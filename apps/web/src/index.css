@@ -1,2 +1,8 @@
 @import "@7xen/ui/globals.css";
 @source "./";
+
+/* phase 2: indeterminate "reading" bar on screenshots */
+@keyframes sx-scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}

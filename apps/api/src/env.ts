@@ -15,7 +15,18 @@ const envSchema = z.object({
         .map((o) => o.trim())
         .filter(Boolean),
     ),
+  /** send session cookies as Secure (needs https). Defaults to on in production; set 0 for plain-http LAN use */
+  COOKIE_SECURE: z.string().optional(),
   LOG_LEVEL: z.string().optional(),
+  /** phase 2: where screenshots and training images live (default <repo>/storage) */
+  STORAGE_DIR: z.string().optional(),
+  /** phase 2: screenshot reader service */
+  EXTRACTOR_URL: z.string().url().default("http://localhost:8090"),
+  /** run the in-process screenshot worker (index.ts); set to 0 to disable */
+  SCREENSHOT_WORKER: z
+    .string()
+    .default("1")
+    .transform((s) => s !== "0" && s.toLowerCase() !== "false"),
 });
 
 const parsed = envSchema.safeParse(process.env);

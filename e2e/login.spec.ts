@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 const WEB_URL = process.env.WEB_URL ?? "http://localhost:5173";
-const ADMIN_URL = process.env.ADMIN_URL ?? "http://localhost:5174";
+const ADMIN_URL = process.env.ADMIN_URL ?? "http://localhost:5173/admin-ui";
 
 for (const [name, url] of [
   ["web (teams & managers)", WEB_URL],

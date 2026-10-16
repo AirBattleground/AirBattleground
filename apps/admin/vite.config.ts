@@ -4,9 +4,12 @@ import tailwindcss from "@tailwindcss/vite";
 import { fileURLToPath, URL } from "node:url";
 
 export default defineConfig({
+  // served under /admin-ui on the same origin as the team & manager portal
+  base: "/admin-ui/",
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: {
+    host: true,
     port: 5174,
     strictPort: true,
     // same-origin API in dev so the httpOnly session cookie just works

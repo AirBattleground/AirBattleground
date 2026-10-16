@@ -6,7 +6,7 @@
  *   pnpm e2e
  *
  * WEB_URL / ADMIN_URL default to the Vite dev servers; for the compose stack use
- * WEB_URL=http://localhost:8080 ADMIN_URL=http://localhost:8081 pnpm e2e
+ * WEB_URL=http://localhost:8080 pnpm e2e
  */
 import { defineConfig, devices } from "@playwright/test";
 

@@ -130,7 +130,7 @@ const isUniqueViolation = (e: unknown): e is Prisma.PrismaClientKnownRequestErro
   e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
 /** Get or lazily create the session row for (scrim, date), tolerating concurrent creators. */
-async function ensureSession(scrimId: string, date: string) {
+export async function ensureSession(scrimId: string, date: string) {
   const d = strToDate(date);
   try {
     return await prisma.scrimSession.upsert({

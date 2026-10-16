@@ -55,6 +55,21 @@
  *   DELETE /api/team/registrations/:id                           → 204  (cancel; PENDING or APPROVED, before start; frees slot)
  *
  *   GET    /api/health                                           → { ok: true }
+ *
+ * PHASE 2 (matches from screenshots, points table, rosters, training center) — full list with inputs and
+ * DTOs in the header of ./phase2.ts. Summary:
+ *   MANAGER  GET  /api/manager/scrims/:id/sessions/:date/matches | /standings
+ *            GET  /api/manager/matches/:matchId · PUT …/lineup · PUT …/results · POST …/publish · POST …/unpublish
+ *            POST /api/manager/matches/:matchId/screenshots (multipart files[] + kind)
+ *                 → 201 { items: ScreenshotRow[], skipped: number }   (skipped = duplicates by sha256)
+ *            GET  /api/manager/screenshots/:id/image · POST …/retry · DELETE /api/manager/screenshots/:id
+ *            PATCH /api/manager/scrims/:id { pointsSystem }  (stored points of published matches are recomputed)
+ *   TEAM     GET  /api/team/results · /api/team/sessions/:scrimId/:date/standings · /api/team/matches/:matchId
+ *            GET|PUT /api/team/roster          (dashboard gains `results`)
+ *   ADMIN    /api/admin/training/samples[/:id[/image|/prefill]] · /api/admin/training/preview
+ *            /api/admin/training/models[/:version/activate] · /api/admin/training/runs[/:id] · /api/admin/extractor/status
+ *   Errors: publish 400 VALIDATION_ERROR with fields keyed "teams.<slotNumber>.placement"; 413 VALIDATION_ERROR for
+ *   an image over MAX_SCREENSHOT_BYTES; 503 EXTRACTOR_OFFLINE when an admin proxy call can't reach the extractor.
  */
 export const API_PREFIX = "/api";
 export const APP_COOKIE = "sx_app";

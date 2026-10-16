@@ -65,7 +65,7 @@ pnpm dev                                    # api + web + admin in parallel
 | App | URL |
 | --- | --- |
 | Web — teams & managers | http://localhost:5173 |
-| Admin console | http://localhost:5174 |
+| Admin console | http://localhost:5173/admin-ui (Vite proxies to :5174) |
 | API | http://localhost:4000 (`/api/health`) |
 
 Run `pnpm check` at any time to diagnose the local setup (toolchain, DB container, `.env`, migrations,
@@ -120,21 +120,21 @@ BASE_URL=http://localhost:8080 pnpm smoke   # against the docker stack, through 
 ```bash
 pnpm dlx playwright@1.62.1 install chromium   # one-time browser download
 pnpm e2e                                      # against pnpm dev (5173 / 5174)
-WEB_URL=http://localhost:8080 ADMIN_URL=http://localhost:8081 pnpm e2e   # against the stack
+WEB_URL=http://localhost:8080 ADMIN_URL=http://localhost:8080/admin-ui pnpm e2e   # against the stack
 ```
 
 ## Production containers
 
 ```bash
 JWT_SECRET=$(openssl rand -hex 32) ADMIN_PASSWORD='…' pnpm stack:up
-# web   → http://localhost:8080     admin → http://localhost:8081
+# web → http://localhost:8080     admin → http://localhost:8080/admin-ui   (LAN: use this machine's IP)
 pnpm db:seed                                # optional demo data (from the host; db is on :5433)
 ```
 
 - `apps/api/Dockerfile` — multi-stage: pnpm via corepack, filtered install, `prisma generate`, tsup
   bundle, `pnpm deploy --prod`; the runtime runs `prisma migrate deploy` (retrying until Postgres is
   up) and then `node dist/index.js` as a non-root user.
-- `apps/web/Dockerfile`, `apps/admin/Dockerfile` — Vite build served by nginx
+- `apps/web/Dockerfile` — Vite build of web + admin (admin at `/admin-ui`) served by nginx
   (`deploy/nginx/spa.conf.template`): `/api` proxied to the API, SPA fallback, immutable caching for
   hashed assets.
 - The extra services live under the compose profile `full`, so `pnpm db:up` still starts only the

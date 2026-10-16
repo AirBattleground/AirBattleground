@@ -98,7 +98,7 @@ probe() { curl -fsS -m 2 -o /dev/null "$1" 2>/dev/null; }
 if command -v curl >/dev/null; then
   probe http://localhost:4000/api/health && ok "api   http://localhost:4000 (healthy)"  || printf '%s-%s api   http://localhost:4000 not running %s(pnpm dev)%s\n' "$D" "$N" "$D" "$N"
   probe http://localhost:5173           && ok "web   http://localhost:5173"            || printf '%s-%s web   http://localhost:5173 not running\n' "$D" "$N"
-  probe http://localhost:5174           && ok "admin http://localhost:5174"            || printf '%s-%s admin http://localhost:5174 not running\n' "$D" "$N"
+  probe http://localhost:5173/admin-ui && ok "admin http://localhost:5173/admin-ui" || printf "%s-%s admin /admin-ui not running\n" "$D" "$N"
 fi
 
 echo

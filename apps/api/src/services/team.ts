@@ -7,6 +7,7 @@ import {
 import { prisma } from "../db.js";
 import { notFound } from "../lib/errors.js";
 import { scrimInclude, strToDate } from "../lib/serialize.js";
+import { teamResultsSummary } from "./teamResults.js";
 import { teamRegistrationInclude, toTeamRegistration } from "./registrations.js";
 import { buildScrimOnDate, countsByScrim, mayOccurOnWhere, scrimOccursOn } from "./schedule.js";
 
@@ -70,13 +71,14 @@ export async function teamDashboard(teamId: string, now = new Date()): Promise<T
   const team = await prisma.team.findUnique({ where: { id: teamId } });
   if (!team) throw notFound("Team not found");
   const today = todayInAppTz(now);
-  const [upcoming, playedBeforeToday, todayApproved] = await Promise.all([
+  const [upcoming, playedBeforeToday, todayApproved, results] = await Promise.all([
     upcomingRegistrations(teamId, now),
     prisma.registration.count({ where: { teamId, status: "APPROVED", session: { date: { lt: strToDate(today) } } } }),
     prisma.registration.findMany({
       where: { teamId, status: "APPROVED", session: { date: strToDate(today) } },
       include: teamRegistrationInclude,
     }),
+    teamResultsSummary(teamId),
   ]);
   const playedToday = todayApproved.map(toTeamRegistration).filter((r) => new Date(r.startsAt) < now).length;
   return {
@@ -89,5 +91,6 @@ export async function teamDashboard(teamId: string, now = new Date()): Promise<T
       pending: upcoming.filter((r) => r.status === "PENDING").length,
       totalPlayed: playedBeforeToday + playedToday,
     },
+    results,
   };
 }

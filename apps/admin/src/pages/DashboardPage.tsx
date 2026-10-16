@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, CalendarClock, CheckCircle2, ChevronRight, Hourglass, KeyRound, Shield, ShieldCheck, ShieldPlus, Swords, Trophy, UserPlus, Users } from "lucide-react";
+import { ArrowRight, CalendarClock, CircleDashed, Cpu, PlugZap, CheckCircle2, ChevronRight, Hourglass, KeyRound, Shield, ShieldCheck, ShieldPlus, Swords, Trophy, UserPlus, Users } from "lucide-react";
 import { PageHeader, StatCard } from "@7xen/ui/components/brand/page";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -12,6 +12,8 @@ import { ActivePill } from "@/components/StatusPill";
 import { useManagers } from "@/features/managers/api";
 import { useAdminStats } from "@/features/stats/api";
 import { useTeams } from "@/features/teams/api";
+import { useExtractorStatus, useModels, useSamples } from "@/features/training/api";
+import { pct } from "@/features/training/format";
 import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/forms";
 import { relativeTime } from "@/lib/format";
@@ -19,6 +21,7 @@ import { relativeTime } from "@/lib/format";
 const TOUR: TourStep[] = [
   { element: '[data-tour="stats"]', title: "Welcome to your control room", description: "These numbers show how many managers and teams are active, scrims running, and registrations waiting for approval.", side: "bottom" },
   { element: '[data-tour="quick-actions"]', title: "Create logins", description: "Teams and managers can't sign up on their own yet. Make their logins here in a few clicks.", side: "bottom" },
+  { element: '[data-tour="reader-card"]', title: "Screenshot reader", description: "Reads match screenshots for managers. Check new samples here so it keeps getting more accurate.", side: "bottom" },
   { element: '[data-tour="how-it-works"]', title: "How 7xen works", description: "You create logins, managers run scrims, teams register and get slots. That's it!", side: "top" },
   { element: '[data-tour="nav-managers"]', title: "Your menu", description: "Managers and Teams live here. Open them to search, edit, reset passwords or disable a login.", side: "right" },
   { element: '[data-tour="tour-btn"]', title: "Need a refresher?", description: "Click here any time to replay the tour for the page you're on.", side: "bottom" },
@@ -177,6 +180,54 @@ function RecentList({ title, to, empty, loading, rows }: { title: string; to: st
   );
 }
 
+function ReaderCard() {
+  const status = useExtractorStatus({ refetchInterval: 30_000 });
+  const models = useModels();
+  const samples = useSamples();
+  const s = status.data;
+  const online = !!s?.online;
+  const active = models.data?.items.find((m) => m.active);
+  const accuracy = pct(active?.metrics?.nameExact ?? null);
+  const unverified = samples.data?.items.filter((x) => !x.verified && !x.excluded).length ?? 0;
+  const loading = status.isPending;
+  return (
+    <Link
+      to={unverified ? "/training/samples?status=unverified" : "/training/samples"}
+      data-tour="reader-card"
+      className="group relative flex flex-col gap-4 overflow-hidden rounded-xl border bg-card p-5 shadow-sm transition-all outline-none hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-row sm:items-center"
+    >
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        <div className={cn("relative flex size-12 shrink-0 items-center justify-center rounded-xl [&_svg]:size-6", loading ? "bg-muted text-muted-foreground" : online ? "bg-success/15 text-success" : "bg-destructive/10 text-destructive")}>
+          {online || loading ? <Cpu /> : <PlugZap />}
+          {online && <span className="absolute -top-0.5 -right-0.5 size-3 animate-pulse rounded-full border-2 border-card bg-success" aria-hidden />}
+        </div>
+        <div className="min-w-0">
+          <div className="font-display text-xl font-bold">Screenshot reader</div>
+          <div className="text-sm text-muted-foreground">
+            {loading ? (
+              <Skeleton className="mt-1 h-4 w-48" />
+            ) : online ? (
+              <>Online · model <strong className="text-foreground">{s?.activeModel ?? active?.version ?? "—"}</strong>{accuracy ? <> · {accuracy} of names read exactly right</> : " · accuracy not measured yet"}</>
+            ) : (
+              "Offline — managers can still type results by hand"
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-3">
+        {unverified > 0 ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/15 px-3 py-1 text-sm font-semibold text-warning-foreground dark:text-warning">
+            <CircleDashed className="size-4" /> {unverified} {unverified === 1 ? "sample needs" : "samples need"} checking
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground">Training center</span>
+        )}
+        <ArrowRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />
+      </div>
+    </Link>
+  );
+}
+
 const newest = <T extends { createdAt: string }>(items: T[] | undefined) => [...(items ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 5);
 
 export default function DashboardPage() {
@@ -194,6 +245,7 @@ export default function DashboardPage() {
           <QuickAction to="/managers?create=1" icon={<UserPlus />} title="Create manager login" text="For someone who will run scrims" />
           <QuickAction to="/teams?create=1" icon={<ShieldPlus />} title="Create team login" text="For a squad that wants to play" />
         </div>
+        <ReaderCard />
         <HowItWorks />
         <div className="grid gap-4 lg:grid-cols-2">
           <RecentList

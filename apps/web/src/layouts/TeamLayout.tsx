@@ -1,5 +1,5 @@
 import { Link, Outlet } from "react-router-dom";
-import { CalendarSearch, Home, Search, Shield, Ticket, Trophy, UserPlus } from "lucide-react";
+import { CalendarSearch, Home, Medal, Search, Shield, Ticket, Trophy, UserPlus } from "lucide-react";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { useAuth } from "@/lib/auth";
@@ -9,6 +9,7 @@ const NAV: NavItem[] = [
   { key: "home", to: "/team", label: "Home", icon: Home, end: true },
   { key: "scrims", to: "/team/scrims", label: "Find scrims", icon: Search },
   { key: "registrations", to: "/team/registrations", label: "My registrations", icon: Ticket },
+  { key: "results", to: "/team/results", label: "Results", icon: Medal },
   { key: "profile", to: "/team/profile", label: "Team profile", icon: Shield },
 ];
 
@@ -55,11 +56,13 @@ function TeamCard({ collapsed, close }: { collapsed: boolean; close: () => void 
   );
 }
 
+const SEGMENT_LABELS = { matches: "Match", standings: "Points table" };
+
 const teamHeader: SidebarSlot = (s) => <TeamCard {...s} />;
 
 export default function TeamLayout() {
   return (
-    <AppShell nav={NAV} homeHref="/team" sidebarHeader={teamHeader} welcomeSteps={WELCOME_STEPS}>
+    <AppShell nav={NAV} homeHref="/team" sidebarHeader={teamHeader} segmentLabels={SEGMENT_LABELS} welcomeSteps={WELCOME_STEPS}>
       <Outlet />
     </AppShell>
   );

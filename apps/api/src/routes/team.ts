@@ -1,10 +1,11 @@
 import { Router, type Request } from "express";
-import { APP_COOKIE, createRegistrationSchema, dateQuerySchema, registrationScopeSchema } from "@7xen/shared";
+import { APP_COOKIE, createRegistrationSchema, dateQuerySchema, dateString, registrationScopeSchema, saveRosterSchema } from "@7xen/shared";
 import { AppError } from "../lib/errors.js";
 import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import { cancelRegistration, registerTeam } from "../services/registrations.js";
 import * as team from "../services/team.js";
+import * as results from "../services/teamResults.js";
 
 function teamId(req: Request): string {
   const t = currentUser(req).team;
@@ -36,6 +37,24 @@ export function teamRouter() {
   r.delete("/registrations/:id", async (req, res) => {
     await cancelRegistration(teamId(req), req.params.id);
     res.status(204).end();
+  });
+
+  // ---- phase 2: results, points table, roster ----
+  r.get("/results", async (req, res) => {
+    res.json({ items: await results.teamResults(teamId(req)) });
+  });
+  r.get("/sessions/:scrimId/:date/standings", async (req, res) => {
+    const date = parse(dateString, req.params.date);
+    res.json(await results.teamSessionStandings(teamId(req), req.params.scrimId, date));
+  });
+  r.get("/matches/:matchId", async (req, res) => {
+    res.json(await results.teamMatchScorecard(teamId(req), req.params.matchId));
+  });
+  r.get("/roster", async (req, res) => {
+    res.json(await results.getRoster(teamId(req)));
+  });
+  r.put("/roster", async (req, res) => {
+    res.json(await results.saveRoster(teamId(req), parse(saveRosterSchema, req.body)));
   });
 
   return r;

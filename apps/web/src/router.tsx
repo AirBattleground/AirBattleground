@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
 import { FullPageLoader } from "@7xen/ui/components/brand/page";
 import { RedirectHome, RequireRole } from "@/lib/guards";
 
@@ -12,6 +12,17 @@ const page = (load: () => Promise<{ default: ComponentType }>) => {
     </Suspense>
   );
 };
+
+/** Breadcrumb targets that aren't pages of their own (e.g. /manager/scrims/:id/:date) → the right page. */
+function SessionRedirect({ area }: { area: "manager" | "team" }) {
+  const { scrimId = "", date = "" } = useParams();
+  return (
+    <Navigate
+      replace
+      to={area === "manager" ? `/manager/scrims/${scrimId}?date=${date}&tab=matches` : `/team/results/${scrimId}/${date}`}
+    />
+  );
+}
 
 const LoginPage = () => page(() => import("@/pages/auth/LoginPage"));
 const NotFoundPage = () => page(() => import("@/pages/NotFoundPage"));
@@ -37,6 +48,10 @@ export const router = createBrowserRouter([
       { path: "scrims/new", element: page(() => import("@/pages/manager/ScrimFormPage")) },
       { path: "scrims/:scrimId", element: page(() => import("@/pages/manager/ScrimDetailPage")) },
       { path: "scrims/:scrimId/edit", element: page(() => import("@/pages/manager/ScrimFormPage")) },
+      { path: "scrims/:scrimId/:date", element: <SessionRedirect area="manager" /> },
+      { path: "scrims/:scrimId/:date/matches", element: <SessionRedirect area="manager" /> },
+      { path: "scrims/:scrimId/:date/matches/:matchId", element: page(() => import("@/pages/manager/MatchCenterPage")) },
+      { path: "scrims/:scrimId/:date/standings", element: page(() => import("@/pages/manager/StandingsPage")) },
       { path: "teams", element: page(() => import("@/pages/manager/TeamsPage")) },
     ],
   },
@@ -54,6 +69,11 @@ export const router = createBrowserRouter([
       { path: "scrims", element: page(() => import("@/pages/team/BrowseScrimsPage")) },
       { path: "registrations", element: page(() => import("@/pages/team/MyRegistrationsPage")) },
       { path: "profile", element: page(() => import("@/pages/team/ProfilePage")) },
+      { path: "results", element: page(() => import("@/pages/team/ResultsPage")) },
+      { path: "results/:scrimId", element: <Navigate replace to="/team/results" /> },
+      { path: "results/:scrimId/:date", element: page(() => import("@/pages/team/SessionResultsPage")) },
+      { path: "results/:scrimId/:date/matches", element: <SessionRedirect area="team" /> },
+      { path: "results/:scrimId/:date/matches/:matchId", element: page(() => import("@/pages/team/MatchScorecardPage")) },
     ],
   },
   { path: "*", element: <NotFoundPage /> },

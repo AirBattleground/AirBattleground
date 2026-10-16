@@ -1,10 +1,16 @@
 /**
- * Seeds the admin account from env (ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_NAME).
- * With SEED_DEMO=1 also creates demo managers, teams, scrims and registrations (idempotent).
+ * Seeds the admin account from env (ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_NAME) and the real
+ * screenshots in services/extractor/eval/dataset/real as training samples (source SEED, unverified).
+ * With SEED_DEMO=1 also creates demo managers, teams, scrims, registrations, rosters and published
+ * match results (idempotent).
  */
-import { PrismaClient, type RegistrationStatus } from "@prisma/client";
+import { readFileSync, existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { PrismaClient, type Prisma, type RegistrationStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { addDays, teamNameKey, todayInAppTz, weekdayOf } from "@7xen/shared";
+import { DEFAULT_POINTS_SYSTEM, addDays, matchPoints, teamNameKey, todayInAppTz, weekdayOf } from "@7xen/shared";
+import { imageInfo, saveBuffer, sha256, splitForSha, storageRoot } from "../src/lib/storage.js";
 
 const prisma = new PrismaClient();
 const d = (s: string) => new Date(`${s}T00:00:00.000Z`);
@@ -89,13 +95,25 @@ async function seedRegistrations(
   });
   for (const e of entries) {
     const decided = e.status === "APPROVED" || e.status === "REJECTED";
+    const existing = await prisma.registration.findUnique({ where: { sessionId_teamId: { sessionId: session.id, teamId: e.teamId } } });
+    if (existing) continue;
+    // the dev DB may already have someone (e.g. a test team) on the wanted slot: take the next free one
+    let slot = e.status === "APPROVED" ? (e.slot ?? null) : null;
+    if (slot != null) {
+      const taken = new Set(
+        (await prisma.registration.findMany({ where: { sessionId: session.id, slotNumber: { not: null } }, select: { slotNumber: true } })).map(
+          (r) => r.slotNumber,
+        ),
+      );
+      while (taken.has(slot)) slot++;
+    }
     await prisma.registration.upsert({
       where: { sessionId_teamId: { sessionId: session.id, teamId: e.teamId } },
       create: {
         sessionId: session.id,
         teamId: e.teamId,
         status: e.status,
-        slotNumber: e.status === "APPROVED" ? (e.slot ?? null) : null,
+        slotNumber: slot,
         rejectionReason: e.reason ?? null,
         decidedAt: decided ? new Date() : null,
         decidedById: decided ? managerId : null,
@@ -204,15 +222,141 @@ async function seedDemo() {
     { teamId: soul, status: "PENDING" },
     { teamId: godl, status: "APPROVED", slot: 1 },
   ]);
+
+  await seedDemoResults(daily, m1.id, teams);
+}
+
+// ---------------------------------------------------------------- phase 2: real screenshots as training samples
+
+const REAL_DATASET = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../services/extractor/eval/dataset/real");
+
+async function seedSamples(): Promise<number> {
+  const labelsPath = path.join(REAL_DATASET, "labels.json");
+  if (!existsSync(labelsPath)) {
+    console.log(`  (no real screenshots at ${REAL_DATASET}; skipping training samples)`);
+    return 0;
+  }
+  const data = JSON.parse(readFileSync(labelsPath, "utf8")) as {
+    images: { file: string; kind: "SLOT_LIST" | "RESULTS"; teams?: unknown[]; rows?: unknown[] }[];
+  };
+  let created = 0;
+  for (const img of data.images) {
+    const file = path.join(REAL_DATASET, img.file);
+    if (!existsSync(file)) continue;
+    const buf = readFileSync(file);
+    const sha = sha256(buf);
+    const info = imageInfo(buf);
+    const key = `samples/seed/${img.file}`;
+    await saveBuffer(key, buf); // (re)copy so the file is present even if storage was wiped
+    if (await prisma.trainingSample.findUnique({ where: { sha256: sha } })) continue;
+    const labels = img.kind === "SLOT_LIST" ? { teams: img.teams ?? [] } : { rows: img.rows ?? [] };
+    await prisma.trainingSample.create({
+      data: {
+        kind: img.kind,
+        source: "SEED",
+        storageKey: key,
+        sha256: sha,
+        width: info?.width ?? null,
+        height: info?.height ?? null,
+        labels: labels as Prisma.InputJsonValue,
+        split: splitForSha(sha),
+        verified: false,
+        notes: `Real screenshot ${img.file} (labels need an admin check)`,
+      },
+    });
+    created++;
+  }
+  return created;
+}
+
+// ---------------------------------------------------------------- phase 2: demo results
+
+const ROSTERS: Record<string, string[]> = {
+  "Team Soul": ["SouLMortaL", "SouLViper", "SouLRegaltos", "SouLOwais"],
+  "GodLike Esports": ["GodLJonathan", "GodLZGOD", "GodLNeyoo", "GodLClutchgod"],
+  "Blind Esports": ["BlindManya", "BlindNakul", "BlindRony", "BlindSpraygod"],
+  Orangutan: ["OGAshTheBoss", "OGAquaNox", "OGWizzGod", "OGLucifer"],
+  "Global Esports": ["GEMavi", "GESlug", "GEHector", "GEBeast"],
+  Revenant: ["RNTSensei", "RNTFury", "RNTApollo", "RNTTracegod"],
+};
+
+/** Yesterday's "Daily Evening Showdown": 6 approved teams with rosters and 2 published matches. */
+async function seedDemoResults(scrim: { id: string; maps: string[] }, managerId: string, teams: { id: string; name: string }[]) {
+  const date = addDays(todayInAppTz(), -1);
+  const demoTeams = teams.filter((t) => ROSTERS[t.name]);
+  await seedRegistrations(
+    scrim.id,
+    date,
+    managerId,
+    demoTeams.map((t, i) => ({ teamId: t.id, status: "APPROVED" as const, slot: 3 + i })),
+  );
+  for (const t of demoTeams) {
+    if ((await prisma.teamPlayer.count({ where: { teamId: t.id } })) > 0) continue;
+    await prisma.teamPlayer.createMany({ data: ROSTERS[t.name]!.map((ign, i) => ({ teamId: t.id, ign, position: i + 1 })) });
+  }
+  const session = await prisma.scrimSession.findUniqueOrThrow({ where: { scrimId_date: { scrimId: scrim.id, date: d(date) } } });
+  // a demo team may already be registered there in another state (dev DB): approve it on a free slot
+  for (const t of demoTeams) {
+    const reg = await prisma.registration.findUniqueOrThrow({ where: { sessionId_teamId: { sessionId: session.id, teamId: t.id } } });
+    if (reg.status === "APPROVED" && reg.slotNumber != null) continue;
+    const taken = new Set(
+      (await prisma.registration.findMany({ where: { sessionId: session.id, slotNumber: { not: null } }, select: { slotNumber: true } })).map((r) => r.slotNumber),
+    );
+    let slot = 3;
+    while (taken.has(slot)) slot++;
+    await prisma.registration.update({
+      where: { id: reg.id },
+      data: { status: "APPROVED", slotNumber: slot, decidedAt: new Date(), decidedById: managerId, rejectionReason: null },
+    });
+  }
+  const regs = await prisma.registration.findMany({ where: { sessionId: session.id, status: "APPROVED" } });
+  const slotOf = new Map(regs.map((r) => [r.teamId, r.slotNumber!]));
+  await prisma.match.createMany({
+    data: scrim.maps.map((map, i) => ({ sessionId: session.id, number: i + 1, map })),
+    skipDuplicates: true,
+  });
+
+  // placement + per-player kills, in demoTeams order
+  const results: [number, number[]][][] = [
+    [[2, [2, 1, 3, 0]], [1, [4, 3, 2, 2]], [5, [1, 0, 1, 0]], [3, [3, 2, 0, 1]], [6, [0, 0, 1, 0]], [4, [2, 1, 1, 1]]],
+    [[1, [3, 4, 2, 1]], [4, [1, 2, 0, 1]], [2, [2, 3, 1, 2]], [6, [0, 1, 0, 0]], [3, [2, 1, 2, 0]], [5, [1, 0, 1, 1]]],
+  ];
+  for (const [mi, rows] of results.entries()) {
+    const match = await prisma.match.findUniqueOrThrow({ where: { sessionId_number: { sessionId: session.id, number: mi + 1 } } });
+    if (match.status === "PUBLISHED") continue;
+    await prisma.matchTeam.deleteMany({ where: { matchId: match.id } });
+    for (const [ti, t] of demoTeams.entries()) {
+      const [placement, playerKills] = rows[ti]!;
+      const kills = playerKills.reduce((a, b) => a + b, 0);
+      const pts = matchPoints(DEFAULT_POINTS_SYSTEM, placement, kills);
+      await prisma.matchTeam.create({
+        data: {
+          matchId: match.id,
+          slotNumber: slotOf.get(t.id)!,
+          teamId: t.id,
+          placement,
+          kills,
+          ...pts,
+          players: { create: ROSTERS[t.name]!.map((name, i) => ({ position: i + 1, name, kills: playerKills[i] ?? 0 })) },
+        },
+      });
+    }
+    await prisma.match.update({
+      where: { id: match.id },
+      data: { status: "PUBLISHED", publishedAt: new Date(`${date}T13:${mi === 0 ? "10" : "45"}:00.000Z`) },
+    });
+  }
 }
 
 async function main() {
   const admin = await seedAdmin();
+  const samples = await seedSamples();
   const demo = process.env.SEED_DEMO === "1" || process.env.SEED_DEMO === "true";
   if (demo) await seedDemo();
 
   console.log("\nSeed complete.\n");
   console.log(`  Admin console : ${admin.username} / ${admin.password}`);
+  console.log(`  Training      : ${samples} new real screenshot sample(s) in ${storageRoot()}/samples/seed`);
   if (demo) {
     console.log(`  Managers      : manager1, manager2  /  ${MANAGER_PASSWORD}`);
     console.log(`  Teams         : ${TEAMS.map((t) => t.username).join(", ")}  /  ${TEAM_PASSWORD}`);

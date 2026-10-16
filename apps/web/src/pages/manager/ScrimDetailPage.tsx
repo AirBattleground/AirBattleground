@@ -13,16 +13,18 @@ import {
   LockOpen,
   Pencil,
   Repeat,
+  Trophy,
   UserMinus,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { ApiError, DATE_RE, occursOn, todayInAppTz, type Registration, type Scrim, type SessionDetail } from "@7xen/shared";
+import { addDays, ApiError, DATE_RE, occursOn, todayInAppTz, type Registration, type Scrim, type SessionDetail } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { SlotChip, StatusBadge, TeamAvatar } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Progress } from "@7xen/ui/components/ui/progress";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@7xen/ui/components/ui/tabs";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useApproveRegistration, useBulkApprove, useRejectRegistration, useScrim, useSession } from "@/features/manager/api";
@@ -46,10 +48,12 @@ import { RequestCard } from "@/features/manager/components/RequestCard";
 import { ScrimStatusPill } from "@/features/manager/components/ScrimStatusPill";
 import { SlotBoard, slotListText } from "@/features/manager/components/SlotBoard";
 import { useNow } from "@/features/manager/components/useNow";
+import { SessionMatches } from "@/features/matches/components/SessionMatches";
 
 const TOUR: TourStep[] = [
   { title: "Running a session", description: "Here you decide which teams play on a given day." },
   { element: '[data-tour="detail-dates"]', title: "Pick the day", description: "Only days this scrim runs are shown. Each day has its own list of teams." },
+  { element: '[data-tour="detail-tabs"]', title: "Teams or matches", description: "“Teams” is for approvals and slots. After the scrim starts, “Matches & results” is where you upload screenshots and publish results." },
   { element: '[data-tour="detail-summary"]', title: "How full is it?", description: "Confirmed teams, requests waiting, slots left — and when registration closes." },
   { element: '[data-tour="detail-requests"]', title: "Approve or reject", description: "Approving gives the team the lowest free slot automatically. You can remove a team later to free their slot." },
   { element: '[data-tour="detail-board"]', title: "Slot board", description: "Who is in which slot. Use “Copy slot list” to paste it into WhatsApp or Discord." },
@@ -106,6 +110,9 @@ function Detail({ scrim }: { scrim: Scrim }) {
 
   const stripDates = useMemo(() => {
     const list = nextOccurrences(scrim, today, scrim.recurrence === "WEEKENDS" ? 8 : 14);
+    // the last few days it ran too, so results of recent sessions are one tap away
+    const past = nextOccurrences(scrim, addDays(today, -7), 14).filter((d) => d < today).slice(-3);
+    list.unshift(...past);
     if (!list.includes(date)) list.push(date);
     return list.sort();
   }, [scrim, today, date]);
@@ -208,7 +215,43 @@ function SessionView({ scrim, date }: { scrim: Scrim; date: string }) {
     return <QueryError error={q.error} onRetry={() => void q.refetch()} />;
   }
   if (!q.data) return <SessionSkeleton />;
-  return <Session s={q.data} />;
+  return <SessionTabs s={q.data} />;
+}
+
+type SessionTab = "teams" | "matches";
+
+/** "Teams" (registrations + slot board) and "Matches & results" (phase 2 match center entry). */
+function SessionTabs({ s }: { s: SessionDetail }) {
+  const [params, setParams] = useSearchParams();
+  const raw = params.get("tab");
+  const started = new Date(s.startsAt).getTime() <= Date.now();
+  const tab: SessionTab = raw === "teams" || raw === "matches" ? raw : started ? "matches" : "teams";
+  const setTab = (t: string) => {
+    const next = new URLSearchParams(params);
+    next.set("tab", t);
+    setParams(next, { replace: true });
+  };
+  return (
+    <Tabs value={tab} onValueChange={setTab} className="gap-5">
+      <TabsList className="h-11 w-full sm:w-auto" data-tour="detail-tabs">
+        <TabsTrigger value="teams" className="px-4">
+          <Users /> Teams
+          {s.counts.pending > 0 && (
+            <span className="grid min-w-5 place-items-center rounded-full bg-warning/25 px-1.5 text-xs text-warning-foreground dark:text-warning">{s.counts.pending}</span>
+          )}
+        </TabsTrigger>
+        <TabsTrigger value="matches" className="px-4">
+          <Trophy /> Matches & results
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="teams">
+        <Session s={s} />
+      </TabsContent>
+      <TabsContent value="matches">
+        <SessionMatches scrimId={s.scrim.id} date={s.date} />
+      </TabsContent>
+    </Tabs>
+  );
 }
 
 function Session({ s }: { s: SessionDetail }) {

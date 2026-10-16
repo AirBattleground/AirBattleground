@@ -22,7 +22,7 @@ export const yesterday = () => addDays(todayInAppTz(), -1);
 
 export async function resetDb() {
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE "TeamRequest", "Registration", "ScrimSession", "Scrim", "Team", "User" RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE "TrainingSample", "MatchPlayer", "MatchTeam", "Screenshot", "Match", "TeamPlayer", "TeamRequest", "Registration", "ScrimSession", "Scrim", "Team", "User" RESTART IDENTITY CASCADE',
   );
 }
 

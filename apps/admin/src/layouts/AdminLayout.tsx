@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Compass, LayoutDashboard, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Shield, ShieldCheck, Users } from "lucide-react";
+import { Compass, GraduationCap, LayoutDashboard, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Shield, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AnimatedBackground } from "@7xen/ui/components/brand/animated-background";
 import { Logo, LogoMark } from "@7xen/ui/components/brand/logo";
@@ -23,12 +23,14 @@ import { useTour } from "@7xen/ui/tour";
 import { useIsDesktop } from "@/hooks/use-media-query";
 import { useAuth } from "@/lib/auth";
 import { useAdminStats } from "@/features/stats/api";
+import { useSamples } from "@/features/training/api";
 
 const NAV = [
   { to: "/", label: "Overview", icon: LayoutDashboard, tour: "nav-overview", end: true },
   { to: "/managers", label: "Managers", icon: Users, tour: "nav-managers", end: false },
   { to: "/teams", label: "Teams", icon: Shield, tour: "nav-teams", end: false },
   { to: "/team-requests", label: "Team approvals", icon: ShieldCheck, tour: "nav-team-requests", end: false },
+  { to: "/training", label: "Training", icon: GraduationCap, tour: "nav-training", end: false },
 ] as const;
 
 const COLLAPSE_KEY = "7xen.admin.sidebar-collapsed";
@@ -40,7 +42,11 @@ function titleFor(pathname: string) {
 
 function NavItems({ collapsed, layoutId, onNavigate }: { collapsed: boolean; layoutId: string; onNavigate?: () => void }) {
   const stats = useAdminStats({ refetchInterval: 30_000 });
-  const badges: Record<string, number> = { "/team-requests": stats.data?.teamRequests.pending ?? 0 };
+  const samples = useSamples();
+  const badges: Record<string, number> = {
+    "/team-requests": stats.data?.teamRequests.pending ?? 0,
+    "/training": samples.data?.items.filter((s) => !s.verified && !s.excluded).length ?? 0,
+  };
   return (
     <nav className="grid gap-1" aria-label="Main">
       {NAV.map(({ to, label, icon: Icon, tour, end }) => {

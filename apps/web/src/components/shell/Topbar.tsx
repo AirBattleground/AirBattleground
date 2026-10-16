@@ -2,6 +2,8 @@ import { Fragment, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ChevronRight, Compass, Menu } from "lucide-react";
 import { toast } from "sonner";
+import { format, parseISO } from "date-fns";
+import { DATE_RE } from "@7xen/shared";
 import { ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
 import { LogoMark } from "@7xen/ui/components/brand/logo";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -29,9 +31,12 @@ function useCrumbs(nav: NavItem[], segmentLabels: Record<string, string>): Crumb
     const crumbs: Crumb[] = [{ label: match.label, to: match.to }];
     const rest = path.slice(match.to.length).split("/").filter(Boolean);
     let acc = match.to;
-    rest.forEach((seg) => {
+    rest.forEach((seg, i) => {
       acc += `/${seg}`;
-      crumbs.push({ label: segmentLabels[seg] ?? DEFAULT_SEGMENT_LABELS[seg] ?? "Details", to: acc });
+      // an id right before a date (".../:scrimId/:date") is shown as the date crumb only
+      if (DATE_RE.test(rest[i + 1] ?? "") && !segmentLabels[seg]) return;
+      const label = DATE_RE.test(seg) ? format(parseISO(seg), "EEE, d MMM") : (segmentLabels[seg] ?? DEFAULT_SEGMENT_LABELS[seg] ?? "Details");
+      crumbs.push({ label, to: acc });
     });
     // the last crumb is the current page — not a link
     const last = crumbs[crumbs.length - 1];

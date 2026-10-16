@@ -7,9 +7,14 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: {
+    host: true, // reachable from other devices on the LAN
     port: 5173,
     strictPort: true,
     // same-origin API in dev so the httpOnly session cookie just works
-    proxy: { "/api": { target: process.env.API_URL ?? "http://localhost:4000", changeOrigin: true } },
+    proxy: {
+      "/api": { target: process.env.API_URL ?? "http://localhost:4000", changeOrigin: true },
+      // admin console lives at /admin-ui on this same origin (dev server on :5174)
+      "/admin-ui": { target: process.env.ADMIN_URL ?? "http://localhost:5174", ws: true },
+    },
   },
 });

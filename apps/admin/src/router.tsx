@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType } from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { FullPageLoader } from "@7xen/ui/components/brand/page";
 import { RequireAdmin } from "@/lib/guards";
 
@@ -29,7 +29,12 @@ export const router = createBrowserRouter([
       { path: "managers", element: page(() => import("@/pages/ManagersPage")) },
       { path: "teams", element: page(() => import("@/pages/TeamsPage")) },
       { path: "team-requests", element: page(() => import("@/pages/TeamRequestsPage")) },
+      { path: "training", element: <Navigate to="/training/samples" replace /> },
+      { path: "training/samples", element: page(() => import("@/pages/training/SamplesPage")) },
+      { path: "training/samples/:id", element: page(() => import("@/pages/training/SampleEditorPage")) },
+      { path: "training/models", element: page(() => import("@/pages/training/ModelsPage")) },
+      { path: "training/runs", element: page(() => import("@/pages/training/RunsPage")) },
     ],
   },
   { path: "*", element: page(() => import("@/pages/NotFoundPage")) },
-]);
+], { basename: "/admin-ui" });

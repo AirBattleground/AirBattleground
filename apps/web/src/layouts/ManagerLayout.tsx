@@ -14,7 +14,7 @@ const WELCOME_STEPS: WelcomeStep[] = [
   { icon: CheckCircle2, title: "Approve", text: "Approve a request and the next free slot is allotted automatically." },
 ];
 
-const SEGMENT_LABELS = { new: "New scrim", edit: "Edit scrim" };
+const SEGMENT_LABELS = { new: "New scrim", edit: "Edit scrim", matches: "Matches", standings: "Points table" };
 
 const NewScrimButton: SidebarSlot = ({ collapsed, close }) => {
   const btn = (

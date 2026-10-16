@@ -9,6 +9,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   SLOTS_FULL: 409,
   REGISTRATION_CLOSED: 409,
   RATE_LIMITED: 429,
+  EXTRACTOR_OFFLINE: 503,
   INTERNAL: 500,
 };
 

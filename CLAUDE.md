@@ -5,7 +5,7 @@ pnpm monorepo (pnpm 11, Node 24, TypeScript strict).
 ```
 apps/api     Express 5 + Prisma 6 + Postgres. REST under /api. Port 4000.
 apps/web     Vite + React 18 + Tailwind v4 + shadcn/ui. Team & Manager portal. Port 5173.
-apps/admin   Same stack. Admin console (creates manager + team logins). Port 5174.
+apps/admin   Same stack. Admin console (creates manager + team logins). Served at /admin-ui (dev: :5174, proxied via web :5173).
 packages/shared  Zod schemas, enums, DTO types, endpoint catalogue (src/api.ts), schedule helpers, fetch client.
 packages/ui      shadcn/ui components + 7xen theme (light/dark), brand components, ThemeProvider, guided tour.
 ```

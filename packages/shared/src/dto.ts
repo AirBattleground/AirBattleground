@@ -14,6 +14,8 @@ export type ApiErrorCode =
   | "SLOTS_FULL"
   | "REGISTRATION_CLOSED"
   | "RATE_LIMITED"
+  /** phase 2: the screenshot reader service is unreachable (HTTP 503) */
+  | "EXTRACTOR_OFFLINE"
   | "INTERNAL";
 
 export interface ApiErrorBody {

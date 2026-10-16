@@ -27,7 +27,7 @@ export function verifyToken(token: string): JwtPayload | null {
 const cookieOptions = () => ({
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: isProd,
+  secure: env.COOKIE_SECURE === undefined ? isProd : env.COOKIE_SECURE === "1" || env.COOKIE_SECURE === "true",
   path: "/",
 });
 

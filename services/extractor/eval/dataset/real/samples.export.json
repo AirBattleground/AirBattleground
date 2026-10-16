@@ -1,0 +1,833 @@
+{
+ "_about": "SampleRef export of the 7 real seed screenshots (image_path relative to STORAGE_DIR). Import as TrainingSample(source=SEED, verified=false); `needs_human_check` lists ambiguous names to confirm.",
+ "samples": [
+  {
+   "id": "seed-lobby-1",
+   "kind": "slot_list",
+   "image_path": "samples/seed/lobby-1.jpg",
+   "labels": {
+    "teams": [
+     {
+      "slot": 5,
+      "players": [
+       "A9xTARUN",
+       "A9xRolf",
+       "AExVENOMM",
+       "RexxyyThePapa"
+      ]
+     },
+     {
+      "slot": 6,
+      "players": [
+       "ATMOSPHERECafe",
+       "WRG | GHOST",
+       "WRG | TIGER",
+       "WRG | CHILLY"
+      ]
+     },
+     {
+      "slot": 7,
+      "players": [
+       "GExRuwad1O",
+       "GExDeadPlaYeR",
+       "GExMoOnGOD",
+       "GExFireGod"
+      ]
+     },
+     {
+      "slot": 8,
+      "players": [
+       "MunawarHuLadle",
+       "4TRxFLeriXx",
+       "4T MAX 999",
+       "TAPxKennnIlk"
+      ]
+     },
+     {
+      "slot": 9,
+      "players": [
+       "WantstobeSLIce",
+       "THUG多FRAGG3R",
+       "THUG多MURD3R",
+       "DTOWN多TenDor"
+      ]
+     },
+     {
+      "slot": 11,
+      "players": [
+       "HaVoC · SLĀYER",
+       "· Titann ·",
+       "HaVoC · KratoS",
+       "LattuMuttaya"
+      ]
+     },
+     {
+      "slot": 12,
+      "players": [
+       "Cloudgawdx",
+       "iQOOSOuLGobliN",
+       "9TxTANUUU",
+       "PATILxJATIN"
+      ]
+     },
+     {
+      "slot": 13,
+      "players": [
+       "AExBlaziken",
+       "AExStanzo",
+       "AExGujjar",
+       "AExJenu"
+      ]
+     },
+     {
+      "slot": 14,
+      "players": [
+       "《vanshu£》",
+       "Talent Scout",
+       "EExANGAT",
+       "Tcシishu"
+      ]
+     }
+    ]
+   },
+   "split": "train",
+   "sha256": "72574a49e10ca4afe6d70ca66c8b2a0e687b914a82b4fa2f1d4b91dff9b642e6",
+   "source": "SEED",
+   "verified": false,
+   "needs_human_check": [
+    "GExMoOnGOD",
+    "GExRuwad1O",
+    "HaVoC · SLĀYER",
+    "TAPxKennnIlk",
+    "WantstobeSLIce",
+    "iQOOSOuLGobliN"
+   ]
+  },
+  {
+   "id": "seed-lobby-2",
+   "kind": "slot_list",
+   "image_path": "samples/seed/lobby-2.jpg",
+   "labels": {
+    "teams": [
+     {
+      "slot": 15,
+      "players": [
+       "GoldJONATHAN3",
+       "AARU JIII",
+       "DROXXI GAMING",
+       "DSTRYXArJUN"
+      ]
+     },
+     {
+      "slot": 16,
+      "players": [
+       "7SxVENØM18",
+       "7SxGOJO",
+       "7SxSØNÛ",
+       "7SxSKÛLL"
+      ]
+     },
+     {
+      "slot": 17,
+      "players": [
+       "302 IS LIVE",
+       "EMPxSagarIGL",
+       "EMPxgoku",
+       "EMPxLivikigl"
+      ]
+     },
+     {
+      "slot": 18,
+      "players": [
+       "ʞeɯɹer2",
+       "DCKARTIK'",
+       "आशीष्",
+       "Lobby×‿ Ja"
+      ]
+     },
+     {
+      "slot": 19,
+      "players": [
+       "THxCASHHH",
+       "TFxVishavvvS7",
+       "THxBakiiJod",
+       "VAIBHAVBHAIYA"
+      ]
+     },
+     {
+      "slot": 20,
+      "players": [
+       "7xStishMuthMar",
+       "7xjumpeR",
+       "MEGAxLUCIFER03"
+      ]
+     },
+     {
+      "slot": 21,
+      "players": [
+       "AIxTIXZO",
+       "AIxKrAg",
+       "AIxZeD",
+       "AIxFlexy"
+      ]
+     },
+     {
+      "slot": 22,
+      "players": [
+       "SYMxARI",
+       "ZAROOxFranky",
+       "IMxBroly",
+       "8INCHESGUY"
+      ]
+     }
+    ]
+   },
+   "split": "train",
+   "sha256": "b34e47a21276a0c74198214f8d9a037f3b8ede1ec6d9715947de20976b1281fc",
+   "source": "SEED",
+   "verified": false,
+   "needs_human_check": [
+    "7SxSKÛLL",
+    "7SxSØNÛ",
+    "7SxVENØM18",
+    "AARU JIII",
+    "AIxFlexy",
+    "AIxKrAg",
+    "AIxTIXZO",
+    "AIxZeD",
+    "EMPxLivikigl",
+    "EMPxSagarIGL",
+    "IMxBroly",
+    "Lobby×‿ Ja",
+    "ZAROOxFranky",
+    "ʞeɯɹer2",
+    "आशीष्"
+   ]
+  },
+  {
+   "id": "seed-result-1",
+   "kind": "results",
+   "image_path": "samples/seed/result-1.jpg",
+   "labels": {
+    "rows": [
+     {
+      "rank": 1,
+      "players": [
+       {
+        "name": "GExRuwad1O",
+        "kills": 5
+       },
+       {
+        "name": "GExDeadPlaYeR",
+        "kills": 5
+       },
+       {
+        "name": "GExMoOnGOD",
+        "kills": 1
+       },
+       {
+        "name": "GExFireGod",
+        "kills": 2
+       }
+      ]
+     },
+     {
+      "rank": 2,
+      "players": [
+       {
+        "name": "AExStanzo",
+        "kills": 1
+       },
+       {
+        "name": "AExJenu",
+        "kills": 1
+       },
+       {
+        "name": "AExGujjar",
+        "kills": 0
+       },
+       {
+        "name": "AExBlaziken",
+        "kills": 3
+       }
+      ]
+     },
+     {
+      "rank": 6,
+      "players": [
+       {
+        "name": "DROXXI GAMING",
+        "kills": 2
+       },
+       {
+        "name": "DSTRYXArJUN",
+        "kills": 3
+       },
+       {
+        "name": "GoldJONATHAN3",
+        "kills": 1
+       },
+       {
+        "name": "AARU JIII",
+        "kills": 2
+       }
+      ]
+     },
+     {
+      "rank": 7,
+      "players": [
+       {
+        "name": "7xStishMuthMar",
+        "kills": 2
+       },
+       {
+        "name": "7xjumpeR",
+        "kills": 1
+       },
+       {
+        "name": "MEGAxLUCIFER03",
+        "kills": 0
+       }
+      ]
+     },
+     {
+      "rank": 8,
+      "players": [
+       {
+        "name": "iQOOSOuLGobliN",
+        "kills": 5
+       },
+       {
+        "name": "PATILxJATIN",
+        "kills": 0
+       },
+       {
+        "name": "9TxTANUUU",
+        "kills": 4
+       },
+       {
+        "name": "Cloudgawdx",
+        "kills": 2
+       }
+      ]
+     }
+    ]
+   },
+   "split": "test",
+   "sha256": "c36f8f5d4ed407db4db4086f6b3f5049826536a62fde72a1f471b570a34f01ab",
+   "source": "SEED",
+   "verified": false,
+   "needs_human_check": [
+    "AARU JIII",
+    "GExMoOnGOD",
+    "GExRuwad1O",
+    "iQOOSOuLGobliN"
+   ]
+  },
+  {
+   "id": "seed-result-2",
+   "kind": "results",
+   "image_path": "samples/seed/result-2.jpg",
+   "labels": {
+    "rows": [
+     {
+      "rank": 1,
+      "players": [
+       {
+        "name": "GExRuwad1O",
+        "kills": 5
+       },
+       {
+        "name": "GExDeadPlaYeR",
+        "kills": 5
+       },
+       {
+        "name": "GExMoOnGOD",
+        "kills": 1
+       },
+       {
+        "name": "GExFireGod",
+        "kills": 2
+       }
+      ]
+     },
+     {
+      "rank": 2,
+      "players": [
+       {
+        "name": "AExStanzo",
+        "kills": 1
+       },
+       {
+        "name": "AExJenu",
+        "kills": 1
+       },
+       {
+        "name": "AExGujjar",
+        "kills": 0
+       },
+       {
+        "name": "AExBlaziken",
+        "kills": 3
+       }
+      ]
+     },
+     {
+      "rank": 3,
+      "players": [
+       {
+        "name": "THxBakiiJod",
+        "kills": 2
+       },
+       {
+        "name": "VAIBHAVBHAIYA",
+        "kills": 1
+       },
+       {
+        "name": "TFxVishavvvS7",
+        "kills": 2
+       },
+       {
+        "name": "THxCASHHH",
+        "kills": 3
+       }
+      ]
+     },
+     {
+      "rank": 4,
+      "players": [
+       {
+        "name": "AExVENOMM",
+        "kills": 2
+       },
+       {
+        "name": "RexxyyThePapa",
+        "kills": 2
+       },
+       {
+        "name": "A9xTARUN",
+        "kills": 1
+       },
+       {
+        "name": "A9xRolf",
+        "kills": 1
+       }
+      ]
+     },
+     {
+      "rank": 5,
+      "players": [
+       {
+        "name": "EMPxLivikigl",
+        "kills": 0
+       },
+       {
+        "name": "302 IS LIVE",
+        "kills": 3
+       },
+       {
+        "name": "EMPxgoku",
+        "kills": 1
+       },
+       {
+        "name": "EMPxSagarIGL",
+        "kills": 2
+       }
+      ]
+     }
+    ]
+   },
+   "split": "train",
+   "sha256": "18406378669b96eab86a1656831fc63e902c4891abf869bd40e74c23069448ee",
+   "source": "SEED",
+   "verified": false,
+   "needs_human_check": [
+    "EMPxLivikigl",
+    "EMPxSagarIGL",
+    "GExMoOnGOD",
+    "GExRuwad1O"
+   ]
+  },
+  {
+   "id": "seed-result-3",
+   "kind": "results",
+   "image_path": "samples/seed/result-3.jpg",
+   "labels": {
+    "rows": [
+     {
+      "rank": 1,
+      "players": [
+       {
+        "name": "GExRuwad1O",
+        "kills": 5
+       },
+       {
+        "name": "GExDeadPlaYeR",
+        "kills": 5
+       },
+       {
+        "name": "GExMoOnGOD",
+        "kills": 1
+       },
+       {
+        "name": "GExFireGod",
+        "kills": 2
+       }
+      ]
+     },
+     {
+      "rank": 2,
+      "players": [
+       {
+        "name": "AExStanzo",
+        "kills": 1
+       },
+       {
+        "name": "AExJenu",
+        "kills": 1
+       },
+       {
+        "name": "AExGujjar",
+        "kills": 0
+       },
+       {
+        "name": "AExBlaziken",
+        "kills": 3
+       }
+      ]
+     },
+     {
+      "rank": 9,
+      "players": [
+       {
+        "name": "DTOWN多TenDor",
+        "kills": 0
+       },
+       {
+        "name": "THUG多FRAGG3R",
+        "kills": 2
+       },
+       {
+        "name": "THUG多MURD3R",
+        "kills": 1
+       },
+       {
+        "name": "WantstobeSLIce",
+        "kills": 1
+       }
+      ]
+     },
+     {
+      "rank": 10,
+      "players": [
+       {
+        "name": "7SxGOJO",
+        "kills": 1
+       },
+       {
+        "name": "7SxSØNÛ",
+        "kills": 2
+       },
+       {
+        "name": "7SxSKÛLL",
+        "kills": 2
+       },
+       {
+        "name": "7SxVENØM18",
+        "kills": 1
+       }
+      ]
+     },
+     {
+      "rank": 11,
+      "players": [
+       {
+        "name": "WRG | CHILLY",
+        "kills": 1
+       },
+       {
+        "name": "WRG | GHOST",
+        "kills": 0
+       },
+       {
+        "name": "WRG | TIGER",
+        "kills": 2
+       },
+       {
+        "name": "ATMOSPHERECafe",
+        "kills": 6
+       }
+      ]
+     }
+    ]
+   },
+   "split": "train",
+   "sha256": "e5e15685da7cc19344029f9e411b59f429c92580ec0ed2984e5d7701a692041b",
+   "source": "SEED",
+   "verified": false,
+   "needs_human_check": [
+    "7SxSKÛLL",
+    "7SxSØNÛ",
+    "7SxVENØM18",
+    "GExMoOnGOD",
+    "GExRuwad1O",
+    "WantstobeSLIce"
+   ]
+  },
+  {
+   "id": "seed-result-4",
+   "kind": "results",
+   "image_path": "samples/seed/result-4.jpg",
+   "labels": {
+    "rows": [
+     {
+      "rank": 1,
+      "players": [
+       {
+        "name": "GExRuwad1O",
+        "kills": 5
+       },
+       {
+        "name": "GExDeadPlaYeR",
+        "kills": 5
+       },
+       {
+        "name": "GExMoOnGOD",
+        "kills": 1
+       },
+       {
+        "name": "GExFireGod",
+        "kills": 2
+       }
+      ]
+     },
+     {
+      "rank": 2,
+      "players": [
+       {
+        "name": "AExStanzo",
+        "kills": 1
+       },
+       {
+        "name": "AExJenu",
+        "kills": 1
+       },
+       {
+        "name": "AExGujjar",
+        "kills": 0
+       },
+       {
+        "name": "AExBlaziken",
+        "kills": 3
+       }
+      ]
+     },
+     {
+      "rank": 12,
+      "players": [
+       {
+        "name": "AIxTIXZO",
+        "kills": 0
+       },
+       {
+        "name": "AIxKrAg",
+        "kills": 0
+       },
+       {
+        "name": "AIxFlexy",
+        "kills": 2
+       },
+       {
+        "name": "AIxZeD",
+        "kills": 5
+       }
+      ]
+     },
+     {
+      "rank": 13,
+      "players": [
+       {
+        "name": "ZAROOxFranky",
+        "kills": 5
+       },
+       {
+        "name": "IMxBroly",
+        "kills": 1
+       },
+       {
+        "name": "8INCHESGUY",
+        "kills": 2
+       },
+       {
+        "name": "SYMxARI",
+        "kills": 3
+       }
+      ]
+     },
+     {
+      "rank": 14,
+      "players": [
+       {
+        "name": "Lobby×‿ Ja",
+        "kills": 0
+       },
+       {
+        "name": "आशीष्",
+        "kills": 0
+       },
+       {
+        "name": "ʞeɯɹer2",
+        "kills": 0
+       },
+       {
+        "name": "DCKARTIK'",
+        "kills": 0
+       }
+      ]
+     }
+    ]
+   },
+   "split": "train",
+   "sha256": "35f57e7642f9f71c8dbde78382f1b5b1b4154ee01e393bf3819c567bf01fe3da",
+   "source": "SEED",
+   "verified": false,
+   "needs_human_check": [
+    "AIxFlexy",
+    "AIxKrAg",
+    "AIxTIXZO",
+    "AIxZeD",
+    "GExMoOnGOD",
+    "GExRuwad1O",
+    "IMxBroly",
+    "Lobby×‿ Ja",
+    "ZAROOxFranky",
+    "ʞeɯɹer2",
+    "आशीष्"
+   ]
+  },
+  {
+   "id": "seed-result-5",
+   "kind": "results",
+   "image_path": "samples/seed/result-5.jpg",
+   "labels": {
+    "rows": [
+     {
+      "rank": 1,
+      "players": [
+       {
+        "name": "GExRuwad1O",
+        "kills": 5
+       },
+       {
+        "name": "GExDeadPlaYeR",
+        "kills": 5
+       },
+       {
+        "name": "GExMoOnGOD",
+        "kills": 1
+       },
+       {
+        "name": "GExFireGod",
+        "kills": 2
+       }
+      ]
+     },
+     {
+      "rank": 2,
+      "players": [
+       {
+        "name": "AExStanzo",
+        "kills": 1
+       },
+       {
+        "name": "AExJenu",
+        "kills": 1
+       },
+       {
+        "name": "AExGujjar",
+        "kills": 0
+       },
+       {
+        "name": "AExBlaziken",
+        "kills": 3
+       }
+      ]
+     },
+     {
+      "rank": 15,
+      "players": [
+       {
+        "name": "TAPxKennnIlk",
+        "kills": 3
+       },
+       {
+        "name": "4TRxFLeriXx",
+        "kills": 1
+       },
+       {
+        "name": "MunawarHuLadle",
+        "kills": 1
+       },
+       {
+        "name": "4T MAX 999",
+        "kills": 1
+       }
+      ]
+     },
+     {
+      "rank": 16,
+      "players": [
+       {
+        "name": "Talent Scout",
+        "kills": 2
+       },
+       {
+        "name": "《vanshu£》",
+        "kills": 0
+       },
+       {
+        "name": "Tcシishu",
+        "kills": 1
+       },
+       {
+        "name": "EExANGAT",
+        "kills": 0
+       }
+      ]
+     },
+     {
+      "rank": 17,
+      "players": [
+       {
+        "name": "HaVoC · KratoS",
+        "kills": 0
+       },
+       {
+        "name": "· Titann ·",
+        "kills": 0
+       },
+       {
+        "name": "LattuMuttaya",
+        "kills": 0
+       },
+       {
+        "name": "HaVoC · SLĀYER",
+        "kills": 0
+       }
+      ]
+     }
+    ]
+   },
+   "split": "train",
+   "sha256": "4b80848f6ecd9183181bab55641482a87556c0c3b3cb399f3c1bba97ee58c40a",
+   "source": "SEED",
+   "verified": false,
+   "needs_human_check": [
+    "GExMoOnGOD",
+    "GExRuwad1O",
+    "HaVoC · SLĀYER",
+    "TAPxKennnIlk"
+   ]
+  }
+ ]
+}

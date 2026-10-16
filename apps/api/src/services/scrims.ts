@@ -16,6 +16,7 @@ import { prisma } from "../db.js";
 import { AppError, conflict, notFound } from "../lib/errors.js";
 import {
   dateToStr,
+  pointsSystemOf,
   registrationInclude,
   scrimInclude,
   strToDate,
@@ -23,6 +24,7 @@ import {
   toScrim,
   toTeamSummary,
 } from "../lib/serialize.js";
+import { recomputeScrimPoints } from "./standings.js";
 import {
   approvedBySession,
   buildScrimOnDate,
@@ -36,7 +38,7 @@ import {
 
 const SCRIM_NOT_FOUND = "Scrim not found";
 
-async function loadOwnScrim(scrimId: string, managerId: string) {
+export async function loadOwnScrim(scrimId: string, managerId: string) {
   const scrim = await prisma.scrim.findUnique({ where: { id: scrimId }, include: scrimInclude });
   if (!scrim || scrim.managerId !== managerId) throw notFound(SCRIM_NOT_FOUND);
   return scrim;
@@ -128,8 +130,10 @@ export async function updateScrim(scrimId: string, managerId: string, input: Upd
   if (input.maps !== undefined) data.maps = input.maps;
   if (input.startTime !== undefined) data.startTime = input.startTime;
   if (input.status !== undefined) data.status = input.status;
+  if (input.pointsSystem !== undefined) data.pointsSystem = input.pointsSystem;
 
   const updated = await prisma.scrim.update({ where: { id: scrimId }, data, include: scrimInclude });
+  if (input.pointsSystem !== undefined) await recomputeScrimPoints(scrimId, pointsSystemOf(updated.pointsSystem));
   return toScrim(updated);
 }
 

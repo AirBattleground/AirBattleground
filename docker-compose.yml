@@ -1,7 +1,7 @@
 # Local dev:      docker-compose up -d db            (Postgres only — what `pnpm db:up` runs)
 # Full stack:     docker-compose --profile full up -d --build
-#                 web   → http://localhost:8080   (team & manager portal)
-#                 admin → http://localhost:8081   (admin console)
+#                 web   → http://<this-machine-ip>:8080            (team & manager portal)
+#                 admin → http://<this-machine-ip>:8080/admin-ui   (admin console)
 #                 api   → internal only; reached through /api on either site
 # Seed the full stack from the host (db is published on :5433):  pnpm db:seed
 
@@ -36,11 +36,16 @@ services:
       DATABASE_URL: postgresql://sevenxen:sevenxen@db:5432/sevenxen?schema=public
       # override in a real deployment: JWT_SECRET=$(openssl rand -hex 32) docker-compose --profile full up -d
       JWT_SECRET: ${JWT_SECRET:-insecure-local-compose-secret-change-me-0123456789abcdef}
+      COOKIE_SECURE: ${COOKIE_SECURE:-0} # plain http on the LAN; set 1 behind https
       SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:8081}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@12345}
       ADMIN_NAME: ${ADMIN_NAME:-7xen Admin}
+      EXTRACTOR_URL: ${EXTRACTOR_URL:-http://extractor:8090}
+      STORAGE_DIR: /data/storage # shared with the extractor (same path in both containers)
+    volumes:
+      - ./storage:/data/storage # same folder the dev setup uses, so existing samples/screenshots keep working
     expose:
       - "4000"
 
@@ -60,21 +65,26 @@ services:
     ports:
       - "${WEB_PORT:-8080}:80"
 
-  admin:
+  extractor:
     profiles: ["full"]
     build:
-      context: .
-      dockerfile: apps/admin/Dockerfile
-      network: host # build-time DNS works even where the docker bridge can't resolve
-    image: 7xen-admin:latest
-    container_name: 7xen-admin
+      context: services/extractor
+      network: host # build-time downloads (python deps + OCR models)
+    image: 7xen-extractor:latest
+    container_name: 7xen-extractor
     restart: unless-stopped
-    depends_on:
-      - api
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}" # can write the bind-mounted models/ folder
     environment:
-      API_UPSTREAM: http://api:4000
-    ports:
-      - "${ADMIN_PORT:-8081}:80"
+      STORAGE_DIR: /data/storage
+      MODELS_DIR: /data/models
+      VLM_ENABLED: ${VLM_ENABLED:-false}
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OCR_THREADS: ${OCR_THREADS:-4}
+    volumes:
+      - ./storage:/data/storage # screenshots + samples, shared with api at the same path
+      - ./services/extractor/models:/data/models # model versions produced by training (v0, v1, …)
+    expose:
+      - "8090"
 
 volumes:
   7xen-pgdata:

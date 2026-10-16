@@ -11,10 +11,12 @@ import { NextMatchCard, NextMatchSkeleton } from "@/features/team/components/Nex
 import { QueryError } from "@/features/team/components/QueryError";
 import { RegistrationCard, RegistrationCardSkeleton } from "@/features/team/components/RegistrationCard";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
+import { LastResultCard } from "@/features/results/components/LastResultCard";
 
 const STEPS: TourStep[] = [
   { title: "Welcome to 7xen!", description: "This is your team's home. Here's a quick look around — it takes 20 seconds." },
   { element: '[data-tour="next-match"]', title: "Your next match", description: "Once an organiser approves you, your slot number, time and maps show up here with a live countdown.", side: "bottom" },
+  { element: '[data-tour="last-result"]', title: "Your last result", description: "Your rank and points from the latest published scrim. Tap it for the full points table.", side: "bottom" },
   { element: '[data-tour="stats"]', title: "Your numbers", description: "Approved matches, requests still waiting for approval, and matches you've played.", side: "top" },
   { element: '[data-tour="upcoming"]', title: "Everything coming up", description: "All your upcoming scrims with their status — waiting or approved with a slot.", side: "top" },
   { element: '[data-tour="find-scrim"]', title: "Find a scrim", description: "Tap here to browse scrims by day and register your team.", side: "bottom" },
@@ -64,6 +66,8 @@ export default function DashboardPage() {
       ) : (
         <>
           {q.isLoading || !d ? <NextMatchSkeleton /> : <NextMatchCard match={d.nextMatch} today={today} />}
+
+          <LastResultCard results={d?.results ?? null} loading={q.isLoading || !d} />
 
           <div className="grid gap-4 sm:grid-cols-3" data-tour="stats">
             <StatCard

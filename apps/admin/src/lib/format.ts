@@ -57,7 +57,13 @@ export function generatePassword(length = 14): string {
   return chars.join("");
 }
 
-export const PORTAL_URL: string = (import.meta.env.VITE_PORTAL_URL as string | undefined) ?? "http://localhost:5173";
+/**
+ * Team & manager portal address for "Copy login details". Production serves admin at <site>/admin-ui,
+ * so the portal is the same origin; the dev admin (:5174) pairs with the dev portal on :5173.
+ */
+export const PORTAL_URL: string =
+  (import.meta.env.VITE_PORTAL_URL as string | undefined) ??
+  (window.location.port === "5174" ? `${window.location.protocol}//${window.location.hostname}:5173` : window.location.origin);
 
 /** Message the admin can paste into WhatsApp. */
 export function loginDetailsMessage(opts: { who: string; role: "Manager" | "Team"; username: string; password: string }): string {

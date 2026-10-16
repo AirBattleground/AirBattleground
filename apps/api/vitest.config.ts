@@ -1,4 +1,6 @@
 import { existsSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { defineConfig } from "vitest/config";
 
 if (existsSync(".env")) process.loadEnvFile(".env");
@@ -25,6 +27,10 @@ export default defineConfig({
       DATABASE_URL,
       JWT_SECRET: process.env.JWT_SECRET ?? "test-secret-test-secret-test-secret",
       CORS_ORIGINS: "http://localhost:5173",
+      // phase 2: files go to a throwaway dir; the extractor is deliberately unreachable (tests stub it)
+      STORAGE_DIR: path.join(tmpdir(), "7xen-api-test-storage"),
+      EXTRACTOR_URL: "http://127.0.0.1:9",
+      SCREENSHOT_WORKER: "0",
     },
   },
 });

@@ -1,5 +1,10 @@
 import { Router } from "express";
+import { z } from "zod";
 import {
+  SAMPLE_SPLITS,
+  SCREENSHOT_KINDS,
+  startTrainingSchema,
+  updateSampleSchema,
   ADMIN_COOKIE,
   createManagerSchema,
   createTeamSchema,
@@ -15,6 +20,32 @@ import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import * as admin from "../services/admin.js";
 import * as teamRequests from "../services/teamRequests.js";
+import * as training from "../services/training.js";
+import { AppError } from "../lib/errors.js";
+import { sendStoredFile } from "../lib/storage.js";
+import { parseMultipart, singleImage } from "../lib/upload.js";
+
+const kindField = z.enum(SCREENSHOT_KINDS, { errorMap: () => ({ message: "Choose team list (SLOT_LIST) or results (RESULTS)" }) });
+const sampleQuerySchema = z.object({
+  kind: kindField.optional().or(z.literal("").transform(() => undefined)),
+  split: z.enum(SAMPLE_SPLITS).optional().or(z.literal("").transform(() => undefined)),
+  q: z.string().trim().max(60).optional(),
+});
+const sampleUploadSchema = z.object({
+  kind: kindField,
+  labels: z.string().max(100_000).optional(),
+  split: z.enum(SAMPLE_SPLITS).optional().or(z.literal("").transform(() => undefined)),
+  notes: z.string().trim().max(500).optional(),
+});
+
+function parseLabelsJson(raw: string | undefined): unknown {
+  if (!raw) return { teams: [], rows: [] };
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new AppError("VALIDATION_ERROR", "Labels aren't valid JSON", { labels: "Not valid JSON" });
+  }
+}
 
 export function adminRouter() {
   const r = Router();
@@ -69,6 +100,64 @@ export function adminRouter() {
   r.post("/team-requests/:id/reject", async (req, res) => {
     const { reason } = parse(rejectTeamRequestSchema, req.body);
     res.json(await teamRequests.rejectTeamRequest(currentUser(req).id, req.params.id, reason));
+  });
+
+  // ---- phase 2: training center ----
+  r.get("/training/samples", async (req, res) => {
+    res.json({ items: await training.listSamples(parse(sampleQuerySchema, req.query)) });
+  });
+  r.post("/training/samples", async (req, res) => {
+    await parseMultipart(req, res);
+    const body = parse(sampleUploadSchema, req.body);
+    const image = singleImage(req, "file");
+    const raw = parseLabelsJson(body.labels);
+    const labels =
+      raw && typeof raw === "object" && !Array.isArray(raw)
+        ? body.kind === "SLOT_LIST"
+          ? { teams: (raw as { teams?: unknown }).teams ?? [] }
+          : { rows: (raw as { rows?: unknown }).rows ?? [] }
+        : raw;
+    res.status(201).json(await training.createSample(currentUser(req).id, { image, kind: body.kind, labels, split: body.split, notes: body.notes }));
+  });
+  r.get("/training/samples/:id", async (req, res) => {
+    res.json(await training.getSample(req.params.id));
+  });
+  r.patch("/training/samples/:id", async (req, res) => {
+    res.json(await training.updateSample(req.params.id, parse(updateSampleSchema, req.body)));
+  });
+  r.delete("/training/samples/:id", async (req, res) => {
+    await training.deleteSample(req.params.id);
+    res.status(204).end();
+  });
+  r.get("/training/samples/:id/image", async (req, res) => {
+    const f = await training.sampleFile(req.params.id);
+    await sendStoredFile(res, f.storageKey, f.mime);
+  });
+  r.post("/training/samples/:id/prefill", async (req, res) => {
+    res.json(await training.prefillSample(req.params.id));
+  });
+  r.post("/training/preview", async (req, res) => {
+    await parseMultipart(req, res);
+    const { kind } = parse(z.object({ kind: kindField }), req.body);
+    res.json(await training.preview(singleImage(req, "file"), kind));
+  });
+  r.get("/training/models", async (_req, res) => {
+    res.json(await training.listModels());
+  });
+  r.post("/training/models/:version/activate", async (req, res) => {
+    res.json(await training.activateModel(req.params.version));
+  });
+  r.get("/training/runs", async (_req, res) => {
+    res.json({ items: await training.listRuns() });
+  });
+  r.post("/training/runs", async (req, res) => {
+    res.status(202).json(await training.startRun(parse(startTrainingSchema, req.body)));
+  });
+  r.get("/training/runs/:id", async (req, res) => {
+    res.json(await training.getRun(req.params.id));
+  });
+  r.get("/extractor/status", async (_req, res) => {
+    res.json(await training.extractorStatus());
   });
 
   return r;

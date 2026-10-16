@@ -1,4 +1,9 @@
 import type { Prisma } from "@prisma/client";
+import {
+  DEFAULT_POINTS_SYSTEM,
+  pointsSystemSchema,
+  type PointsSystem,
+} from "@7xen/shared";
 import type {
   TeamRequestRow,
   GameMap,
@@ -14,8 +19,13 @@ import type {
 export const dateToStr = (d: Date): string => d.toISOString().slice(0, 10);
 /** "YYYY-MM-DD" → Date for a @db.Date column */
 export const strToDate = (s: string): Date => new Date(`${s}T00:00:00.000Z`);
-const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
+/** Scrim.pointsSystem JSON → PointsSystem (null/invalid → DEFAULT_POINTS_SYSTEM). */
+export function pointsSystemOf(raw: Prisma.JsonValue | null | undefined): PointsSystem {
+  const r = pointsSystemSchema.safeParse(raw);
+  return r.success ? r.data : { placement: [...DEFAULT_POINTS_SYSTEM.placement], killPoints: DEFAULT_POINTS_SYSTEM.killPoints };
+}
 
+export const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 // ---------- shared include shapes ----------
 export const scrimInclude = {
   manager: { select: { id: true, displayName: true } },
@@ -59,6 +69,7 @@ export function toScrim(s: ScrimWithManager): Scrim {
     slotCount: s.slotCount,
     firstSlot: s.firstSlot,
     status: s.status,
+    pointsSystem: pointsSystemOf(s.pointsSystem),
     manager: { id: s.manager.id, displayName: s.manager.displayName },
     createdAt: s.createdAt.toISOString(),
   };
