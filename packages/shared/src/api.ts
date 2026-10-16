@@ -25,6 +25,10 @@
  *   POST   /api/admin/teams                CreateTeamInput       → TeamRow        (409 CONFLICT name/username taken; error.fields says which: teamName | username)
  *   PATCH  /api/admin/teams/:id            UpdateTeamInput       → TeamRow        (:id = team id)
  *   POST   /api/admin/teams/:id/reset-password ResetPasswordInput → 204
+ *   GET    /api/admin/teams/availability?teamName=&username=        → TeamAvailability
+ *   GET    /api/admin/team-requests?status=PENDING|APPROVED|REJECTED → ListResponse<TeamRequestRow> (default PENDING; oldest first for PENDING)
+ *   POST   /api/admin/team-requests/:id/approve                     → TeamRow  (creates the login; 409 CONFLICT if name/username got taken meanwhile)
+ *   POST   /api/admin/team-requests/:id/reject   RejectTeamRequestInput → TeamRequestRow (frees the name/username)
  *
  * MANAGER (role MANAGER; only sees own scrims)
  *   GET    /api/manager/dashboard                                → ManagerDashboard
@@ -37,6 +41,10 @@
  *   GET    /api/manager/requests                                 → ListResponse<PendingRequest> (all PENDING for upcoming sessions, soonest first)
  *   POST   /api/manager/registrations/:id/approve                → Registration   (409 SLOTS_FULL; auto-allots lowest free slot)
  *   POST   /api/manager/registrations/:id/reject  RejectRegistrationInput → Registration (works on PENDING or APPROVED; frees slot)
+ *   GET    /api/manager/team-requests                            → ListResponse<TeamRequestRow> (own requests, newest first)
+ *   POST   /api/manager/team-requests      CreateTeamInput       → TeamRequestRow (201; 409 CONFLICT + fields teamName|username if taken or pending elsewhere)
+ *   DELETE /api/manager/team-requests/:id                        → 204 (withdraw; PENDING only)
+ *   GET    /api/manager/teams/availability?teamName=&username=   → TeamAvailability
  *
  * TEAM (role TEAM)
  *   GET    /api/team/dashboard                                   → TeamDashboard

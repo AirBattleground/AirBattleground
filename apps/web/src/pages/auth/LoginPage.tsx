@@ -264,7 +264,7 @@ export default function LoginPage() {
               </form>
 
               <p className="mt-6 rounded-lg border border-dashed bg-muted/40 px-3 py-2.5 text-center text-xs leading-relaxed text-muted-foreground">
-                Accounts are issued by the 7xen admin. Contact them if you don't have one.
+                No account yet? Ask your scrim manager or the 7xen admin to register your team.
               </p>
             </div>
             <p className="mt-6 text-center text-xs text-muted-foreground">© {new Date().getFullYear()} 7XEN · Built for competitive squads</p>

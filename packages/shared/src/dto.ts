@@ -3,7 +3,7 @@
  * Every error response is `ApiErrorBody` with an HTTP 4xx/5xx status.
  * Dates are "YYYY-MM-DD"; timestamps are ISO-8601 strings.
  */
-import type { GameMap, Recurrence, RegistrationStatus, Role, ScrimStatus } from "./enums";
+import type { GameMap, Recurrence, RegistrationStatus, Role, ScrimStatus, TeamRequestStatus } from "./enums";
 
 export type ApiErrorCode =
   | "VALIDATION_ERROR"
@@ -50,6 +50,8 @@ export interface AdminStats {
   teams: { total: number; active: number };
   scrims: { total: number; active: number };
   registrations: { pending: number; approvedUpcoming: number };
+  /** manager-submitted team logins waiting for the admin */
+  teamRequests: { pending: number };
 }
 
 export interface ManagerRow {
@@ -78,6 +80,35 @@ export interface TeamRow {
   registrationCount: number;
   lastLoginAt: string | null;
   createdAt: string;
+  /** manager who requested this team; null when the admin created it directly */
+  requestedBy: { id: string; displayName: string } | null;
+}
+
+export interface TeamRequestRow {
+  id: string;
+  status: TeamRequestStatus;
+  teamName: string;
+  tag: string;
+  captainName: string | null;
+  username: string;
+  email: string | null;
+  phone: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  reviewedAt: string | null;
+  manager: { id: string; displayName: string };
+  /** the created team once APPROVED */
+  teamId: string | null;
+}
+
+export interface AvailabilityResult {
+  available: boolean;
+  /** why not, in plain words, e.g. "Already taken" / "Waiting for admin approval in another request" */
+  message: string | null;
+}
+export interface TeamAvailability {
+  teamName?: AvailabilityResult;
+  username?: AvailabilityResult;
 }
 
 export interface ListResponse<T> {

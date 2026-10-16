@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Compass, LayoutDashboard, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Shield, Users } from "lucide-react";
+import { Compass, LayoutDashboard, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Shield, ShieldCheck, Users } from "lucide-react";
 import { toast } from "sonner";
 import { AnimatedBackground } from "@7xen/ui/components/brand/animated-background";
 import { Logo, LogoMark } from "@7xen/ui/components/brand/logo";
@@ -22,11 +22,13 @@ import { cn } from "@7xen/ui/lib/utils";
 import { useTour } from "@7xen/ui/tour";
 import { useIsDesktop } from "@/hooks/use-media-query";
 import { useAuth } from "@/lib/auth";
+import { useAdminStats } from "@/features/stats/api";
 
 const NAV = [
   { to: "/", label: "Overview", icon: LayoutDashboard, tour: "nav-overview", end: true },
   { to: "/managers", label: "Managers", icon: Users, tour: "nav-managers", end: false },
   { to: "/teams", label: "Teams", icon: Shield, tour: "nav-teams", end: false },
+  { to: "/team-requests", label: "Team approvals", icon: ShieldCheck, tour: "nav-team-requests", end: false },
 ] as const;
 
 const COLLAPSE_KEY = "7xen.admin.sidebar-collapsed";
@@ -37,6 +39,8 @@ function titleFor(pathname: string) {
 }
 
 function NavItems({ collapsed, layoutId, onNavigate }: { collapsed: boolean; layoutId: string; onNavigate?: () => void }) {
+  const stats = useAdminStats({ refetchInterval: 30_000 });
+  const badges: Record<string, number> = { "/team-requests": stats.data?.teamRequests.pending ?? 0 };
   return (
     <nav className="grid gap-1" aria-label="Main">
       {NAV.map(({ to, label, icon: Icon, tour, end }) => {
@@ -64,6 +68,16 @@ function NavItems({ collapsed, layoutId, onNavigate }: { collapsed: boolean; lay
                 )}
                 <Icon className={cn("relative size-[18px] shrink-0", isActive && "text-primary")} />
                 {!collapsed && <span className="relative truncate">{label}</span>}
+                {!!badges[to] && (
+                  <span
+                    className={cn(
+                      "relative rounded-full bg-primary px-1.5 text-[11px] leading-[18px] font-bold text-primary-foreground",
+                      collapsed ? "absolute top-0.5 right-0.5 min-w-[18px] text-center" : "ml-auto min-w-[20px] text-center",
+                    )}
+                  >
+                    {badges[to]}
+                  </span>
+                )}
               </>
             )}
           </NavLink>
@@ -86,7 +100,7 @@ function SidebarFooterNote({ collapsed }: { collapsed: boolean }) {
   return (
     <div className="rounded-xl border bg-card/60 p-3 text-xs text-muted-foreground">
       <div className="mb-1 font-display text-sm font-bold text-foreground">Phase 1</div>
-      You create every manager and team login. Send each one their details after creating it.
+      You create manager logins. Teams can be added by you or by managers — manager-added teams need your approval.
     </div>
   );
 }

@@ -28,6 +28,7 @@ export const router = createBrowserRouter([
       { index: true, element: page(() => import("@/pages/DashboardPage")) },
       { path: "managers", element: page(() => import("@/pages/ManagersPage")) },
       { path: "teams", element: page(() => import("@/pages/TeamsPage")) },
+      { path: "team-requests", element: page(() => import("@/pages/TeamRequestsPage")) },
     ],
   },
   { path: "*", element: page(() => import("@/pages/NotFoundPage")) },

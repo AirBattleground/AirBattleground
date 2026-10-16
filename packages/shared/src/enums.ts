@@ -41,3 +41,13 @@ export const REGISTRATION_STATUS_LABELS: Record<RegistrationStatus, string> = {
 
 /** Max squads in a Battlegrounds custom room. Slot numbers run 1..MAX_ROOM_SLOTS. */
 export const MAX_ROOM_SLOTS = 25;
+
+/** A manager's request for a new team login; only the admin can approve it. */
+export const TEAM_REQUEST_STATUSES = ["PENDING", "APPROVED", "REJECTED"] as const;
+export type TeamRequestStatus = (typeof TEAM_REQUEST_STATUSES)[number];
+
+export const TEAM_REQUEST_STATUS_LABELS: Record<TeamRequestStatus, string> = {
+  PENDING: "Waiting for admin",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+};

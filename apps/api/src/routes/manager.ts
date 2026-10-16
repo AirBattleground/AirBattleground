@@ -1,5 +1,7 @@
 import { Router } from "express";
 import {
+  createTeamSchema,
+  teamAvailabilityQuerySchema,
   APP_COOKIE,
   createScrimSchema,
   dateQuerySchema,
@@ -11,6 +13,7 @@ import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import { approveRegistration, rejectRegistration } from "../services/registrations.js";
 import * as scrims from "../services/scrims.js";
+import * as teamRequests from "../services/teamRequests.js";
 
 export function managerRouter() {
   const r = Router();
@@ -52,6 +55,21 @@ export function managerRouter() {
   r.post("/registrations/:id/reject", async (req, res) => {
     const { reason } = parse(rejectRegistrationSchema, req.body);
     res.json(await rejectRegistration(req.params.id, currentUser(req).id, reason));
+  });
+
+  // ---- team login requests (admin approves) ----
+  r.get("/teams/availability", async (req, res) => {
+    res.json(await teamRequests.checkAvailability(parse(teamAvailabilityQuerySchema, req.query)));
+  });
+  r.get("/team-requests", async (req, res) => {
+    res.json({ items: await teamRequests.listManagerTeamRequests(currentUser(req).id) });
+  });
+  r.post("/team-requests", async (req, res) => {
+    res.status(201).json(await teamRequests.createTeamRequest(currentUser(req).id, parse(createTeamSchema, req.body)));
+  });
+  r.delete("/team-requests/:id", async (req, res) => {
+    await teamRequests.withdrawTeamRequest(currentUser(req).id, req.params.id);
+    res.status(204).end();
   });
 
   return r;

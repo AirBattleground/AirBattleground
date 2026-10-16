@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, CalendarClock, CheckCircle2, ChevronRight, Hourglass, KeyRound, Shield, ShieldPlus, Swords, Trophy, UserPlus, Users } from "lucide-react";
+import { ArrowRight, CalendarClock, CheckCircle2, ChevronRight, Hourglass, KeyRound, Shield, ShieldCheck, ShieldPlus, Swords, Trophy, UserPlus, Users } from "lucide-react";
 import { PageHeader, StatCard } from "@7xen/ui/components/brand/page";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -55,7 +55,27 @@ function Stats() {
     { label: "Pending", value: data.registrations.pending, hint: "Waiting for manager approval", icon: <Hourglass />, tone: "warning" },
     { label: "Upcoming slots", value: data.registrations.approvedUpcoming, hint: "Approved, not yet played", icon: <CheckCircle2 />, tone: "success" },
   ];
+  const teamsWaiting = data.teamRequests.pending;
   return (
+    <>
+    {teamsWaiting > 0 && (
+      <Link
+        to="/team-requests"
+        className="mb-4 flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 p-4 transition-colors hover:bg-primary/15"
+        data-tour="team-approvals-banner"
+      >
+        <span className="rounded-lg bg-primary p-2 text-primary-foreground animate-pulse-ring">
+          <ShieldCheck className="size-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display text-lg font-bold">
+            {teamsWaiting} {teamsWaiting === 1 ? "team is" : "teams are"} waiting for your approval
+          </span>
+          <span className="block text-sm text-muted-foreground">Managers registered them. They can't log in until you approve.</span>
+        </span>
+        <span className="text-sm font-semibold text-primary">Review →</span>
+      </Link>
+    )}
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5" data-tour="stats">
       {cards.map((c, i) => (
         <motion.div key={c.label} {...fade(i)} className={cn(i === 0 && "col-span-2 sm:col-span-1")}>
@@ -63,6 +83,7 @@ function Stats() {
         </motion.div>
       ))}
     </div>
+    </>
   );
 }
 

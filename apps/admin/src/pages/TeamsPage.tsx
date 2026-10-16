@@ -34,7 +34,8 @@ const TOUR: TourStep[] = [
 export default function TeamsPage() {
   usePageTour("admin.teams", TOUR);
   const isDesktop = useIsDesktop();
-  const [search, setSearch] = useState("");
+  // ?q= prefills the search (e.g. "View team" from Team approvals)
+  const [search, setSearch] = useState(() => new URLSearchParams(window.location.search).get("q") ?? "");
   const q = useDebounced(search.trim(), 300);
   const list = useTeams(q);
   const update = useUpdateTeam();
@@ -114,7 +115,10 @@ export default function TeamsPage() {
                     <TeamAvatar name={t.name} tag={t.tag} className={t.isActive ? "" : "opacity-50 grayscale"} />
                     <div className="min-w-0">
                       <div className="truncate font-medium">{t.name}</div>
-                      <div className="text-xs font-semibold tracking-wider text-primary">[{t.tag}]</div>
+                      <div className="text-xs font-semibold tracking-wider text-primary">
+                        [{t.tag}]
+                        {t.requestedBy && <span className="ml-2 font-normal tracking-normal text-muted-foreground">via {t.requestedBy.displayName}</span>}
+                      </div>
                     </div>
                   </div>
                 </TableCell>
@@ -147,7 +151,10 @@ export default function TeamsPage() {
                 <div className="truncate font-medium">
                   {t.name} <span className="text-xs font-semibold tracking-wider text-primary">[{t.tag}]</span>
                 </div>
-                <div className="truncate font-mono text-xs text-muted-foreground">@{t.username}</div>
+                <div className="truncate font-mono text-xs text-muted-foreground">
+                  @{t.username}
+                  {t.requestedBy && <span className="ml-2 font-sans">via {t.requestedBy.displayName}</span>}
+                </div>
               </div>
               {actionsFor(t, i)}
             </div>

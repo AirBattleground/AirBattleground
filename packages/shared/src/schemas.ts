@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MAPS, MAX_ROOM_SLOTS, RECURRENCES, SCRIM_STATUSES } from "./enums";
+import { MAPS, MAX_ROOM_SLOTS, RECURRENCES, SCRIM_STATUSES, TEAM_REQUEST_STATUSES } from "./enums";
 import { DATE_RE, TIME_RE } from "./schedule";
 
 const username = z
@@ -91,6 +91,22 @@ export const updateTeamSchema = z.object({
   isActive: z.boolean().optional(),
 });
 export type UpdateTeamInput = z.infer<typeof updateTeamSchema>;
+
+/** Live availability check while typing (team name and/or username). */
+export const teamAvailabilityQuerySchema = z.object({
+  teamName: z.string().trim().max(40).optional(),
+  username: z.string().trim().toLowerCase().max(32).optional(),
+});
+export type TeamAvailabilityQuery = z.infer<typeof teamAvailabilityQuerySchema>;
+
+export const teamRequestListQuerySchema = z.object({
+  status: z.enum(TEAM_REQUEST_STATUSES).default("PENDING"),
+});
+
+export const rejectTeamRequestSchema = z.object({
+  reason: optionalText(200),
+});
+export type RejectTeamRequestInput = z.infer<typeof rejectTeamRequestSchema>;
 
 export const resetPasswordSchema = z.object({ password });
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

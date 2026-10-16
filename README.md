@@ -7,7 +7,7 @@ one tap, managers approve and slots are allotted automatically — no spreadshee
 
 **Phase 1 (current)**
 
-- **Admin-issued logins.** The admin creates every manager and team account (no public sign-up yet),
+- **Admin-controlled logins.** The admin creates every manager account. Teams are created by the admin or registered by a manager and then approved by the admin (no public sign-up yet),
   can edit, reset passwords and deactivate. Team names are unique regardless of case or spacing.
 - **Scrim scheduling.** Managers create scrims with a map per match, a start time (IST) and a
   recurrence: **ONCE**, **DAILY** or **WEEKENDS** (Sat & Sun), with a slot count and first slot number

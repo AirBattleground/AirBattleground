@@ -14,12 +14,13 @@ import { notFound } from "../lib/errors.js";
 import { hashPassword } from "../lib/password.js";
 import { managerRowInclude, teamRowInclude, toManagerRow, toTeamRow } from "../lib/serialize.js";
 import { countUpcomingRegistrations } from "./schedule.js";
+import { assertAvailable, countPendingTeamRequests } from "./teamRequests.js";
 
 const contains = (q: string) => ({ contains: q, mode: "insensitive" as const });
 
 // ---------- stats ----------
 export async function adminStats(now = new Date()): Promise<AdminStats> {
-  const [mTotal, mActive, tTotal, tActive, sTotal, sActive, pending, approvedUpcoming] = await Promise.all([
+  const [mTotal, mActive, tTotal, tActive, sTotal, sActive, pending, approvedUpcoming, pendingTeamRequests] = await Promise.all([
     prisma.user.count({ where: { role: "MANAGER" } }),
     prisma.user.count({ where: { role: "MANAGER", isActive: true } }),
     prisma.team.count(),
@@ -28,12 +29,14 @@ export async function adminStats(now = new Date()): Promise<AdminStats> {
     prisma.scrim.count({ where: { status: "ACTIVE" } }),
     countUpcomingRegistrations({ status: "PENDING" }, now),
     countUpcomingRegistrations({ status: "APPROVED" }, now),
+    countPendingTeamRequests(),
   ]);
   return {
     managers: { total: mTotal, active: mActive },
     teams: { total: tTotal, active: tActive },
     scrims: { total: sTotal, active: sActive },
     registrations: { pending, approvedUpcoming },
+    teamRequests: { pending: pendingTeamRequests },
   };
 }
 
@@ -102,6 +105,7 @@ export async function listTeams(q?: string): Promise<TeamRow[]> {
 }
 
 export async function createTeam(input: CreateTeamInput): Promise<TeamRow> {
+  await assertAvailable({ teamName: input.teamName, username: input.username });
   const passwordHash = await hashPassword(input.password);
   const team = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
@@ -131,6 +135,7 @@ export async function createTeam(input: CreateTeamInput): Promise<TeamRow> {
 export async function updateTeam(id: string, input: UpdateTeamInput): Promise<TeamRow> {
   const existing = await prisma.team.findUnique({ where: { id }, select: { userId: true } });
   if (!existing) throw notFound("Team not found");
+  if (input.teamName !== undefined) await assertAvailable({ teamName: input.teamName }, { excludeTeamId: id });
   const team = await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: existing.userId },

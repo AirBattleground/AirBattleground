@@ -1,6 +1,6 @@
 import { Link, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarPlus, CheckCircle2, Inbox, LayoutDashboard, Plus, Swords, Users } from "lucide-react";
+import { CalendarPlus, CheckCircle2, Inbox, LayoutDashboard, Plus, Shield, Swords, Users } from "lucide-react";
 import type { ListResponse, PendingRequest } from "@7xen/shared";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
@@ -54,6 +54,7 @@ export default function ManagerLayout() {
     { key: "dashboard", to: "/manager", label: "Dashboard", icon: LayoutDashboard, end: true },
     { key: "requests", to: "/manager/requests", label: "Approvals", icon: Inbox, badge: pending },
     { key: "scrims", to: "/manager/scrims", label: "Scrims", icon: Swords },
+    { key: "teams", to: "/manager/teams", label: "Teams", icon: Shield },
   ];
 
   return (

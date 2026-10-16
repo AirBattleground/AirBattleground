@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import type {
+  TeamRequestRow,
   GameMap,
   ManagerRow,
   Registration,
@@ -95,6 +96,7 @@ export function toManagerRow(u: ManagerWithCount): ManagerRow {
 export const teamRowInclude = {
   user: true,
   _count: { select: { registrations: true } },
+  request: { select: { manager: { select: { id: true, displayName: true } } } },
 } satisfies Prisma.TeamInclude;
 export type TeamWithUser = Prisma.TeamGetPayload<{ include: typeof teamRowInclude }>;
 
@@ -112,5 +114,27 @@ export function toTeamRow(t: TeamWithUser): TeamRow {
     registrationCount: t._count.registrations,
     lastLoginAt: iso(t.user.lastLoginAt),
     createdAt: t.createdAt.toISOString(),
+    requestedBy: t.request?.manager ?? null,
+  };
+}
+
+export const teamRequestInclude = { manager: { select: { id: true, displayName: true } } } satisfies Prisma.TeamRequestInclude;
+export type TeamRequestWithManager = Prisma.TeamRequestGetPayload<{ include: typeof teamRequestInclude }>;
+
+export function toTeamRequestRow(r: TeamRequestWithManager): TeamRequestRow {
+  return {
+    id: r.id,
+    status: r.status,
+    teamName: r.teamName,
+    tag: r.tag,
+    captainName: r.captainName,
+    username: r.username,
+    email: r.email,
+    phone: r.phone,
+    rejectionReason: r.rejectionReason,
+    createdAt: r.createdAt.toISOString(),
+    reviewedAt: iso(r.reviewedAt),
+    manager: r.manager,
+    teamId: r.teamId,
   };
 }

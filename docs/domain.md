@@ -10,10 +10,15 @@ the API enforces. The API (`apps/api`) is the source of truth; the endpoint cont
 | --- | --- | --- | --- |
 | **ADMIN** | Platform owner | Seeded from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `apps/api/.env` | Admin console (`apps/admin`, :5174) |
 | **MANAGER** | Scrim organiser / host | Created by the admin | Web portal (`apps/web`, :5173) |
-| **TEAM** | A squad (one shared login per team) | Created by the admin, together with the team profile | Web portal (`apps/web`, :5173) |
+| **TEAM** | A squad (one shared login per team) | Created by the admin directly, **or** requested by a manager and approved by the admin | Web portal (`apps/web`, :5173) |
 
-- There is **no self sign-up in phase 1**. Every manager and team login is issued by the admin, who
-  can edit profiles, reset passwords and deactivate accounts.
+- There is **no self sign-up in phase 1**. The admin issues every manager login and can edit
+  profiles, reset passwords and deactivate accounts.
+- **Managers can register teams.** A manager's team is stored as a `TeamRequest` (PENDING) — no
+  login exists yet. Trying to sign in with those details says "waiting for admin approval".
+  The admin approves (the `User` + `Team` are created atomically; double-approve → 409) or rejects
+  with an optional reason (the manager sees it, and the name/username become free again). A manager
+  can withdraw a request while it is PENDING.
 - Deactivating an account takes effect immediately: the session user is re-read on every request, so
   an existing session stops working on the next call.
 - Admin and app sessions use **separate httpOnly cookies** (`sx_admin`, `sx_app`), so being signed
@@ -21,7 +26,10 @@ the API enforces. The API (`apps/api`) is the source of truth; the endpoint cont
 - **Team names are unique**, ignoring case and repeated spaces: `Team Soul`, `team soul` and
   `  TEAM   SOUL ` collide. This is enforced by a unique `nameKey` column
   (`teamNameKey()` = trim → collapse whitespace → lowercase). Usernames are stored lowercase and
-  are unique across all roles.
+  are unique across all roles. Uniqueness also covers **pending team requests** (partial unique
+  indexes on `TeamRequest(nameKey|username) WHERE status = 'PENDING'`), so a name can't be queued
+  twice or created by the admin while a manager's request for it is waiting. Both portals show a
+  live "Available / Already taken" check while typing.
 
 ## Scrims and sessions
 

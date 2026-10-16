@@ -37,6 +37,7 @@ export const router = createBrowserRouter([
       { path: "scrims/new", element: page(() => import("@/pages/manager/ScrimFormPage")) },
       { path: "scrims/:scrimId", element: page(() => import("@/pages/manager/ScrimDetailPage")) },
       { path: "scrims/:scrimId/edit", element: page(() => import("@/pages/manager/ScrimFormPage")) },
+      { path: "teams", element: page(() => import("@/pages/manager/TeamsPage")) },
     ],
   },
   {

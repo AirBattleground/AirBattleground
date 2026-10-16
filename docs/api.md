@@ -178,6 +178,26 @@ Body `{ "password": "..." }`.
 
 ---
 
+### `GET /api/admin/teams/availability?teamName=&username=` → `TeamAvailability`
+
+Live check used by the create forms. Each field present in the query gets `{ available, message }`;
+`message` is `"Already taken"` or `"Already requested — waiting for admin approval"`.
+
+### `GET /api/admin/team-requests?status=PENDING|APPROVED|REJECTED` → `ListResponse<TeamRequestRow>`
+
+Teams registered by managers. Default `PENDING`, oldest first (a queue); other statuses are newest
+decision first, max 200.
+
+### `POST /api/admin/team-requests/:id/approve` → `TeamRow`
+
+Creates the team's `User` + `Team` from the request in one transaction. `TeamRow.requestedBy` names
+the manager. `409 CONFLICT` if it was already reviewed, or if the name/username got taken meanwhile.
+
+### `POST /api/admin/team-requests/:id/reject` → `TeamRequestRow`
+
+Body `{ "reason"?: string }` (≤ 200 chars, shown to the manager). Frees the name and username.
+`409` if already reviewed.
+
 ## Manager (role MANAGER — only their own scrims)
 
 Another manager's scrim or registration id returns `404 NOT_FOUND`.
@@ -311,6 +331,25 @@ Body `RejectRegistrationInput`: `{ "reason"?: string }` (≤ 200 chars, shown to
 Works on `PENDING` or `APPROVED` (frees the slot). `409 CONFLICT` if the team already cancelled.
 
 ---
+
+### `GET /api/manager/team-requests` → `ListResponse<TeamRequestRow>`
+
+The manager's own team registrations, newest first, with status and any rejection reason.
+
+### `POST /api/manager/team-requests` → `201 TeamRequestRow`
+
+Body: `CreateTeamInput` (same as the admin's create team). No login is created until the admin
+approves. `409 CONFLICT` with `fields.teamName` / `fields.username` when the name or username is
+taken by a team or by another pending request. Signing in with these details before approval →
+`403` "Your team is waiting for admin approval…"; after a rejection → `403` with the reason.
+
+### `DELETE /api/manager/team-requests/:id` → `204`
+
+Withdraw a PENDING request (`409` once reviewed, `404` if it isn't yours).
+
+### `GET /api/manager/teams/availability?teamName=&username=` → `TeamAvailability`
+
+Same as the admin availability check.
 
 ## Team (role TEAM)
 

@@ -8,6 +8,7 @@ import { AppError } from "../lib/errors.js";
 import { verifyPassword } from "../lib/password.js";
 import { toSessionUser, userWithTeamInclude } from "../lib/serialize.js";
 import { parse } from "../lib/validate.js";
+import { latestRequestForLogin } from "../services/teamRequests.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 
 const WRONG_CREDS = "Wrong username or password";
@@ -34,6 +35,18 @@ function authRouter(cookieName: string, roles: Role[]) {
   r.post("/login", loginLimiter(), async (req, res) => {
     const { username, password } = parse(loginSchema, req.body);
     const user = await prisma.user.findUnique({ where: { username }, include: userWithTeamInclude });
+    if (!user && roles.includes("TEAM")) {
+      // a manager registered this team but the admin hasn't approved it (or rejected it)
+      const pending = await latestRequestForLogin(username);
+      if (pending && (await verifyPassword(password, pending.passwordHash))) {
+        throw new AppError(
+          "FORBIDDEN",
+          pending.status === "PENDING"
+            ? "Your team is waiting for admin approval. You can log in once it's approved."
+            : `Your team registration was not approved${pending.rejectionReason ? `: ${pending.rejectionReason}` : ""}. Contact your manager.`,
+        );
+      }
+    }
     if (!user || !roles.includes(user.role) || !(await verifyPassword(password, user.passwordHash))) {
       throw new AppError("UNAUTHENTICATED", WRONG_CREDS);
     }

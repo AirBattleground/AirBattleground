@@ -3,14 +3,18 @@ import {
   ADMIN_COOKIE,
   createManagerSchema,
   createTeamSchema,
+  rejectTeamRequestSchema,
   resetPasswordSchema,
+  teamAvailabilityQuerySchema,
+  teamRequestListQuerySchema,
   searchQuerySchema,
   updateManagerSchema,
   updateTeamSchema,
 } from "@7xen/shared";
 import { parse } from "../lib/validate.js";
-import { requireAuth } from "../middleware/requireAuth.js";
+import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import * as admin from "../services/admin.js";
+import * as teamRequests from "../services/teamRequests.js";
 
 export function adminRouter() {
   const r = Router();
@@ -36,6 +40,9 @@ export function adminRouter() {
     res.status(204).end();
   });
 
+  r.get("/teams/availability", async (req, res) => {
+    res.json(await teamRequests.checkAvailability(parse(teamAvailabilityQuerySchema, req.query)));
+  });
   r.get("/teams", async (req, res) => {
     const { q } = parse(searchQuerySchema, req.query);
     res.json({ items: await admin.listTeams(q || undefined) });
@@ -50,6 +57,18 @@ export function adminRouter() {
     const { password } = parse(resetPasswordSchema, req.body);
     await admin.resetTeamPassword(req.params.id, password);
     res.status(204).end();
+  });
+
+  r.get("/team-requests", async (req, res) => {
+    const { status } = parse(teamRequestListQuerySchema, req.query);
+    res.json({ items: await teamRequests.listTeamRequests(status) });
+  });
+  r.post("/team-requests/:id/approve", async (req, res) => {
+    res.json(await teamRequests.approveTeamRequest(currentUser(req).id, req.params.id));
+  });
+  r.post("/team-requests/:id/reject", async (req, res) => {
+    const { reason } = parse(rejectTeamRequestSchema, req.body);
+    res.json(await teamRequests.rejectTeamRequest(currentUser(req).id, req.params.id, reason));
   });
 
   return r;

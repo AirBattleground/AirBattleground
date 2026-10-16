@@ -11,8 +11,8 @@ packages/ui      shadcn/ui components + 7xen theme (light/dark), brand component
 ```
 
 ## Phase 1 domain
-- Roles: ADMIN (owner, seeded from env), MANAGER, TEAM. **All manager and team logins are created by the admin** (no self sign-up in phase 1).
-- Team names are unique (case/space-insensitive via `teamNameKey`).
+- Roles: ADMIN (owner, seeded from env), MANAGER, TEAM. Admin creates manager logins. Teams: admin creates them directly, or a manager submits a `TeamRequest` that the admin approves (login only exists after approval). No self sign-up yet.
+- Team names are unique (case/space-insensitive via `teamNameKey`), across teams AND pending team requests.
 - Manager creates **scrims**: title, maps (one per match), start time (IST, "HH:mm"), recurrence ONCE | DAILY | WEEKENDS, start/end date, slotCount, firstSlot.
 - A scrim "occurs" on a date per `occursOn()`; one `ScrimSession` row per (scrim, date), created lazily.
 - Team picks a date → sees scrims that day → registers (PENDING). Manager approves → **lowest free slot auto-allotted** (firstSlot..firstSlot+slotCount-1). Reject/cancel frees the slot. Registration closes at session start.
