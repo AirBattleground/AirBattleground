@@ -1,7 +1,7 @@
 # Local dev:      docker-compose up -d db            (Postgres only — what `pnpm db:up` runs)
 # Full stack:     docker-compose --profile full up -d --build
-#                 web   → http://<this-machine-ip>:8080            (team & manager portal)
-#                 admin → http://<this-machine-ip>:8080/admin-ui   (admin console)
+#                 web   → http://<this-machine-ip>/            (team & manager portal, port 80)
+#                 admin → http://<this-machine-ip>/admin-ui   (admin console)
 #                 api   → internal only; reached through /api on either site
 # Seed the full stack from the host (db is published on :5433):  pnpm db:seed
 
@@ -46,8 +46,8 @@ services:
       STORAGE_DIR: /data/storage # shared with the extractor (same path in both containers)
     volumes:
       - ./storage:/data/storage # same folder the dev setup uses, so existing samples/screenshots keep working
-    expose:
-      - "4000"
+    ports:
+      - "127.0.0.1:4000:4000" # only for the host-networked web container; not exposed to the LAN
 
   web:
     profiles: ["full"]
@@ -60,10 +60,11 @@ services:
     restart: unless-stopped
     depends_on:
       - api
+    # Host networking: nginx listens directly on this machine's port 80, so phones on the Wi-Fi
+    # reach it even when net.ipv4.ip_forward=0 (which blocks Docker's NAT-published ports).
+    network_mode: host
     environment:
-      API_UPSTREAM: http://api:4000
-    ports:
-      - "${WEB_PORT:-8080}:80"
+      API_UPSTREAM: http://127.0.0.1:4000
 
   extractor:
     profiles: ["full"]
