@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  TEAM
+}
+
+enum Recurrence {
+  ONCE
+  DAILY
+  WEEKENDS
+}
+
+enum ScrimStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// Every login (admin, manager, team) is a User. Credentials are issued by the admin.
+model User {
+  id           String    @id @default(cuid())
+  /// stored lowercase
+  username     String    @unique
+  passwordHash String
+  role         Role
+  displayName  String
+  email        String?
+  phone        String?
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  team               Team?
+  scrims             Scrim[]        @relation("ScrimManager")
+  decidedRegistrations Registration[] @relation("RegistrationDecider")
+
+  @@index([role])
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  /// teamNameKey(name): trimmed, single-spaced, lowercase — enforces unique team names
+  nameKey     String   @unique
+  tag         String
+  captainName String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  registrations Registration[]
+}
+
+/// A scrim definition. It "occurs" on dates according to recurrence; see shared/schedule.ts occursOn().
+model Scrim {
+  id          String      @id @default(cuid())
+  managerId   String
+  manager     User        @relation("ScrimManager", fields: [managerId], references: [id])
+  title       String
+  description String?
+  /// GameMap values, one per match, in play order
+  maps        String[]
+  /// "HH:mm" in app timezone (IST)
+  startTime   String
+  recurrence  Recurrence
+  startDate   DateTime    @db.Date
+  endDate     DateTime?   @db.Date
+  slotCount   Int
+  firstSlot   Int         @default(1)
+  status      ScrimStatus @default(ACTIVE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  sessions ScrimSession[]
+
+  @@index([managerId])
+  @@index([status, startDate])
+}
+
+/// One occurrence of a scrim on a date. Created lazily on first registration.
+/// Phase 2 hangs room details, match results and screenshots off this.
+model ScrimSession {
+  id        String   @id @default(cuid())
+  scrimId   String
+  scrim     Scrim    @relation(fields: [scrimId], references: [id], onDelete: Cascade)
+  date      DateTime @db.Date
+  createdAt DateTime @default(now())
+
+  registrations Registration[]
+
+  @@unique([scrimId, date])
+  @@index([date])
+}
+
+model Registration {
+  id              String             @id @default(cuid())
+  sessionId       String
+  session         ScrimSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  teamId          String
+  team            Team               @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  status          RegistrationStatus @default(PENDING)
+  /// set only while APPROVED
+  slotNumber      Int?
+  rejectionReason String?
+  decidedAt       DateTime?
+  decidedById     String?
+  decidedBy       User?              @relation("RegistrationDecider", fields: [decidedById], references: [id])
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  /// one row per team per session; re-registering after cancel/reject reuses the row
+  @@unique([sessionId, teamId])
+  /// NULLs are distinct in Postgres, so only allotted slots must be unique
+  @@unique([sessionId, slotNumber])
+  @@index([teamId, status])
+  @@index([sessionId, status])
+}

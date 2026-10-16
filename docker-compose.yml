@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: 7xen-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sevenxen
+      POSTGRES_PASSWORD: sevenxen
+      POSTGRES_DB: sevenxen
+    ports:
+      - "5433:5432"
+    volumes:
+      - 7xen-pgdata:/var/lib/postgresql/data
+volumes:
+  7xen-pgdata:
