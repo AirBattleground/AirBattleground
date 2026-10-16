@@ -142,7 +142,13 @@ export type CreateScrimInput = z.infer<typeof createScrimSchema>;
 
 export const updateScrimSchema = scrimBase
   .partial()
-  .extend({ status: z.enum(SCRIM_STATUSES).optional() });
+  .extend({
+    status: z.enum(SCRIM_STATUSES).optional(),
+    /** phase 2: points table rules for this scrim (default DEFAULT_POINTS_SYSTEM) */
+    pointsSystem: z
+      .object({ placement: z.array(z.number().int().min(0).max(100)).min(1).max(25), killPoints: z.number().int().min(0).max(10) })
+      .optional(),
+  });
 export type UpdateScrimInput = z.infer<typeof updateScrimSchema>;
 
 export const rejectRegistrationSchema = z.object({

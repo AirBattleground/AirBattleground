@@ -31,6 +31,37 @@ enum TeamRequestStatus {
   REJECTED
 }
 
+enum MatchStatus {
+  SCHEDULED
+  LINEUP_REVIEW
+  LIVE
+  RESULTS_REVIEW
+  PUBLISHED
+}
+
+enum ScreenshotKind {
+  SLOT_LIST
+  RESULTS
+}
+
+enum ScreenshotStatus {
+  QUEUED
+  PROCESSING
+  DONE
+  FAILED
+}
+
+enum SampleSplit {
+  TRAIN
+  TEST
+}
+
+enum SampleSource {
+  ADMIN_UPLOAD
+  MANAGER_CORRECTION
+  SEED
+}
+
 enum RegistrationStatus {
   PENDING
   APPROVED
@@ -57,6 +88,8 @@ model User {
   scrims             Scrim[]        @relation("ScrimManager")
   decidedRegistrations Registration[] @relation("RegistrationDecider")
   teamRequests       TeamRequest[]  @relation("TeamRequestManager")
+  screenshots        Screenshot[]
+  trainingSamples    TrainingSample[]
   reviewedTeamRequests TeamRequest[] @relation("TeamRequestReviewer")
 
   @@index([role])
@@ -77,6 +110,22 @@ model Team {
   registrations Registration[]
   /// set when the team came from a manager's request
   request       TeamRequest?
+  players       TeamPlayer[]
+  matchTeams    MatchTeam[]
+}
+
+/// Team roster (phase 2). Used to match OCR'd names to teams.
+model TeamPlayer {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  ign       String
+  bgmiId    String?
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([teamId])
 }
 
 /// A manager asks for a team login. It becomes a real User + Team only when the admin approves.
@@ -126,6 +175,8 @@ model Scrim {
   slotCount   Int
   firstSlot   Int         @default(1)
   status      ScrimStatus @default(ACTIVE)
+  /// PointsSystem JSON { placement: number[], killPoints }; null = DEFAULT_POINTS_SYSTEM
+  pointsSystem Json?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -145,6 +196,7 @@ model ScrimSession {
   createdAt DateTime @default(now())
 
   registrations Registration[]
+  matches       Match[]
 
   @@unique([scrimId, date])
   @@index([date])
@@ -172,4 +224,109 @@ model Registration {
   @@unique([sessionId, slotNumber])
   @@index([teamId, status])
   @@index([sessionId, status])
+}
+
+/// One match (map) of a scrim session. Created from scrim.maps when the manager opens the session.
+model Match {
+  id          String       @id @default(cuid())
+  sessionId   String
+  session     ScrimSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  number      Int
+  map         String
+  status      MatchStatus  @default(SCHEDULED)
+  publishedAt DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  screenshots Screenshot[]
+  teams       MatchTeam[]
+
+  @@unique([sessionId, number])
+}
+
+/// An uploaded screenshot; read asynchronously by the extractor (worker in apps/api).
+model Screenshot {
+  id           String           @id @default(cuid())
+  matchId      String
+  match        Match            @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  kind         ScreenshotKind
+  /// path relative to STORAGE_DIR, e.g. screenshots/2026/10/<id>.jpg
+  storageKey   String
+  mimeType     String
+  sha256       String
+  width        Int?
+  height       Int?
+  status       ScreenshotStatus @default(QUEUED)
+  attempts     Int              @default(0)
+  /// ExtractionResult JSON (camelCase, see shared/phase2.ts)
+  extraction   Json?
+  error        String?
+  modelVersion String?
+  uploadedById String
+  uploadedBy   User             @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime         @default(now())
+  processedAt  DateTime?
+
+  @@unique([matchId, sha256])
+  @@index([status, createdAt])
+}
+
+/// A team (slot) in a match: lineup + result. Points are stored when published.
+model MatchTeam {
+  id              String        @id @default(cuid())
+  matchId         String
+  match           Match         @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  slotNumber      Int
+  /// resolved from the session's APPROVED registration on this slot (null if none)
+  teamId          String?
+  team            Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  placement       Int?
+  kills           Int?
+  placementPoints Int?
+  killPoints      Int?
+  totalPoints     Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  players MatchPlayer[]
+
+  @@unique([matchId, slotNumber])
+  @@index([teamId])
+}
+
+model MatchPlayer {
+  id            String    @id @default(cuid())
+  matchTeamId   String
+  matchTeam     MatchTeam @relation(fields: [matchTeamId], references: [id], onDelete: Cascade)
+  position      Int
+  name          String
+  ocrName       String?
+  ocrConfidence Float?
+  kills         Int?
+
+  @@unique([matchTeamId, position])
+}
+
+/// Labelled screenshot used to evaluate/train the extractor. Image lives under STORAGE_DIR.
+model TrainingSample {
+  id           String         @id @default(cuid())
+  kind         ScreenshotKind
+  source       SampleSource
+  storageKey   String
+  sha256       String         @unique
+  width        Int?
+  height       Int?
+  /// SlotListLabels | ResultsLabels JSON
+  labels       Json
+  split        SampleSplit    @default(TRAIN)
+  verified     Boolean        @default(false)
+  excluded     Boolean        @default(false)
+  notes        String?
+  screenshotId String?
+  createdById  String?
+  createdBy    User?          @relation(fields: [createdById], references: [id])
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([kind, split])
 }

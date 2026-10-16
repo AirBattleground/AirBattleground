@@ -1,0 +1,46 @@
+[project]
+name = "sevenxen-extractor"
+version = "0.1.0"
+description = "7xen screenshot reader: BGMI slot-list and results screenshots -> structured JSON"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "python-multipart>=0.0.12",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "structlog>=24.4",
+  "numpy>=1.26,<2.3",
+  "opencv-python-headless>=4.10",
+  "pyyaml>=6.0",
+  "rapidfuzz>=3.10",
+  "httpx>=0.27",
+  "pillow>=10.4",
+  "paddlepaddle>=3.0",
+  "paddleocr>=3.0",
+]
+
+[project.optional-dependencies]
+# training-only extras (owned by the ML/training work)
+train = []
+
+[dependency-groups]
+dev = ["pytest>=8.3", "ruff>=0.7", "mypy>=1.13", "types-PyYAML"]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+warn_unused_ignores = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

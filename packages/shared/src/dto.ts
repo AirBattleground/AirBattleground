@@ -128,6 +128,8 @@ export interface Scrim {
   slotCount: number;
   firstSlot: number;
   status: ScrimStatus;
+  /** phase 2: points table rules */
+  pointsSystem: { placement: number[]; killPoints: number };
   manager: { id: string; displayName: string };
   createdAt: string;
 }
@@ -200,4 +202,6 @@ export interface TeamDashboard {
   nextMatch: TeamRegistration | null;
   upcoming: TeamRegistration[];
   counts: { approvedUpcoming: number; pending: number; totalPlayed: number };
+  /** phase 2: points summary (null until the team has a published match) */
+  results: import("./phase2").TeamResultsSummary | null;
 }
