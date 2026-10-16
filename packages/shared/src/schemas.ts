@@ -23,6 +23,19 @@ const optionalEmail = z
   .email("Enter a valid email")
   .optional()
   .or(z.literal("").transform(() => undefined));
+/** For PATCH: omitted = keep, "" or null = clear, value = set. */
+const clearableText = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .optional();
+const clearableEmail = z
+  .union([z.literal("").transform(() => null), z.string().trim().email("Enter a valid email")])
+  .nullable()
+  .optional();
 export const dateString = z.string().regex(DATE_RE, "Use YYYY-MM-DD");
 export const timeString = z.string().regex(TIME_RE, "Use HH:mm (24h)");
 
@@ -45,8 +58,8 @@ export type CreateManagerInput = z.infer<typeof createManagerSchema>;
 
 export const updateManagerSchema = z.object({
   displayName: z.string().trim().min(2).max(60).optional(),
-  email: optionalEmail,
-  phone: optionalText(20),
+  email: clearableEmail,
+  phone: clearableText(20),
   isActive: z.boolean().optional(),
 });
 export type UpdateManagerInput = z.infer<typeof updateManagerSchema>;
@@ -72,9 +85,9 @@ export type CreateTeamInput = z.infer<typeof createTeamSchema>;
 export const updateTeamSchema = z.object({
   teamName: z.string().trim().min(2).max(40).optional(),
   tag: z.string().trim().toUpperCase().min(2).max(5).regex(/^[A-Z0-9]+$/).optional(),
-  captainName: optionalText(60),
-  email: optionalEmail,
-  phone: optionalText(20),
+  captainName: clearableText(60),
+  email: clearableEmail,
+  phone: clearableText(20),
   isActive: z.boolean().optional(),
 });
 export type UpdateTeamInput = z.infer<typeof updateTeamSchema>;

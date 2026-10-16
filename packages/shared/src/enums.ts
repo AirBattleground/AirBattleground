@@ -33,7 +33,7 @@ export const RECURRENCE_LABELS: Record<Recurrence, string> = {
 };
 
 export const REGISTRATION_STATUS_LABELS: Record<RegistrationStatus, string> = {
-  PENDING: "Awaiting approval",
+  PENDING: "Waiting for approval",
   APPROVED: "Approved",
   REJECTED: "Rejected",
   CANCELLED: "Cancelled",

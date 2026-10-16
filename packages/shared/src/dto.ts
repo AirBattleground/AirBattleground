@@ -113,7 +113,7 @@ export interface ScrimOnDate {
 
 /** Team view of a scrim on a date: includes the team's own registration if any. */
 export interface TeamScrimOnDate extends ScrimOnDate {
-  myRegistration: { id: string; status: RegistrationStatus; slotNumber: number | null } | null;
+  myRegistration: { id: string; status: RegistrationStatus; slotNumber: number | null; rejectionReason: string | null } | null;
 }
 
 export interface Registration {

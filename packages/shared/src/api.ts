@@ -22,7 +22,7 @@
  *   PATCH  /api/admin/managers/:id         UpdateManagerInput    → ManagerRow
  *   POST   /api/admin/managers/:id/reset-password ResetPasswordInput → 204
  *   GET    /api/admin/teams?q=                                   → ListResponse<TeamRow>
- *   POST   /api/admin/teams                CreateTeamInput       → TeamRow        (409 CONFLICT name/username taken)
+ *   POST   /api/admin/teams                CreateTeamInput       → TeamRow        (409 CONFLICT name/username taken; error.fields says which: teamName | username)
  *   PATCH  /api/admin/teams/:id            UpdateTeamInput       → TeamRow        (:id = team id)
  *   POST   /api/admin/teams/:id/reset-password ResetPasswordInput → 204
  *
@@ -41,7 +41,8 @@
  * TEAM (role TEAM)
  *   GET    /api/team/dashboard                                   → TeamDashboard
  *   GET    /api/team/scrims?date=                                → ListResponse<TeamScrimOnDate> (ACTIVE scrims of all managers on that date)
- *   POST   /api/team/registrations         CreateRegistrationInput → TeamRegistration (409 CONFLICT already registered; 409 REGISTRATION_CLOSED)
+ *   POST   /api/team/registrations         CreateRegistrationInput → TeamRegistration (409 CONFLICT already registered; 409 REGISTRATION_CLOSED;
+ *                                          re-registering after REJECTED/CANCELLED reuses the same registration id, back to PENDING)
  *   GET    /api/team/registrations?scope=upcoming|past           → ListResponse<TeamRegistration>
  *   DELETE /api/team/registrations/:id                           → 204  (cancel; PENDING or APPROVED, before start; frees slot)
  *

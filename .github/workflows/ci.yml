@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Typecheck · build · test · smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sevenxen
+          POSTGRES_PASSWORD: sevenxen
+          POSTGRES_DB: sevenxen
+        # same host port as local dev, so apps/api/.env.example works unchanged
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sevenxen -d sevenxen"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://sevenxen:sevenxen@localhost:5433/sevenxen?schema=public
+      JWT_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4 # version comes from package.json "packageManager"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: API env file
+        run: cp apps/api/.env.example apps/api/.env
+
+      - name: Prisma generate
+        run: pnpm --filter @7xen/api db:generate
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Apply migrations
+        run: pnpm --filter @7xen/api db:deploy
+
+      - name: Unit & API tests
+        run: pnpm test
+        env:
+          NODE_ENV: test
+
+      - name: Seed demo data
+        run: pnpm db:seed
+
+      - name: Start API (built bundle)
+        run: |
+          pnpm --filter @7xen/api start > api.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:4000/api/health && exit 0
+            sleep 1
+          done
+          echo "API did not become healthy"; cat api.log; exit 1
+
+      - name: End-to-end smoke test
+        run: pnpm smoke
+
+      - name: API log
+        if: always()
+        run: cat api.log || true
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Validate compose file
+        run: docker compose --profile full config --quiet
+      - name: Build api / web / admin
+        run: |
+          for app in api web admin; do
+            docker buildx build --load -f apps/$app/Dockerfile -t 7xen-$app:ci .
+          done

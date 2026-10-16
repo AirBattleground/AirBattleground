@@ -12,7 +12,14 @@
     "db:up": "docker-compose up -d db",
     "db:migrate": "pnpm --filter @7xen/api db:migrate",
     "db:seed": "pnpm --filter @7xen/api db:seed",
-    "db:studio": "pnpm --filter @7xen/api db:studio"
+    "db:studio": "pnpm --filter @7xen/api db:studio",
+    "test": "pnpm -r --if-present test",
+    "smoke": "node scripts/smoke.ts",
+    "check": "bash scripts/dev-check.sh",
+    "e2e": "pnpm dlx @playwright/test@1.62.1 test -c e2e/playwright.config.ts",
+    "stack:up": "docker-compose --profile full up -d --build",
+    "stack:down": "docker-compose --profile full stop api web admin",
+    "stack:logs": "docker-compose --profile full logs -f api web admin"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

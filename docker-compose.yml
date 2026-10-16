@@ -1,3 +1,10 @@
+# Local dev:      docker-compose up -d db            (Postgres only — what `pnpm db:up` runs)
+# Full stack:     docker-compose --profile full up -d --build
+#                 web   → http://localhost:8080   (team & manager portal)
+#                 admin → http://localhost:8081   (admin console)
+#                 api   → internal only; reached through /api on either site
+# Seed the full stack from the host (db is published on :5433):  pnpm db:seed
+
 services:
   db:
     image: postgres:16-alpine
@@ -11,5 +18,63 @@ services:
       - "5433:5432"
     volumes:
       - 7xen-pgdata:/var/lib/postgresql/data
+
+  api:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      network: host # build-time DNS works even where the docker bridge can't resolve
+    image: 7xen-api:latest
+    container_name: 7xen-api
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      DATABASE_URL: postgresql://sevenxen:sevenxen@db:5432/sevenxen?schema=public
+      # override in a real deployment: JWT_SECRET=$(openssl rand -hex 32) docker-compose --profile full up -d
+      JWT_SECRET: ${JWT_SECRET:-insecure-local-compose-secret-change-me-0123456789abcdef}
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:8081}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@12345}
+      ADMIN_NAME: ${ADMIN_NAME:-7xen Admin}
+    expose:
+      - "4000"
+
+  web:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      network: host # build-time DNS works even where the docker bridge can't resolve
+    image: 7xen-web:latest
+    container_name: 7xen-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_UPSTREAM: http://api:4000
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+  admin:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      network: host # build-time DNS works even where the docker bridge can't resolve
+    image: 7xen-admin:latest
+    container_name: 7xen-admin
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_UPSTREAM: http://api:4000
+    ports:
+      - "${ADMIN_PORT:-8081}:80"
+
 volumes:
   7xen-pgdata:
