@@ -153,12 +153,10 @@ API side: `STATION_URL` (default `http://127.0.0.1:4500`; compose uses `http://h
   - Latency is about 4–8 s (2 s segments, 6 in the list).
 - **BGMI on an emulator.** Krafton's anti-cheat can detect emulators and may refuse to run or ban the account. Use a
   dedicated account. This is a known, accepted risk.
-- **BGMI currently crashes on bgmi14** (also without the station running): native SIGSEGV in
-  `libEGL_emulation.so createNativeSync` from `eglSwapBuffers`, under ARM translation. This is an emulator GPU issue,
-  not a capture issue. Things to try:
-  - `EMULATOR_ARGS="-gpu swiftshader_indirect -no-boot-anim -no-snapshot-save"` (or `-gpu angle_indirect`), then cold
-    boot the AVD;
-  - a newer emulator or system image.
+- **BGMI GPU crash (fixed).** With plain `-gpu host`, BGMI crashed after ~20 s with a native SIGSEGV in
+  `libEGL_emulation.so createNativeSync` (from `eglSwapBuffers`). Disabling the emulator's async swap fixes it:
+  `EMULATOR_ARGS=-gpu host -feature -GLAsyncSwap -no-boot-anim -no-snapshot-save` (now the default). If an emulator
+  was started by hand without that flag, stop it (`adb emu kill`); the station starts it correctly on the next Prepare.
 - Mid-stream resolution changes (rotation) play fine in hls.js and Safari and decode completely with ffmpeg. Some
   desktop players show a brief glitch at the switch.
 

@@ -82,7 +82,7 @@ export function loadConfig(): StationConfig {
     avdHome: expand(str("ANDROID_AVD_HOME", path.join(androidRoot, "avd"))),
     avd: str("AVD_NAME", "bgmi14"),
     display: str("DISPLAY", ":0"),
-    emulatorArgs: str("EMULATOR_ARGS", "-gpu host -no-boot-anim -no-snapshot-save").split(/\s+/).filter(Boolean),
+    emulatorArgs: str("EMULATOR_ARGS", "-gpu host -feature -GLAsyncSwap -no-boot-anim -no-snapshot-save").split(/\s+/).filter(Boolean),
     serial: str("ADB_SERIAL", ""),
     bootTimeoutMs: num("EMULATOR_BOOT_TIMEOUT_SEC", 240) * 1000,
     bgmiPackage: str("BGMI_PACKAGE", "com.pubg.imobile"),
