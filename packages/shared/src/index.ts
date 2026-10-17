@@ -6,3 +6,5 @@ export * from "./api";
 export * from "./client";
 export * from "./points";
 export * from "./phase2";
+export * from "./phase3";
+export * from "./tournament";

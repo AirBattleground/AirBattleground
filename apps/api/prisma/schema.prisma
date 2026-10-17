@@ -62,6 +62,41 @@ enum SampleSource {
   SEED
 }
 
+enum TournamentStatus {
+  DRAFT
+  REGISTRATION_OPEN
+  REGISTRATION_CLOSED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum StageStatus {
+  PENDING
+  DRAWN
+  LIVE
+  COMPLETED
+}
+
+enum EntryType {
+  REGISTERED
+  INVITED
+}
+
+enum EntryStatus {
+  CONFIRMED
+  WAITLISTED
+  WITHDRAWN
+  REMOVED
+}
+
+enum GroupTeamStatus {
+  ACTIVE
+  ADVANCED
+  ELIMINATED
+  DISQUALIFIED
+}
+
 enum RegistrationStatus {
   PENDING
   APPROVED
@@ -90,6 +125,7 @@ model User {
   teamRequests       TeamRequest[]  @relation("TeamRequestManager")
   screenshots        Screenshot[]
   trainingSamples    TrainingSample[]
+  tournaments        Tournament[]   @relation("TournamentManager")
   reviewedTeamRequests TeamRequest[] @relation("TeamRequestReviewer")
 
   @@index([role])
@@ -112,6 +148,9 @@ model Team {
   request       TeamRequest?
   players       TeamPlayer[]
   matchTeams    MatchTeam[]
+  tournamentEntries TournamentEntry[]
+  groupSlots    GroupTeam[]
+  championOf    Tournament[]   @relation("TournamentChampion")
 }
 
 /// Team roster (phase 2). Used to match OCR'd names to teams.
@@ -229,8 +268,13 @@ model Registration {
 /// One match (map) of a scrim session. Created from scrim.maps when the manager opens the session.
 model Match {
   id          String       @id @default(cuid())
-  sessionId   String
-  session     ScrimSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  /// a match belongs to a scrim session OR a tournament group (exactly one is set)
+  sessionId   String?
+  session     ScrimSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  groupId     String?
+  group       TournamentGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  scheduledAt DateTime?
+  lobbyIndex  Int?
   number      Int
   map         String
   status      MatchStatus  @default(SCHEDULED)
@@ -242,6 +286,8 @@ model Match {
   teams       MatchTeam[]
 
   @@unique([sessionId, number])
+  @@unique([groupId, number])
+  @@index([scheduledAt])
 }
 
 /// An uploaded screenshot; read asynchronously by the extractor (worker in apps/api).
@@ -329,4 +375,122 @@ model TrainingSample {
   updatedAt    DateTime       @updatedAt
 
   @@index([kind, split])
+}
+
+/// Phase 3: a multi-stage tournament run by a manager. Plan: docs/phase3/TOURNAMENTS.md
+model Tournament {
+  id                   String           @id @default(cuid())
+  managerId            String
+  manager              User             @relation("TournamentManager", fields: [managerId], references: [id])
+  title                String
+  description          String?
+  rules                String?
+  prize                String?
+  status               TournamentStatus @default(DRAFT)
+  /// PointsSystem JSON; null = DEFAULT_POINTS_SYSTEM
+  pointsSystem         Json?
+  teamSize             Int              @default(4)
+  firstSlot            Int              @default(1)
+  maxTeams             Int
+  registrationOpensAt  DateTime?
+  registrationClosesAt DateTime?
+  championTeamId       String?
+  champion             Team?            @relation("TournamentChampion", fields: [championTeamId], references: [id], onDelete: SetNull)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  stages  TournamentStage[]
+  entries TournamentEntry[]
+
+  @@index([status])
+  @@index([managerId])
+}
+
+model TournamentStage {
+  id              String      @id @default(cuid())
+  tournamentId    String
+  tournament      Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  /// 1-based
+  order           Int
+  name            String
+  status          StageStatus @default(PENDING)
+  teamsIn         Int
+  lobbySize       Int         @default(16)
+  groupCount      Int
+  matchesPerGroup Int
+  /// GameMap per match
+  maps            String[]
+  advancePerGroup Int
+  wildcardCount   Int         @default(0)
+  invitedSlots    Int         @default(0)
+  /// ScheduleConfig JSON
+  schedule        Json?
+  drawSeed        String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  groups TournamentGroup[]
+
+  @@unique([tournamentId, order])
+}
+
+/// A team's place in a tournament: a first-come-first-served registration or a manager invite.
+model TournamentEntry {
+  id              String      @id @default(cuid())
+  tournamentId    String
+  tournament      Tournament  @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teamId          String
+  team            Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  type            EntryType   @default(REGISTERED)
+  status          EntryStatus
+  /// stage order the team enters at (1 = qualifier; invites can enter later)
+  entryStage      Int         @default(1)
+  /// TimeSlotOption ids (ISO start instants), most preferred first; empty = any time
+  timePreferences String[]
+  registeredAt    DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([tournamentId, teamId])
+  @@index([tournamentId, status, registeredAt])
+}
+
+model TournamentGroup {
+  id         String          @id @default(cuid())
+  stageId    String
+  stage      TournamentStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  index      Int
+  name       String
+  lobbyIndex Int?
+  /// TimeSlotOption id (ISO) this group plays in
+  slotId     String?
+  startsAt   DateTime?
+  createdAt  DateTime        @default(now())
+
+  teams   GroupTeam[]
+  matches Match[]
+
+  @@unique([stageId, index])
+}
+
+model GroupTeam {
+  id          String          @id @default(cuid())
+  groupId     String
+  group       TournamentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teamId      String
+  team        Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  slotNumber  Int
+  seed        Int?
+  status      GroupTeamStatus @default(ACTIVE)
+  /// "TOP" | "WILDCARD" when ADVANCED
+  advancedVia String?
+  finalRank   Int?
+  dqReason    String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([groupId, teamId])
+  @@unique([groupId, slotNumber])
+  @@index([teamId])
 }
