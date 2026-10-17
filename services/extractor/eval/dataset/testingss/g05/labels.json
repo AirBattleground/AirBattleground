@@ -1,0 +1,897 @@
+{
+ "_about": "Hand-labelled ground truth for g05 (iPad 1600x1199; BGMI in a floating window with iPad app switcher/dock around it; results screens only, no lobby; same team pool as g04). Labelled by Claude from the images on 2026-10-17. Rank 6 contains a player whose name renders blank (1 finish) - labelled as U+3164 HANGUL FILLER; confirm. needs_human_check lists ambiguous glyphs.",
+ "needs_human_check": [
+  "ㅤ",
+  "J A C K",
+  "K R I S H",
+  "G1xOjuuOG",
+  "G1xAiMGOD08",
+  "ChalReNOoB",
+  "VPExChalReNooB",
+  "DCxARJuN",
+  "ISAGIyoichi9",
+  "TBxNxTLvL",
+  "T2HxOxygenOP",
+  "DExJOi",
+  "LSxSKyOP",
+  "TCYTxMaddYxIGL",
+  "THE ツ HɆRO",
+  "THEツPUÑISHER",
+  "SoMu | YaDaV",
+  "SEG VaLdUS",
+  "GòdLxDayesh",
+  "BTWxWonzeIGL",
+  "BTWxGoDLEveL09",
+  "KTxADiTyaaOP",
+  "KTxBaBaTILLU",
+  "IQxXENOZ",
+  "IQxOGR",
+  "KiZnVivekkOp",
+  "UltraBxCHiNUr7",
+  "PSHx⋆SPARKIE",
+  "30 FPS WALa",
+  "Ｍｒ·ＬａＬａ",
+  "Mop£HUBHAI",
+  "DRKxAnKú",
+  "4PExFlashh03",
+  "AVERAGEPIAYeR"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "G1xABDUL",
+       "kills": 6
+      },
+      {
+       "name": "G1xOjuuOG",
+       "kills": 3
+      },
+      {
+       "name": "G1xBee",
+       "kills": 0
+      },
+      {
+       "name": "G1xAiMGOD08",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "DCxNEMESIS",
+       "kills": 1
+      },
+      {
+       "name": "ChalReNOoB",
+       "kills": 2
+      },
+      {
+       "name": "PGRxFALCON",
+       "kills": 3
+      },
+      {
+       "name": "DCxARJuN",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "4PExFLEX",
+       "kills": 0
+      },
+      {
+       "name": "Khabatataa",
+       "kills": 1
+      },
+      {
+       "name": "4PExFlashh03",
+       "kills": 2
+      },
+      {
+       "name": "4PExGoLeM",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "whosZERO",
+       "kills": 0
+      },
+      {
+       "name": "IPHONEPLAYEr",
+       "kills": 1
+      },
+      {
+       "name": "UGxOMEn",
+       "kills": 2
+      },
+      {
+       "name": "UGxHunnTeRr",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "TeamNMxNOVA",
+       "kills": 0
+      },
+      {
+       "name": "TeamNMxYÅSH",
+       "kills": 0
+      },
+      {
+       "name": "ISAGIyoichi9",
+       "kills": 0
+      },
+      {
+       "name": "TeamNMxRohit",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "G1xABDUL",
+       "kills": 6
+      },
+      {
+       "name": "G1xOjuuOG",
+       "kills": 3
+      },
+      {
+       "name": "G1xBee",
+       "kills": 0
+      },
+      {
+       "name": "G1xAiMGOD08",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "DCxNEMESIS",
+       "kills": 1
+      },
+      {
+       "name": "ChalReNOoB",
+       "kills": 2
+      },
+      {
+       "name": "PGRxFALCON",
+       "kills": 3
+      },
+      {
+       "name": "DCxARJuN",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "TBxNxTLvL",
+       "kills": 2
+      },
+      {
+       "name": "RTNxSankuu",
+       "kills": 1
+      },
+      {
+       "name": "ㅤ",
+       "kills": 1
+      },
+      {
+       "name": "J A C K",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "T2HxOxygenOP",
+       "kills": 1
+      },
+      {
+       "name": "PUNITH GAMING",
+       "kills": 2
+      },
+      {
+       "name": "JhakaasXPlayer",
+       "kills": 1
+      },
+      {
+       "name": "Choke Player",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "DRExPsycho",
+       "kills": 0
+      },
+      {
+       "name": "DExJOi",
+       "kills": 1
+      },
+      {
+       "name": "DRExSamBOSS",
+       "kills": 1
+      },
+      {
+       "name": "LSxSKyOP",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "G1xABDUL",
+       "kills": 6
+      },
+      {
+       "name": "G1xOjuuOG",
+       "kills": 3
+      },
+      {
+       "name": "G1xBee",
+       "kills": 0
+      },
+      {
+       "name": "G1xAiMGOD08",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "DCxNEMESIS",
+       "kills": 1
+      },
+      {
+       "name": "ChalReNOoB",
+       "kills": 2
+      },
+      {
+       "name": "PGRxFALCON",
+       "kills": 3
+      },
+      {
+       "name": "DCxARJuN",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "TCYTxDINESH",
+       "kills": 0
+      },
+      {
+       "name": "TCYTxMaddYxIGL",
+       "kills": 0
+      },
+      {
+       "name": "CakeNakYT",
+       "kills": 0
+      },
+      {
+       "name": "ChanduYTisLive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "KnoXxNiinzeE",
+       "kills": 1
+      },
+      {
+       "name": "ZeBLAKE",
+       "kills": 0
+      },
+      {
+       "name": "KnoXxNEKROS",
+       "kills": 1
+      },
+      {
+       "name": "KnoXxTANMAY",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "AVERAGEPIAYeR",
+       "kills": 0
+      },
+      {
+       "name": "7x فيضان",
+       "kills": 0
+      },
+      {
+       "name": "WETxIMMORTAL",
+       "kills": 0
+      },
+      {
+       "name": "OK BRO",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "G1xABDUL",
+       "kills": 6
+      },
+      {
+       "name": "G1xOjuuOG",
+       "kills": 3
+      },
+      {
+       "name": "G1xBee",
+       "kills": 0
+      },
+      {
+       "name": "G1xAiMGOD08",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "DCxNEMESIS",
+       "kills": 1
+      },
+      {
+       "name": "ChalReNOoB",
+       "kills": 2
+      },
+      {
+       "name": "PGRxFALCON",
+       "kills": 3
+      },
+      {
+       "name": "DCxARJuN",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "THE ツ HɆRO",
+       "kills": 0
+      },
+      {
+       "name": "GODJOHNATHANIG",
+       "kills": 0
+      },
+      {
+       "name": "SoMu | YaDaV",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "RBy SCOOBY",
+       "kills": 1
+      },
+      {
+       "name": "BxM ICONIC",
+       "kills": 1
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 2
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "SEG VaLdUS",
+       "kills": 2
+      },
+      {
+       "name": "VPExChalReNooB",
+       "kills": 0
+      },
+      {
+       "name": "K R I S H",
+       "kills": 0
+      },
+      {
+       "name": "VPExMAXTRO",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "G1xABDUL",
+       "kills": 6
+      },
+      {
+       "name": "G1xOjuuOG",
+       "kills": 3
+      },
+      {
+       "name": "G1xBee",
+       "kills": 0
+      },
+      {
+       "name": "G1xAiMGOD08",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "DCxNEMESIS",
+       "kills": 1
+      },
+      {
+       "name": "ChalReNOoB",
+       "kills": 2
+      },
+      {
+       "name": "PGRxFALCON",
+       "kills": 3
+      },
+      {
+       "name": "DCxARJuN",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "KnoXxNiinzeE",
+       "kills": 1
+      },
+      {
+       "name": "ZeBLAKE",
+       "kills": 0
+      },
+      {
+       "name": "KnoXxNEKROS",
+       "kills": 1
+      },
+      {
+       "name": "KnoXxTANMAY",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "AVERAGEPIAYeR",
+       "kills": 0
+      },
+      {
+       "name": "7x فيضان",
+       "kills": 0
+      },
+      {
+       "name": "WETxIMMORTAL",
+       "kills": 0
+      },
+      {
+       "name": "OK BRO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 24,
+     "players": [
+      {
+       "name": "INXxSUMIT",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "G1xABDUL",
+       "kills": 6
+      },
+      {
+       "name": "G1xOjuuOG",
+       "kills": 3
+      },
+      {
+       "name": "G1xBee",
+       "kills": 0
+      },
+      {
+       "name": "G1xAiMGOD08",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "DCxNEMESIS",
+       "kills": 1
+      },
+      {
+       "name": "ChalReNOoB",
+       "kills": 2
+      },
+      {
+       "name": "PGRxFALCON",
+       "kills": 3
+      },
+      {
+       "name": "DCxARJuN",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "BTWxMEGA",
+       "kills": 0
+      },
+      {
+       "name": "BTWxWonzeIGL",
+       "kills": 4
+      },
+      {
+       "name": "BTWxTryFlack",
+       "kills": 1
+      },
+      {
+       "name": "BTWxGoDLEveL09",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "GòdLxDayesh",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "KTxBaBaTILLU",
+       "kills": 0
+      },
+      {
+       "name": "KTxADiTyaaOP",
+       "kills": 0
+      },
+      {
+       "name": "LaWdEkaMEta",
+       "kills": 1
+      },
+      {
+       "name": "4BitTHUG",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "G1xABDUL",
+       "kills": 6
+      },
+      {
+       "name": "G1xOjuuOG",
+       "kills": 3
+      },
+      {
+       "name": "G1xBee",
+       "kills": 0
+      },
+      {
+       "name": "G1xAiMGOD08",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "DCxNEMESIS",
+       "kills": 1
+      },
+      {
+       "name": "ChalReNOoB",
+       "kills": 2
+      },
+      {
+       "name": "PGRxFALCON",
+       "kills": 3
+      },
+      {
+       "name": "DCxARJuN",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "UltraBxCHiNUr7",
+       "kills": 0
+      },
+      {
+       "name": "UltraBxAIZEN",
+       "kills": 0
+      },
+      {
+       "name": "UltraBxMANAV",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "KiZnYANG69",
+       "kills": 1
+      },
+      {
+       "name": "KiZnDREAMERog",
+       "kills": 0
+      },
+      {
+       "name": "KiZnVivekkOp",
+       "kills": 0
+      },
+      {
+       "name": "KiZnAYAAN",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "BAT KA GRIP",
+       "kills": 0
+      },
+      {
+       "name": "IQxXENOZ",
+       "kills": 0
+      },
+      {
+       "name": "TAxSPIKEeee",
+       "kills": 0
+      },
+      {
+       "name": "IQxOGR",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "08.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "G1xABDUL",
+       "kills": 6
+      },
+      {
+       "name": "G1xOjuuOG",
+       "kills": 3
+      },
+      {
+       "name": "G1xBee",
+       "kills": 0
+      },
+      {
+       "name": "G1xAiMGOD08",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "DCxNEMESIS",
+       "kills": 1
+      },
+      {
+       "name": "ChalReNOoB",
+       "kills": 2
+      },
+      {
+       "name": "PGRxFALCON",
+       "kills": 3
+      },
+      {
+       "name": "DCxARJuN",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "TGxAYAN",
+       "kills": 0
+      },
+      {
+       "name": "CRSxSmacky",
+       "kills": 2
+      },
+      {
+       "name": "TfxLazzy",
+       "kills": 1
+      },
+      {
+       "name": "PSHx⋆SPARKIE",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "30 FPS WALa",
+       "kills": 0
+      },
+      {
+       "name": "steKEENYx",
+       "kills": 0
+      },
+      {
+       "name": "THEツPUÑISHER",
+       "kills": 0
+      },
+      {
+       "name": "MLGHYPER",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "Ｍｒ·ＬａＬａ",
+       "kills": 3
+      },
+      {
+       "name": "Mop£HUBHAI",
+       "kills": 1
+      },
+      {
+       "name": "DRKxAnKú",
+       "kills": 1
+      },
+      {
+       "name": "DRKxRIO",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

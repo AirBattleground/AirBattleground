@@ -1,0 +1,775 @@
+{
+ "_about": "Hand-labelled ground truth for g14 (iPad 1600x1199, BGMI in floating window shifted slightly right vs other groups; results screens only, no lobby screenshot). Labelled by Claude 2026-10-17. 'Fł�s OP' literally renders a U+FFFD replacement-character diamond in-game. Names in needs_human_check have ambiguous/unusual glyphs (ornaments/connectors in MrS NoVa and Dεᴠɪʟ⊸ŠK are approximations).",
+ "needs_human_check": [
+  "▢MrS⊸NoVa▢",
+  "Dεᴠɪʟ⊸ŠK",
+  "Fł�s OP",
+  "ӂØӂ 《MadMax",
+  "メMaNiSa个Rani",
+  "4HMxSevenOp",
+  "4HMxZytoxZoD",
+  "AExNeji01",
+  "VoDxSkullE",
+  "VoDxBamBaaZIGL",
+  "MGxFortvalor07",
+  "UBdeviL08",
+  "VZNxPAÑDAOP",
+  "VZNxROONNNNYOP",
+  "ELITEKuntaIIgl",
+  "IGxSPÎKE",
+  "VGSxPaBlO",
+  "GRExHexaOG",
+  "IGLhunbhaiii",
+  "TSxCrazyOG",
+  "ROLLxmafiaOP",
+  "TheOGbabu04",
+  "Keemonop",
+  "TSxAʟᴏɴɛ",
+  "YouTubeSOyab",
+  "HARLOWRUSHIYT",
+  "iNvVLIKEC"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "4HMxDEMON",
+       "kills": 4
+      },
+      {
+       "name": "4HMxZytoxZoD",
+       "kills": 3
+      },
+      {
+       "name": "4HMxSevenOp",
+       "kills": 4
+      },
+      {
+       "name": "4HMxVaMpire",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ROTxNEXUS",
+       "kills": 2
+      },
+      {
+       "name": "ROTxJACK",
+       "kills": 0
+      },
+      {
+       "name": "Fł�s OP",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "EPIC×SPARTAN",
+       "kills": 0
+      },
+      {
+       "name": "EPIC×FAIZ",
+       "kills": 0
+      },
+      {
+       "name": "ӂØӂ 《MadMax",
+       "kills": 0
+      },
+      {
+       "name": "xTryout",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "VoDxNumB",
+       "kills": 0
+      },
+      {
+       "name": "VoDxBamBaaZIGL",
+       "kills": 1
+      },
+      {
+       "name": "VoDxSkullE",
+       "kills": 0
+      },
+      {
+       "name": "VoDxHarshit",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "7SEAxCiGNA",
+       "kills": 1
+      },
+      {
+       "name": "RGxJHONNY",
+       "kills": 2
+      },
+      {
+       "name": "RGxSATYAA",
+       "kills": 0
+      },
+      {
+       "name": "AExNeji01",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "4HMxDEMON",
+       "kills": 4
+      },
+      {
+       "name": "4HMxZytoxZoD",
+       "kills": 3
+      },
+      {
+       "name": "4HMxSevenOp",
+       "kills": 4
+      },
+      {
+       "name": "4HMxVaMpire",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ROTxNEXUS",
+       "kills": 2
+      },
+      {
+       "name": "ROTxJACK",
+       "kills": 0
+      },
+      {
+       "name": "Fł�s OP",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "Magician×Viki",
+       "kills": 0
+      },
+      {
+       "name": "Magician×Leo",
+       "kills": 0
+      },
+      {
+       "name": "メMaNiSa个Rani",
+       "kills": 0
+      },
+      {
+       "name": "MGxFortvalor07",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "CuteHoAap",
+       "kills": 0
+      },
+      {
+       "name": "Reggieislive",
+       "kills": 0
+      },
+      {
+       "name": "TUxDarkEye",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeSOyab",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "GNxSaurya",
+       "kills": 0
+      },
+      {
+       "name": "GNxSaHiL",
+       "kills": 0
+      },
+      {
+       "name": "UBdeviL08",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "4HMxDEMON",
+       "kills": 4
+      },
+      {
+       "name": "4HMxZytoxZoD",
+       "kills": 3
+      },
+      {
+       "name": "4HMxSevenOp",
+       "kills": 4
+      },
+      {
+       "name": "4HMxVaMpire",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ROTxNEXUS",
+       "kills": 2
+      },
+      {
+       "name": "ROTxJACK",
+       "kills": 0
+      },
+      {
+       "name": "Fł�s OP",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "vampVALDUS",
+       "kills": 2
+      },
+      {
+       "name": "vampABHI",
+       "kills": 4
+      },
+      {
+       "name": "Keemonop",
+       "kills": 0
+      },
+      {
+       "name": "vampMAXTRO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "WILDxLIONYT",
+       "kills": 0
+      },
+      {
+       "name": "VZNxPAÑDAOP",
+       "kills": 1
+      },
+      {
+       "name": "▢MrS⊸NoVa▢",
+       "kills": 0
+      },
+      {
+       "name": "VZNxROONNNNYOP",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "ELITE · GOKUNUB",
+       "kills": 1
+      },
+      {
+       "name": "MOMMY ISSUES",
+       "kills": 2
+      },
+      {
+       "name": "ELITEKuntaIIgl",
+       "kills": 1
+      },
+      {
+       "name": "NSxReaPer",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "4HMxDEMON",
+       "kills": 4
+      },
+      {
+       "name": "4HMxZytoxZoD",
+       "kills": 3
+      },
+      {
+       "name": "4HMxSevenOp",
+       "kills": 4
+      },
+      {
+       "name": "4HMxVaMpire",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ROTxNEXUS",
+       "kills": 2
+      },
+      {
+       "name": "ROTxJACK",
+       "kills": 0
+      },
+      {
+       "name": "Fł�s OP",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "Dεᴠɪʟ⊸ŠK",
+       "kills": 0
+      },
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 1
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "RIBxDEVIL",
+       "kills": 0
+      },
+      {
+       "name": "RIBxTANISHQ",
+       "kills": 0
+      },
+      {
+       "name": "IGxSPÎKE",
+       "kills": 1
+      },
+      {
+       "name": "RIBxBOB",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 0
+      },
+      {
+       "name": "4WLxKIRA",
+       "kills": 0
+      },
+      {
+       "name": "HAVOC PLAYzzz",
+       "kills": 1
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "4HMxDEMON",
+       "kills": 4
+      },
+      {
+       "name": "4HMxZytoxZoD",
+       "kills": 3
+      },
+      {
+       "name": "4HMxSevenOp",
+       "kills": 4
+      },
+      {
+       "name": "4HMxVaMpire",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ROTxNEXUS",
+       "kills": 2
+      },
+      {
+       "name": "ROTxJACK",
+       "kills": 0
+      },
+      {
+       "name": "Fł�s OP",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "GRExHexaOG",
+       "kills": 1
+      },
+      {
+       "name": "GRExNiNjA69",
+       "kills": 0
+      },
+      {
+       "name": "GRExJohnny",
+       "kills": 0
+      },
+      {
+       "name": "GRExAustinNub",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "ARCxMaX",
+       "kills": 1
+      },
+      {
+       "name": "ARCxUnderGODYT",
+       "kills": 2
+      },
+      {
+       "name": "ARCxSTARBOY",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "CLOWN卍PINTU",
+       "kills": 0
+      },
+      {
+       "name": "IGLhunbhaiii",
+       "kills": 0
+      },
+      {
+       "name": "TSxCrazyOG",
+       "kills": 0
+      },
+      {
+       "name": "ROLLxmafiaOP",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "4HMxDEMON",
+       "kills": 4
+      },
+      {
+       "name": "4HMxZytoxZoD",
+       "kills": 3
+      },
+      {
+       "name": "4HMxSevenOp",
+       "kills": 4
+      },
+      {
+       "name": "4HMxVaMpire",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ROTxNEXUS",
+       "kills": 2
+      },
+      {
+       "name": "ROTxJACK",
+       "kills": 0
+      },
+      {
+       "name": "Fł�s OP",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "UB MADARA",
+       "kills": 0
+      },
+      {
+       "name": "UBelegun",
+       "kills": 0
+      },
+      {
+       "name": "UBsavageboy",
+       "kills": 0
+      },
+      {
+       "name": "UBaashu",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 2
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 0
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 2
+      },
+      {
+       "name": "TFKxZero2",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "NODDYisLIVE",
+       "kills": 8
+      },
+      {
+       "name": "· Garuda",
+       "kills": 0
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 2
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "4HMxDEMON",
+       "kills": 4
+      },
+      {
+       "name": "4HMxZytoxZoD",
+       "kills": 3
+      },
+      {
+       "name": "4HMxSevenOp",
+       "kills": 4
+      },
+      {
+       "name": "4HMxVaMpire",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ROTxNEXUS",
+       "kills": 2
+      },
+      {
+       "name": "ROTxJACK",
+       "kills": 0
+      },
+      {
+       "name": "Fł�s OP",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "GLCExZuxXy",
+       "kills": 0
+      },
+      {
+       "name": "GLCExKraToS",
+       "kills": 0
+      },
+      {
+       "name": "GLCExBEAST333",
+       "kills": 4
+      },
+      {
+       "name": "Chhota Pistol",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "SRExINSANE",
+       "kills": 2
+      },
+      {
+       "name": "SRExAQUAJOD",
+       "kills": 3
+      },
+      {
+       "name": "JusttTOXIC",
+       "kills": 1
+      },
+      {
+       "name": "Reaper jod",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "iNvVLIKEC",
+       "kills": 0
+      },
+      {
+       "name": "iNvWuxin",
+       "kills": 0
+      },
+      {
+       "name": "iNvJACKX",
+       "kills": 0
+      },
+      {
+       "name": "HARLOWRUSHIYT",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

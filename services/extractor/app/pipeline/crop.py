@@ -31,6 +31,15 @@ def _rows(region: Region, spec: dict[str, Any]) -> list[Box]:
     ]
 
 
+def _row_visible(region: Region, name: Box, fin: Box, margin: float) -> bool:
+    """A row is readable if the centres of its name and finishes strips lie inside the visible range."""
+    if region.visible is None:
+        return True
+    y0, y1 = region.visible
+    m = margin * region.ref_h
+    return all(y0 + m <= (b.y0 + b.y1) / 2 <= y1 - m for b in (name, fin))
+
+
 def region_strip_boxes(det: Detection, layout: dict[str, Any]) -> list[tuple[Role, int, int, Box, str]]:
     """(role, region index, row, box, profile) for every strip, before cutting pixels."""
     out: list[tuple[Role, int, int, Box, str]] = []
@@ -51,10 +60,12 @@ def region_strip_boxes(det: Detection, layout: dict[str, Any]) -> list[tuple[Rol
             out.append(("icon", i, 0, rank_box, text_prof))
         else:
             out.append(("rank", i, 0, rank_box, text_prof))
-        for j, b in enumerate(_rows(r, spec["names"])):
-            out.append(("name", i, j, b, text_prof))
-        for j, b in enumerate(_rows(r, spec["finishes"])):
-            out.append(("finishes", i, j, b, "finishes"))
+        names, fins = _rows(r, spec["names"]), _rows(r, spec["finishes"])
+        for j, (nb, fb) in enumerate(zip(names, fins, strict=True)):
+            if not _row_visible(r, nb, fb, res["row_visible_margin"]):
+                continue  # row cut off by the panel edge: not on screen, not read
+            out.append(("name", i, j, nb, text_prof))
+            out.append(("finishes", i, j, fb, "finishes"))
     return out
 
 

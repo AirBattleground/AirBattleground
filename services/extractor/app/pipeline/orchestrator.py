@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import hashlib
 import time
+from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, TypeVar
@@ -30,6 +31,7 @@ from app.pipeline.detect import PARTIAL_NOTE, Detection, Image, detect, draw_ove
 from app.pipeline.ocr_paddle import PaddleRecognizer, RecResult, get_recognizer
 from app.pipeline.preprocess import Prepared, gold_ratio, prepare
 from app.pipeline.roster import Match, Matcher
+from app.pipeline.viewport import Viewport, draw_viewport, normalise
 from app.schemas import Extraction, Kind, PlayerOut, ResultRowOut, Roster, TeamOut
 from app.settings import Settings, get_settings
 
@@ -38,6 +40,8 @@ T = TypeVar("T")
 
 # confidence assigned to values implied by screen position / neighbours rather than read
 POSITIONAL_CONFIDENCE = 0.6
+# finishes whose number was implied by the wording ("finishes" with the digit dropped) or inconsistent
+IMPLIED_KILLS_FACTOR = 0.7
 
 
 class ImageDecodeError(ValueError):
@@ -201,7 +205,8 @@ def extract_image(
     t_all = time.perf_counter()
     warnings: list[str] = []
     layout = load_layout(settings.layout_path, bundle.layout)
-    img = timer.run("decode", lambda: decode_image(image_bytes))
+    raw = timer.run("decode", lambda: decode_image(image_bytes))
+    img, vp = timer.run("viewport", lambda: normalise(raw, kind, layout))
     iid = image_id or image_id_for(image_bytes)
 
     det: Detection = timer.run("detect", lambda: detect(img, kind, layout))
@@ -218,7 +223,13 @@ def extract_image(
     pcfg = layout["postprocess"]
 
     def clean(r: _Read) -> str:
-        s = pp.clean_name(r.text, pcfg["edge_noise"], int(pcfg["max_name_len"]))
+        s = pp.clean_name(
+            r.text,
+            pcfg["edge_noise"],
+            int(pcfg["max_name_len"]),
+            pcfg.get("char_map") or {},
+            str(pcfg.get("spaced_separators", "")),
+        )
         s = pp.apply_char_fixes(s, bundle.char_fixes)
         return s if len(s) >= int(pcfg["min_name_len"]) else ""
 
@@ -233,7 +244,7 @@ def extract_image(
 
     ex = timer.run("postprocess", _post)
     if settings.debug_crops:
-        _write_debug(img, det, reads, iid, kind, settings)
+        _write_debug(raw, vp, img, det, reads, iid, kind, settings)
     timer.timings["total"] = round((time.perf_counter() - t_all) * 1000, 1)
     ex.timings_ms = timer.timings
     low = settings.low_confidence
@@ -344,22 +355,33 @@ def _results(
             continue
         ranks.append(v)
         rconf.append(rr.score if (rr and v is not None) else 0.0)
-    # right panel ranks are consecutive top-down: fill single gaps
+    # right panel ranks are consecutive top-down and never 1-2 (pinned left): rank_j = offset + j. The offset
+    # most blocks agree on wins; blocks that disagree (cut digits, misreads) or were unreadable take it.
     right_idx = [i for i, r in enumerate(det.regions) if r.panel == "right"]
-    filled = _fill_sequence([ranks[i] for i in right_idx], lambda a, b: True)
+    pinned = int(res["left_panel"]["blocks"])
+    offsets: Counter[int] = Counter()
     for j, i in enumerate(right_idx):
-        if ranks[i] is None and filled[j] is not None:
-            ranks[i] = filled[j]
+        rv_i = ranks[i]
+        if rv_i is not None and rv_i > pinned:
+            offsets[rv_i - j] += 1
+    consensus: int | None = None
+    if offsets:
+        (top, n), *rest = offsets.most_common()
+        if n >= 2 or (len(offsets) == 1 and not rest):
+            consensus = top
+    for j, i in enumerate(right_idx):
+        read = ranks[i]
+        if consensus is not None and read != consensus + j:
+            ranks[i] = consensus + j
             rconf[i] = POSITIONAL_CONFIDENCE
-            warnings.append(f"rank of block {j + 1} inferred as {filled[j]} from its neighbours")
-        elif ranks[i] is None:
+            what = "unreadable" if read is None else f"read as {read}"
+            warnings.append(f"rank of block {j + 1} {what}; set to {ranks[i]} from its neighbours")
+        elif read is not None and read <= pinned:
+            ranks[i] = None
+            rconf[i] = 0.0
             warnings.append(f"could not read the rank of right-panel block {j + 1}")
-    rv = [ranks[i] for i in right_idx]
-    known = [r for r in rv if r is not None]
-    if known != sorted(known) or any(
-        b - a != 1 for a, b in zip(rv, rv[1:], strict=False) if a is not None and b is not None
-    ):
-        warnings.append("right panel ranks are not consecutive; check the ranks")
+        elif read is None:
+            warnings.append(f"could not read the rank of right-panel block {j + 1}")
     if any(det.regions[i].edge_cut for i in right_idx):
         warnings.append("a rank block touches the panel edge; check its last player")
 
@@ -376,14 +398,20 @@ def _results(
         )
         players: list[PlayerOut] = []
         for t, r, m in zip(texts, names, matches, strict=True):
-            if not t:
-                continue
-            p = _player(t, r.score, r.source, m)
             f = fins.get(r.strip.row)
             k = pp.parse_finishes(f.text) if f and f.prep.image is not None else None
+            if not t:
+                if k is None:
+                    continue  # empty row (team with fewer players)
+                # a player whose name renders blank (e.g. Hangul filler) still has finishes that count
+                p = PlayerOut(name="", confidence=0.0, source=r.source)
+                warnings.append(f"a player of rank {ranks[i]} has a blank name; enter it by hand")
+            else:
+                p = _player(t, r.score, r.source, m)
             if k is not None and f is not None:
                 p.kills = k
-                p.kills_confidence = round(f.score * (1.0 if pp.finishes_consistent(f.text, k) else 0.7), 4)
+                ok = pp.finishes_consistent(f.text, k) and pp.finishes_digit_read(f.text)
+                p.kills_confidence = round(f.score * (1.0 if ok else IMPLIED_KILLS_FACTOR), 4)
             else:
                 p.kills_confidence = 0.0
                 warnings.append(f"could not read finishes for {t!r}")
@@ -408,12 +436,20 @@ def _results(
 
 
 def _write_debug(
-    img: Image, det: Detection, reads: list[_Read], iid: str, kind: str, settings: Settings
+    raw: Image,
+    vp: Viewport,
+    img: Image,
+    det: Detection,
+    reads: list[_Read],
+    iid: str,
+    kind: str,
+    settings: Settings,
 ) -> None:
     try:
         d = settings.debug_dir / f"{iid}-{kind}"
         d.mkdir(parents=True, exist_ok=True)
         draw_overlay(img, det, [(r.strip.role, r.strip.box) for r in reads], d / "overlay.png")
+        draw_viewport(raw, vp, d / "viewport.png")
         for r in reads:
             if r.prep.image is not None:
                 name = f"r{r.strip.region}-{r.strip.role}{r.strip.row}.png"

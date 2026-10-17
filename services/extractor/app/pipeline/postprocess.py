@@ -32,17 +32,54 @@ DIGIT_LOOKALIKES: dict[str, str] = {
     "b": "6",
 }
 
-_FINISH_RE = re.compile(r"^\s*([0-9OoDQIl|i!SsBZzgqGbA]{1,2})\s*[fF]", re.UNICODE)
-
 
 def nfc(s: str) -> str:
     return unicodedata.normalize("NFC", s)
 
 
-def clean_name(raw: str, edge_noise: str, max_len: int) -> str:
-    """NFC, collapse whitespace, strip noise characters from both ends (never from the middle)."""
-    s = _WS.sub(" ", nfc(raw)).strip()
+def _wide(c: str) -> bool:
+    return len(c) == 1 and unicodedata.east_asian_width(c) == "F"  # fullwidth Latin (Ｍｒ·ＬａＬａ)
+
+
+def space_separators(s: str, seps: str) -> str:
+    """Clan separators are drawn with a space on each side in BGMI ("WRG | GHOST", "HaVoC · SLĀYER",
+    "· Titann ·": 60 of 61 labelled names); the recogniser often drops those spaces. Fullwidth neighbours
+    (e.g. "Ｍｒ·ＬａＬａ") are left alone."""
+    if not seps or not s:
+        return s
+    out: list[str] = []
+    for i, c in enumerate(s):
+        if c in seps:
+            prev = s[i - 1] if i > 0 else ""
+            nxt = s[i + 1] if i + 1 < len(s) else ""
+            if _wide(prev) or _wide(nxt):
+                out.append(c)
+                continue
+            if out and out[-1] != " ":
+                out.append(" ")
+            out.append(c)
+            if nxt and nxt != " ":
+                out.append(" ")
+        else:
+            out.append(c)
+    return "".join(out)
+
+
+def clean_name(
+    raw: str,
+    edge_noise: str,
+    max_len: int,
+    char_map: dict[str, str] | None = None,
+    spaced_separators: str = "",
+) -> str:
+    """NFC, map OCR variants, collapse whitespace, strip noise characters from both ends (never from the
+    middle), restore the spaces around clan separators."""
+    s = nfc(raw)
+    if char_map:
+        s = "".join(char_map.get(c, c) for c in s)
+    s = _WS.sub(" ", s).strip()
     s = s.strip(edge_noise + " ")
+    s = _WS.sub(" ", space_separators(s, spaced_separators)).strip()
     return s[:max_len]
 
 
@@ -108,26 +145,45 @@ def parse_int(raw: str, lo: int, hi: int) -> int | None:
     return v if lo <= v <= hi else None
 
 
+PLURAL_ZERO = frozenset({"I", "l", "|", "i", "!", "1", "U", "u", "O", "o", "D", "Q", "0"})
+_FINISH_WORD = re.compile(r"[ft]?[il1|]?n[il1|]?s[hn][a-z]*|[ft][il1|]n[a-z]*", re.IGNORECASE)
+
+
 def parse_finishes(raw: str, max_kills: int = 99) -> int | None:
-    """ "5 finishes" / "1 finish" / OCR variants ("Ofinishes", "l finish", "I finish") -> int."""
+    """ "5 finishes" / "1 finish" / OCR variants ("Ofinishes", "l finish", "I inish", "1I fnish") -> int.
+
+    The game writes the singular only for exactly one finish, so a singular word means 1 whatever digit
+    was read; otherwise the token before the word is the number (digit lookalikes mapped)."""
     s = nfc(raw).strip()
-    low = s.lower()
-    if "finish" in low and "finishes" not in low:
-        return 1  # the game writes the singular only for exactly one finish
-    m = _FINISH_RE.match(s)
-    if m:
-        token = m.group(1)
+    word = _FINISH_WORD.search(s)
+    if word:
+        w = word.group(0).lower()
+        if w.endswith("h"):  # "finish" (also "fnish", "inish"); "finishe(s)" / "finisshes" are plural
+            return 1
+        head = s[: word.start()]
+        token = "".join(head.split())
+        # plural: the number is not 1. The narrow "0" glyph is the one the recogniser drops or reads as
+        # I / l / U (measured on 1884 labelled strips: every such plural reading was 0)
+        if not token or token in PLURAL_ZERO:
+            return 0
     else:
-        # no "f..." tail recognised: accept a bare number
-        m2 = re.match(r"^\s*([0-9]{1,2})\s*$", s)
-        if not m2:
-            return None
-        token = m2.group(1)
+        token = "".join(s.split())
+    if not token or len(token) > 2:
+        return None
+    if len(token) == 2 and any(c.isdigit() for c in token) and not token.isdigit():
+        token = "".join(c for c in token if c.isdigit())  # "B6" -> 6: a stray lookalike beside a real digit
     digits = "".join(DIGIT_LOOKALIKES.get(c, c) for c in token)
     if not digits.isdigit():
         return None
     v = int(digits)
     return v if 0 <= v <= max_kills else None
+
+
+def finishes_digit_read(raw: str) -> bool:
+    """False when the number had to be implied by the wording (no digit-like token before the word)."""
+    word = _FINISH_WORD.search(nfc(raw))
+    head = nfc(raw)[: word.start()] if word else nfc(raw)
+    return bool("".join(head.split()))
 
 
 def finishes_consistent(raw: str, value: int) -> bool:

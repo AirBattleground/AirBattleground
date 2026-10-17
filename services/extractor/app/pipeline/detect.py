@@ -18,7 +18,7 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from app.pipeline.geometry import Box, odd_kernel, to_px_x, to_px_y
+from app.pipeline.geometry import Box, odd_kernel
 
 Image = NDArray[np.uint8]
 PARTIAL_NOTE = "ignored"  # prefix of the informational "dropped partial blocks" warning (not a review reason)
@@ -35,6 +35,7 @@ class Region:
     ref_h: int  # nominal height used for row positions (== box.h unless the block was cut)
     rank_hint: int | None = None  # rank implied by position (left panel)
     edge_cut: bool = False
+    visible: tuple[int, int] | None = None  # y-range actually shown (rows outside it are not read)
 
 
 @dataclass
@@ -78,40 +79,57 @@ def _dark_mask(img: Image, c: dict[str, Any]) -> Image:
     return mask
 
 
-def _card_contours(img: Image, cfg: dict[str, Any]) -> list[Box]:
+def find_cards(img: Image, cfg: dict[str, Any]) -> list[Box]:
+    """Dark filled rectangles with the card aspect, then the largest group of similar width (scale-free:
+    works on any resolution / window size before normalisation)."""
     c = cfg["cards"]
-    h = img.shape[0]
+    h, w = img.shape[:2]
     mask = _dark_mask(img, c)
     k = odd_kernel(c["open_kernel_frac"], h)
     mask = np.asarray(
         cv2.morphologyEx(mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_RECT, (k, k))), np.uint8
     )
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    out: list[Box] = []
+    cands: list[Box] = []
+    lo, hi = c["aspect"]
     for cnt in contours:
         x, y, bw, bh = cv2.boundingRect(cnt)
-        if not (c["min_width_frac"] * h <= bw <= c["max_width_frac"] * h):
-            continue
-        if not (c["min_height_frac"] * h <= bh <= c["max_height_frac"] * h):
+        if bw < c["min_width_frac_w"] * w or bh == 0 or not lo <= bw / bh <= hi:
             continue
         # a card is a filled rectangle: its contour should cover most of its bounding box
         if cv2.contourArea(cnt) < c["min_fill"] * bw * bh:
             continue
-        out.append(Box(x, y, x + bw, y + bh))
-    return out
+        cands.append(Box(x, y, x + bw, y + bh))
+    if not cands:
+        return []
+    tol = float(c["cluster_tol"])
+    best: list[Box] = []
+    for ref in cands:
+        group = [b for b in cands if abs(b.w - ref.w) <= tol * ref.w and abs(b.h - ref.h) <= tol * ref.h]
+        if len(group) > len(best):
+            best = group
+    return best
+
+
+def _card_contours(img: Image, cfg: dict[str, Any]) -> list[Box]:
+    """Cards on a normalised image: the scale-free finder plus the canonical size check."""
+    c = cfg["cards"]
+    cw, ch = float(c["canonical_w"]), float(c["canonical_h"])
+    tol = float(c["canonical_tol"])
+    return [b for b in find_cards(img, cfg) if abs(b.w - cw) <= tol * cw and abs(b.h - ch) <= tol * ch]
 
 
 def _grid_cards(img: Image, cfg: dict[str, Any]) -> list[Box]:
     g = cfg["grid"]
     h, w = img.shape[:2]
-    units = cfg["x_units"]
     mask = _dark_mask(img, cfg["cards"])
     out: list[Box] = []
-    cw, ch = g["card_w"] * h, g["card_h"] * h
+    unit = float(layout_unit(cfg))
+    cw, ch = g["card_w"] * unit, g["card_h"] * unit
     for r in range(int(g["rows"])):
         for col in range(int(g["cols"])):
-            x0 = to_px_x(g["x0"] + col * (g["card_w"] + g["gap_x"]), w, h, units)
-            y0 = to_px_y(g["y0"] + r * (g["card_h"] + g["gap_y"]), h)
+            x0 = round(w / 2 + (g["x0"] + col * (g["card_w"] + g["gap_x"])) * unit)
+            y0 = round(h / 2 + (g["y0"] + r * (g["card_h"] + g["gap_y"])) * unit)
             b = Box(x0, y0, x0 + round(cw), y0 + round(ch)).clip(w, h)
             if b.area == 0:
                 continue
@@ -159,63 +177,94 @@ def _runs(flags: NDArray[np.bool_]) -> list[tuple[int, int]]:
     return out
 
 
+def layout_unit(cfg: dict[str, Any]) -> float:
+    """Pixel size of one layout unit on a normalised image (the canonical UI unit)."""
+    return float(cfg.get("unit_px", 720))
+
+
+def find_gold_panel(img: Image, rp: dict[str, Any]) -> tuple[Box, list[tuple[int, int]]] | None:
+    """The results right panel: the widest run of columns that are mostly gold, then its gold row runs.
+    Scale-free (works before normalisation). Returns (panel box, [(y0, y1) per gold row run])."""
+    h, w = img.shape[:2]
+    gm = gold_mask(img, rp)
+    counts = gm.sum(axis=0).astype(np.float64)
+    if counts.max() <= 0:
+        return None
+    cols = _runs(counts >= rp["col_peak_frac"] * counts.max())
+    if not cols:
+        return None
+    c0, c1 = max(cols, key=lambda r: float(counts[r[0] : r[1]].sum()))
+    if (c1 - c0) < rp["min_width_frac_w"] * w:
+        return None
+    rows = _runs(gm[:, c0:c1].mean(axis=1) >= rp["row_fill_min"])
+    rows = [r for r in rows if r[1] - r[0] >= rp["min_run_frac"] * (c1 - c0)]
+    if not rows:
+        return None
+    return Box(c0, rows[0][0], c1, rows[-1][1]), rows
+
+
+def _digit_centred(
+    img: Image, panel: Box, a: int, b: int, gw: float, nominal: float, cfg: dict[str, Any]
+) -> bool:
+    """True when the white rank digit's vertical centre sits in the middle of the gold run [a, b)."""
+    spec = cfg["right_block"]["rank"]
+    x0, x1 = round(panel.x0 + spec["x0"] * gw), round(panel.x0 + spec["x1"] * gw)
+    roi = img[a:b, x0:x1]
+    if roi.size == 0:
+        return False
+    ink = roi.min(axis=2) >= int(cfg["right_panel"]["digit_ink_min"])
+    rows = np.flatnonzero(ink.sum(axis=1) >= 1)
+    if rows.size < cfg["right_panel"]["digit_min_rows"] * nominal:
+        return False
+    centre = (rows[0] + rows[-1]) / 2
+    return bool(abs(centre - (b - a) / 2) <= cfg["right_panel"]["digit_centre_tol"] * nominal)
+
+
 def detect_results(img: Image, layout: dict[str, Any]) -> Detection:
+    """Expects a normalised image (viewport.normalise): the gold panel is ~canonical width."""
     cfg = layout["results"]
     rp = cfg["right_panel"]
     h, w = img.shape[:2]
-    units = cfg["x_units"]
     warnings: list[str] = []
     method = "gold-profile"
+    unit = layout_unit(cfg)
 
-    s = rp["search"]
-    sx0, sx1 = to_px_x(s["x0"], w, h, units), to_px_x(s["x1"], w, h, units)
-    sy0, sy1 = to_px_y(s["y0"], h), to_px_y(s["y1"], h)
-    search = Box(sx0, sy0, sx1, sy1).clip(w, h)
-    gm = gold_mask(img, rp)[search.y0 : search.y1, search.x0 : search.x1]
-    nominal = rp["block_height_frac"] * h
-
-    panel: Box | None = None
-    segments: list[tuple[int, int]] = []
-    if gm.size:
-        cols = _runs(gm.mean(axis=0) >= rp["col_fill_min"])
-        if cols:
-            c0, c1 = max(cols, key=lambda r: r[1] - r[0])
-            if (c1 - c0) >= rp["min_width_frac"] * h:
-                rows = _runs(gm[:, c0:c1].mean(axis=1) >= rp["row_fill_min"])
-                if rows:
-                    panel = Box(
-                        search.x0 + c0, search.y0 + rows[0][0], search.x0 + c1, search.y0 + rows[-1][1]
-                    )
-                    segments = [(search.y0 + a, search.y0 + b) for a, b in rows]
-    if panel is None:
+    found = find_gold_panel(img, rp)
+    if found is not None:
+        panel, segments = found
+        gw = float(panel.w)
+    else:
         f = rp["fallback"]
         panel = Box(
-            to_px_x(f["x0"], w, h, units),
-            to_px_y(f["y0"], h),
-            to_px_x(f["x1"], w, h, units),
-            to_px_y(f["y1"], h),
+            round(w / 2 + f["x0"] * unit),
+            round(h / 2 + f["y0"] * unit),
+            round(w / 2 + f["x1"] * unit),
+            round(h / 2 + f["y1"] * unit),
         ).clip(w, h)
+        gw = float(panel.w)
         method = "fallback"
         warnings.append("results right panel not found by colour; using layout fallback")
+        step = rp["block_height"] * gw
         n = int(rp["max_blocks"])
-        step = nominal
         segments = [(round(panel.y0 + i * step), round(panel.y0 + (i + 1) * step)) for i in range(n)]
         segments = [sg for sg in segments if sg[1] <= panel.y1]
 
-    # nominal block height: trust the measured full blocks when they agree with the layout
+    nominal = rp["block_height"] * gw  # everything in the results layout scales with the panel width
     heights = [b - a for a, b in segments]
     lo, hi = rp["nominal_agree"]
     if heights and lo * nominal <= max(heights) <= hi * nominal:
         nominal = float(max(heights))
     ref_h = round(nominal)
-    edge = rp["edge_touch_frac"] * h
+    edge = rp["edge_touch"] * gw
 
     regions: list[Region] = []
-    # left panel: pinned rank 1 + rank 2
+    # left panel: pinned rank 1 + rank 2, placed relative to the gold panel
     lp = cfg["left_panel"]
-    ly0 = panel.y0 if method != "fallback" else to_px_y(lp["y0"], h)
     lbox = Box(
-        to_px_x(lp["x0"], w, h, units), ly0, to_px_x(lp["x1"], w, h, units), ly0 + to_px_y(lp["height"], h)
+        round(panel.x0 + lp["x0"] * gw),
+        panel.y0,
+        round(panel.x0 + lp["x1"] * gw),
+        round(panel.y0 + lp["height"] * gw),
     ).clip(w, h)
     nb = int(lp["blocks"])
     for i in range(nb):
@@ -225,7 +274,7 @@ def detect_results(img: Image, layout: dict[str, Any]) -> Detection:
         regions.append(Region(box=lb, panel="left", index=i, ref_h=lb.h, rank_hint=i + 1))
 
     # right panel: complete blocks only. Only blocks touching the panel's top/bottom edge can be cut by the
-    # scroll position; inner blocks are complete even when short (teams of 2-3 players have shorter blocks).
+    # scroll position; inner blocks are complete even when short (teams of 1-3 players have shorter blocks).
     dropped = 0
     ri = 0
     for a, b in segments:
@@ -233,14 +282,20 @@ def detect_results(img: Image, layout: dict[str, Any]) -> Detection:
         at_top = (a - panel.y0) <= edge
         at_bottom = (panel.y1 - b) <= edge
         at_edge = at_top or at_bottom
-        if (at_edge and seg_h < rp["min_complete"] * nominal) or seg_h < rp["min_block_frac"] * nominal:
+        # top edge: the upper rows (names) are gone -> need nearly the whole block; bottom edge: a block with
+        # fewer players is shorter, so keep it and read only the rows that are fully visible
+        need = rp["min_complete"] if at_top else rp["bottom_min_keep"] if at_bottom else rp["min_block_frac"]
+        if seg_h < need * nominal or seg_h < rp["min_block_frac"] * nominal:
             dropped += 1
             continue
-        cut = at_edge and seg_h < rp["cut_flag_ratio"] * nominal
+        short = at_edge and seg_h < rp["cut_flag_ratio"] * nominal
+        # a short block at the panel edge is either cut by the scroll position or a complete block of a team
+        # with fewer players. The rank digit is centred in a complete block -> tell them apart by it.
+        cut = short and not _digit_centred(img, panel, a, b, gw, nominal, cfg)
         # a block cut at the top shows its lower part: position its rows from the bottom
         y0 = b - ref_h if (cut and at_top) else a
         box = Box(panel.x0, y0, panel.x1, y0 + ref_h).clip(w, h)
-        regions.append(Region(box=box, panel="right", index=ri, ref_h=ref_h, edge_cut=cut))
+        regions.append(Region(box=box, panel="right", index=ri, ref_h=ref_h, edge_cut=cut, visible=(a, b)))
         ri += 1
         if ri >= int(rp["max_blocks"]):
             break

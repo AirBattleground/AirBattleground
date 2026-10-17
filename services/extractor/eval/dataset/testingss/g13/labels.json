@@ -1,0 +1,796 @@
+{
+ "_about": "Hand-labelled ground truth for g13 (iPad 1600x1199 but BGMI full-screen, no floating window / no iPad dock; results screens only, no lobby screenshot). Labelled by Claude 2026-10-17. 'Fł�s OP' literally renders a U+FFFD replacement-character diamond in-game. Names in needs_human_check have ambiguous/unusual glyphs (ornament glyphs around MrS NoVa and the connector in Dεᴠɪʟ⊸ŠK / MrS⊸NoVa are approximations).",
+ "needs_human_check": [
+  "▢MrS⊸NoVa▢",
+  "Dεᴠɪʟ⊸ŠK",
+  "Fł�s OP",
+  "ӂØӂ 《MadMax",
+  "ARCxZLaKoV1C",
+  "GNxAnUtheIGL",
+  "AExNeji01",
+  "IGLhunbhaiii",
+  "VoDxSkullE",
+  "VoDxBamBaaZIGL",
+  "iNvMOONÉOGG",
+  "WRLD乛HAVOC",
+  "VGSxPaBlO",
+  "TSxCrazyOG",
+  "ROLLxmafiaOP",
+  "GRExHexaOG",
+  "4HMxSevenOp",
+  "VZNxROONNNNYOP",
+  "IGxSPÎKE",
+  "DEAD · DNA 04",
+  "TSxAʟᴏɴɛ",
+  "YouTubeSOyab",
+  "MGxFortvalor07",
+  "TFKxZero2"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "DEAD · DNA 04",
+       "kills": 2
+      },
+      {
+       "name": "GNxSaHiL",
+       "kills": 3
+      },
+      {
+       "name": "GNxSaurya",
+       "kills": 6
+      },
+      {
+       "name": "GNxAnUtheIGL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7SEAxCiGNA",
+       "kills": 1
+      },
+      {
+       "name": "RGxJHONNY",
+       "kills": 4
+      },
+      {
+       "name": "RGxSATYAA",
+       "kills": 1
+      },
+      {
+       "name": "AExNeji01",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "RIBxDEVIL",
+       "kills": 0
+      },
+      {
+       "name": "RIBxTANISHQ",
+       "kills": 0
+      },
+      {
+       "name": "IGxSPÎKE",
+       "kills": 0
+      },
+      {
+       "name": "RIBxBOB",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "ELITE · GOKUNUB",
+       "kills": 0
+      },
+      {
+       "name": "ARCxReTroS",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "WILDxLIONYT",
+       "kills": 0
+      },
+      {
+       "name": "▢MrS⊸NoVa▢",
+       "kills": 0
+      },
+      {
+       "name": "VZNxROONNNNYOP",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "DEAD · DNA 04",
+       "kills": 2
+      },
+      {
+       "name": "GNxSaHiL",
+       "kills": 3
+      },
+      {
+       "name": "GNxSaurya",
+       "kills": 6
+      },
+      {
+       "name": "GNxAnUtheIGL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7SEAxCiGNA",
+       "kills": 1
+      },
+      {
+       "name": "RGxJHONNY",
+       "kills": 4
+      },
+      {
+       "name": "RGxSATYAA",
+       "kills": 1
+      },
+      {
+       "name": "AExNeji01",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "vampHARDIK",
+       "kills": 2
+      },
+      {
+       "name": "vampABHI",
+       "kills": 2
+      },
+      {
+       "name": "vampVALDUS",
+       "kills": 4
+      },
+      {
+       "name": "vampMAXTRO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "Magician×Viki",
+       "kills": 0
+      },
+      {
+       "name": "Magician×Leo",
+       "kills": 1
+      },
+      {
+       "name": "DWxSTRANGE",
+       "kills": 0
+      },
+      {
+       "name": "MGxFortvalor07",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "Dεᴠɪʟ⊸ŠK",
+       "kills": 1
+      },
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 1
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 0
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "DEAD · DNA 04",
+       "kills": 2
+      },
+      {
+       "name": "GNxSaHiL",
+       "kills": 3
+      },
+      {
+       "name": "GNxSaurya",
+       "kills": 6
+      },
+      {
+       "name": "GNxAnUtheIGL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7SEAxCiGNA",
+       "kills": 1
+      },
+      {
+       "name": "RGxJHONNY",
+       "kills": 4
+      },
+      {
+       "name": "RGxSATYAA",
+       "kills": 1
+      },
+      {
+       "name": "AExNeji01",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "CLOWN卍PINTU",
+       "kills": 1
+      },
+      {
+       "name": "IGLhunbhaiii",
+       "kills": 0
+      },
+      {
+       "name": "TSxCrazyOG",
+       "kills": 0
+      },
+      {
+       "name": "ROLLxmafiaOP",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 0
+      },
+      {
+       "name": "WRLD乛HAVOC",
+       "kills": 0
+      },
+      {
+       "name": "HAVOC PLAYzzz",
+       "kills": 0
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "TeamNE NinjA",
+       "kills": 0
+      },
+      {
+       "name": "4HMxZytoxZoD",
+       "kills": 0
+      },
+      {
+       "name": "4HMxSevenOp",
+       "kills": 1
+      },
+      {
+       "name": "4HMxVaMpireXD",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "DEAD · DNA 04",
+       "kills": 2
+      },
+      {
+       "name": "GNxSaHiL",
+       "kills": 3
+      },
+      {
+       "name": "GNxSaurya",
+       "kills": 6
+      },
+      {
+       "name": "GNxAnUtheIGL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7SEAxCiGNA",
+       "kills": 1
+      },
+      {
+       "name": "RGxJHONNY",
+       "kills": 4
+      },
+      {
+       "name": "RGxSATYAA",
+       "kills": 1
+      },
+      {
+       "name": "AExNeji01",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "ROTxNEXUS",
+       "kills": 0
+      },
+      {
+       "name": "V4ExPsYxHaC",
+       "kills": 3
+      },
+      {
+       "name": "ROTxJACK",
+       "kills": 1
+      },
+      {
+       "name": "Fł�s OP",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 4
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 1
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 1
+      },
+      {
+       "name": "TFKxZero2",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "CuteHoAap",
+       "kills": 1
+      },
+      {
+       "name": "YouTubeSOyab",
+       "kills": 0
+      },
+      {
+       "name": "TUxDarkEye",
+       "kills": 1
+      },
+      {
+       "name": "Reggieislive",
+       "kills": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "DEAD · DNA 04",
+       "kills": 2
+      },
+      {
+       "name": "GNxSaHiL",
+       "kills": 3
+      },
+      {
+       "name": "GNxSaurya",
+       "kills": 6
+      },
+      {
+       "name": "GNxAnUtheIGL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7SEAxCiGNA",
+       "kills": 1
+      },
+      {
+       "name": "RGxJHONNY",
+       "kills": 4
+      },
+      {
+       "name": "RGxSATYAA",
+       "kills": 1
+      },
+      {
+       "name": "AExNeji01",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "UBsavageboy",
+       "kills": 2
+      },
+      {
+       "name": "iNvMOONÉOGG",
+       "kills": 1
+      },
+      {
+       "name": "UBelegun",
+       "kills": 3
+      },
+      {
+       "name": "UBaashu",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "SRExINSANE",
+       "kills": 2
+      },
+      {
+       "name": "SRExAQUAJOD",
+       "kills": 3
+      },
+      {
+       "name": "JusttTOXIC",
+       "kills": 2
+      },
+      {
+       "name": "Reaper jod",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "iNvVLIKEC",
+       "kills": 0
+      },
+      {
+       "name": "iNvRushi",
+       "kills": 1
+      },
+      {
+       "name": "iNvJACKX",
+       "kills": 2
+      },
+      {
+       "name": "iNvWuxin",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "DEAD · DNA 04",
+       "kills": 2
+      },
+      {
+       "name": "GNxSaHiL",
+       "kills": 3
+      },
+      {
+       "name": "GNxSaurya",
+       "kills": 6
+      },
+      {
+       "name": "GNxAnUtheIGL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7SEAxCiGNA",
+       "kills": 1
+      },
+      {
+       "name": "RGxJHONNY",
+       "kills": 4
+      },
+      {
+       "name": "RGxSATYAA",
+       "kills": 1
+      },
+      {
+       "name": "AExNeji01",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "NODDYisLIVE",
+       "kills": 3
+      },
+      {
+       "name": "· Garuda",
+       "kills": 0
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "VoDxNumB",
+       "kills": 0
+      },
+      {
+       "name": "VoDxBamBaaZIGL",
+       "kills": 0
+      },
+      {
+       "name": "VoDxSkullE",
+       "kills": 0
+      },
+      {
+       "name": "VoDxHarshit",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "GRExHexaOG",
+       "kills": 0
+      },
+      {
+       "name": "GRExNiNjA69",
+       "kills": 0
+      },
+      {
+       "name": "GRExJohnny",
+       "kills": 0
+      },
+      {
+       "name": "GRExAustinNub",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "DEAD · DNA 04",
+       "kills": 2
+      },
+      {
+       "name": "GNxSaHiL",
+       "kills": 3
+      },
+      {
+       "name": "GNxSaurya",
+       "kills": 6
+      },
+      {
+       "name": "GNxAnUtheIGL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7SEAxCiGNA",
+       "kills": 1
+      },
+      {
+       "name": "RGxJHONNY",
+       "kills": 4
+      },
+      {
+       "name": "RGxSATYAA",
+       "kills": 1
+      },
+      {
+       "name": "AExNeji01",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "ARCxMaX",
+       "kills": 0
+      },
+      {
+       "name": "ARCxZLaKoV1C",
+       "kills": 0
+      },
+      {
+       "name": "ARCxUnderGODYT",
+       "kills": 1
+      },
+      {
+       "name": "ARCxSTARBOY",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "GLCExZuxXy",
+       "kills": 0
+      },
+      {
+       "name": "GLCExBEAST333",
+       "kills": 1
+      },
+      {
+       "name": "GLCExKraToS",
+       "kills": 0
+      },
+      {
+       "name": "Chhota Pistol",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "EPIC×SPARTAN",
+       "kills": 0
+      },
+      {
+       "name": "EPIC×HUSSAIN",
+       "kills": 0
+      },
+      {
+       "name": "ӂØӂ 《MadMax",
+       "kills": 0
+      },
+      {
+       "name": "EPIC×FAIZ",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

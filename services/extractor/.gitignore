@@ -9,3 +9,4 @@ models/
 debug/
 eval/runs/
 eval/dataset/synthetic/
+eval/dataset/testingss/**/*.jpg

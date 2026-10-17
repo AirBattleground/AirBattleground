@@ -1,0 +1,966 @@
+{
+ "_about": "Hand-labelled ground truth for g12 (iPad 1600x1199, BGMI in floating window; lobby team lists 'Remaining 84 / Team 23' with '/0 Finished' rows at 9:15 PM, results at 9:38 PM). Labelled by Claude 2026-10-17. Names in needs_human_check have ambiguous glyphs; 'Ｉｎｓｉ' renders as wide-spaced monospace letters (guessed fullwidth Unicode), 'NEO' has a thin differently-styled N.",
+ "needs_human_check": [
+  "Ｉｎｓｉ",
+  "NEO",
+  "TESxDRÄKÉ",
+  "ELITEKuntaIIgl",
+  "ICxAsur",
+  "AvinashYT14310",
+  "GodI乂Ansh",
+  "TSxAʟᴏɴɛ",
+  "ʟɛɢᴧᴄʏ★",
+  "VGSxPaBlO",
+  "YouTubeSOyab",
+  "CE7xADMiNO",
+  "TS7 | TOXIC 07",
+  "TCxAMIT16",
+  "UBdeviL08",
+  "TMTxNOoB",
+  "GLCExICONIC",
+  "2EZxLangPongg",
+  "DSTxSpine"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 4
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 3
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 6
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4WLxKIRA",
+       "kills": 2
+      },
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 2
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "GLCExICONIC",
+       "kills": 1
+      },
+      {
+       "name": "GLCExSPRAYNOXx",
+       "kills": 1
+      },
+      {
+       "name": "Chhota Pistol",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "Tryout90",
+       "kills": 0
+      },
+      {
+       "name": "AvinashYT14310",
+       "kills": 0
+      },
+      {
+       "name": "KillarGuDdu",
+       "kills": 0
+      },
+      {
+       "name": "botttYT",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "ELITE · GOKUNUB",
+       "kills": 0
+      },
+      {
+       "name": "NSxReaPer",
+       "kills": 0
+      },
+      {
+       "name": "ELITEKuntaIIgl",
+       "kills": 0
+      },
+      {
+       "name": "ELITE · IZUKU",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 12,
+     "players": [
+      "CuteHoAap",
+      "GodI乂Ansh",
+      "Reggieislive",
+      "YouTubeSOyab"
+     ]
+    },
+    {
+     "slot": 13,
+     "players": [
+      "wRizZzGod",
+      "KTxJonnyOp",
+      "GODxDxBABA",
+      "DKGxWiZaRD"
+     ]
+    },
+    {
+     "slot": 14,
+     "players": [
+      "XinB · DanavOP",
+      "ʟɛɢᴧᴄʏ★",
+      "XinB · ArowYL",
+      "XinB · HUÑTÊR"
+     ]
+    },
+    {
+     "slot": 15,
+     "players": [
+      "UBelegun",
+      "UBdeviL08",
+      "UBaashu",
+      "UBsavageboy"
+     ]
+    },
+    {
+     "slot": 16,
+     "players": [
+      "KillarGuDdu",
+      "Tryout90",
+      "botttYT",
+      "AvinashYT14310"
+     ]
+    },
+    {
+     "slot": 17,
+     "players": [
+      "INFExM4JAY",
+      "INFExPIXEL",
+      "INFExApeXx",
+      "INFExKARTIK"
+     ]
+    },
+    {
+     "slot": 18,
+     "players": [
+      "NSxReaPer",
+      "ELITE · IZUKU",
+      "ELITEKuntaIIgl",
+      "ELITE · GOKUNUB"
+     ]
+    },
+    {
+     "slot": 19,
+     "players": [
+      "TFK×Nojo",
+      "TFKxCYCLOPS",
+      "TFKxVasu"
+     ]
+    },
+    {
+     "slot": 20,
+     "players": [
+      "SRExAQUAJOD",
+      "TCxAMIT16",
+      "SRExINSANE",
+      "Reaper jod"
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 4
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 3
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 6
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4WLxKIRA",
+       "kills": 2
+      },
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 2
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "CE7xLordEXD",
+       "kills": 0
+      },
+      {
+       "name": "FlâmeBoY",
+       "kills": 0
+      },
+      {
+       "name": "CE7xGAMBLER",
+       "kills": 0
+      },
+      {
+       "name": "CE7xADMiNO",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "R2CxHyPePaCk",
+       "kills": 0
+      },
+      {
+       "name": "R2CxDHIRAJ",
+       "kills": 0
+      },
+      {
+       "name": "R2CxSKuLL",
+       "kills": 1
+      },
+      {
+       "name": "R2CxICONICJOD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "INFExM4JAY",
+       "kills": 0
+      },
+      {
+       "name": "INFExKARTIK",
+       "kills": 0
+      },
+      {
+       "name": "INFExApeXx",
+       "kills": 0
+      },
+      {
+       "name": "INFExPIXEL",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 18,
+     "players": [
+      "NSxReaPer",
+      "ELITE · IZUKU",
+      "ELITEKuntaIIgl",
+      "ELITE · GOKUNUB"
+     ]
+    },
+    {
+     "slot": 19,
+     "players": [
+      "TFK×Nojo",
+      "TFKxCYCLOPS",
+      "TFKxVasu"
+     ]
+    },
+    {
+     "slot": 20,
+     "players": [
+      "SRExAQUAJOD",
+      "TCxAMIT16",
+      "SRExINSANE",
+      "Reaper jod"
+     ]
+    },
+    {
+     "slot": 21,
+     "players": [
+      "TMTxJoker",
+      "TMT×PAIMON",
+      "TMTxNOoB"
+     ]
+    },
+    {
+     "slot": 22,
+     "players": [
+      "4WLxKIRA",
+      "VGSxPaBlO",
+      "4WLxBLA3KCAT"
+     ]
+    },
+    {
+     "slot": 23,
+     "players": [
+      "XSxSTARCk",
+      "XspaceTHOR",
+      "X人SPACE人JOD",
+      "X s PRINCE"
+     ]
+    },
+    {
+     "slot": 24,
+     "players": [
+      "ICxAsur",
+      "AMpSPIDY",
+      "AMpHASIRA",
+      "AMpVAIKO"
+     ]
+    },
+    {
+     "slot": 25,
+     "players": [
+      "GLCExSPRAYNOXx",
+      "GLCExICONIC",
+      "Chhota Pistol"
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 4
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 3
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 6
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4WLxKIRA",
+       "kills": 2
+      },
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 2
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "XinB · DanavOP",
+       "kills": 0
+      },
+      {
+       "name": "ʟɛɢᴧᴄʏ★",
+       "kills": 2
+      },
+      {
+       "name": "XinB · HUÑTÊR",
+       "kills": 0
+      },
+      {
+       "name": "XinB · ArowYL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "XSxSTARCk",
+       "kills": 0
+      },
+      {
+       "name": "X s PRINCE",
+       "kills": 1
+      },
+      {
+       "name": "XspaceTHOR",
+       "kills": 2
+      },
+      {
+       "name": "X人SPACE人JOD",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "BBxFateYT",
+       "kills": 0
+      },
+      {
+       "name": "TESxDRÄKÉ",
+       "kills": 0
+      },
+      {
+       "name": "BBxKiRa",
+       "kills": 1
+      },
+      {
+       "name": "BBxSPEED",
+       "kills": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 4
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 3
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 6
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4WLxKIRA",
+       "kills": 2
+      },
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 2
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "NEO",
+       "kills": 0
+      },
+      {
+       "name": "TESxNinjaFury",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "CuteHoAap",
+       "kills": 0
+      },
+      {
+       "name": "GodI乂Ansh",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeSOyab",
+       "kills": 0
+      },
+      {
+       "name": "Reggieislive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 0
+      },
+      {
+       "name": "iR4xRandeep",
+       "kills": 0
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 4
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 3
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 6
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4WLxKIRA",
+       "kills": 2
+      },
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 2
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "FTWxSHIVANSH",
+       "kills": 0
+      },
+      {
+       "name": "FTWxAbhiShek",
+       "kills": 0
+      },
+      {
+       "name": "2EZxLangPongg",
+       "kills": 4
+      },
+      {
+       "name": "FTWxSAM",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "AMpVAIKO",
+       "kills": 0
+      },
+      {
+       "name": "ICxAsur",
+       "kills": 0
+      },
+      {
+       "name": "AMpSPIDY",
+       "kills": 1
+      },
+      {
+       "name": "AMpHASIRA",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "TCxAMIT16",
+       "kills": 5
+      },
+      {
+       "name": "SRExAQUAJOD",
+       "kills": 4
+      },
+      {
+       "name": "SRExINSANE",
+       "kills": 4
+      },
+      {
+       "name": "Reaper jod",
+       "kills": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "08.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 2,
+     "players": [
+      "FGxAARYN",
+      "Ｉｎｓｉ",
+      "BTExSubbu"
+     ]
+    },
+    {
+     "slot": 4,
+     "players": [
+      "TESxNinjaFury",
+      "NEO"
+     ]
+    },
+    {
+     "slot": 5,
+     "players": [
+      "2EZxLangPongg",
+      "FTWxAbhiShek",
+      "FTWxSAM",
+      "FTWxSHIVANSH"
+     ]
+    },
+    {
+     "slot": 6,
+     "players": [
+      "TS7 | TOXIC 07",
+      "DSTxSpine",
+      "VPExPhaNToM"
+     ]
+    },
+    {
+     "slot": 7,
+     "players": [
+      "captainBoyy",
+      "iR4xRandeep",
+      "TSxAʟᴏɴɛ",
+      "YouTubeREGNOX"
+     ]
+    },
+    {
+     "slot": 8,
+     "players": [
+      "vampVALDUS",
+      "vampMAXTRO",
+      "vampKEEMON",
+      "vampHARDIK"
+     ]
+    },
+    {
+     "slot": 9,
+     "players": [
+      "BBxKiRa",
+      "TESxDRÄKÉ",
+      "BBxSPEED",
+      "BBxFateYT"
+     ]
+    },
+    {
+     "slot": 10,
+     "players": [
+      "R2CxHyPePaCk",
+      "R2CxSKuLL",
+      "R2CxICONICJOD",
+      "R2CxDHIRAJ"
+     ]
+    },
+    {
+     "slot": 11,
+     "players": [
+      "CE7xADMiNO",
+      "CE7xGAMBLER",
+      "FlâmeBoY",
+      "CE7xLordEXD"
+     ]
+    }
+   ]
+  },
+  {
+   "file": "09.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 4
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 3
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 6
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4WLxKIRA",
+       "kills": 2
+      },
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 2
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "DKGxWiZaRD",
+       "kills": 3
+      },
+      {
+       "name": "wRizZzGod",
+       "kills": 2
+      },
+      {
+       "name": "GODxDxBABA",
+       "kills": 1
+      },
+      {
+       "name": "KTxJonnyOp",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "BTExSubbu",
+       "kills": 1
+      },
+      {
+       "name": "FGxAARYN",
+       "kills": 0
+      },
+      {
+       "name": "Ｉｎｓｉ",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "TMTxJoker",
+       "kills": 0
+      },
+      {
+       "name": "TMTxNOoB",
+       "kills": 0
+      },
+      {
+       "name": "TMT×PAIMON",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "10.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 4
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 3
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 6
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4WLxKIRA",
+       "kills": 2
+      },
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 2
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "vampKEEMON",
+       "kills": 2
+      },
+      {
+       "name": "vampVALDUS",
+       "kills": 2
+      },
+      {
+       "name": "vampHARDIK",
+       "kills": 2
+      },
+      {
+       "name": "vampMAXTRO",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "DSTxSpine",
+       "kills": 0
+      },
+      {
+       "name": "VPExPhaNToM",
+       "kills": 1
+      },
+      {
+       "name": "TS7 | TOXIC 07",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "UBsavageboy",
+       "kills": 1
+      },
+      {
+       "name": "UBelegun",
+       "kills": 0
+      },
+      {
+       "name": "UBaashu",
+       "kills": 1
+      },
+      {
+       "name": "UBdeviL08",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

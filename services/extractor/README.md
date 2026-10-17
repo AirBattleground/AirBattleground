@@ -76,10 +76,17 @@ is set so nothing is fetched.
 
 ## How it reads a screenshot (`app/pipeline/`)
 
-1. `detect.py` — SLOT_LIST: near-black cards on the lighter map → threshold + contours, row-major, up to 9
-   (falls back to the %-grid). RESULTS: the gold right panel is found by colour, split into blocks at the
-   dark separators, blocks cut by the panel edge are dropped; the pinned left panel (rank 1 with the wings
-   icon and no digit, rank 2 below) is placed from the layout, top-aligned with the right panel.
+0. `viewport.py` — find the game frame: the whole image for full-screen shots, or the floating BGMI window on
+   iPad (long paired horizontal borders, refined with vertical edges; rejected unless it contains the game
+   content). The frame is cropped and resized so the HUD has its canonical size, measured from the content
+   itself (gold results-panel width → 544 px, slot-card width → 363 px), so 20:9 phones, 4:3 iPads, windows of
+   any size and 2732x2048 screenshots all reach the same pixel geometry. The debug output draws the viewport.
+1. `detect.py` — SLOT_LIST: near-black cards → threshold + contours, filtered by shape and grouped by size,
+   row-major, up to 9 (falls back to the grid). RESULTS: the gold right panel is found by colour, split into
+   blocks at the dark separators; every other length (block height, the pinned left panel with rank 1 /
+   rank 2) is a fraction of the gold panel width. Blocks at the panel edge are classified as *cut* (dropped
+   if mostly hidden, otherwise only fully visible rows are read) or *complete but short* (teams with fewer
+   players — their rank digit is centred).
 2. `crop.py` — slot/rank digit box, 4 name rows, 4 finishes rows per card/block (fractions of the box).
 3. `preprocess.py` — tighten each strip to its text (ink = min(B,G,R): white text vs dark *or* gold
    backgrounds; HSV value + Otsu for coloured slot digits), detect empty rows, pad, hand the original colour
@@ -97,9 +104,9 @@ is set so nothing is fetched.
 
 All geometry and thresholds are in `app/config/layout.yaml` — the code has no pixel constants.
 
-* Panel-level x values use `x_units: center_h` (offset from the screen centre in units of the image height:
-  BGMI scales its UI with the height and centres it, so 16:9 / 19.5:9 / 20:9 share one layout). Use
-  `x_units: width` for a UI that stretches with the width. y values are fractions of the height.
+* Detection runs on the *normalised* image (see `viewport:`): RESULTS geometry is a fraction of the gold panel
+  width, SLOT_LIST cards are found by shape; the grid fallback uses offsets from the image centre in layout
+  units (`unit_px`).
 * Everything inside a card/block is a fraction of that box (`row_centers`, `row_height`, `x0..x1`).
 * To support a new screen: take a sample, run with `DEBUG_CROPS=true`, open
   `debug/<image-id>-<kind>/overlay.png`, adjust the ratios until boxes sit on the text, then bump
@@ -111,7 +118,8 @@ All geometry and thresholds are in `app/config/layout.yaml` — the code has no 
 
 ```bash
 uv run pytest -m "not slow"                       # fast unit + API contract tests
-uv run pytest -m slow tests/test_pipeline_integration.py   # full OCR on the 7 real screenshots (~1 min)
-uv run python -m app.pipeline.bench               # rewrites eval/PIPELINE_BASELINE.md from measurements
+uv run pytest -m slow tests/test_pipeline_integration.py tests/test_pipeline_ipad.py   # full OCR on real images
+uv run python -m app.pipeline.bench               # rewrites eval/PIPELINE_BASELINE.md (real/ + testingss/)
+uv run python -m app.pipeline.bench --dataset eval/dataset/testingss --groups g10,g16 --misses   # any labels dir
 uv run ruff check app tests && uv run mypy app/pipeline app/api/extract.py app/config app/settings.py app/logging.py
 ```

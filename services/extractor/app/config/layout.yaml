@@ -1,36 +1,63 @@
 # Screen layouts for BGMI screenshots. EVERY geometric ratio and threshold used by the pipeline
 # lives here (no pixel constants in code). A model bundle may override any key (deep-merged).
 #
-# Coordinate conventions
-#   * Panel-level x values use `x_units`:
-#       center_h  -> x = W/2 + value * H   (BGMI scales its UI with the screen height and centres it,
-#                                          so these survive 16:9 / 20:9 / 19.5:9 aspect ratios)
-#       width     -> x = value * W
-#   * Panel-level y values are fractions of the image height H.
+# Pipeline: viewport (find the game frame: full screen, or the floating window on iPad) -> normalise (crop and
+# resize so the HUD has its canonical pixel size, measured from the content: gold results panel width or
+# slot-card width) -> detect -> crop -> preprocess -> OCR.
+#
+# Coordinate conventions (on the normalised image)
+#   * RESULTS: everything is relative to the detected gold panel: lengths are fractions of its width (gw),
+#     the left panel is placed from the gold panel's left edge / top.
+#   * SLOT_LIST: cards are found by shape (scale-free); the %-grid fallback uses offsets from the image
+#     centre in layout units (unit_px, = viewport.canonical_unit).
 #   * Everything inside a card/block (slot digits, name strips, rows) is a fraction of that card/block box.
 #   * Kernel sizes are fractions of H, rounded to the nearest odd pixel count >= 1 (or >= 3 for blurs).
 #   * Colour thresholds are OpenCV HSV (H 0-179, S/V 0-255) or 8-bit grey levels.
-# Measured on 1600x720 (20:9) samples in eval/dataset/real/.
+# Measured on the phone samples in eval/dataset/real/ (1600x720) and the iPad / phone samples in
+# eval/dataset/testingss/ (1600x1199, 2732x2048, 1600x717).
 
-layout_version: "2026.10.17-1"
+layout_version: "2026.10.17-2"
+
+viewport:                    # stage 0 (viewport.py): floating game window on iPad, else full screen
+  enabled: true
+  blur_frac: 0.004             # Gaussian blur kernel (x H) before the edge map
+  edge_offset_frac: 0.002      # rows compared for the horizontal-edge map (x H)
+  edge_min: 18                 # grey-level step that counts as an edge
+  run_gap_frac: 0.06           # gaps (x W) bridged inside a border run (dark wallpaper stripes, the "..." grabber)
+  min_run_frac: 0.45           # a window border runs at least this share of the image width
+  nms_frac: 0.006              # border rows closer than this (x H) are one edge
+  pair_tol_frac: 0.03          # top and bottom borders start/end within this (x W) of each other
+  min_height_frac: 0.4         # window at least this tall (x H)
+  aspect: [1.2, 2.4]           # width / height of a game frame
+  side_search_frac: 0.03       # left/right refinement window (x W) around the run ends
+  side_min_fill: 0.5           # share of the window's middle rows that must show the vertical edge
+  full_frame_area: 0.92        # a "window" covering this share of the image is just the full screen
+  ui_ref_w: 1880               # BGMI HUD scales with min(H, W * ui_ref_h / ui_ref_w) (measured: 4:3 vs 20:9)
+  ui_ref_h: 1080
+  canonical_unit: 720          # normalised UI unit in px (the 1600x720 phone screenshots are unchanged)
+  scale_tolerance: 0.02        # skip resizing when already within this of the canonical unit
+  canonical_gold_w: 544        # results: gold panel width after normalisation (phone 1600x720 measurement)
+  contain_slack_frac: 0.01     # the window must contain the content anchor (x W slack)
 
 slot_list:
-  x_units: center_h
+  unit_px: 720                 # layout unit on the normalised image (= viewport.canonical_unit)
   max_cards: 9
   max_slot: 99
   cards:
     dark_max_gray: 24          # card background is darker than this; the blurred game map behind is ~28-40
     median_blur_frac: 0.007    # ~5 px at 720p
     open_kernel_frac: 0.0125   # breaks thin bridges between neighbouring cards
-    min_width_frac: 0.38       # card width / H  (measured 0.504)
-    max_width_frac: 0.65
-    min_height_frac: 0.19      # card height / H (measured 0.261)
-    max_height_frac: 0.34
-    row_tolerance_frac: 0.06   # cards whose tops differ by less than this (x H) share a row
+    aspect: [1.6, 2.4]         # card width / height (measured 1.93 on phone and iPad)
+    min_width_frac_w: 0.08     # candidate cards are at least this share of the image width
     min_fill: 0.8              # contour area / bounding-box area (cards are filled rectangles)
+    cluster_tol: 0.12          # cards on one screen have the same size within this
+    canonical_w: 363           # card size after normalisation (px)
+    canonical_h: 188
+    canonical_tol: 0.25
+    row_tolerance_frac: 0.06   # cards whose tops differ by less than this (x H) share a row
   grid:                        # fallback when contour detection does not find a plausible set of cards
-    x0: -0.854                 # left edge of column 1 (center_h units)
-    y0: 0.12
+    x0: -0.854                 # left edge of column 1 (offset from the image centre, layout units)
+    y0: -0.381                 # top edge of row 1 (offset from the image centre, layout units)
     card_w: 0.504
     card_h: 0.261
     gap_x: 0.035
@@ -51,29 +78,32 @@ slot_list:
     profile: dark              # see preprocess.profiles
 
 results:
-  x_units: center_h
-  right_panel:
-    search: {x0: -0.1, x1: 1.0, y0: 0.13, y1: 0.92}
-    fallback: {x0: 0.05, x1: 0.8056, y0: 0.182, y1: 0.872}
+  unit_px: 720
+  right_panel:                 # gold blocks; every results length is a fraction of the panel WIDTH (gw)
+    fallback: {x0: 0.05, x1: 0.8056, y0: -0.318, y1: 0.372}   # centre offsets in layout units
     gold_hue_min: 8
     gold_hue_max: 35
     gold_sat_min: 70
     gold_val_min: 40
-    col_fill_min: 0.5          # a column belongs to the panel if >= this share of its rows are gold
+    col_peak_frac: 0.5         # panel columns hold >= this share of the gold of the "goldest" column
+    min_width_frac_w: 0.12     # gold panel at least this share of the image width
+    min_run_frac: 0.0          # gold row runs shorter than this x gw are ignored
     row_fill_min: 0.5          # a row belongs to a block if >= this share of the panel width is gold
-    block_height_frac: 0.222   # nominal block height / H (160 px at 720p)
+    block_height: 0.294        # nominal block height x gw (160 px for the 544 px phone panel)
     min_complete: 0.85         # edge blocks shorter than this x nominal are cut off by the panel edge -> dropped
+    bottom_min_keep: 0.45      # bottom-edge blocks at least this x nominal are kept (rows read if fully visible)
     min_block_frac: 0.4        # inner gold runs shorter than this x nominal are noise (a 3-player block measured 0.92)
-    edge_touch_frac: 0.004     # a block starting this close (x H) to the panel top is anchored to its bottom
+    edge_touch: 0.0055         # a block this close (x gw) to the panel top/bottom touches the edge
     max_blocks: 4
-    min_width_frac: 0.25       # gold panel must be at least this wide (x H)
     nominal_agree: [0.8, 1.25] # use the tallest measured block as nominal height if within this x layout value
-    cut_flag_ratio: 0.97       # kept blocks shorter than this x nominal are flagged as edge-cut
-  left_panel:
-    x0: -0.8167
-    x1: 0.0278
-    y0: 0.182                  # replaced by the detected right-panel top when available
-    height: 0.597
+    cut_flag_ratio: 0.97       # edge blocks shorter than this x nominal: cut, unless their rank digit is centred
+    digit_ink_min: 170         # min(B,G,R) of the white rank digit on gold
+    digit_min_rows: 0.12       # the digit must span at least this x nominal rows
+    digit_centre_tol: 0.08     # |digit centre - run centre| (x nominal) for a complete short block
+  left_panel:                  # relative to the gold panel: x from its left edge, y from its top, in x gw
+    x0: -1.147
+    x1: -0.0294
+    height: 0.7904
     blocks: 2                  # rank 1 (wings icon, no digit) above rank 2
   left_block:
     rank: {x0: 0.0, x1: 0.16, y0: 0.2, y1: 0.8}
@@ -84,6 +114,7 @@ results:
     rank: {x0: 0.025, x1: 0.2, y0: 0.12, y1: 0.88}
     names: {x0: 0.205, x1: 0.78, row_centers: [0.075, 0.325, 0.575, 0.825], row_height: 0.225}
     finishes: {x0: 0.8, x1: 0.99, row_centers: [0.12, 0.37, 0.62, 0.87], row_height: 0.225}
+  row_visible_margin: 0.02     # a row's centre must be this far (x block height) inside the visible range
   max_rank: 100
 
 # Text strip tightening + OCR input preparation (preprocess.py)
@@ -104,7 +135,8 @@ preprocess:
   # when tightening the strip and detecting empty rows.
   profiles:
     dark:                      # white/grey text on near-black (slot list cards, results left panel)
-      ink_min: 110             # min(B,G,R) above this = text ink
+      ink_min: 45              # floor; with otsu the threshold adapts (greyed-out players are drawn at ~90)
+      otsu: true
       mode: raw
       scale: 1.0
       border_frac: 0.25        # white border for mode ink (x crop height)
@@ -122,12 +154,14 @@ preprocess:
     finishes:                  # grey "N finishes" on dark or bronze
       ink_min: 120
       pad_frac: 0.25           # the recogniser drops a "0" glued to the crop edge
-      mode: raw
-      scale: 1.0
+      mode: ink                # raw crops on the brown iPad gradient lost the "0" (377/419 vs 416/419 ink 2x)
+      scale: 2.0
       border_frac: 0.25        # white border for mode ink (x crop height)
 
 postprocess:
   edge_noise: "|_~`,;:-=+^*\"\\/[]{}()<>!?"   # stripped from both ends of a name (· and ' are legitimate)
+  char_map: {"•": "·", "∙": "·", "⋅": "·"}   # OCR variants of the middle-dot clan separator
+  spaced_separators: "·|"      # always drawn with a space on each side (60 of 61 labelled names)
   max_name_len: 24
   min_name_len: 1
 

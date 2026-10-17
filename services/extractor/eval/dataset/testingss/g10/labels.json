@@ -1,0 +1,1130 @@
+{
+ "_about": "Hand-labelled ground truth for g10 (iPad 1600x1199, BGMI in floating window; lobby team list 'Remaining 90 / Team 00' with '/0 Finished' rows at 8:04 PM, results at 8:33-8:34 PM). Labelled by Claude 2026-10-17. Slot 2 / rank 13 has a 4th row whose name renders blank (\"/0 Finished\" / \"0 finishes\" with no visible name) - omitted from labels since names cannot be empty. Slot 13 shows 3 players in the lobby but rank 7 has a 4th player wRizZzGod who joined after the lobby screenshot. Names in needs_human_check have ambiguous glyphs.",
+ "needs_human_check": [
+  "ـــﮩNova",
+  "ʟɛɢᴧᴄʏ★",
+  "GodI乂Ansh",
+  "TSxAʟᴏɴɛ",
+  "VGSxPaBlO",
+  "WRLD乛MERCY",
+  "YouTubeSOyab",
+  "CE7xADMiNO",
+  "IG么PRADIP",
+  "TS7 | TOXIC 07",
+  "TExKarthikIGL",
+  "TCxAMIT16",
+  "UBdeviL08",
+  "TMTxNOoB",
+  "GLCExICONIC"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 11,
+     "players": [
+      "FlâmeBoY",
+      "CE7xADMiNO",
+      "CE7xGAMBLER",
+      "CE7xLordEXD"
+     ]
+    },
+    {
+     "slot": 12,
+     "players": [
+      "CuteHoAap",
+      "GodI乂Ansh",
+      "Reggieislive",
+      "YouTubeSOyab"
+     ]
+    },
+    {
+     "slot": 13,
+     "players": [
+      "KTxJonnyOp",
+      "GODxDxBABA",
+      "DKGxWiZaRD"
+     ]
+    },
+    {
+     "slot": 14,
+     "players": [
+      "ʟɛɢᴧᴄʏ★",
+      "XinB · QuEEnoG",
+      "XinB · DanavOP",
+      "XinB · HUÑTÊR"
+     ]
+    },
+    {
+     "slot": 15,
+     "players": [
+      "UBsavageboy",
+      "UBelegun",
+      "UBaashu",
+      "UBdeviL08"
+     ]
+    },
+    {
+     "slot": 16,
+     "players": [
+      "VSTGAMEINGYT",
+      "botttYT",
+      "KillarGuDdu",
+      "Tryout90"
+     ]
+    },
+    {
+     "slot": 17,
+     "players": [
+      "INFExApeXx",
+      "INFExM4JAY",
+      "INFExPIXEL",
+      "INFExKARTIK"
+     ]
+    },
+    {
+     "slot": 18,
+     "players": [
+      "ـــﮩNova",
+      "メMaNiSa个Rani",
+      "ELITE · GOKUNUB"
+     ]
+    },
+    {
+     "slot": 19,
+     "players": [
+      "TFK×Nojo",
+      "TFKxCYCLOPS",
+      "TFKxVasu",
+      "ZONKTOK"
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 2,
+     "players": [
+      "BTExSubbu",
+      "SCR33N×SLAY3R",
+      "FGxAARYN"
+     ]
+    },
+    {
+     "slot": 3,
+     "players": [
+      "kERAL4Jod",
+      "LVLUPxMAX",
+      "YouTubeMegtron",
+      "LVLUPxBrisTo"
+     ]
+    },
+    {
+     "slot": 4,
+     "players": [
+      "TMxARSHI",
+      "TMxFragger",
+      "TMxKASHISH"
+     ]
+    },
+    {
+     "slot": 5,
+     "players": [
+      "FTWxSHIVANSH",
+      "FTWxSAM",
+      "FTWxAbhiShek"
+     ]
+    },
+    {
+     "slot": 6,
+     "players": [
+      "VPExCluTcH",
+      "VPExPhaNToM",
+      "TS7 | TOXIC 07",
+      "IG么PRADIP"
+     ]
+    },
+    {
+     "slot": 7,
+     "players": [
+      "captainBoyy",
+      "iR4xRandeep",
+      "TSxAʟᴏɴɛ",
+      "YouTubeREGNOX"
+     ]
+    },
+    {
+     "slot": 8,
+     "players": [
+      "vampMAXTRO",
+      "vampHARDIK",
+      "vampKEEMON"
+     ]
+    },
+    {
+     "slot": 9,
+     "players": [
+      "BBxKiRa",
+      "TExKarthikIGL",
+      "BBxSPEED",
+      "LFMxSurya05"
+     ]
+    },
+    {
+     "slot": 10,
+     "players": [
+      "R2CxHyPePaCk",
+      "R2CxSKuLL",
+      "R2CxDHIRAJ",
+      "R2CxICONICJOD"
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "XinB · DanavOP",
+       "kills": 1
+      },
+      {
+       "name": "ʟɛɢᴧᴄʏ★",
+       "kills": 1
+      },
+      {
+       "name": "XinB · HUÑTÊR",
+       "kills": 4
+      },
+      {
+       "name": "XinB · QuEEnoG",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AMpVAIKO",
+       "kills": 2
+      },
+      {
+       "name": "AMpSPIDY",
+       "kills": 4
+      },
+      {
+       "name": "SDTxASSULTY",
+       "kills": 0
+      },
+      {
+       "name": "AMpHASIRA",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "VPExCluTcH",
+       "kills": 0
+      },
+      {
+       "name": "VPExPhaNToM",
+       "kills": 1
+      },
+      {
+       "name": "IG么PRADIP",
+       "kills": 2
+      },
+      {
+       "name": "TS7 | TOXIC 07",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "SCR33N×SLAY3R",
+       "kills": 0
+      },
+      {
+       "name": "FGxAARYN",
+       "kills": 0
+      },
+      {
+       "name": "BTExSubbu",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "R2CxHyPePaCk",
+       "kills": 0
+      },
+      {
+       "name": "R2CxDHIRAJ",
+       "kills": 0
+      },
+      {
+       "name": "R2CxSKuLL",
+       "kills": 1
+      },
+      {
+       "name": "R2CxICONICJOD",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "XinB · DanavOP",
+       "kills": 1
+      },
+      {
+       "name": "ʟɛɢᴧᴄʏ★",
+       "kills": 1
+      },
+      {
+       "name": "XinB · HUÑTÊR",
+       "kills": 4
+      },
+      {
+       "name": "XinB · QuEEnoG",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AMpVAIKO",
+       "kills": 2
+      },
+      {
+       "name": "AMpSPIDY",
+       "kills": 4
+      },
+      {
+       "name": "SDTxASSULTY",
+       "kills": 0
+      },
+      {
+       "name": "AMpHASIRA",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "TCxAMIT16",
+       "kills": 0
+      },
+      {
+       "name": "SRExAQUAJOD",
+       "kills": 1
+      },
+      {
+       "name": "SRExINSANE",
+       "kills": 0
+      },
+      {
+       "name": "Reaper jod",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "ELITE · GOKUNUB",
+       "kills": 0
+      },
+      {
+       "name": "メMaNiSa个Rani",
+       "kills": 0
+      },
+      {
+       "name": "ـــﮩNova",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "CuteHoAap",
+       "kills": 0
+      },
+      {
+       "name": "GodI乂Ansh",
+       "kills": 2
+      },
+      {
+       "name": "YouTubeSOyab",
+       "kills": 0
+      },
+      {
+       "name": "Reggieislive",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "XinB · DanavOP",
+       "kills": 1
+      },
+      {
+       "name": "ʟɛɢᴧᴄʏ★",
+       "kills": 1
+      },
+      {
+       "name": "XinB · HUÑTÊR",
+       "kills": 4
+      },
+      {
+       "name": "XinB · QuEEnoG",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AMpVAIKO",
+       "kills": 2
+      },
+      {
+       "name": "AMpSPIDY",
+       "kills": 4
+      },
+      {
+       "name": "SDTxASSULTY",
+       "kills": 0
+      },
+      {
+       "name": "AMpHASIRA",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "ELITE · GOKUNUB",
+       "kills": 0
+      },
+      {
+       "name": "メMaNiSa个Rani",
+       "kills": 0
+      },
+      {
+       "name": "ـــﮩNova",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "CuteHoAap",
+       "kills": 0
+      },
+      {
+       "name": "GodI乂Ansh",
+       "kills": 2
+      },
+      {
+       "name": "YouTubeSOyab",
+       "kills": 0
+      },
+      {
+       "name": "Reggieislive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 24,
+     "players": [
+      {
+       "name": "TMxFragger",
+       "kills": 0
+      },
+      {
+       "name": "TMxARSHI",
+       "kills": 0
+      },
+      {
+       "name": "TMxKASHISH",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "XinB · DanavOP",
+       "kills": 1
+      },
+      {
+       "name": "ʟɛɢᴧᴄʏ★",
+       "kills": 1
+      },
+      {
+       "name": "XinB · HUÑTÊR",
+       "kills": 4
+      },
+      {
+       "name": "XinB · QuEEnoG",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AMpVAIKO",
+       "kills": 2
+      },
+      {
+       "name": "AMpSPIDY",
+       "kills": 4
+      },
+      {
+       "name": "SDTxASSULTY",
+       "kills": 0
+      },
+      {
+       "name": "AMpHASIRA",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "Tryout90",
+       "kills": 0
+      },
+      {
+       "name": "VSTGAMEINGYT",
+       "kills": 0
+      },
+      {
+       "name": "KillarGuDdu",
+       "kills": 0
+      },
+      {
+       "name": "botttYT",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 3
+      },
+      {
+       "name": "ZONKTOK",
+       "kills": 0
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 0
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 1
+      },
+      {
+       "name": "4WLxKIRA",
+       "kills": 0
+      },
+      {
+       "name": "WRLD乛MERCY",
+       "kills": 0
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "XinB · DanavOP",
+       "kills": 1
+      },
+      {
+       "name": "ʟɛɢᴧᴄʏ★",
+       "kills": 1
+      },
+      {
+       "name": "XinB · HUÑTÊR",
+       "kills": 4
+      },
+      {
+       "name": "XinB · QuEEnoG",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AMpVAIKO",
+       "kills": 2
+      },
+      {
+       "name": "AMpSPIDY",
+       "kills": 4
+      },
+      {
+       "name": "SDTxASSULTY",
+       "kills": 0
+      },
+      {
+       "name": "AMpHASIRA",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "INFExPIXEL",
+       "kills": 2
+      },
+      {
+       "name": "INFExKARTIK",
+       "kills": 0
+      },
+      {
+       "name": "INFExApeXx",
+       "kills": 3
+      },
+      {
+       "name": "INFExM4JAY",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "DKGxWiZaRD",
+       "kills": 0
+      },
+      {
+       "name": "wRizZzGod",
+       "kills": 1
+      },
+      {
+       "name": "GODxDxBABA",
+       "kills": 0
+      },
+      {
+       "name": "KTxJonnyOp",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 1
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 0
+      },
+      {
+       "name": "iR4xRandeep",
+       "kills": 1
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "08.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "XinB · DanavOP",
+       "kills": 1
+      },
+      {
+       "name": "ʟɛɢᴧᴄʏ★",
+       "kills": 1
+      },
+      {
+       "name": "XinB · HUÑTÊR",
+       "kills": 4
+      },
+      {
+       "name": "XinB · QuEEnoG",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AMpVAIKO",
+       "kills": 2
+      },
+      {
+       "name": "AMpSPIDY",
+       "kills": 4
+      },
+      {
+       "name": "SDTxASSULTY",
+       "kills": 0
+      },
+      {
+       "name": "AMpHASIRA",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "LVLUPxBrisTo",
+       "kills": 0
+      },
+      {
+       "name": "LVLUPxMAX",
+       "kills": 3
+      },
+      {
+       "name": "kERAL4Jod",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeMegtron",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "GLCExSPRAYNOXx",
+       "kills": 3
+      },
+      {
+       "name": "GLCExICONIC",
+       "kills": 4
+      },
+      {
+       "name": "Chhota Pistol",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "FTWxSHIVANSH",
+       "kills": 0
+      },
+      {
+       "name": "FTWxAbhiShek",
+       "kills": 0
+      },
+      {
+       "name": "FTWxSAM",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "09.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "XinB · DanavOP",
+       "kills": 1
+      },
+      {
+       "name": "ʟɛɢᴧᴄʏ★",
+       "kills": 1
+      },
+      {
+       "name": "XinB · HUÑTÊR",
+       "kills": 4
+      },
+      {
+       "name": "XinB · QuEEnoG",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AMpVAIKO",
+       "kills": 2
+      },
+      {
+       "name": "AMpSPIDY",
+       "kills": 4
+      },
+      {
+       "name": "SDTxASSULTY",
+       "kills": 0
+      },
+      {
+       "name": "AMpHASIRA",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "CE7xLordEXD",
+       "kills": 2
+      },
+      {
+       "name": "FlâmeBoY",
+       "kills": 1
+      },
+      {
+       "name": "CE7xGAMBLER",
+       "kills": 5
+      },
+      {
+       "name": "CE7xADMiNO",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "TMTxJoker",
+       "kills": 0
+      },
+      {
+       "name": "TMTxNOoB",
+       "kills": 1
+      },
+      {
+       "name": "TMT×DAKSH",
+       "kills": 2
+      },
+      {
+       "name": "TMT×PAIMON",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "vampHARDIK",
+       "kills": 2
+      },
+      {
+       "name": "vampKEEMON",
+       "kills": 0
+      },
+      {
+       "name": "vampMAXTRO",
+       "kills": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "10.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "XinB · DanavOP",
+       "kills": 1
+      },
+      {
+       "name": "ʟɛɢᴧᴄʏ★",
+       "kills": 1
+      },
+      {
+       "name": "XinB · HUÑTÊR",
+       "kills": 4
+      },
+      {
+       "name": "XinB · QuEEnoG",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AMpVAIKO",
+       "kills": 2
+      },
+      {
+       "name": "AMpSPIDY",
+       "kills": 4
+      },
+      {
+       "name": "SDTxASSULTY",
+       "kills": 0
+      },
+      {
+       "name": "AMpHASIRA",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "TExKarthikIGL",
+       "kills": 0
+      },
+      {
+       "name": "BBxKiRa",
+       "kills": 0
+      },
+      {
+       "name": "LFMxSurya05",
+       "kills": 0
+      },
+      {
+       "name": "BBxSPEED",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "UBaashu",
+       "kills": 0
+      },
+      {
+       "name": "UBelegun",
+       "kills": 0
+      },
+      {
+       "name": "UBsavageboy",
+       "kills": 0
+      },
+      {
+       "name": "UBdeviL08",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "AsBxNaomi",
+       "kills": 0
+      },
+      {
+       "name": "JOHNDAIMARI",
+       "kills": 0
+      },
+      {
+       "name": "2Ez4xSYTRIZE",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "11.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 17,
+     "players": [
+      "INFExApeXx",
+      "INFExM4JAY",
+      "INFExPIXEL",
+      "INFExKARTIK"
+     ]
+    },
+    {
+     "slot": 18,
+     "players": [
+      "ـــﮩNova",
+      "メMaNiSa个Rani",
+      "ELITE · GOKUNUB"
+     ]
+    },
+    {
+     "slot": 19,
+     "players": [
+      "TFK×Nojo",
+      "TFKxCYCLOPS",
+      "TFKxVasu",
+      "ZONKTOK"
+     ]
+    },
+    {
+     "slot": 20,
+     "players": [
+      "SRExAQUAJOD",
+      "TCxAMIT16",
+      "SRExINSANE",
+      "Reaper jod"
+     ]
+    },
+    {
+     "slot": 21,
+     "players": [
+      "TMT×DAKSH",
+      "TMT×PAIMON",
+      "TMTxJoker",
+      "TMTxNOoB"
+     ]
+    },
+    {
+     "slot": 22,
+     "players": [
+      "4WLxBLA3KCAT",
+      "WRLD乛MERCY",
+      "4WLxKIRA",
+      "VGSxPaBlO"
+     ]
+    },
+    {
+     "slot": 23,
+     "players": [
+      "JOHNDAIMARI",
+      "2Ez4xSYTRIZE",
+      "AsBxNaomi"
+     ]
+    },
+    {
+     "slot": 24,
+     "players": [
+      "SDTxASSULTY",
+      "AMpSPIDY",
+      "AMpHASIRA",
+      "AMpVAIKO"
+     ]
+    },
+    {
+     "slot": 25,
+     "players": [
+      "GLCExSPRAYNOXx",
+      "Chhota Pistol",
+      "GLCExICONIC"
+     ]
+    }
+   ]
+  }
+ ]
+}

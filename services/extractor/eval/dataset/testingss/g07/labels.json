@@ -1,0 +1,766 @@
+{
+ "_about": "Hand-labelled ground truth for g07 (iPad 1600x1199; BGMI floating window, dock + YouTube thumbnail around it; results screens only, no lobby). Labelled by Claude from the images on 2026-10-17. Uncertain glyphs: PixelisLive (the l/i pair has a hook, could be another Unicode letter), 'SHOCKWvE ⸙' (trailing quill/feather-like symbol, exact codepoint unknown), '⋆NEO⋆' (O has an arc around it - likely a combining mark), '· Aꜱaulter' (small-capital s, U+A731). needs_human_check lists all ambiguous names.",
+ "needs_human_check": [
+  "PixelisLive",
+  "SHOCKWvE ⸙",
+  "⋆NEO⋆",
+  "· Aꜱaulter",
+  "4WIZxRaìDéÑ",
+  "4WIZxMOhIT",
+  "4WIZxPowerOG",
+  "PROBöT",
+  "A N M Ø L",
+  "69XéñoN",
+  "TheOGbabu04",
+  "BxM DoDoOp",
+  "NODDYisLIVE",
+  "Realxlama",
+  "RollxNickOP",
+  "WILDxLIONYT",
+  "4BKuntaLigl",
+  "LoveInMyVeins",
+  "R2CxICONICJOD",
+  "CRxJaiOp17",
+  "TPxGØD",
+  "OSxCLOWNN",
+  "CHACHAislive",
+  "TExZarvissOG",
+  "VoDxBamBaaZIGL",
+  "VoDxSkullE",
+  "TBxAsuRJOD",
+  "TMT×DAKSH",
+  "TMT×PAIMON",
+  "X人SPACE人JOD",
+  "MR》 MAFIA》 IGL",
+  "CLOWN卍PINTU",
+  "BÁGAD BILLA",
+  "ZNXxAditya"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TheOGxSHADOW",
+       "kills": 3
+      },
+      {
+       "name": "NODDYisLIVE",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BxM DoDoOp",
+       "kills": 1
+      },
+      {
+       "name": "RBy Player777",
+       "kills": 3
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 4
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "TeamDExLEGEND",
+       "kills": 0
+      },
+      {
+       "name": "DExMINATO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "ZGxMAULI",
+       "kills": 0
+      },
+      {
+       "name": "TRExNOXXY",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "PRxM4JAY",
+       "kills": 0
+      },
+      {
+       "name": "BABYgurls",
+       "kills": 0
+      },
+      {
+       "name": "PixelisLive",
+       "kills": 0
+      },
+      {
+       "name": "INFExApeXx",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TheOGxSHADOW",
+       "kills": 3
+      },
+      {
+       "name": "NODDYisLIVE",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BxM DoDoOp",
+       "kills": 1
+      },
+      {
+       "name": "RBy Player777",
+       "kills": 3
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 4
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "PRxM4JAY",
+       "kills": 0
+      },
+      {
+       "name": "BABYgurls",
+       "kills": 0
+      },
+      {
+       "name": "PixelisLive",
+       "kills": 0
+      },
+      {
+       "name": "INFExApeXx",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "CYRUSog",
+       "kills": 0
+      },
+      {
+       "name": "ARzVixxen",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "BÁGAD BILLA",
+       "kills": 0
+      },
+      {
+       "name": "AWDSxPRIYAM",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TheOGxSHADOW",
+       "kills": 3
+      },
+      {
+       "name": "NODDYisLIVE",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BxM DoDoOp",
+       "kills": 1
+      },
+      {
+       "name": "RBy Player777",
+       "kills": 3
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 4
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "4DESUGAR",
+       "kills": 1
+      },
+      {
+       "name": "TAxMSRavan",
+       "kills": 3
+      },
+      {
+       "name": "TAxPROFESSOR",
+       "kills": 0
+      },
+      {
+       "name": "TAxMAXX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "Realxlama",
+       "kills": 3
+      },
+      {
+       "name": "VZNxPAÑDAOP",
+       "kills": 1
+      },
+      {
+       "name": "WILDxLIONYT",
+       "kills": 0
+      },
+      {
+       "name": "VZNxREAPER",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "CLOWN卍PINTU",
+       "kills": 3
+      },
+      {
+       "name": "RollxNickOP",
+       "kills": 0
+      },
+      {
+       "name": "MR》 MAFIA》 IGL",
+       "kills": 2
+      },
+      {
+       "name": "NASTYxZENON",
+       "kills": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TheOGxSHADOW",
+       "kills": 3
+      },
+      {
+       "name": "NODDYisLIVE",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BxM DoDoOp",
+       "kills": 1
+      },
+      {
+       "name": "RBy Player777",
+       "kills": 3
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 4
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "ELITE · GOKUNUB",
+       "kills": 0
+      },
+      {
+       "name": "NSxReaPer",
+       "kills": 2
+      },
+      {
+       "name": "4BKuntaLigl",
+       "kills": 0
+      },
+      {
+       "name": "ELITE · IZUKU",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "R2CxHyPePaCk",
+       "kills": 0
+      },
+      {
+       "name": "R2CxDHIRAJ",
+       "kills": 1
+      },
+      {
+       "name": "R2CxSKuLL",
+       "kills": 0
+      },
+      {
+       "name": "R2CxICONICJOD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "LoveInMyVeins",
+       "kills": 0
+      },
+      {
+       "name": "CRxZEUSoP",
+       "kills": 1
+      },
+      {
+       "name": "TPxGØD",
+       "kills": 0
+      },
+      {
+       "name": "CRxJaiOp17",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TheOGxSHADOW",
+       "kills": 3
+      },
+      {
+       "name": "NODDYisLIVE",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BxM DoDoOp",
+       "kills": 1
+      },
+      {
+       "name": "RBy Player777",
+       "kills": 3
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 4
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "PROBöT",
+       "kills": 1
+      },
+      {
+       "name": "SHOCKWvE ⸙",
+       "kills": 0
+      },
+      {
+       "name": "RZeFLoW",
+       "kills": 3
+      },
+      {
+       "name": "BLEEDxVADER",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "ZNXxAditya",
+       "kills": 0
+      },
+      {
+       "name": "4WIZxRaìDéÑ",
+       "kills": 0
+      },
+      {
+       "name": "4WIZxPowerOG",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxMOhIT",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "X人SPACE人JOD",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TheOGxSHADOW",
+       "kills": 3
+      },
+      {
+       "name": "NODDYisLIVE",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BxM DoDoOp",
+       "kills": 1
+      },
+      {
+       "name": "RBy Player777",
+       "kills": 3
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 4
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "CHACHAislive",
+       "kills": 2
+      },
+      {
+       "name": "PExRcord",
+       "kills": 0
+      },
+      {
+       "name": "OSxCLOWNN",
+       "kills": 1
+      },
+      {
+       "name": "A N M Ø L",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "· Aꜱaulter",
+       "kills": 0
+      },
+      {
+       "name": "69XéñoN",
+       "kills": 1
+      },
+      {
+       "name": "OkayViPER",
+       "kills": 3
+      },
+      {
+       "name": "AaRu · is · Live",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "TExRich",
+       "kills": 1
+      },
+      {
+       "name": "TExBURSTKID",
+       "kills": 0
+      },
+      {
+       "name": "⋆NEO⋆",
+       "kills": 2
+      },
+      {
+       "name": "TExZarvissOG",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TheOGxSHADOW",
+       "kills": 3
+      },
+      {
+       "name": "NODDYisLIVE",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BxM DoDoOp",
+       "kills": 1
+      },
+      {
+       "name": "RBy Player777",
+       "kills": 3
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 4
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "VoDxBamBaaZIGL",
+       "kills": 1
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 1
+      },
+      {
+       "name": "VoDxSkullE",
+       "kills": 1
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "TMT×DAKSH",
+       "kills": 0
+      },
+      {
+       "name": "TMT×PAIMON",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "TBxAsuRJOD",
+       "kills": 1
+      },
+      {
+       "name": "vampABHI",
+       "kills": 2
+      },
+      {
+       "name": "4LMxRPGMafiYa",
+       "kills": 0
+      },
+      {
+       "name": "vampMAXTRO",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

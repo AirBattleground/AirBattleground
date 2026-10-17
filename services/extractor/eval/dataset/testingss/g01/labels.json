@@ -1,0 +1,771 @@
+{
+ "_about": "Hand-labelled ground truth for g01 (iPad 1600x1199, BGMI results screens only; no lobby screenshot in this group). Labelled by Claude from the images on 2026-10-17. Thin, widely-spaced names (SKYLA, RAVAN, Gunda, SoMeOnE) are rendered in a fallback font and were transcribed as fullwidth Latin; small stars as U+22C6. needs_human_check lists ambiguous glyphs (I/l/1, O/0, unusual Unicode/symbols).",
+ "needs_human_check": [
+  "〆OKANE〆",
+  "GUJJAR乡SINGH",
+  "Ｇｕｎｄａ⋆",
+  "十 · ANSHU",
+  "ZD¬AFFXNNN",
+  "ZD¬شيفان",
+  "znndnxnnxnxnx",
+  "GodLsadil",
+  "◉Xəиoи◉",
+  "ＳＫＹＬＡ",
+  "op或ＲＡＶＡＮ",
+  "ＳｏＭｅＯｎＥ",
+  "dUrGeShNal",
+  "· Δrsħ ·",
+  "FIxAROHI",
+  "LAIBAA",
+  "MTB · Ãɯaη",
+  "S͜aurabh⋆",
+  "DEATHGØD⋆ie",
+  "UP70xSkullE",
+  "AWxAquaIGL",
+  "ThappaxIGL",
+  "⋆HΔRSHiTΔ⋆",
+  "AVERAGEPIAYeR",
+  "Lalá¹",
+  "4TselzyOG",
+  "IM | VENGEANĆE"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "〆OKANE〆",
+       "kills": 1
+      },
+      {
+       "name": "ISTxAIZEN66",
+       "kills": 0
+      },
+      {
+       "name": "QUEENxSHAILLY",
+       "kills": 1
+      },
+      {
+       "name": "GUJJAR乡SINGH",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7oceanPOWER",
+       "kills": 0
+      },
+      {
+       "name": "PyarKregiii",
+       "kills": 1
+      },
+      {
+       "name": "BTxJaLLaD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "十 · ANSHU",
+       "kills": 0
+      },
+      {
+       "name": "Ｇｕｎｄａ⋆",
+       "kills": 1
+      },
+      {
+       "name": "會 | PriyansH ·",
+       "kills": 0
+      },
+      {
+       "name": "TLxNaman",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "UL々Goku",
+       "kills": 0
+      },
+      {
+       "name": "GodLsadil",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "Abusad7205",
+       "kills": 0
+      },
+      {
+       "name": "ZD¬AFFXNNN",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬شيفان",
+       "kills": 1
+      },
+      {
+       "name": "znndnxnnxnxnx",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "〆OKANE〆",
+       "kills": 1
+      },
+      {
+       "name": "ISTxAIZEN66",
+       "kills": 0
+      },
+      {
+       "name": "QUEENxSHAILLY",
+       "kills": 1
+      },
+      {
+       "name": "GUJJAR乡SINGH",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7oceanPOWER",
+       "kills": 0
+      },
+      {
+       "name": "PyarKregiii",
+       "kills": 1
+      },
+      {
+       "name": "BTxJaLLaD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "◉Xəиoи◉",
+       "kills": 0
+      },
+      {
+       "name": "ＳＫＹＬＡ",
+       "kills": 0
+      },
+      {
+       "name": "Jasleen",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "op或ＲＡＶＡＮ",
+       "kills": 1
+      },
+      {
+       "name": "pTron | X",
+       "kills": 0
+      },
+      {
+       "name": "TXxHUNTERop",
+       "kills": 0
+      },
+      {
+       "name": "dUrGeShNal",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "TMxKASHISH",
+       "kills": 0
+      },
+      {
+       "name": "· Δrsħ ·",
+       "kills": 0
+      },
+      {
+       "name": "FIxAROHI",
+       "kills": 0
+      },
+      {
+       "name": "LAIBAA",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "〆OKANE〆",
+       "kills": 1
+      },
+      {
+       "name": "ISTxAIZEN66",
+       "kills": 0
+      },
+      {
+       "name": "QUEENxSHAILLY",
+       "kills": 1
+      },
+      {
+       "name": "GUJJAR乡SINGH",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7oceanPOWER",
+       "kills": 0
+      },
+      {
+       "name": "PyarKregiii",
+       "kills": 1
+      },
+      {
+       "name": "BTxJaLLaD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "MTB · Aafu",
+       "kills": 2
+      },
+      {
+       "name": "MTB · Honey",
+       "kills": 0
+      },
+      {
+       "name": "MTB · Ãɯaη",
+       "kills": 2
+      },
+      {
+       "name": "MTB · XSTUN",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "XcaliburArës",
+       "kills": 1
+      },
+      {
+       "name": "SHADOW BEAST",
+       "kills": 1
+      },
+      {
+       "name": "ÁÑASOP",
+       "kills": 6
+      },
+      {
+       "name": "FZxDBSwala",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "VLxPHANTOM",
+       "kills": 1
+      },
+      {
+       "name": "VLxLUFY",
+       "kills": 0
+      },
+      {
+       "name": "VLxMUSA",
+       "kills": 0
+      },
+      {
+       "name": "WDCxPAAJI",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "〆OKANE〆",
+       "kills": 1
+      },
+      {
+       "name": "ISTxAIZEN66",
+       "kills": 0
+      },
+      {
+       "name": "QUEENxSHAILLY",
+       "kills": 1
+      },
+      {
+       "name": "GUJJAR乡SINGH",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7oceanPOWER",
+       "kills": 0
+      },
+      {
+       "name": "PyarKregiii",
+       "kills": 1
+      },
+      {
+       "name": "BTxJaLLaD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "UGxHunnTeRr",
+       "kills": 2
+      },
+      {
+       "name": "IPHONEPLAYEr",
+       "kills": 6
+      },
+      {
+       "name": "UGxOMEn",
+       "kills": 0
+      },
+      {
+       "name": "whosZERO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "DEATHGØD⋆ie",
+       "kills": 4
+      },
+      {
+       "name": "Sparktbh",
+       "kills": 3
+      },
+      {
+       "name": "whyYASH",
+       "kills": 0
+      },
+      {
+       "name": "S͜aurabh⋆",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "VoDBamBaaZ",
+       "kills": 1
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 0
+      },
+      {
+       "name": "UP70xSkullE",
+       "kills": 3
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "〆OKANE〆",
+       "kills": 1
+      },
+      {
+       "name": "ISTxAIZEN66",
+       "kills": 0
+      },
+      {
+       "name": "QUEENxSHAILLY",
+       "kills": 1
+      },
+      {
+       "name": "GUJJAR乡SINGH",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7oceanPOWER",
+       "kills": 0
+      },
+      {
+       "name": "PyarKregiii",
+       "kills": 1
+      },
+      {
+       "name": "BTxJaLLaD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "AWxDeaDPlayeR",
+       "kills": 4
+      },
+      {
+       "name": "AWxGUDDU",
+       "kills": 0
+      },
+      {
+       "name": "AWxAquaIGL",
+       "kills": 2
+      },
+      {
+       "name": "AWxOBITO",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "DestructorDEV",
+       "kills": 1
+      },
+      {
+       "name": "SE · VÏRÜS",
+       "kills": 0
+      },
+      {
+       "name": "CräckSHØT",
+       "kills": 0
+      },
+      {
+       "name": "XcaliburHades",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "FATESuKuNà",
+       "kills": 0
+      },
+      {
+       "name": "FATEWario",
+       "kills": 1
+      },
+      {
+       "name": "G1xHEAVEN",
+       "kills": 1
+      },
+      {
+       "name": "FATEZyreX",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "〆OKANE〆",
+       "kills": 1
+      },
+      {
+       "name": "ISTxAIZEN66",
+       "kills": 0
+      },
+      {
+       "name": "QUEENxSHAILLY",
+       "kills": 1
+      },
+      {
+       "name": "GUJJAR乡SINGH",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7oceanPOWER",
+       "kills": 0
+      },
+      {
+       "name": "PyarKregiii",
+       "kills": 1
+      },
+      {
+       "name": "BTxJaLLaD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "⋆HΔRSHiTΔ⋆",
+       "kills": 6
+      },
+      {
+       "name": "TAxTheGoaat",
+       "kills": 1
+      },
+      {
+       "name": "TeamFxNadegod",
+       "kills": 1
+      },
+      {
+       "name": "IM | VENGEANĆE",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "AVERAGEPIAYeR",
+       "kills": 0
+      },
+      {
+       "name": "7x فيضان",
+       "kills": 0
+      },
+      {
+       "name": "OK BRO",
+       "kills": 0
+      },
+      {
+       "name": "Lalá¹",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "4TstarX",
+       "kills": 0
+      },
+      {
+       "name": "4TselzyOG",
+       "kills": 0
+      },
+      {
+       "name": "4TAkashOP",
+       "kills": 3
+      },
+      {
+       "name": "4Tnav",
+       "kills": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "〆OKANE〆",
+       "kills": 1
+      },
+      {
+       "name": "ISTxAIZEN66",
+       "kills": 0
+      },
+      {
+       "name": "QUEENxSHAILLY",
+       "kills": 1
+      },
+      {
+       "name": "GUJJAR乡SINGH",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "7oceanPOWER",
+       "kills": 0
+      },
+      {
+       "name": "PyarKregiii",
+       "kills": 1
+      },
+      {
+       "name": "BTxJaLLaD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "ThappaxIGL",
+       "kills": 0
+      },
+      {
+       "name": "4NM×RÛSHGØD",
+       "kills": 0
+      },
+      {
+       "name": "TAxSHÁNKS",
+       "kills": 0
+      },
+      {
+       "name": "ＳｏＭｅＯｎＥ",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "DExZac",
+       "kills": 0
+      },
+      {
+       "name": "BxM ICONIC",
+       "kills": 1
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 0
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "十 · ANSHU",
+       "kills": 0
+      },
+      {
+       "name": "Ｇｕｎｄａ⋆",
+       "kills": 1
+      },
+      {
+       "name": "會 | PriyansH ·",
+       "kills": 0
+      },
+      {
+       "name": "TLxNaman",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,2523 @@
+{
+ "_about": "Hand-labelled ground truth for testingss g21: 24 phone screenshots (1600x720 / 1600x717, full-screen BGMI, no chrome) covering THREE matches of the same scrim lobby. match a = 01-08 (GE team rank 1; 01,03-08 are pixel-identical copies of eval/dataset/real/* and reuse those labels; 02 is a different scroll), match b = 09-15 (AI team rank 1; lobby 'Remaining 67 Team 17'), match c = 16-24 (EMP team rank 1; lobby 'Remaining 70 Team 18'; 16 and 20 are duplicates). Lobby lists use '/0 Eliminations'. Labelled by Claude 2026-10-17. NOTE: the upside-down name is labelled 'ʎeɯɹer2' (first glyph is a turned y, no vertical stem) whereas real/labels.json has 'ʞeɯɹer2' - one of them should be corrected. '文 · DRAGON' carries a decorative ring under 'GO' (omitted). 'WR〆VIKRAM16' separator glyph is a feather/quill-like symbol; 〆 is a guess. 'Lobby×‿ Ja' renders as 'Lobby× . . Ja' in lobby lists (font fallback) and with '‿' in results.",
+ "needs_human_check": [
+  "GExRuwad1O",
+  "GExMoOnGOD",
+  "TAPxKennnIlk",
+  "WantstobeSLIce",
+  "iQOOSOuLGobliN",
+  "AARU JIII",
+  "7SxVENØM18",
+  "7SxSØNÛ",
+  "7SxSKÛLL",
+  "EMPxSagarIGL",
+  "EMPxLivikigl",
+  "ʎeɯɹer2",
+  "आशीष्",
+  "Lobby×‿ Ja",
+  "AIxTIXZO",
+  "AIxKrAg",
+  "AIxZeD",
+  "AIxFlexy",
+  "ZAROOxFranky",
+  "IMxBroly",
+  "HaVoC · SLĀYER",
+  "THxBaKiJOD777",
+  "TDSxSHYBOY7",
+  "7xKingSlayer",
+  "ASvFLux",
+  "ATOM ISèLIVE",
+  "TAGJONATHAṄ69",
+  "BIHARIchor",
+  "ZMCxDraGooN",
+  "TGxVIVEK7",
+  "文 · DRAGON",
+  "AExZilo",
+  "7xRolexx",
+  "WR〆VIKRAM16",
+  "DCKARTIK'"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "GExRuwad1O",
+       "kills": 5
+      },
+      {
+       "name": "GExDeadPlaYeR",
+       "kills": 5
+      },
+      {
+       "name": "GExMoOnGOD",
+       "kills": 1
+      },
+      {
+       "name": "GExFireGod",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 1
+      },
+      {
+       "name": "AExJenu",
+       "kills": 1
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "AIxTIXZO",
+       "kills": 0
+      },
+      {
+       "name": "AIxKrAg",
+       "kills": 0
+      },
+      {
+       "name": "AIxFlexy",
+       "kills": 2
+      },
+      {
+       "name": "AIxZeD",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "ZAROOxFranky",
+       "kills": 5
+      },
+      {
+       "name": "IMxBroly",
+       "kills": 1
+      },
+      {
+       "name": "8INCHESGUY",
+       "kills": 2
+      },
+      {
+       "name": "SYMxARI",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "Lobby×‿ Ja",
+       "kills": 0
+      },
+      {
+       "name": "आशीष्",
+       "kills": 0
+      },
+      {
+       "name": "ʎeɯɹer2",
+       "kills": 0
+      },
+      {
+       "name": "DCKARTIK'",
+       "kills": 0
+      }
+     ]
+    }
+   ],
+   "match": "a"
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "GExRuwad1O",
+       "kills": 5
+      },
+      {
+       "name": "GExDeadPlaYeR",
+       "kills": 5
+      },
+      {
+       "name": "GExMoOnGOD",
+       "kills": 1
+      },
+      {
+       "name": "GExFireGod",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 1
+      },
+      {
+       "name": "AExJenu",
+       "kills": 1
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "7SxGOJO",
+       "kills": 1
+      },
+      {
+       "name": "7SxSØNÛ",
+       "kills": 2
+      },
+      {
+       "name": "7SxSKÛLL",
+       "kills": 2
+      },
+      {
+       "name": "7SxVENØM18",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "WRG | CHILLY",
+       "kills": 1
+      },
+      {
+       "name": "WRG | GHOST",
+       "kills": 0
+      },
+      {
+       "name": "WRG | TIGER",
+       "kills": 2
+      },
+      {
+       "name": "ATMOSPHERECafe",
+       "kills": 6
+      }
+     ]
+    }
+   ],
+   "match": "a"
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "GExRuwad1O",
+       "kills": 5
+      },
+      {
+       "name": "GExDeadPlaYeR",
+       "kills": 5
+      },
+      {
+       "name": "GExMoOnGOD",
+       "kills": 1
+      },
+      {
+       "name": "GExFireGod",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 1
+      },
+      {
+       "name": "AExJenu",
+       "kills": 1
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "TAPxKennnIlk",
+       "kills": 3
+      },
+      {
+       "name": "4TRxFLeriXx",
+       "kills": 1
+      },
+      {
+       "name": "MunawarHuLadle",
+       "kills": 1
+      },
+      {
+       "name": "4T MAX 999",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "Talent Scout",
+       "kills": 2
+      },
+      {
+       "name": "《vanshu£》",
+       "kills": 0
+      },
+      {
+       "name": "Tcシishu",
+       "kills": 1
+      },
+      {
+       "name": "EExANGAT",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "HaVoC · KratoS",
+       "kills": 0
+      },
+      {
+       "name": "· Titann ·",
+       "kills": 0
+      },
+      {
+       "name": "LattuMuttaya",
+       "kills": 0
+      },
+      {
+       "name": "HaVoC · SLĀYER",
+       "kills": 0
+      }
+     ]
+    }
+   ],
+   "match": "a"
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "GExRuwad1O",
+       "kills": 5
+      },
+      {
+       "name": "GExDeadPlaYeR",
+       "kills": 5
+      },
+      {
+       "name": "GExMoOnGOD",
+       "kills": 1
+      },
+      {
+       "name": "GExFireGod",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 1
+      },
+      {
+       "name": "AExJenu",
+       "kills": 1
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "THxBakiiJod",
+       "kills": 2
+      },
+      {
+       "name": "VAIBHAVBHAIYA",
+       "kills": 1
+      },
+      {
+       "name": "TFxVishavvvS7",
+       "kills": 2
+      },
+      {
+       "name": "THxCASHHH",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "AExVENOMM",
+       "kills": 2
+      },
+      {
+       "name": "RexxyyThePapa",
+       "kills": 2
+      },
+      {
+       "name": "A9xTARUN",
+       "kills": 1
+      },
+      {
+       "name": "A9xRolf",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "EMPxLivikigl",
+       "kills": 0
+      },
+      {
+       "name": "302 IS LIVE",
+       "kills": 3
+      },
+      {
+       "name": "EMPxgoku",
+       "kills": 1
+      },
+      {
+       "name": "EMPxSagarIGL",
+       "kills": 2
+      }
+     ]
+    }
+   ],
+   "match": "a"
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "GExRuwad1O",
+       "kills": 5
+      },
+      {
+       "name": "GExDeadPlaYeR",
+       "kills": 5
+      },
+      {
+       "name": "GExMoOnGOD",
+       "kills": 1
+      },
+      {
+       "name": "GExFireGod",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 1
+      },
+      {
+       "name": "AExJenu",
+       "kills": 1
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "DTOWN多TenDor",
+       "kills": 0
+      },
+      {
+       "name": "THUG多FRAGG3R",
+       "kills": 2
+      },
+      {
+       "name": "THUG多MURD3R",
+       "kills": 1
+      },
+      {
+       "name": "WantstobeSLIce",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "7SxGOJO",
+       "kills": 1
+      },
+      {
+       "name": "7SxSØNÛ",
+       "kills": 2
+      },
+      {
+       "name": "7SxSKÛLL",
+       "kills": 2
+      },
+      {
+       "name": "7SxVENØM18",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "WRG | CHILLY",
+       "kills": 1
+      },
+      {
+       "name": "WRG | GHOST",
+       "kills": 0
+      },
+      {
+       "name": "WRG | TIGER",
+       "kills": 2
+      },
+      {
+       "name": "ATMOSPHERECafe",
+       "kills": 6
+      }
+     ]
+    }
+   ],
+   "match": "a"
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "GExRuwad1O",
+       "kills": 5
+      },
+      {
+       "name": "GExDeadPlaYeR",
+       "kills": 5
+      },
+      {
+       "name": "GExMoOnGOD",
+       "kills": 1
+      },
+      {
+       "name": "GExFireGod",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 1
+      },
+      {
+       "name": "AExJenu",
+       "kills": 1
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "DROXXI GAMING",
+       "kills": 2
+      },
+      {
+       "name": "DSTRYXArJUN",
+       "kills": 3
+      },
+      {
+       "name": "GoldJONATHAN3",
+       "kills": 1
+      },
+      {
+       "name": "AARU JIII",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "7xStishMuthMar",
+       "kills": 2
+      },
+      {
+       "name": "7xjumpeR",
+       "kills": 1
+      },
+      {
+       "name": "MEGAxLUCIFER03",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "iQOOSOuLGobliN",
+       "kills": 5
+      },
+      {
+       "name": "PATILxJATIN",
+       "kills": 0
+      },
+      {
+       "name": "9TxTANUUU",
+       "kills": 4
+      },
+      {
+       "name": "Cloudgawdx",
+       "kills": 2
+      }
+     ]
+    }
+   ],
+   "match": "a"
+  },
+  {
+   "file": "07.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 5,
+     "players": [
+      "A9xTARUN",
+      "A9xRolf",
+      "AExVENOMM",
+      "RexxyyThePapa"
+     ]
+    },
+    {
+     "slot": 6,
+     "players": [
+      "ATMOSPHERECafe",
+      "WRG | GHOST",
+      "WRG | TIGER",
+      "WRG | CHILLY"
+     ]
+    },
+    {
+     "slot": 7,
+     "players": [
+      "GExRuwad1O",
+      "GExDeadPlaYeR",
+      "GExMoOnGOD",
+      "GExFireGod"
+     ]
+    },
+    {
+     "slot": 8,
+     "players": [
+      "MunawarHuLadle",
+      "4TRxFLeriXx",
+      "4T MAX 999",
+      "TAPxKennnIlk"
+     ]
+    },
+    {
+     "slot": 9,
+     "players": [
+      "WantstobeSLIce",
+      "THUG多FRAGG3R",
+      "THUG多MURD3R",
+      "DTOWN多TenDor"
+     ]
+    },
+    {
+     "slot": 11,
+     "players": [
+      "HaVoC · SLĀYER",
+      "· Titann ·",
+      "HaVoC · KratoS",
+      "LattuMuttaya"
+     ]
+    },
+    {
+     "slot": 12,
+     "players": [
+      "Cloudgawdx",
+      "iQOOSOuLGobliN",
+      "9TxTANUUU",
+      "PATILxJATIN"
+     ]
+    },
+    {
+     "slot": 13,
+     "players": [
+      "AExBlaziken",
+      "AExStanzo",
+      "AExGujjar",
+      "AExJenu"
+     ]
+    },
+    {
+     "slot": 14,
+     "players": [
+      "《vanshu£》",
+      "Talent Scout",
+      "EExANGAT",
+      "Tcシishu"
+     ]
+    }
+   ],
+   "match": "a"
+  },
+  {
+   "file": "08.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 15,
+     "players": [
+      "GoldJONATHAN3",
+      "AARU JIII",
+      "DROXXI GAMING",
+      "DSTRYXArJUN"
+     ]
+    },
+    {
+     "slot": 16,
+     "players": [
+      "7SxVENØM18",
+      "7SxGOJO",
+      "7SxSØNÛ",
+      "7SxSKÛLL"
+     ]
+    },
+    {
+     "slot": 17,
+     "players": [
+      "302 IS LIVE",
+      "EMPxSagarIGL",
+      "EMPxgoku",
+      "EMPxLivikigl"
+     ]
+    },
+    {
+     "slot": 18,
+     "players": [
+      "ʎeɯɹer2",
+      "DCKARTIK'",
+      "आशीष्",
+      "Lobby×‿ Ja"
+     ]
+    },
+    {
+     "slot": 19,
+     "players": [
+      "THxCASHHH",
+      "TFxVishavvvS7",
+      "THxBakiiJod",
+      "VAIBHAVBHAIYA"
+     ]
+    },
+    {
+     "slot": 20,
+     "players": [
+      "7xStishMuthMar",
+      "7xjumpeR",
+      "MEGAxLUCIFER03"
+     ]
+    },
+    {
+     "slot": 21,
+     "players": [
+      "AIxTIXZO",
+      "AIxKrAg",
+      "AIxZeD",
+      "AIxFlexy"
+     ]
+    },
+    {
+     "slot": 22,
+     "players": [
+      "SYMxARI",
+      "ZAROOxFranky",
+      "IMxBroly",
+      "8INCHESGUY"
+     ]
+    }
+   ],
+   "match": "a"
+  },
+  {
+   "file": "09.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 15,
+     "players": [
+      "GoldJONATHAN3",
+      "DSTRYXArJUN",
+      "AARU JIII",
+      "DROXXI GAMING"
+     ]
+    },
+    {
+     "slot": 16,
+     "players": [
+      "7SxVENØM18",
+      "7SxGOJO",
+      "7SxSKÛLL",
+      "7SxSØNÛ"
+     ]
+    },
+    {
+     "slot": 17,
+     "players": [
+      "302 IS LIVE",
+      "EMPxSagarIGL",
+      "EMPxLivikigl",
+      "VAIBHAVBHAIYA"
+     ]
+    },
+    {
+     "slot": 18,
+     "players": [
+      "ʎeɯɹer2",
+      "आशीष्",
+      "Lobby×‿ Ja",
+      "DCKARTIK'"
+     ]
+    },
+    {
+     "slot": 19,
+     "players": [
+      "THxCASHHH",
+      "TFxVishavvvS7",
+      "THxBaKiJOD777",
+      "TDSxSHYBOY7"
+     ]
+    },
+    {
+     "slot": 20,
+     "players": [
+      "7xKingSlayer",
+      "7xStishMuthMar",
+      "7xjumpeR"
+     ]
+    },
+    {
+     "slot": 21,
+     "players": [
+      "AIxTIXZO",
+      "AIxKrAg",
+      "AIxZeD",
+      "AIxFlexy"
+     ]
+    },
+    {
+     "slot": 22,
+     "players": [
+      "SYMxARI",
+      "8INCHESGUY",
+      "IMxBroly",
+      "ZAROOxFranky"
+     ]
+    }
+   ],
+   "match": "b"
+  },
+  {
+   "file": "10.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "AIxTIXZO",
+       "kills": 0
+      },
+      {
+       "name": "AIxKrAg",
+       "kills": 2
+      },
+      {
+       "name": "AIxFlexy",
+       "kills": 2
+      },
+      {
+       "name": "AIxZeD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 0
+      },
+      {
+       "name": "AExJenu",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "TDSxSHYBOY7",
+       "kills": 2
+      },
+      {
+       "name": "THxCASHHH",
+       "kills": 3
+      },
+      {
+       "name": "TFxVishavvvS7",
+       "kills": 0
+      },
+      {
+       "name": "THxBaKiJOD777",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "LattuMuttaya",
+       "kills": 0
+      },
+      {
+       "name": "· Titann ·",
+       "kills": 0
+      },
+      {
+       "name": "HaVoC · KratoS",
+       "kills": 0
+      },
+      {
+       "name": "HaVoC · SLĀYER",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "GExRuwad1O",
+       "kills": 1
+      },
+      {
+       "name": "GExDeadPlaYeR",
+       "kills": 1
+      },
+      {
+       "name": "GExMoOnGOD",
+       "kills": 2
+      },
+      {
+       "name": "GExFireGod",
+       "kills": 0
+      }
+     ]
+    }
+   ],
+   "match": "b"
+  },
+  {
+   "file": "11.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "AIxTIXZO",
+       "kills": 0
+      },
+      {
+       "name": "AIxKrAg",
+       "kills": 2
+      },
+      {
+       "name": "AIxFlexy",
+       "kills": 2
+      },
+      {
+       "name": "AIxZeD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 0
+      },
+      {
+       "name": "AExJenu",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "DROXXI GAMING",
+       "kills": 2
+      },
+      {
+       "name": "DSTRYXArJUN",
+       "kills": 0
+      },
+      {
+       "name": "GoldJONATHAN3",
+       "kills": 0
+      },
+      {
+       "name": "AARU JIII",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "ZAROOxFranky",
+       "kills": 1
+      },
+      {
+       "name": "IMxBroly",
+       "kills": 1
+      },
+      {
+       "name": "8INCHESGUY",
+       "kills": 1
+      },
+      {
+       "name": "SYMxARI",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "7xStishMuthMar",
+       "kills": 0
+      },
+      {
+       "name": "7xjumpeR",
+       "kills": 0
+      },
+      {
+       "name": "7xKingSlayer",
+       "kills": 1
+      }
+     ]
+    }
+   ],
+   "match": "b"
+  },
+  {
+   "file": "12.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "AIxTIXZO",
+       "kills": 0
+      },
+      {
+       "name": "AIxKrAg",
+       "kills": 2
+      },
+      {
+       "name": "AIxFlexy",
+       "kills": 2
+      },
+      {
+       "name": "AIxZeD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 0
+      },
+      {
+       "name": "AExJenu",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "EMPxLivikigl",
+       "kills": 3
+      },
+      {
+       "name": "VAIBHAVBHAIYA",
+       "kills": 0
+      },
+      {
+       "name": "EMPxSagarIGL",
+       "kills": 0
+      },
+      {
+       "name": "302 IS LIVE",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "iQOOSOuLGobliN",
+       "kills": 0
+      },
+      {
+       "name": "PATILxJATIN",
+       "kills": 0
+      },
+      {
+       "name": "9TxTANUUU",
+       "kills": 1
+      },
+      {
+       "name": "Cloudgawdx",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "ʎeɯɹer2",
+       "kills": 0
+      },
+      {
+       "name": "आशीष्",
+       "kills": 2
+      },
+      {
+       "name": "Lobby×‿ Ja",
+       "kills": 0
+      },
+      {
+       "name": "DCKARTIK'",
+       "kills": 0
+      }
+     ]
+    }
+   ],
+   "match": "b"
+  },
+  {
+   "file": "13.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 5,
+     "players": [
+      "A9xTARUN",
+      "A9xRolf",
+      "RexxyyThePapa",
+      "AExVENOMM"
+     ]
+    },
+    {
+     "slot": 6,
+     "players": [
+      "ATMOSPHERECafe",
+      "WRG | GHOST",
+      "WRG | CHILLY",
+      "WRG | TIGER"
+     ]
+    },
+    {
+     "slot": 7,
+     "players": [
+      "GExRuwad1O",
+      "GExDeadPlaYeR",
+      "GExMoOnGOD",
+      "GExFireGod"
+     ]
+    },
+    {
+     "slot": 8,
+     "players": [
+      "MunawarHuLadle",
+      "4TRxFLeriXx",
+      "4T MAX 999",
+      "TAPxKennnIlk"
+     ]
+    },
+    {
+     "slot": 9,
+     "players": [
+      "WantstobeSLIce",
+      "THUG多MURD3R",
+      "THUG多FRAGG3R",
+      "DTOWN多TenDor"
+     ]
+    },
+    {
+     "slot": 11,
+     "players": [
+      "HaVoC · KratoS",
+      "· Titann ·",
+      "HaVoC · SLĀYER",
+      "LattuMuttaya"
+     ]
+    },
+    {
+     "slot": 12,
+     "players": [
+      "Cloudgawdx",
+      "iQOOSOuLGobliN",
+      "9TxTANUUU",
+      "PATILxJATIN"
+     ]
+    },
+    {
+     "slot": 13,
+     "players": [
+      "AExStanzo",
+      "AExGujjar",
+      "AExJenu",
+      "AExBlaziken"
+     ]
+    },
+    {
+     "slot": 14,
+     "players": [
+      "ASvFLux",
+      "EExANGAT",
+      "《vanshu£》",
+      "Tcシishu"
+     ]
+    }
+   ],
+   "match": "b"
+  },
+  {
+   "file": "14.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "AIxTIXZO",
+       "kills": 0
+      },
+      {
+       "name": "AIxKrAg",
+       "kills": 2
+      },
+      {
+       "name": "AIxFlexy",
+       "kills": 2
+      },
+      {
+       "name": "AIxZeD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 0
+      },
+      {
+       "name": "AExJenu",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "WRG | CHILLY",
+       "kills": 0
+      },
+      {
+       "name": "WRG | GHOST",
+       "kills": 0
+      },
+      {
+       "name": "WRG | TIGER",
+       "kills": 0
+      },
+      {
+       "name": "ATMOSPHERECafe",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "7SxGOJO",
+       "kills": 0
+      },
+      {
+       "name": "7SxSØNÛ",
+       "kills": 1
+      },
+      {
+       "name": "7SxSKÛLL",
+       "kills": 0
+      },
+      {
+       "name": "7SxVENØM18",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "Tcシishu",
+       "kills": 0
+      },
+      {
+       "name": "《vanshu£》",
+       "kills": 0
+      },
+      {
+       "name": "ASvFLux",
+       "kills": 0
+      },
+      {
+       "name": "EExANGAT",
+       "kills": 0
+      }
+     ]
+    }
+   ],
+   "match": "b"
+  },
+  {
+   "file": "15.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "AIxTIXZO",
+       "kills": 0
+      },
+      {
+       "name": "AIxKrAg",
+       "kills": 2
+      },
+      {
+       "name": "AIxFlexy",
+       "kills": 2
+      },
+      {
+       "name": "AIxZeD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "AExStanzo",
+       "kills": 0
+      },
+      {
+       "name": "AExJenu",
+       "kills": 0
+      },
+      {
+       "name": "AExBlaziken",
+       "kills": 3
+      },
+      {
+       "name": "AExGujjar",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "TAPxKennnIlk",
+       "kills": 1
+      },
+      {
+       "name": "4TRxFLeriXx",
+       "kills": 1
+      },
+      {
+       "name": "MunawarHuLadle",
+       "kills": 1
+      },
+      {
+       "name": "4T MAX 999",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "AExVENOMM",
+       "kills": 0
+      },
+      {
+       "name": "RexxyyThePapa",
+       "kills": 0
+      },
+      {
+       "name": "A9xTARUN",
+       "kills": 1
+      },
+      {
+       "name": "A9xRolf",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "THUG多MURD3R",
+       "kills": 3
+      },
+      {
+       "name": "THUG多FRAGG3R",
+       "kills": 0
+      },
+      {
+       "name": "DTOWN多TenDor",
+       "kills": 0
+      },
+      {
+       "name": "WantstobeSLIce",
+       "kills": 4
+      }
+     ]
+    }
+   ],
+   "match": "b"
+  },
+  {
+   "file": "16.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "EMPxLivikigl",
+       "kills": 0
+      },
+      {
+       "name": "302 IS LIVE",
+       "kills": 5
+      },
+      {
+       "name": "EMPxgoku",
+       "kills": 0
+      },
+      {
+       "name": "EMPxSagarIGL",
+       "kills": 9
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4T MAX 999",
+       "kills": 0
+      },
+      {
+       "name": "MunawarHuLadle",
+       "kills": 1
+      },
+      {
+       "name": "ATOM ISèLIVE",
+       "kills": 3
+      },
+      {
+       "name": "4TRxFLeriXx",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "EExANGAT",
+       "kills": 0
+      },
+      {
+       "name": "《vanshu£》",
+       "kills": 0
+      },
+      {
+       "name": "Tcシishu",
+       "kills": 0
+      },
+      {
+       "name": "ASvFLux",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "DTOWN多TenDor",
+       "kills": 0
+      },
+      {
+       "name": "THUG多FRAGG3R",
+       "kills": 2
+      },
+      {
+       "name": "THUG多MURD3R",
+       "kills": 3
+      },
+      {
+       "name": "WantstobeSLIce",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "THxBaKiJOD777",
+       "kills": 1
+      },
+      {
+       "name": "VAIBHAVBHAIYA",
+       "kills": 0
+      },
+      {
+       "name": "THxCASHHH",
+       "kills": 0
+      }
+     ]
+    }
+   ],
+   "match": "c"
+  },
+  {
+   "file": "17.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 5,
+     "players": [
+      "A9xTARUN",
+      "A9xRolf",
+      "RexxyyThePapa",
+      "AExVENOMM"
+     ]
+    },
+    {
+     "slot": 6,
+     "players": [
+      "ATMOSPHERECafe",
+      "WRG | GHOST",
+      "WRG | TIGER",
+      "WRG | CHILLY"
+     ]
+    },
+    {
+     "slot": 7,
+     "players": [
+      "GExRuwad1O",
+      "GExDeadPlaYeR",
+      "GExFireGod",
+      "GExMoOnGOD"
+     ]
+    },
+    {
+     "slot": 8,
+     "players": [
+      "MunawarHuLadle",
+      "4TRxFLeriXx",
+      "4T MAX 999",
+      "ATOM ISèLIVE"
+     ]
+    },
+    {
+     "slot": 9,
+     "players": [
+      "WantstobeSLIce",
+      "THUG多MURD3R",
+      "THUG多FRAGG3R",
+      "DTOWN多TenDor"
+     ]
+    },
+    {
+     "slot": 10,
+     "players": [
+      "TAGJONATHAṄ69",
+      "BIHARIchor",
+      "ZMCxDraGooN"
+     ]
+    },
+    {
+     "slot": 11,
+     "players": [
+      "HaVoC · SLĀYER",
+      "· Titann ·",
+      "HaVoC · KratoS",
+      "LattuMuttaya"
+     ]
+    },
+    {
+     "slot": 12,
+     "players": [
+      "Cloudgawdx",
+      "iQOOSOuLGobliN",
+      "9TxTANUUU",
+      "PATILxJATIN"
+     ]
+    },
+    {
+     "slot": 13,
+     "players": [
+      "AExBlaziken",
+      "TGxVIVEK7",
+      "文 · DRAGON",
+      "AExZilo"
+     ]
+    }
+   ],
+   "match": "c"
+  },
+  {
+   "file": "18.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "EMPxLivikigl",
+       "kills": 0
+      },
+      {
+       "name": "302 IS LIVE",
+       "kills": 5
+      },
+      {
+       "name": "EMPxgoku",
+       "kills": 0
+      },
+      {
+       "name": "EMPxSagarIGL",
+       "kills": 9
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4T MAX 999",
+       "kills": 0
+      },
+      {
+       "name": "MunawarHuLadle",
+       "kills": 1
+      },
+      {
+       "name": "ATOM ISèLIVE",
+       "kills": 3
+      },
+      {
+       "name": "4TRxFLeriXx",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "AExVENOMM",
+       "kills": 0
+      },
+      {
+       "name": "RexxyyThePapa",
+       "kills": 4
+      },
+      {
+       "name": "A9xTARUN",
+       "kills": 0
+      },
+      {
+       "name": "A9xRolf",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "7xRolexx",
+       "kills": 0
+      },
+      {
+       "name": "7xjumpeR",
+       "kills": 0
+      },
+      {
+       "name": "7xStishMuthMar",
+       "kills": 3
+      },
+      {
+       "name": "7xKingSlayer",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "iQOOSOuLGobliN",
+       "kills": 0
+      },
+      {
+       "name": "PATILxJATIN",
+       "kills": 1
+      },
+      {
+       "name": "9TxTANUUU",
+       "kills": 0
+      },
+      {
+       "name": "Cloudgawdx",
+       "kills": 1
+      }
+     ]
+    }
+   ],
+   "match": "c"
+  },
+  {
+   "file": "19.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "EMPxLivikigl",
+       "kills": 0
+      },
+      {
+       "name": "302 IS LIVE",
+       "kills": 5
+      },
+      {
+       "name": "EMPxgoku",
+       "kills": 0
+      },
+      {
+       "name": "EMPxSagarIGL",
+       "kills": 9
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4T MAX 999",
+       "kills": 0
+      },
+      {
+       "name": "MunawarHuLadle",
+       "kills": 1
+      },
+      {
+       "name": "ATOM ISèLIVE",
+       "kills": 3
+      },
+      {
+       "name": "4TRxFLeriXx",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "DROXXI GAMING",
+       "kills": 0
+      },
+      {
+       "name": "DSTRYXArJUN",
+       "kills": 0
+      },
+      {
+       "name": "GoldJONATHAN3",
+       "kills": 2
+      },
+      {
+       "name": "AARU JIII",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "AIxTIXZO",
+       "kills": 0
+      },
+      {
+       "name": "AIxKrAg",
+       "kills": 0
+      },
+      {
+       "name": "AIxFlexy",
+       "kills": 1
+      },
+      {
+       "name": "AIxZeD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "7SxGOJO",
+       "kills": 0
+      },
+      {
+       "name": "7SxSØNÛ",
+       "kills": 0
+      },
+      {
+       "name": "WR〆VIKRAM16",
+       "kills": 0
+      },
+      {
+       "name": "7SxSKÛLL",
+       "kills": 0
+      }
+     ]
+    }
+   ],
+   "match": "c"
+  },
+  {
+   "file": "20.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "EMPxLivikigl",
+       "kills": 0
+      },
+      {
+       "name": "302 IS LIVE",
+       "kills": 5
+      },
+      {
+       "name": "EMPxgoku",
+       "kills": 0
+      },
+      {
+       "name": "EMPxSagarIGL",
+       "kills": 9
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4T MAX 999",
+       "kills": 0
+      },
+      {
+       "name": "MunawarHuLadle",
+       "kills": 1
+      },
+      {
+       "name": "ATOM ISèLIVE",
+       "kills": 3
+      },
+      {
+       "name": "4TRxFLeriXx",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "EExANGAT",
+       "kills": 0
+      },
+      {
+       "name": "《vanshu£》",
+       "kills": 0
+      },
+      {
+       "name": "Tcシishu",
+       "kills": 0
+      },
+      {
+       "name": "ASvFLux",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "DTOWN多TenDor",
+       "kills": 0
+      },
+      {
+       "name": "THUG多FRAGG3R",
+       "kills": 2
+      },
+      {
+       "name": "THUG多MURD3R",
+       "kills": 3
+      },
+      {
+       "name": "WantstobeSLIce",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "THxBaKiJOD777",
+       "kills": 1
+      },
+      {
+       "name": "VAIBHAVBHAIYA",
+       "kills": 0
+      },
+      {
+       "name": "THxCASHHH",
+       "kills": 0
+      }
+     ]
+    }
+   ],
+   "match": "c"
+  },
+  {
+   "file": "21.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "EMPxLivikigl",
+       "kills": 0
+      },
+      {
+       "name": "302 IS LIVE",
+       "kills": 5
+      },
+      {
+       "name": "EMPxgoku",
+       "kills": 0
+      },
+      {
+       "name": "EMPxSagarIGL",
+       "kills": 9
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4T MAX 999",
+       "kills": 0
+      },
+      {
+       "name": "MunawarHuLadle",
+       "kills": 1
+      },
+      {
+       "name": "ATOM ISèLIVE",
+       "kills": 3
+      },
+      {
+       "name": "4TRxFLeriXx",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "AIxTIXZO",
+       "kills": 0
+      },
+      {
+       "name": "AIxKrAg",
+       "kills": 0
+      },
+      {
+       "name": "AIxFlexy",
+       "kills": 1
+      },
+      {
+       "name": "AIxZeD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "7SxGOJO",
+       "kills": 0
+      },
+      {
+       "name": "7SxSØNÛ",
+       "kills": 0
+      },
+      {
+       "name": "WR〆VIKRAM16",
+       "kills": 0
+      },
+      {
+       "name": "7SxSKÛLL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "ZMCxDraGooN",
+       "kills": 0
+      },
+      {
+       "name": "BIHARIchor",
+       "kills": 1
+      },
+      {
+       "name": "TAGJONATHAṄ69",
+       "kills": 0
+      }
+     ]
+    }
+   ],
+   "match": "c"
+  },
+  {
+   "file": "22.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "EMPxLivikigl",
+       "kills": 0
+      },
+      {
+       "name": "302 IS LIVE",
+       "kills": 5
+      },
+      {
+       "name": "EMPxgoku",
+       "kills": 0
+      },
+      {
+       "name": "EMPxSagarIGL",
+       "kills": 9
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4T MAX 999",
+       "kills": 0
+      },
+      {
+       "name": "MunawarHuLadle",
+       "kills": 1
+      },
+      {
+       "name": "ATOM ISèLIVE",
+       "kills": 3
+      },
+      {
+       "name": "4TRxFLeriXx",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "WRG | CHILLY",
+       "kills": 0
+      },
+      {
+       "name": "WRG | GHOST",
+       "kills": 0
+      },
+      {
+       "name": "WRG | TIGER",
+       "kills": 3
+      },
+      {
+       "name": "ATMOSPHERECafe",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "ʎeɯɹer2",
+       "kills": 0
+      },
+      {
+       "name": "आशीष्",
+       "kills": 0
+      },
+      {
+       "name": "Lobby×‿ Ja",
+       "kills": 0
+      },
+      {
+       "name": "DCKARTIK'",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "HaVoC · KratoS",
+       "kills": 0
+      },
+      {
+       "name": "· Titann ·",
+       "kills": 2
+      },
+      {
+       "name": "LattuMuttaya",
+       "kills": 0
+      },
+      {
+       "name": "HaVoC · SLĀYER",
+       "kills": 0
+      }
+     ]
+    }
+   ],
+   "match": "c"
+  },
+  {
+   "file": "23.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "EMPxLivikigl",
+       "kills": 0
+      },
+      {
+       "name": "302 IS LIVE",
+       "kills": 5
+      },
+      {
+       "name": "EMPxgoku",
+       "kills": 0
+      },
+      {
+       "name": "EMPxSagarIGL",
+       "kills": 9
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "4T MAX 999",
+       "kills": 0
+      },
+      {
+       "name": "MunawarHuLadle",
+       "kills": 1
+      },
+      {
+       "name": "ATOM ISèLIVE",
+       "kills": 3
+      },
+      {
+       "name": "4TRxFLeriXx",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "GExRuwad1O",
+       "kills": 1
+      },
+      {
+       "name": "GExDeadPlaYeR",
+       "kills": 2
+      },
+      {
+       "name": "GExMoOnGOD",
+       "kills": 0
+      },
+      {
+       "name": "GExFireGod",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "AExBlaziken",
+       "kills": 1
+      },
+      {
+       "name": "AExZilo",
+       "kills": 4
+      },
+      {
+       "name": "文 · DRAGON",
+       "kills": 0
+      },
+      {
+       "name": "TGxVIVEK7",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "ZAROOxFranky",
+       "kills": 1
+      },
+      {
+       "name": "IMxBroly",
+       "kills": 1
+      },
+      {
+       "name": "8INCHESGUY",
+       "kills": 3
+      },
+      {
+       "name": "SYMxARI",
+       "kills": 3
+      }
+     ]
+    }
+   ],
+   "match": "c"
+  },
+  {
+   "file": "24.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 14,
+     "players": [
+      "《vanshu£》",
+      "EExANGAT",
+      "Tcシishu",
+      "ASvFLux"
+     ]
+    },
+    {
+     "slot": 15,
+     "players": [
+      "GoldJONATHAN3",
+      "DSTRYXArJUN",
+      "AARU JIII",
+      "DROXXI GAMING"
+     ]
+    },
+    {
+     "slot": 16,
+     "players": [
+      "7SxGOJO",
+      "WR〆VIKRAM16",
+      "7SxSKÛLL",
+      "7SxSØNÛ"
+     ]
+    },
+    {
+     "slot": 17,
+     "players": [
+      "302 IS LIVE",
+      "EMPxSagarIGL",
+      "EMPxLivikigl",
+      "EMPxgoku"
+     ]
+    },
+    {
+     "slot": 18,
+     "players": [
+      "ʎeɯɹer2",
+      "आशीष्",
+      "Lobby×‿ Ja",
+      "DCKARTIK'"
+     ]
+    },
+    {
+     "slot": 19,
+     "players": [
+      "THxCASHHH",
+      "THxBaKiJOD777",
+      "VAIBHAVBHAIYA"
+     ]
+    },
+    {
+     "slot": 20,
+     "players": [
+      "7xStishMuthMar",
+      "7xRolexx",
+      "7xjumpeR",
+      "7xKingSlayer"
+     ]
+    },
+    {
+     "slot": 21,
+     "players": [
+      "AIxTIXZO",
+      "AIxKrAg",
+      "AIxZeD",
+      "AIxFlexy"
+     ]
+    },
+    {
+     "slot": 22,
+     "players": [
+      "SYMxARI",
+      "IMxBroly",
+      "8INCHESGUY",
+      "ZAROOxFranky"
+     ]
+    }
+   ],
+   "match": "c"
+  }
+ ]
+}

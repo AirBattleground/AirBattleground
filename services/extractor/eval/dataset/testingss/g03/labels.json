@@ -1,0 +1,726 @@
+{
+ "_about": "Hand-labelled ground truth for g03 (iPad 1600x1199, BGMI results screens only; no lobby screenshot; same team pool as g01/g02). Labelled by Claude from the images on 2026-10-17. Thin, widely-spaced names transcribed as fullwidth Latin; small stars as U+22C6. Note FATEWarîo (circumflex i, team with DExZac) is a different player from FATEWario of g01/g02. needs_human_check lists ambiguous glyphs.",
+ "needs_human_check": [
+  "ZD¬شيفان",
+  "ZD¬سوزان",
+  "ZD¬AFFXNNN",
+  "FATEWarîo",
+  "FIxAROHI",
+  "GodLsadil",
+  "◉Xəиoи◉",
+  "ＳＫＹＬＡ",
+  "ＳｏＭｅＯｎＥ",
+  "Ｇｕｎｄａ⋆",
+  "S͜aurabh⋆",
+  "BTxYAMRAJ",
+  "〆OKANE〆",
+  "GUJJAR乡SINGH",
+  "dUrGeShNal",
+  "AVERAGEPIAYeR",
+  "ASTRO々THUNDER",
+  "Lalá¹",
+  "ThappaxIGL",
+  "UP70xSkullE",
+  "XAUUSD×",
+  "· ChocoLaLo ·",
+  "⋆HΔRSHiTΔ⋆",
+  "會 | PriyansH ·",
+  "4TselzyOG",
+  "MTB · Ãɯaη"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ZD¬شيفان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬سوزان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬AFFXNNN",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "XcaliburArës",
+       "kills": 2
+      },
+      {
+       "name": "SHADOW BEAST",
+       "kills": 5
+      },
+      {
+       "name": "ÁÑASOP",
+       "kills": 4
+      },
+      {
+       "name": "FZxDBSwala",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "DestructorDEV",
+       "kills": 0
+      },
+      {
+       "name": "SE · VÏRÜS",
+       "kills": 1
+      },
+      {
+       "name": "CräckSHØT",
+       "kills": 0
+      },
+      {
+       "name": "XcaliburHades",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "DExZac",
+       "kills": 0
+      },
+      {
+       "name": "FATEWarîo",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "RBy HIRO",
+       "kills": 0
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ZD¬شيفان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬سوزان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬AFFXNNN",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "XcaliburArës",
+       "kills": 2
+      },
+      {
+       "name": "SHADOW BEAST",
+       "kills": 5
+      },
+      {
+       "name": "ÁÑASOP",
+       "kills": 4
+      },
+      {
+       "name": "FZxDBSwala",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "TMxKASHISH",
+       "kills": 0
+      },
+      {
+       "name": "TMxARSHI",
+       "kills": 0
+      },
+      {
+       "name": "FIxAROHI",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "UL々Goku",
+       "kills": 1
+      },
+      {
+       "name": "GodLsadil",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "◉Xəиoи◉",
+       "kills": 0
+      },
+      {
+       "name": "ＳＫＹＬＡ",
+       "kills": 1
+      },
+      {
+       "name": "GGxMiNi",
+       "kills": 0
+      },
+      {
+       "name": "DRExPsycho",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ZD¬شيفان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬سوزان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬AFFXNNN",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "XcaliburArës",
+       "kills": 2
+      },
+      {
+       "name": "SHADOW BEAST",
+       "kills": 5
+      },
+      {
+       "name": "ÁÑASOP",
+       "kills": 4
+      },
+      {
+       "name": "FZxDBSwala",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "Sparktbh",
+       "kills": 2
+      },
+      {
+       "name": "S͜aurabh⋆",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "7oceanPOWER",
+       "kills": 0
+      },
+      {
+       "name": "BTxYAMRAJ",
+       "kills": 0
+      },
+      {
+       "name": "PyarKregiii",
+       "kills": 0
+      },
+      {
+       "name": "BTxJaLLaD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "〆OKANE〆",
+       "kills": 1
+      },
+      {
+       "name": "QUEENxSHAILLY",
+       "kills": 2
+      },
+      {
+       "name": "GUJJAR乡SINGH",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ZD¬شيفان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬سوزان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬AFFXNNN",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "XcaliburArës",
+       "kills": 2
+      },
+      {
+       "name": "SHADOW BEAST",
+       "kills": 5
+      },
+      {
+       "name": "ÁÑASOP",
+       "kills": 4
+      },
+      {
+       "name": "FZxDBSwala",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "TXxHUNTERop",
+       "kills": 0
+      },
+      {
+       "name": "MUMBAI | 68",
+       "kills": 0
+      },
+      {
+       "name": "dUrGeShNal",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "DestructorDEV",
+       "kills": 0
+      },
+      {
+       "name": "SE · VÏRÜS",
+       "kills": 1
+      },
+      {
+       "name": "CräckSHØT",
+       "kills": 0
+      },
+      {
+       "name": "XcaliburHades",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "DExZac",
+       "kills": 0
+      },
+      {
+       "name": "FATEWarîo",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ZD¬شيفان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬سوزان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬AFFXNNN",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "XcaliburArës",
+       "kills": 2
+      },
+      {
+       "name": "SHADOW BEAST",
+       "kills": 5
+      },
+      {
+       "name": "ÁÑASOP",
+       "kills": 4
+      },
+      {
+       "name": "FZxDBSwala",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "AVERAGEPIAYeR",
+       "kills": 1
+      },
+      {
+       "name": "ASTRO々THUNDER",
+       "kills": 1
+      },
+      {
+       "name": "OK BRO",
+       "kills": 1
+      },
+      {
+       "name": "Lalá¹",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "ThappaxIGL",
+       "kills": 0
+      },
+      {
+       "name": "4NM×RÛSHGØD",
+       "kills": 0
+      },
+      {
+       "name": "TAxSHÁNKS",
+       "kills": 1
+      },
+      {
+       "name": "ＳｏＭｅＯｎＥ",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "AWxDeaDPlayeR",
+       "kills": 2
+      },
+      {
+       "name": "AWxOBITO",
+       "kills": 0
+      },
+      {
+       "name": "AWxGUDDU",
+       "kills": 1
+      },
+      {
+       "name": "AWxAQUARIOUS",
+       "kills": 4
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ZD¬شيفان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬سوزان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬AFFXNNN",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "XcaliburArës",
+       "kills": 2
+      },
+      {
+       "name": "SHADOW BEAST",
+       "kills": 5
+      },
+      {
+       "name": "ÁÑASOP",
+       "kills": 4
+      },
+      {
+       "name": "FZxDBSwala",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "UP70xSkullE",
+       "kills": 2
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 1
+      },
+      {
+       "name": "VoDBamBaaZ",
+       "kills": 1
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "XAUUSD×",
+       "kills": 2
+      },
+      {
+       "name": "· ChocoLaLo ·",
+       "kills": 2
+      },
+      {
+       "name": "TeamFxNadegod",
+       "kills": 0
+      },
+      {
+       "name": "⋆HΔRSHiTΔ⋆",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "Ｇｕｎｄａ⋆",
+       "kills": 0
+      },
+      {
+       "name": "TLxNaman",
+       "kills": 0
+      },
+      {
+       "name": "會 | PriyansH ·",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ZD¬شيفان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬سوزان",
+       "kills": 1
+      },
+      {
+       "name": "ZD¬AFFXNNN",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "XcaliburArës",
+       "kills": 2
+      },
+      {
+       "name": "SHADOW BEAST",
+       "kills": 5
+      },
+      {
+       "name": "ÁÑASOP",
+       "kills": 4
+      },
+      {
+       "name": "FZxDBSwala",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "4TstarX",
+       "kills": 2
+      },
+      {
+       "name": "4TselzyOG",
+       "kills": 2
+      },
+      {
+       "name": "4TAkashOP",
+       "kills": 3
+      },
+      {
+       "name": "4Tnav",
+       "kills": 4
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "UGxHunnTeRr",
+       "kills": 3
+      },
+      {
+       "name": "IPHONEPLAYEr",
+       "kills": 1
+      },
+      {
+       "name": "UGxOMEn",
+       "kills": 2
+      },
+      {
+       "name": "whosZERO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "MTB · Aafu",
+       "kills": 0
+      },
+      {
+       "name": "MTB · Honey",
+       "kills": 0
+      },
+      {
+       "name": "MTB · Ãɯaη",
+       "kills": 1
+      },
+      {
+       "name": "MTB · XSTUN",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

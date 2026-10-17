@@ -1,0 +1,657 @@
+{
+ "_about": "Hand-labelled ground truth for testingss g16 (6 iPad Pro 2732x2048 screenshots, BGMI in floating window, one match). Results only (no lobby list in this group); same scrim series/teams as g15 (OPUS Esports Rise Up Warfare), spellings kept consistent with g15. Labelled by Claude 2026-10-17. O vs 0 is visually identical in this font; such names are best guesses listed in needs_human_check.",
+ "needs_human_check": [
+  "BDLrPlasmaOG",
+  "BDLrJoDLEeeeee",
+  "TWOBxMOB777",
+  "DLSEAxZGOATiGL",
+  "TFKxINSANE16",
+  "TFKxZiEXKii16",
+  "TFKxLeVi04",
+  "OSMxSeizuOcO",
+  "IExCloneWNL",
+  "IExKhrieOG",
+  "IExKAeL",
+  "IExDazzlíñg",
+  "4FMxOPO",
+  "TCrowSwordxOP",
+  "ONExLoOk",
+  "ONExigIANKUSH",
+  "LAXsStuNner07",
+  "OSMxNoSoul",
+  "OSMxDR3WQT",
+  "1NonlyMittuDon",
+  "MNesXDemonOG",
+  "OSTxScarlxssOG",
+  "DExJOKER18",
+  "OPUSxDINO11",
+  "YG · NoNgO",
+  "TSBxKHATRI728"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "BTWxMAHARATHII",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSukunaJod",
+       "kills": 1
+      },
+      {
+       "name": "BTWxSAVAGE",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSAPROplayz",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BDLrSlayer",
+       "kills": 3
+      },
+      {
+       "name": "BDLrPlasmaOG",
+       "kills": 5
+      },
+      {
+       "name": "BDLrJoDLEeeeee",
+       "kills": 4
+      },
+      {
+       "name": "SMITH XD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "DLSEAxZGOATiGL",
+       "kills": 1
+      },
+      {
+       "name": "TWOBxMOB777",
+       "kills": 0
+      },
+      {
+       "name": "MH23kaNIGGA",
+       "kills": 1
+      },
+      {
+       "name": "DLSEAxSAQUIB",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "TFKxINSANE16",
+       "kills": 0
+      },
+      {
+       "name": "TFKxZiEXKii16",
+       "kills": 0
+      },
+      {
+       "name": "TFKxSexYRiJeT",
+       "kills": 0
+      },
+      {
+       "name": "TFKxLeVi04",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "OSMxWAKANDA",
+       "kills": 0
+      },
+      {
+       "name": "OSMxJesTer",
+       "kills": 1
+      },
+      {
+       "name": "OSMxMantaStyle",
+       "kills": 0
+      },
+      {
+       "name": "OSMxSeizuOcO",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "BTWxMAHARATHII",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSukunaJod",
+       "kills": 1
+      },
+      {
+       "name": "BTWxSAVAGE",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSAPROplayz",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BDLrSlayer",
+       "kills": 3
+      },
+      {
+       "name": "BDLrPlasmaOG",
+       "kills": 5
+      },
+      {
+       "name": "BDLrJoDLEeeeee",
+       "kills": 4
+      },
+      {
+       "name": "SMITH XD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "IExCloneWNL",
+       "kills": 1
+      },
+      {
+       "name": "IExDazzlíñg",
+       "kills": 0
+      },
+      {
+       "name": "IExKhrieOG",
+       "kills": 0
+      },
+      {
+       "name": "IExKAeL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "4FMxArjit2Nub",
+       "kills": 0
+      },
+      {
+       "name": "TCrowSwordxOP",
+       "kills": 0
+      },
+      {
+       "name": "4FMxLavis",
+       "kills": 1
+      },
+      {
+       "name": "4FMxOPO",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "BTWxMAHARATHII",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSukunaJod",
+       "kills": 1
+      },
+      {
+       "name": "BTWxSAVAGE",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSAPROplayz",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BDLrSlayer",
+       "kills": 3
+      },
+      {
+       "name": "BDLrPlasmaOG",
+       "kills": 5
+      },
+      {
+       "name": "BDLrJoDLEeeeee",
+       "kills": 4
+      },
+      {
+       "name": "SMITH XD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "OSMxWAKANDA",
+       "kills": 0
+      },
+      {
+       "name": "OSMxJesTer",
+       "kills": 1
+      },
+      {
+       "name": "OSMxMantaStyle",
+       "kills": 0
+      },
+      {
+       "name": "OSMxSeizuOcO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "ONExKRISHNA",
+       "kills": 1
+      },
+      {
+       "name": "ONExLoOk",
+       "kills": 0
+      },
+      {
+       "name": "ONExigIANKUSH",
+       "kills": 0
+      },
+      {
+       "name": "ONExASTRONAUT",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "4ABxBo",
+       "kills": 0
+      },
+      {
+       "name": "MuFFinAY",
+       "kills": 0
+      },
+      {
+       "name": "4ABxMALIT",
+       "kills": 0
+      },
+      {
+       "name": "LAXsStuNner07",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "BTWxMAHARATHII",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSukunaJod",
+       "kills": 1
+      },
+      {
+       "name": "BTWxSAVAGE",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSAPROplayz",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BDLrSlayer",
+       "kills": 3
+      },
+      {
+       "name": "BDLrPlasmaOG",
+       "kills": 5
+      },
+      {
+       "name": "BDLrJoDLEeeeee",
+       "kills": 4
+      },
+      {
+       "name": "SMITH XD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "OSMxNoSoul",
+       "kills": 0
+      },
+      {
+       "name": "EAExSHOGUN",
+       "kills": 0
+      },
+      {
+       "name": "OSMxZELL4L",
+       "kills": 1
+      },
+      {
+       "name": "OSMxDR3WQT",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "CLSxAbhi88",
+       "kills": 3
+      },
+      {
+       "name": "CLSxTharkiii",
+       "kills": 7
+      },
+      {
+       "name": "1NonlyMittuDon",
+       "kills": 2
+      },
+      {
+       "name": "ACxRambo",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "MNesXREXZ",
+       "kills": 0
+      },
+      {
+       "name": "MNesXSHANKs",
+       "kills": 0
+      },
+      {
+       "name": "ngxd2",
+       "kills": 1
+      },
+      {
+       "name": "MNesXDemonOG",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "BTWxMAHARATHII",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSukunaJod",
+       "kills": 1
+      },
+      {
+       "name": "BTWxSAVAGE",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSAPROplayz",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BDLrSlayer",
+       "kills": 3
+      },
+      {
+       "name": "BDLrPlasmaOG",
+       "kills": 5
+      },
+      {
+       "name": "BDLrJoDLEeeeee",
+       "kills": 4
+      },
+      {
+       "name": "SMITH XD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "GSxBabybot",
+       "kills": 3
+      },
+      {
+       "name": "GSxEminNub",
+       "kills": 2
+      },
+      {
+       "name": "GSxClutchy",
+       "kills": 2
+      },
+      {
+       "name": "GSxYIN",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "TSBxKHATRI728",
+       "kills": 1
+      },
+      {
+       "name": "DhakkadITACHI",
+       "kills": 1
+      },
+      {
+       "name": "RICH JOKER",
+       "kills": 0
+      },
+      {
+       "name": "TSBxNikhil",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "OSTxScarlxssOG",
+       "kills": 0
+      },
+      {
+       "name": "OSTxBeeeNuut",
+       "kills": 0
+      },
+      {
+       "name": "OSTxFreYzeY",
+       "kills": 1
+      },
+      {
+       "name": "OSTxNotSus77",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "BTWxMAHARATHII",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSukunaJod",
+       "kills": 1
+      },
+      {
+       "name": "BTWxSAVAGE",
+       "kills": 3
+      },
+      {
+       "name": "BTWxSAPROplayz",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "BDLrSlayer",
+       "kills": 3
+      },
+      {
+       "name": "BDLrPlasmaOG",
+       "kills": 5
+      },
+      {
+       "name": "BDLrJoDLEeeeee",
+       "kills": 4
+      },
+      {
+       "name": "SMITH XD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "DExJOKER18",
+       "kills": 0
+      },
+      {
+       "name": "OPUSxNavNeet",
+       "kills": 0
+      },
+      {
+       "name": "OPUSxNAYAK",
+       "kills": 0
+      },
+      {
+       "name": "OPUSxDINO11",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "YG · FlanKer",
+       "kills": 1
+      },
+      {
+       "name": "YG · Arex",
+       "kills": 0
+      },
+      {
+       "name": "YG · NoNgO",
+       "kills": 0
+      },
+      {
+       "name": "YG · COCOMELÓN",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

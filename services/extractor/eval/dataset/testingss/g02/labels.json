@@ -1,0 +1,795 @@
+{
+ "_about": "Hand-labelled ground truth for g02 (iPad 1600x1199, BGMI results screens only; no lobby screenshot in this group; mostly the same teams as g01). Labelled by Claude from the images on 2026-10-17. Thin, widely-spaced names transcribed as fullwidth Latin; small stars as U+22C6; indented names (LAIBAA, BTxYAMRAJ) labelled without the leading blank. needs_human_check lists ambiguous glyphs.",
+ "needs_human_check": [
+  "⋆HΔRSHiTΔ⋆",
+  "· ChocoLaLo ·",
+  "AVERAGEPIAYeR",
+  "FIxAROHI",
+  "LAIBAA",
+  "BTxYAMRAJ",
+  "MTB · Ãɯaη",
+  "S͜aurabh⋆",
+  "DEATHGØD⋆ie",
+  "SamOG999",
+  "GodLsadil",
+  "XAUUSD×",
+  "dUrGeShNal",
+  "◉Xəиoи◉",
+  "ＳＫＹＬＡ",
+  "ＳｏＭｅＯｎＥ",
+  "ZD¬سعاد",
+  "ZD¬AFFXNNN",
+  "ZD¬شيفان",
+  "znndnxnnxnxnx",
+  "『Mr』⟜PRAsad",
+  "BandóokBáaZ5",
+  "〆OKANE〆",
+  "GUJJAR乡SINGH",
+  "UP70xSkullE",
+  "ThappaxIGL",
+  "4TselzyOG"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "⋆HΔRSHiTΔ⋆",
+       "kills": 6
+      },
+      {
+       "name": "· ChocoLaLo ·",
+       "kills": 4
+      },
+      {
+       "name": "TeamFxNadegod",
+       "kills": 1
+      },
+      {
+       "name": "IM | VENGEANĆE",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "UP70xSkullE",
+       "kills": 1
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 3
+      },
+      {
+       "name": "VoDBamBaaZ",
+       "kills": 3
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "FATESuKuNà",
+       "kills": 1
+      },
+      {
+       "name": "FATEadmino",
+       "kills": 2
+      },
+      {
+       "name": "FATEWario",
+       "kills": 1
+      },
+      {
+       "name": "FATEZyreX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "VLxPHANTOM",
+       "kills": 1
+      },
+      {
+       "name": "VLxLUFY",
+       "kills": 0
+      },
+      {
+       "name": "VLxMUSA",
+       "kills": 0
+      },
+      {
+       "name": "reppyop",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "AWxGUDDU",
+       "kills": 0
+      },
+      {
+       "name": "AWxOBITO",
+       "kills": 0
+      },
+      {
+       "name": "AWxDeaDPlayeR",
+       "kills": 0
+      },
+      {
+       "name": "AWxAQUARIOUS",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "⋆HΔRSHiTΔ⋆",
+       "kills": 6
+      },
+      {
+       "name": "· ChocoLaLo ·",
+       "kills": 4
+      },
+      {
+       "name": "TeamFxNadegod",
+       "kills": 1
+      },
+      {
+       "name": "IM | VENGEANĆE",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "UP70xSkullE",
+       "kills": 1
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 3
+      },
+      {
+       "name": "VoDBamBaaZ",
+       "kills": 3
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "MTB · Aafu",
+       "kills": 0
+      },
+      {
+       "name": "MTB · Honey",
+       "kills": 1
+      },
+      {
+       "name": "MTB · Ãɯaη",
+       "kills": 0
+      },
+      {
+       "name": "MTB · XSTUN",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "TMxKASHISH",
+       "kills": 0
+      },
+      {
+       "name": "TMxARSHI",
+       "kills": 0
+      },
+      {
+       "name": "FIxAROHI",
+       "kills": 1
+      },
+      {
+       "name": "LAIBAA",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "DestructorDEV",
+       "kills": 1
+      },
+      {
+       "name": "SE · VÏRÜS",
+       "kills": 1
+      },
+      {
+       "name": "CräckSHØT",
+       "kills": 1
+      },
+      {
+       "name": "XcaliburHades",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "⋆HΔRSHiTΔ⋆",
+       "kills": 6
+      },
+      {
+       "name": "· ChocoLaLo ·",
+       "kills": 4
+      },
+      {
+       "name": "TeamFxNadegod",
+       "kills": 1
+      },
+      {
+       "name": "IM | VENGEANĆE",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "UP70xSkullE",
+       "kills": 1
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 3
+      },
+      {
+       "name": "VoDBamBaaZ",
+       "kills": 3
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "4TstarX",
+       "kills": 5
+      },
+      {
+       "name": "4TselzyOG",
+       "kills": 1
+      },
+      {
+       "name": "4TAkashOP",
+       "kills": 1
+      },
+      {
+       "name": "4Tnav",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "XAUUSD×",
+       "kills": 0
+      },
+      {
+       "name": "GodLsadil",
+       "kills": 0
+      },
+      {
+       "name": "UL々Goku",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "7oceanPOWER",
+       "kills": 2
+      },
+      {
+       "name": "BTxYAMRAJ",
+       "kills": 1
+      },
+      {
+       "name": "PyarKregiii",
+       "kills": 2
+      },
+      {
+       "name": "BTxJaLLaD",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "⋆HΔRSHiTΔ⋆",
+       "kills": 6
+      },
+      {
+       "name": "· ChocoLaLo ·",
+       "kills": 4
+      },
+      {
+       "name": "TeamFxNadegod",
+       "kills": 1
+      },
+      {
+       "name": "IM | VENGEANĆE",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "UP70xSkullE",
+       "kills": 1
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 3
+      },
+      {
+       "name": "VoDBamBaaZ",
+       "kills": 3
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "DEATHGØD⋆ie",
+       "kills": 0
+      },
+      {
+       "name": "S͜aurabh⋆",
+       "kills": 0
+      },
+      {
+       "name": "whyYASH",
+       "kills": 0
+      },
+      {
+       "name": "Sparktbh",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "XcaliburArës",
+       "kills": 1
+      },
+      {
+       "name": "SHADOW BEAST",
+       "kills": 1
+      },
+      {
+       "name": "ÁÑASOP",
+       "kills": 1
+      },
+      {
+       "name": "FZxDBSwala",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "SamOG999",
+       "kills": 1
+      },
+      {
+       "name": "ARxPRO",
+       "kills": 1
+      },
+      {
+       "name": "ARxWizarD",
+       "kills": 0
+      },
+      {
+       "name": "TWOBxEGGY666",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "⋆HΔRSHiTΔ⋆",
+       "kills": 6
+      },
+      {
+       "name": "· ChocoLaLo ·",
+       "kills": 4
+      },
+      {
+       "name": "TeamFxNadegod",
+       "kills": 1
+      },
+      {
+       "name": "IM | VENGEANĆE",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "UP70xSkullE",
+       "kills": 1
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 3
+      },
+      {
+       "name": "VoDBamBaaZ",
+       "kills": 3
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "BxM ICONIC",
+       "kills": 0
+      },
+      {
+       "name": "DExZac",
+       "kills": 0
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 0
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "TXxHUNTERop",
+       "kills": 0
+      },
+      {
+       "name": "pTron | X",
+       "kills": 0
+      },
+      {
+       "name": "MUMBAI | 68",
+       "kills": 0
+      },
+      {
+       "name": "dUrGeShNal",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "AVERAGEPIAYeR",
+       "kills": 0
+      },
+      {
+       "name": "OK BRO",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "⋆HΔRSHiTΔ⋆",
+       "kills": 6
+      },
+      {
+       "name": "· ChocoLaLo ·",
+       "kills": 4
+      },
+      {
+       "name": "TeamFxNadegod",
+       "kills": 1
+      },
+      {
+       "name": "IM | VENGEANĆE",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "UP70xSkullE",
+       "kills": 1
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 3
+      },
+      {
+       "name": "VoDBamBaaZ",
+       "kills": 3
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "DRExPsycho",
+       "kills": 0
+      },
+      {
+       "name": "ＳＫＹＬＡ",
+       "kills": 0
+      },
+      {
+       "name": "◉Xəиoи◉",
+       "kills": 1
+      },
+      {
+       "name": "GGxMiNi",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "ZD¬سعاد",
+       "kills": 0
+      },
+      {
+       "name": "ZD¬AFFXNNN",
+       "kills": 0
+      },
+      {
+       "name": "ZD¬شيفان",
+       "kills": 0
+      },
+      {
+       "name": "znndnxnnxnxnx",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "BandóokBáaZ5",
+       "kills": 0
+      },
+      {
+       "name": "『Mr』⟜PRAsad",
+       "kills": 0
+      },
+      {
+       "name": "WARLxASTRO",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "⋆HΔRSHiTΔ⋆",
+       "kills": 6
+      },
+      {
+       "name": "· ChocoLaLo ·",
+       "kills": 4
+      },
+      {
+       "name": "TeamFxNadegod",
+       "kills": 1
+      },
+      {
+       "name": "IM | VENGEANĆE",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "UP70xSkullE",
+       "kills": 1
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 3
+      },
+      {
+       "name": "VoDBamBaaZ",
+       "kills": 3
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "ThappaxIGL",
+       "kills": 1
+      },
+      {
+       "name": "4NM×RÛSHGØD",
+       "kills": 2
+      },
+      {
+       "name": "TAxSHÁNKS",
+       "kills": 4
+      },
+      {
+       "name": "ＳｏＭｅＯｎＥ",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "UGxHunnTeRr",
+       "kills": 0
+      },
+      {
+       "name": "IPHONEPLAYEr",
+       "kills": 4
+      },
+      {
+       "name": "UGxOMEn",
+       "kills": 2
+      },
+      {
+       "name": "whosZERO",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "〆OKANE〆",
+       "kills": 1
+      },
+      {
+       "name": "onlySAM69",
+       "kills": 1
+      },
+      {
+       "name": "QUEENxSHAILLY",
+       "kills": 3
+      },
+      {
+       "name": "GUJJAR乡SINGH",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,917 @@
+{
+ "_about": "Hand-labelled ground truth for g04 (iPad 1600x1199; BGMI in a floating window over a Canva editor; results screens only, no lobby). Labelled by Claude from the images on 2026-10-17. Rank 12 has a player whose name renders blank (0 finishes) - labelled as U+3164 HANGUL FILLER, the usual BGMI blank-name character; confirm. Thin fallback-font names transcribed as fullwidth Latin. needs_human_check lists ambiguous glyphs.",
+ "needs_human_check": [
+  "ㅤ",
+  "ANKIT",
+  "J A C K",
+  "K R I S H",
+  "THEツPUÑISHER",
+  "THE ツ HɆRO",
+  "30 FPS WALa",
+  "Mop£HUBHAI",
+  "G1xOjuuOG",
+  "AVERAGEPIAYeR",
+  "IQxXENOZ",
+  "IQxOGR",
+  "KiZnVivekkOp",
+  "ChalReNOoB",
+  "VPExChalReNooB",
+  "DCxKRISHNA10",
+  "DCxNEMESIS",
+  "UltraBxCHiNUr7",
+  "Ｍｒ·ＬａＬａ",
+  "DRKxAnKú",
+  "LAIBAA",
+  "DExJOi",
+  "KTxADiTyaaOP",
+  "KTxBaBaTILLU",
+  "4PExFlashh03",
+  "BTWxWonzeIGL",
+  "BTWxGoDLEveL09",
+  "G1xRaiKenOG",
+  "G1xAiMGOD08",
+  "ZNTxMYSTERIO"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TeamNMxNOVA",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxYÅSH",
+       "kills": 4
+      },
+      {
+       "name": "ZNTxMYSTERIO",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxRohit",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "FATESuKuNà",
+       "kills": 2
+      },
+      {
+       "name": "FATEadmino",
+       "kills": 0
+      },
+      {
+       "name": "FATEWario",
+       "kills": 3
+      },
+      {
+       "name": "FATEZyreX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "RBy SCOOBY",
+       "kills": 1
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 0
+      },
+      {
+       "name": "BxM ICONIC",
+       "kills": 0
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "30 FPS WALa",
+       "kills": 0
+      },
+      {
+       "name": "steKEENYx",
+       "kills": 1
+      },
+      {
+       "name": "THEツPUÑISHER",
+       "kills": 0
+      },
+      {
+       "name": "MLGHYPER",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "UGxHunnTeRr",
+       "kills": 0
+      },
+      {
+       "name": "IPHONEPLAYEr",
+       "kills": 0
+      },
+      {
+       "name": "UGxOMEn",
+       "kills": 1
+      },
+      {
+       "name": "whosZERO",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TeamNMxNOVA",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxYÅSH",
+       "kills": 4
+      },
+      {
+       "name": "ZNTxMYSTERIO",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxRohit",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "FATESuKuNà",
+       "kills": 2
+      },
+      {
+       "name": "FATEadmino",
+       "kills": 0
+      },
+      {
+       "name": "FATEWario",
+       "kills": 3
+      },
+      {
+       "name": "FATEZyreX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "30 FPS WALa",
+       "kills": 0
+      },
+      {
+       "name": "steKEENYx",
+       "kills": 1
+      },
+      {
+       "name": "THEツPUÑISHER",
+       "kills": 0
+      },
+      {
+       "name": "MLGHYPER",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "UGxHunnTeRr",
+       "kills": 0
+      },
+      {
+       "name": "IPHONEPLAYEr",
+       "kills": 0
+      },
+      {
+       "name": "UGxOMEn",
+       "kills": 1
+      },
+      {
+       "name": "whosZERO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 24,
+     "players": [
+      {
+       "name": "TCYTxDINESH",
+       "kills": 0
+      },
+      {
+       "name": "LVxBerry",
+       "kills": 0
+      },
+      {
+       "name": "CakeNakYT",
+       "kills": 1
+      },
+      {
+       "name": "ChanduYTisLive",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TeamNMxNOVA",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxYÅSH",
+       "kills": 4
+      },
+      {
+       "name": "ZNTxMYSTERIO",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxRohit",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "FATESuKuNà",
+       "kills": 2
+      },
+      {
+       "name": "FATEadmino",
+       "kills": 0
+      },
+      {
+       "name": "FATEWario",
+       "kills": 3
+      },
+      {
+       "name": "FATEZyreX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "ANKIT",
+       "kills": 0
+      },
+      {
+       "name": "GODJOHNATHANIG",
+       "kills": 0
+      },
+      {
+       "name": "ㅤ",
+       "kills": 0
+      },
+      {
+       "name": "J A C K",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "Mop£HUBHAI",
+       "kills": 2
+      },
+      {
+       "name": "ChoduCidSeHain",
+       "kills": 2
+      },
+      {
+       "name": "G1xOjuuOG",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "AVERAGEPIAYeR",
+       "kills": 0
+      },
+      {
+       "name": "7x فيضان",
+       "kills": 0
+      },
+      {
+       "name": "WETxIMMORTAL",
+       "kills": 0
+      },
+      {
+       "name": "OK BRO",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TeamNMxNOVA",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxYÅSH",
+       "kills": 4
+      },
+      {
+       "name": "ZNTxMYSTERIO",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxRohit",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "FATESuKuNà",
+       "kills": 2
+      },
+      {
+       "name": "FATEadmino",
+       "kills": 0
+      },
+      {
+       "name": "FATEWario",
+       "kills": 3
+      },
+      {
+       "name": "FATEZyreX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "THE ツ HɆRO",
+       "kills": 0
+      },
+      {
+       "name": "PUNITH GAMING",
+       "kills": 0
+      },
+      {
+       "name": "JhakaasXPlayer",
+       "kills": 2
+      },
+      {
+       "name": "Choke Player",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "BAT KA GRIP",
+       "kills": 1
+      },
+      {
+       "name": "IQxXENOZ",
+       "kills": 0
+      },
+      {
+       "name": "TAxSPIKEeee",
+       "kills": 1
+      },
+      {
+       "name": "IQxOGR",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "KiZnYANG69",
+       "kills": 3
+      },
+      {
+       "name": "KiZnDREAMERog",
+       "kills": 0
+      },
+      {
+       "name": "KiZnVivekkOp",
+       "kills": 0
+      },
+      {
+       "name": "KiZnAYAAN",
+       "kills": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TeamNMxNOVA",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxYÅSH",
+       "kills": 4
+      },
+      {
+       "name": "ZNTxMYSTERIO",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxRohit",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "FATESuKuNà",
+       "kills": 2
+      },
+      {
+       "name": "FATEadmino",
+       "kills": 0
+      },
+      {
+       "name": "FATEWario",
+       "kills": 3
+      },
+      {
+       "name": "FATEZyreX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "UltraBxCHiNUr7",
+       "kills": 0
+      },
+      {
+       "name": "UltraBxMANAV",
+       "kills": 0
+      },
+      {
+       "name": "UltraBxAIZEN",
+       "kills": 0
+      },
+      {
+       "name": "UltraBxAPEX",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "DCxNEMESIS",
+       "kills": 0
+      },
+      {
+       "name": "DCxKRISHNA10",
+       "kills": 0
+      },
+      {
+       "name": "PGRxFALCON",
+       "kills": 0
+      },
+      {
+       "name": "ChalReNOoB",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "VPExMAXTRO",
+       "kills": 0
+      },
+      {
+       "name": "VPExChalReNooB",
+       "kills": 0
+      },
+      {
+       "name": "K R I S H",
+       "kills": 0
+      },
+      {
+       "name": "DExREX",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TeamNMxNOVA",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxYÅSH",
+       "kills": 4
+      },
+      {
+       "name": "ZNTxMYSTERIO",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxRohit",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "FATESuKuNà",
+       "kills": 2
+      },
+      {
+       "name": "FATEadmino",
+       "kills": 0
+      },
+      {
+       "name": "FATEWario",
+       "kills": 3
+      },
+      {
+       "name": "FATEZyreX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "KnoXxNiinzeE",
+       "kills": 1
+      },
+      {
+       "name": "ZeBLAKE",
+       "kills": 2
+      },
+      {
+       "name": "KnoXxNEKROS",
+       "kills": 1
+      },
+      {
+       "name": "KnoXxTANMAY",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "Ｍｒ·ＬａＬａ",
+       "kills": 0
+      },
+      {
+       "name": "DRKxAnKú",
+       "kills": 0
+      },
+      {
+       "name": "DRKxXAVI",
+       "kills": 0
+      },
+      {
+       "name": "DRKxRIO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "TMxKASHISH",
+       "kills": 4
+      },
+      {
+       "name": "TMxKIRRU",
+       "kills": 1
+      },
+      {
+       "name": "LAIBAA",
+       "kills": 3
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TeamNMxNOVA",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxYÅSH",
+       "kills": 4
+      },
+      {
+       "name": "ZNTxMYSTERIO",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxRohit",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "FATESuKuNà",
+       "kills": 2
+      },
+      {
+       "name": "FATEadmino",
+       "kills": 0
+      },
+      {
+       "name": "FATEWario",
+       "kills": 3
+      },
+      {
+       "name": "FATEZyreX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "TGxAYAN",
+       "kills": 1
+      },
+      {
+       "name": "CRSxSmacky",
+       "kills": 0
+      },
+      {
+       "name": "TfxLazzy",
+       "kills": 2
+      },
+      {
+       "name": "UExARxSPARKIE",
+       "kills": 6
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "4BitTHUG",
+       "kills": 0
+      },
+      {
+       "name": "KTxADiTyaaOP",
+       "kills": 1
+      },
+      {
+       "name": "KTxBaBaTILLU",
+       "kills": 6
+      },
+      {
+       "name": "LaWdEkaMEta",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "ERŚHAAÑ",
+       "kills": 3
+      },
+      {
+       "name": "DExJOi",
+       "kills": 1
+      },
+      {
+       "name": "DRExPsycho",
+       "kills": 5
+      },
+      {
+       "name": "DRExSamBOSS",
+       "kills": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "08.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "TeamNMxNOVA",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxYÅSH",
+       "kills": 4
+      },
+      {
+       "name": "ZNTxMYSTERIO",
+       "kills": 2
+      },
+      {
+       "name": "TeamNMxRohit",
+       "kills": 7
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "FATESuKuNà",
+       "kills": 2
+      },
+      {
+       "name": "FATEadmino",
+       "kills": 0
+      },
+      {
+       "name": "FATEWario",
+       "kills": 3
+      },
+      {
+       "name": "FATEZyreX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "4PExFlashh03",
+       "kills": 1
+      },
+      {
+       "name": "Khabatataa",
+       "kills": 0
+      },
+      {
+       "name": "4PExFLEX",
+       "kills": 1
+      },
+      {
+       "name": "4PExGoLeM",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "BTWxMEGA",
+       "kills": 0
+      },
+      {
+       "name": "BTWxWonzeIGL",
+       "kills": 0
+      },
+      {
+       "name": "BTWxTryFlack",
+       "kills": 0
+      },
+      {
+       "name": "BTWxGoDLEveL09",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "G1xBee",
+       "kills": 0
+      },
+      {
+       "name": "G1xRaiKenOG",
+       "kills": 0
+      },
+      {
+       "name": "G1xABDUL",
+       "kills": 0
+      },
+      {
+       "name": "G1xAiMGOD08",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

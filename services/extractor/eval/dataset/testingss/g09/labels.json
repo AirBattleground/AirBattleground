@@ -1,0 +1,790 @@
+{
+ "_about": "Hand-labelled ground truth for g09 (iPad 1600x1199, BGMI in floating window over WhatsApp; results screens only, no lobby screenshot in this group). Labelled by Claude 2026-10-17. Names in needs_human_check have ambiguous glyphs.",
+ "needs_human_check": [
+  "亗CRULE乛KAI",
+  "TSxAʟᴏɴɛ",
+  "F2fxSexasuiiOg",
+  "AMpOperfectBoi",
+  "TOXIIC⟜KILLER",
+  "DemonÓG",
+  "PHØËÑÎX彡x",
+  "OPUSxDINO11",
+  "R I Gsssssss",
+  "KDxANAND",
+  "LExADIop",
+  "Conc℮ptX",
+  "★DEMON★",
+  "JG★ARJUN",
+  "B90 | TOKYOBROT",
+  "B90 | CHOTZ",
+  "RvIsLive",
+  "TMTxNOoB"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "F2fxVinila",
+       "kills": 1
+      },
+      {
+       "name": "F2fxPriya",
+       "kills": 3
+      },
+      {
+       "name": "F2fxSexasuiiOg",
+       "kills": 5
+      },
+      {
+       "name": "亗CRULE乛KAI",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "GONxTHOR",
+       "kills": 0
+      },
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 4
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "AMpVAIKO",
+       "kills": 2
+      },
+      {
+       "name": "AMpOperfectBoi",
+       "kills": 0
+      },
+      {
+       "name": "AMpSPIDY",
+       "kills": 1
+      },
+      {
+       "name": "AMpASUR",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "VRxPiKACHU",
+       "kills": 0
+      },
+      {
+       "name": "OPTiMUS | PRiME",
+       "kills": 0
+      },
+      {
+       "name": "BSxSubhamm",
+       "kills": 0
+      },
+      {
+       "name": "NTxSHRIYANS",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "AoPxGaMerBoy",
+       "kills": 0
+      },
+      {
+       "name": "DKGxWiZaRD",
+       "kills": 0
+      },
+      {
+       "name": "GODxDxBABA",
+       "kills": 1
+      },
+      {
+       "name": "PURANA PANDA",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "F2fxVinila",
+       "kills": 1
+      },
+      {
+       "name": "F2fxPriya",
+       "kills": 3
+      },
+      {
+       "name": "F2fxSexasuiiOg",
+       "kills": 5
+      },
+      {
+       "name": "亗CRULE乛KAI",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "GONxTHOR",
+       "kills": 0
+      },
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 4
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "KoDATOM",
+       "kills": 0
+      },
+      {
+       "name": "TSSxKamranJod",
+       "kills": 0
+      },
+      {
+       "name": "TOXIIC⟜KILLER",
+       "kills": 0
+      },
+      {
+       "name": "DemonÓG",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "· TAATYA",
+       "kills": 0
+      },
+      {
+       "name": "TheOGxSHADOW",
+       "kills": 0
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 0
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "I AM MUZAN",
+       "kills": 0
+      },
+      {
+       "name": "STX×ZOOP",
+       "kills": 0
+      },
+      {
+       "name": "Aulter07",
+       "kills": 0
+      },
+      {
+       "name": "TCxAdarsh",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "F2fxVinila",
+       "kills": 1
+      },
+      {
+       "name": "F2fxPriya",
+       "kills": 3
+      },
+      {
+       "name": "F2fxSexasuiiOg",
+       "kills": 5
+      },
+      {
+       "name": "亗CRULE乛KAI",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "GONxTHOR",
+       "kills": 0
+      },
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 4
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "MRITYUxNAYAK",
+       "kills": 0
+      },
+      {
+       "name": "MRITYUxDEVTA",
+       "kills": 0
+      },
+      {
+       "name": "MRITYUxDAAN",
+       "kills": 0
+      },
+      {
+       "name": "MRITYUxSHANI",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "CLOWN卍PINTU",
+       "kills": 1
+      },
+      {
+       "name": "ShärKy · OP",
+       "kills": 0
+      },
+      {
+       "name": "PHØËÑÎX彡x",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "TMTxLâLàa",
+       "kills": 0
+      },
+      {
+       "name": "TMTxNOoB",
+       "kills": 0
+      },
+      {
+       "name": "TMT×PAIMON",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "F2fxVinila",
+       "kills": 1
+      },
+      {
+       "name": "F2fxPriya",
+       "kills": 3
+      },
+      {
+       "name": "F2fxSexasuiiOg",
+       "kills": 5
+      },
+      {
+       "name": "亗CRULE乛KAI",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "GONxTHOR",
+       "kills": 0
+      },
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 4
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "AExRANGErYT",
+       "kills": 1
+      },
+      {
+       "name": "SiRxBEAST",
+       "kills": 4
+      },
+      {
+       "name": "RvIsLive",
+       "kills": 2
+      },
+      {
+       "name": "VickyツGandva",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "iNvVLIKEC",
+       "kills": 0
+      },
+      {
+       "name": "iNvWuxin",
+       "kills": 1
+      },
+      {
+       "name": "iNvJACKX",
+       "kills": 2
+      },
+      {
+       "name": "iNvRushi",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "DExJOKER18",
+       "kills": 0
+      },
+      {
+       "name": "OPUSxNavNeet",
+       "kills": 5
+      },
+      {
+       "name": "OPUSxArnav",
+       "kills": 2
+      },
+      {
+       "name": "OPUSxDINO11",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "F2fxVinila",
+       "kills": 1
+      },
+      {
+       "name": "F2fxPriya",
+       "kills": 3
+      },
+      {
+       "name": "F2fxSexasuiiOg",
+       "kills": 5
+      },
+      {
+       "name": "亗CRULE乛KAI",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "GONxTHOR",
+       "kills": 0
+      },
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 4
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "vampHARDIK",
+       "kills": 1
+      },
+      {
+       "name": "vampABHI",
+       "kills": 2
+      },
+      {
+       "name": "vampVALDUS",
+       "kills": 4
+      },
+      {
+       "name": "vampKEEMON",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "tAJGAMING",
+       "kills": 0
+      },
+      {
+       "name": "TExZENON",
+       "kills": 3
+      },
+      {
+       "name": "ClutchXmAdMaX",
+       "kills": 0
+      },
+      {
+       "name": "RollxNickOP",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "BBxFateYT",
+       "kills": 0
+      },
+      {
+       "name": "R I Gsssssss",
+       "kills": 0
+      },
+      {
+       "name": "No1xClutchOP",
+       "kills": 0
+      },
+      {
+       "name": "BBxSPEED",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "F2fxVinila",
+       "kills": 1
+      },
+      {
+       "name": "F2fxPriya",
+       "kills": 3
+      },
+      {
+       "name": "F2fxSexasuiiOg",
+       "kills": 5
+      },
+      {
+       "name": "亗CRULE乛KAI",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "GONxTHOR",
+       "kills": 0
+      },
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 4
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "THCxMIKEY",
+       "kills": 0
+      },
+      {
+       "name": "WAGxBARNY",
+       "kills": 0
+      },
+      {
+       "name": "THCxBEAST",
+       "kills": 3
+      },
+      {
+       "name": "THCxEBOY",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "WAGxPRABHAT",
+       "kills": 1
+      },
+      {
+       "name": "WAGxDrDooM",
+       "kills": 3
+      },
+      {
+       "name": "WAGxNINJAXxxxx",
+       "kills": 1
+      },
+      {
+       "name": "WAGxCHAMop423",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "Naughtyhorakyy",
+       "kills": 1
+      },
+      {
+       "name": "NoTxKrisHi",
+       "kills": 1
+      },
+      {
+       "name": "NoTxAyan",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "F2fxVinila",
+       "kills": 1
+      },
+      {
+       "name": "F2fxPriya",
+       "kills": 3
+      },
+      {
+       "name": "F2fxSexasuiiOg",
+       "kills": 5
+      },
+      {
+       "name": "亗CRULE乛KAI",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "GONxTHOR",
+       "kills": 0
+      },
+      {
+       "name": "TSxAʟᴏɴɛ",
+       "kills": 0
+      },
+      {
+       "name": "YouTubeREGNOX",
+       "kills": 4
+      },
+      {
+       "name": "captainBoyy",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "KDxANAND",
+       "kills": 0
+      },
+      {
+       "name": "CLUTCHWVEx16",
+       "kills": 0
+      },
+      {
+       "name": "LExADIop",
+       "kills": 1
+      },
+      {
+       "name": "GiggaNigga¹",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "B90 | TOKYOBROT",
+       "kills": 0
+      },
+      {
+       "name": "iNV · ITACHI",
+       "kills": 0
+      },
+      {
+       "name": "Conc℮ptX",
+       "kills": 0
+      },
+      {
+       "name": "B90 | CHOTZ",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "JG★ARJUN",
+       "kills": 1
+      },
+      {
+       "name": "★DEMON★",
+       "kills": 1
+      },
+      {
+       "name": "M A Xii",
+       "kills": 2
+      },
+      {
+       "name": "INF · JiggleGod",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

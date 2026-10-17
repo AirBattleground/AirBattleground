@@ -190,7 +190,14 @@ def test_prepare_raw_and_ink_modes(layout: dict[str, Any]) -> None:
         ("O finishes", 0),
         ("D finishes", 0),
         ("12 finishes", 12),
-        (" finishes", None),
+        (" finishes", 0),  # plural with the narrow "0" dropped
+        ("I finishes", 0),  # "1" is never plural
+        ("u tinisnes", 0),
+        ("I inish", 1),
+        ("1I fnish", 1),
+        ("3 finishe", 3),
+        ("2 finisshes", 2),
+        ("B6 finishes", 6),
         ("", None),
         ("garbage", None),
         ("7", 7),
@@ -282,3 +289,49 @@ def test_detect_results_keeps_short_inner_block(layout: dict[str, Any]) -> None:
     right = [r for r in det.regions if r.panel == "right"]
     assert [r.box.y0 for r in right] == [138, 302, 453]
     assert not any(r.edge_cut for r in right)
+
+
+# ------------------------------------------------------------------ viewport (stage 0)
+def _ipad_window_screenshot() -> np.ndarray:
+    """1600x1199 'iPad' with a grey wallpaper, a dock and a floating game window holding a gold panel."""
+    img = np.full((1199, 1600, 3), 125, np.uint8)
+    img[:, 200:260] = 10  # dark wallpaper stripe crossing the window border
+    img[1050:1170, 215:1385] = 210  # dock
+    img[28:1020, 137:1462] = 4  # game window
+    # gold panel 680 px wide (scale 544/680 = 0.8 to canonical)
+    for y0 in (300, 504, 708):
+        img[y0 : y0 + 200, 700:1380] = (44, 147, 180)
+    return img
+
+
+def test_viewport_finds_floating_window(layout: dict[str, Any]) -> None:
+    from app.pipeline.viewport import find_window, normalise
+
+    img = _ipad_window_screenshot()
+    box = find_window(img, layout["viewport"])
+    assert box is not None
+    assert abs(box.x0 - 137) <= 6 and abs(box.x1 - 1462) <= 6
+    assert abs(box.y0 - 28) <= 6 and abs(box.y1 - 1020) <= 6
+    canon, vp = normalise(img, "results", layout)
+    assert vp.method == "window+anchor"
+    assert abs(vp.scale - 544 / 680) < 0.01
+    assert abs(canon.shape[1] - round(box.w * vp.scale)) <= 1
+    det = detect_results(canon, layout)
+    assert sum(r.panel == "right" for r in det.regions) == 3
+    assert all(abs(r.box.w - 544) <= 3 for r in det.regions if r.panel == "right")
+
+
+def test_viewport_full_screen_phone_unchanged(layout: dict[str, Any]) -> None:
+    from app.pipeline.viewport import normalise
+
+    img = _results_screen([(131, 140), (144, 304), (308, 468), (472, 628)])
+    canon, vp = normalise(img, "results", layout)
+    assert vp.method == "full+anchor" and vp.scale == 1.0 and canon.shape == img.shape
+
+
+def test_space_separators() -> None:
+    assert pp.clean_name("MTB·Aafu", "|_", 24, {}, "·|") == "MTB · Aafu"
+    assert pp.clean_name("WRG|GHOST", "_", 24, {}, "·|") == "WRG | GHOST"
+    assert pp.clean_name("·Titann·", "|_", 24, {}, "·|") == "· Titann ·"
+    assert pp.clean_name("• Titann •", "|_", 24, {"•": "·"}, "·|") == "· Titann ·"
+    assert pp.clean_name("Ｍｒ·ＬａＬａ", "|_", 24, {}, "·|") == "Ｍｒ·ＬａＬａ"  # fullwidth: untouched

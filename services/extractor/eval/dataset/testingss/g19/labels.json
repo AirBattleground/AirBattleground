@@ -1,0 +1,892 @@
+{
+ "_about": "Hand-labelled ground truth for testingss g19 (8 iPad 1600x1199 screenshots, BGMI floating window over a chat app; one match, results only, no lobby list). Same scrim series as g17/g18 (spellings kept consistent). Onepiece/RarePiece carry a decorative ring around two letters (probable combining mark) which is omitted. Labelled by Claude 2026-10-17.",
+ "needs_human_check": [
+  "⋆ SHUBH ⋆",
+  "AimGod Bolte",
+  "〖Ṁohan〗",
+  "TCYTxRangerOp",
+  "ChanduYTisLive",
+  "FLeX亥DhIrAj",
+  "Onepiece",
+  "RarePiece",
+  "GOD父WRATH",
+  "4PExFlashh03",
+  "TeamSGxGOD",
+  "LRxB4TMAN17",
+  "LRxNiCKkkxIGL",
+  "TMT×DAKSH",
+  "TMT×PAIMON",
+  "TheOGxSHADOW",
+  "DEAD · DNA 04",
+  "GNxAnUtheIGL",
+  "VLTxPrinceW5",
+  "VOLTxMJ",
+  "VOLTxSPRAYJOD6",
+  "X s PRINCE",
+  "X人SPACE人JOD",
+  "AExNeji01",
+  "KoFlexo10",
+  "iNvVLIKEC",
+  "4HMxSevenOp",
+  "4HMxZytoxZoD",
+  "4HMxVaMpireXD",
+  "BLAZIE",
+  "TWxCycLoNe17",
+  "RBxDaRkJoD7",
+  "SWxJODboy",
+  "GLCExSPRAYNOXX",
+  "UP26xMahiOp",
+  "UP26xJodexXx",
+  "J É T T",
+  "VoDxSkullEJoD",
+  "VoDxBamBaaZIGL",
+  "TFK×Nojo",
+  "TLCxMACNO",
+  "TExKarthikIGL",
+  "4WLxBLA3KCAT",
+  "WRLD¬MERCY",
+  "VGSxPaBlO"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "iNFxHORNET",
+       "kills": 2
+      },
+      {
+       "name": "AimGod Bolte",
+       "kills": 0
+      },
+      {
+       "name": "⋆ SHUBH ⋆",
+       "kills": 1
+      },
+      {
+       "name": "REFLEXxGAMINGY",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "〖Ṁohan〗",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxRangerOp",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxDINESH",
+       "kills": 7
+      },
+      {
+       "name": "ChanduYTisLive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "FLeX亥VaNsH",
+       "kills": 0
+      },
+      {
+       "name": "FLeX亥VrUsHaBh",
+       "kills": 0
+      },
+      {
+       "name": "FLeX亥DhIrAj",
+       "kills": 1
+      },
+      {
+       "name": "FLeX亥YasH",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "Keemonop",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "Onepiece",
+       "kills": 0
+      },
+      {
+       "name": "RarePiece",
+       "kills": 0
+      },
+      {
+       "name": "GOD父WRATH",
+       "kills": 0
+      },
+      {
+       "name": "4WLxAKIRA",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "iNFxHORNET",
+       "kills": 2
+      },
+      {
+       "name": "AimGod Bolte",
+       "kills": 0
+      },
+      {
+       "name": "⋆ SHUBH ⋆",
+       "kills": 1
+      },
+      {
+       "name": "REFLEXxGAMINGY",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "〖Ṁohan〗",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxRangerOp",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxDINESH",
+       "kills": 7
+      },
+      {
+       "name": "ChanduYTisLive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 22,
+     "players": [
+      {
+       "name": "Keemonop",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 23,
+     "players": [
+      {
+       "name": "Onepiece",
+       "kills": 0
+      },
+      {
+       "name": "RarePiece",
+       "kills": 0
+      },
+      {
+       "name": "GOD父WRATH",
+       "kills": 0
+      },
+      {
+       "name": "4WLxAKIRA",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 24,
+     "players": [
+      {
+       "name": "BBxKiRa",
+       "kills": 0
+      },
+      {
+       "name": "BBxBERRY",
+       "kills": 0
+      },
+      {
+       "name": "BBxSPEED",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "iNFxHORNET",
+       "kills": 2
+      },
+      {
+       "name": "AimGod Bolte",
+       "kills": 0
+      },
+      {
+       "name": "⋆ SHUBH ⋆",
+       "kills": 1
+      },
+      {
+       "name": "REFLEXxGAMINGY",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "〖Ṁohan〗",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxRangerOp",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxDINESH",
+       "kills": 7
+      },
+      {
+       "name": "ChanduYTisLive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "4PExFLEX",
+       "kills": 1
+      },
+      {
+       "name": "4PExNAKUL7",
+       "kills": 0
+      },
+      {
+       "name": "4PExFlashh03",
+       "kills": 0
+      },
+      {
+       "name": "4PExGoLeM",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "TeamSGxGOD",
+       "kills": 1
+      },
+      {
+       "name": "LRxB4TMAN17",
+       "kills": 2
+      },
+      {
+       "name": "LRxNiCKkkxIGL",
+       "kills": 3
+      },
+      {
+       "name": "LRxTySoN",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "TMTxJoker",
+       "kills": 0
+      },
+      {
+       "name": "TheOGxSHADOW",
+       "kills": 3
+      },
+      {
+       "name": "TMT×DAKSH",
+       "kills": 1
+      },
+      {
+       "name": "TMT×PAIMON",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "iNFxHORNET",
+       "kills": 2
+      },
+      {
+       "name": "AimGod Bolte",
+       "kills": 0
+      },
+      {
+       "name": "⋆ SHUBH ⋆",
+       "kills": 1
+      },
+      {
+       "name": "REFLEXxGAMINGY",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "〖Ṁohan〗",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxRangerOp",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxDINESH",
+       "kills": 7
+      },
+      {
+       "name": "ChanduYTisLive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "DEAD · DNA 04",
+       "kills": 0
+      },
+      {
+       "name": "GNxAnUtheIGL",
+       "kills": 0
+      },
+      {
+       "name": "GNxSaurya",
+       "kills": 0
+      },
+      {
+       "name": "GNxSaHiL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "VLTxPrinceW5",
+       "kills": 1
+      },
+      {
+       "name": "VOLTxMJ",
+       "kills": 0
+      },
+      {
+       "name": "VLTxDIEHARD",
+       "kills": 0
+      },
+      {
+       "name": "VOLTxSPRAYJOD6",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "XSxSTARCk",
+       "kills": 3
+      },
+      {
+       "name": "X s PRINCE",
+       "kills": 0
+      },
+      {
+       "name": "XspaceTHOR",
+       "kills": 0
+      },
+      {
+       "name": "X人SPACE人JOD",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "iNFxHORNET",
+       "kills": 2
+      },
+      {
+       "name": "AimGod Bolte",
+       "kills": 0
+      },
+      {
+       "name": "⋆ SHUBH ⋆",
+       "kills": 1
+      },
+      {
+       "name": "REFLEXxGAMINGY",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "〖Ṁohan〗",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxRangerOp",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxDINESH",
+       "kills": 7
+      },
+      {
+       "name": "ChanduYTisLive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "RGxJHONNY",
+       "kills": 1
+      },
+      {
+       "name": "AExNeji01",
+       "kills": 1
+      },
+      {
+       "name": "KoFlexo10",
+       "kills": 1
+      },
+      {
+       "name": "RGxSATYAA",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "iNvVLIKEC",
+       "kills": 4
+      },
+      {
+       "name": "iNvWuxin",
+       "kills": 1
+      },
+      {
+       "name": "iNvJACKX",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "4HMxDEMON",
+       "kills": 5
+      },
+      {
+       "name": "4HMxSevenOp",
+       "kills": 1
+      },
+      {
+       "name": "4HMxZytoxZoD",
+       "kills": 0
+      },
+      {
+       "name": "4HMxVaMpireXD",
+       "kills": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "iNFxHORNET",
+       "kills": 2
+      },
+      {
+       "name": "AimGod Bolte",
+       "kills": 0
+      },
+      {
+       "name": "⋆ SHUBH ⋆",
+       "kills": 1
+      },
+      {
+       "name": "REFLEXxGAMINGY",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "〖Ṁohan〗",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxRangerOp",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxDINESH",
+       "kills": 7
+      },
+      {
+       "name": "ChanduYTisLive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "TOXY PLAYS",
+       "kills": 0
+      },
+      {
+       "name": "Appppyyyyyyfiz",
+       "kills": 0
+      },
+      {
+       "name": "4CNxSLaYeR",
+       "kills": 0
+      },
+      {
+       "name": "BLAZIE",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "TWxCowBoYYY",
+       "kills": 0
+      },
+      {
+       "name": "TWxSoClose",
+       "kills": 1
+      },
+      {
+       "name": "TWxKRUTIKzXxx",
+       "kills": 2
+      },
+      {
+       "name": "TWxCycLoNe17",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "SWxRoBB",
+       "kills": 0
+      },
+      {
+       "name": "SWxKEYMON",
+       "kills": 0
+      },
+      {
+       "name": "RBxDaRkJoD7",
+       "kills": 0
+      },
+      {
+       "name": "SWxJODboy",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "iNFxHORNET",
+       "kills": 2
+      },
+      {
+       "name": "AimGod Bolte",
+       "kills": 0
+      },
+      {
+       "name": "⋆ SHUBH ⋆",
+       "kills": 1
+      },
+      {
+       "name": "REFLEXxGAMINGY",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "〖Ṁohan〗",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxRangerOp",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxDINESH",
+       "kills": 7
+      },
+      {
+       "name": "ChanduYTisLive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "GLCExBEAST333",
+       "kills": 2
+      },
+      {
+       "name": "GLCExSPRAYNOXX",
+       "kills": 2
+      },
+      {
+       "name": "Chhota Pistol",
+       "kills": 3
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "UP26xMahiOp",
+       "kills": 3
+      },
+      {
+       "name": "UP26xJodexXx",
+       "kills": 4
+      },
+      {
+       "name": "UP26xSuraj",
+       "kills": 2
+      },
+      {
+       "name": "J É T T",
+       "kills": 1
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "VoDxSkullEJoD",
+       "kills": 0
+      },
+      {
+       "name": "VoDxBamBaaZIGL",
+       "kills": 0
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 2
+      },
+      {
+       "name": "VoDxHarshit",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "08.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "iNFxHORNET",
+       "kills": 2
+      },
+      {
+       "name": "AimGod Bolte",
+       "kills": 0
+      },
+      {
+       "name": "⋆ SHUBH ⋆",
+       "kills": 1
+      },
+      {
+       "name": "REFLEXxGAMINGY",
+       "kills": 5
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "〖Ṁohan〗",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxRangerOp",
+       "kills": 1
+      },
+      {
+       "name": "TCYTxDINESH",
+       "kills": 7
+      },
+      {
+       "name": "ChanduYTisLive",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "TFK×Nojo",
+       "kills": 0
+      },
+      {
+       "name": "TFKxVasu",
+       "kills": 0
+      },
+      {
+       "name": "TFKxCYCLOPS",
+       "kills": 0
+      },
+      {
+       "name": "TLCxMACNO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "TExKarthikIGL",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "4WLxBLA3KCAT",
+       "kills": 0
+      },
+      {
+       "name": "WRLD¬MERCY",
+       "kills": 0
+      },
+      {
+       "name": "4WLxZORO",
+       "kills": 0
+      },
+      {
+       "name": "VGSxPaBlO",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

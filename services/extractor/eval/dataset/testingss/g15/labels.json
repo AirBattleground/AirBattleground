@@ -1,0 +1,207 @@
+{
+ "_about": "Hand-labelled ground truth for testingss g15 (2 iPad Pro 2732x2048 screenshots, BGMI in floating window, lobby team list with '/0 Finished', 'Remaining 70 Team 00'). No results screenshots in this group. Labelled by Claude 2026-10-17. In this font O and 0 are visually identical; names with O/0 are a best guess (letters inside words, digits next to digits) and listed in needs_human_check.",
+ "needs_human_check": [
+  "MNesXDemonOG",
+  "DEMOTIVATOR10",
+  "LAXsStuNner07",
+  "4FMxOPO",
+  "OSTxFreYzeY",
+  "OSTxScarlxssOG",
+  "OSTxNotSus77",
+  "OSTxBeeeNuut",
+  "IExKAeL",
+  "IExDazzlíñg",
+  "IExCloneWNL",
+  "IExKhrieOG",
+  "TFKxZiEXKii16",
+  "TFKxINSANE16",
+  "TFKxLeVi04",
+  "DLSEAxLOLO",
+  "DLSEAxZGOATiGL",
+  "BTWxSAPROplayz",
+  "1NonlyMittuDon",
+  "OPUSxDINO11",
+  "OSMxSeizuOcO",
+  "RMLjuzDivinE11",
+  "YG · NoNgO",
+  "ONExLoOk",
+  "ONExigIANKUSH",
+  "DExJOKER18",
+  "TSBxKHATRI728",
+  "BDLrPlasmaOG"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 15,
+     "players": [
+      "MNesXSHANKs",
+      "ngxd2",
+      "MNesXREXZ",
+      "MNesXDemonOG"
+     ]
+    },
+    {
+     "slot": 16,
+     "players": [
+      "4FMxOPO",
+      "4FMxArjit2Nub",
+      "TCrowSwordxOP",
+      "4FMxLavis"
+     ]
+    },
+    {
+     "slot": 17,
+     "players": [
+      "1NonlyMittuDon",
+      "ACxRambo",
+      "CLSxTharkiii",
+      "CLSxAbhi88"
+     ]
+    },
+    {
+     "slot": 18,
+     "players": [
+      "MuFFinAY",
+      "DEMOTIVATOR10",
+      "LAXsStuNner07",
+      "4ABxBo"
+     ]
+    },
+    {
+     "slot": 19,
+     "players": [
+      "OSTxFreYzeY",
+      "OSTxScarlxssOG",
+      "OSTxNotSus77",
+      "OSTxBeeeNuut"
+     ]
+    },
+    {
+     "slot": 20,
+     "players": [
+      "IExKAeL",
+      "IExDazzlíñg",
+      "IExCloneWNL",
+      "IExKhrieOG"
+     ]
+    },
+    {
+     "slot": 21,
+     "players": [
+      "TFKxZiEXKii16",
+      "TFKxINSANE16",
+      "TFKxSexYRiJeT",
+      "TFKxLeVi04"
+     ]
+    },
+    {
+     "slot": 22,
+     "players": [
+      "BTWxSukunaJod",
+      "BTWxSAPROplayz",
+      "BTWxMAHARATHII",
+      "BTWxSAVAGE"
+     ]
+    },
+    {
+     "slot": 23,
+     "players": [
+      "DLSEAxSAQUIB",
+      "DLSEAxLOLO",
+      "DLSEAxZGOATiGL"
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "SLOT_LIST",
+   "teams": [
+    {
+     "slot": 6,
+     "players": [
+      "DExJOKER18",
+      "OPUSxDINO11",
+      "OPUSxNAYAK",
+      "OPUSxNavNeet"
+     ]
+    },
+    {
+     "slot": 7,
+     "players": [
+      "OSMxNAUGHTYY",
+      "OSMxZELL4L",
+      "OSMxDR3WQT",
+      "OSMxNoSoul"
+     ]
+    },
+    {
+     "slot": 8,
+     "players": [
+      "OSMxSeizuOcO",
+      "OSMxMantaStyle",
+      "OSMxWAKANDA",
+      "OSMxJesTer"
+     ]
+    },
+    {
+     "slot": 9,
+     "players": [
+      "GSxClutchy",
+      "GSxEminNub",
+      "GSxBabybot"
+     ]
+    },
+    {
+     "slot": 10,
+     "players": [
+      "RMLjuzDivinE11",
+      "RMLaluman69",
+      "RMLMikaMi",
+      "RMLhelixz"
+     ]
+    },
+    {
+     "slot": 11,
+     "players": [
+      "YG · INVOKR",
+      "YG · Arex",
+      "YG · COCOMELÓN",
+      "YG · NoNgO"
+     ]
+    },
+    {
+     "slot": 12,
+     "players": [
+      "TSBxKHATRI728",
+      "TSBxNikhil",
+      "DhakkadITACHI",
+      "RICH JOKER"
+     ]
+    },
+    {
+     "slot": 13,
+     "players": [
+      "BDLrJoDLEeeeee",
+      "BDLrBAAZ",
+      "SMITH XD",
+      "BDLrPlasmaOG"
+     ]
+    },
+    {
+     "slot": 14,
+     "players": [
+      "ONExASTRONAUT",
+      "ONExLoOk",
+      "ONExigIANKUSH",
+      "ONExKRISHNA"
+     ]
+    }
+   ]
+  }
+ ]
+}

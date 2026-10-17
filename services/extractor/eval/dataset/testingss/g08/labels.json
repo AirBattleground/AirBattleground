@@ -1,0 +1,761 @@
+{
+ "_about": "Hand-labelled ground truth for g08 (iPad 1600x1199, BGMI in floating window; results screens only, no lobby screenshot in this group). Labelled by Claude 2026-10-17. Names in needs_human_check have ambiguous glyphs.",
+ "needs_human_check": [
+  "4WIZxMOhIT",
+  "4WIZxRaìDéÑ",
+  "PixelÌsLive",
+  "MÖDxKiläR",
+  "YoúrName—",
+  "⟜BAĐツBØY",
+  "★NEO★",
+  "TMT×PAIMON",
+  "TMT×DAKSH",
+  "· Asaulter",
+  "4BKuntaLigl",
+  "R2CxICONICJOD",
+  "Realxlama"
+ ],
+ "images": [
+  {
+   "file": "01.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ROLLxBLLACK",
+       "kills": 13
+      },
+      {
+       "name": "RollxNickOP",
+       "kills": 0
+      },
+      {
+       "name": "MR》 MAFIA》 IGL",
+       "kills": 1
+      },
+      {
+       "name": "NASTYxZENON",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ZNXxAditya",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxRaìDéÑ",
+       "kills": 3
+      },
+      {
+       "name": "4WIZxPowerOG",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxMOhIT",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "TRExNOXXY",
+       "kills": 0
+      },
+      {
+       "name": "ZGxMAULI",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "AWDSxPRIYAM",
+       "kills": 0
+      },
+      {
+       "name": "VZNxYOURNAME",
+       "kills": 0
+      },
+      {
+       "name": "BÁGAD BILLA",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 21,
+     "players": [
+      {
+       "name": "· Asaulter",
+       "kills": 0
+      },
+      {
+       "name": "69XéñoN",
+       "kills": 0
+      },
+      {
+       "name": "AaRu · is · Live",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "02.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ROLLxBLLACK",
+       "kills": 13
+      },
+      {
+       "name": "RollxNickOP",
+       "kills": 0
+      },
+      {
+       "name": "MR》 MAFIA》 IGL",
+       "kills": 1
+      },
+      {
+       "name": "NASTYxZENON",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ZNXxAditya",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxRaìDéÑ",
+       "kills": 3
+      },
+      {
+       "name": "4WIZxPowerOG",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxMOhIT",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 6,
+     "players": [
+      {
+       "name": "BxM DoDoOp",
+       "kills": 0
+      },
+      {
+       "name": "RBy Player777",
+       "kills": 0
+      },
+      {
+       "name": "RBy HIRO",
+       "kills": 0
+      },
+      {
+       "name": "ClencySLAYs",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 7,
+     "players": [
+      {
+       "name": "R2CxHyPePaCk",
+       "kills": 0
+      },
+      {
+       "name": "R2CxDHIRAJ",
+       "kills": 0
+      },
+      {
+       "name": "R2CxSKuLL",
+       "kills": 1
+      },
+      {
+       "name": "R2CxICONICJOD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 8,
+     "players": [
+      {
+       "name": "VoDxBamBaaZIGL",
+       "kills": 0
+      },
+      {
+       "name": "C9xNumB",
+       "kills": 4
+      },
+      {
+       "name": "VoDxSkullE",
+       "kills": 2
+      },
+      {
+       "name": "VoDxHarshitOp",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "03.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ROLLxBLLACK",
+       "kills": 13
+      },
+      {
+       "name": "RollxNickOP",
+       "kills": 0
+      },
+      {
+       "name": "MR》 MAFIA》 IGL",
+       "kills": 1
+      },
+      {
+       "name": "NASTYxZENON",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ZNXxAditya",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxRaìDéÑ",
+       "kills": 3
+      },
+      {
+       "name": "4WIZxPowerOG",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxMOhIT",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 9,
+     "players": [
+      {
+       "name": "OopsBAT",
+       "kills": 4
+      },
+      {
+       "name": "RZeFLoW",
+       "kills": 0
+      },
+      {
+       "name": "BLEEDxVADER",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 10,
+     "players": [
+      {
+       "name": "Realxlama",
+       "kills": 1
+      },
+      {
+       "name": "VZNxPAÑDAOP",
+       "kills": 1
+      },
+      {
+       "name": "WILDxLIONYT",
+       "kills": 0
+      },
+      {
+       "name": "VZNxREAPER",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 11,
+     "players": [
+      {
+       "name": "TMTxJoker",
+       "kills": 0
+      },
+      {
+       "name": "TMT×PAIMON",
+       "kills": 0
+      },
+      {
+       "name": "TMT×DAKSH",
+       "kills": 0
+      },
+      {
+       "name": "MÖDxKiläR",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "04.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ROLLxBLLACK",
+       "kills": 13
+      },
+      {
+       "name": "RollxNickOP",
+       "kills": 0
+      },
+      {
+       "name": "MR》 MAFIA》 IGL",
+       "kills": 1
+      },
+      {
+       "name": "NASTYxZENON",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ZNXxAditya",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxRaìDéÑ",
+       "kills": 3
+      },
+      {
+       "name": "4WIZxPowerOG",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxMOhIT",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "players": [
+      {
+       "name": "NTxBUDHWAR",
+       "kills": 0
+      },
+      {
+       "name": "BABYgurls",
+       "kills": 0
+      },
+      {
+       "name": "PixelÌsLive",
+       "kills": 7
+      },
+      {
+       "name": "INFExApeXx",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 4,
+     "players": [
+      {
+       "name": "4DESUGAR",
+       "kills": 1
+      },
+      {
+       "name": "TAxMSRavan",
+       "kills": 1
+      },
+      {
+       "name": "TAxPROFESSOR",
+       "kills": 2
+      },
+      {
+       "name": "TAxMAXX",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 5,
+     "players": [
+      {
+       "name": "LoveInMyVeins",
+       "kills": 9
+      },
+      {
+       "name": "CRxZEUSoP",
+       "kills": 0
+      },
+      {
+       "name": "TPxGØD",
+       "kills": 5
+      },
+      {
+       "name": "CRxJaiOp17",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "05.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ROLLxBLLACK",
+       "kills": 13
+      },
+      {
+       "name": "RollxNickOP",
+       "kills": 0
+      },
+      {
+       "name": "MR》 MAFIA》 IGL",
+       "kills": 1
+      },
+      {
+       "name": "NASTYxZENON",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ZNXxAditya",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxRaìDéÑ",
+       "kills": 3
+      },
+      {
+       "name": "4WIZxPowerOG",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxMOhIT",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 12,
+     "players": [
+      {
+       "name": "NODDYisLIVE",
+       "kills": 1
+      },
+      {
+       "name": "TheOGxSHADOW",
+       "kills": 1
+      },
+      {
+       "name": "TheOGbabu04",
+       "kills": 0
+      },
+      {
+       "name": "TheOGbeast",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 13,
+     "players": [
+      {
+       "name": "vampABHI",
+       "kills": 1
+      },
+      {
+       "name": "4LMxRPGMafiYa",
+       "kills": 0
+      },
+      {
+       "name": "vampMAXTRO",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 14,
+     "players": [
+      {
+       "name": "ELITE · GOKUNUB",
+       "kills": 1
+      },
+      {
+       "name": "NSxReaPer",
+       "kills": 2
+      },
+      {
+       "name": "4BKuntaLigl",
+       "kills": 1
+      },
+      {
+       "name": "ELITE · IZUKU",
+       "kills": 1
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "06.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ROLLxBLLACK",
+       "kills": 13
+      },
+      {
+       "name": "RollxNickOP",
+       "kills": 0
+      },
+      {
+       "name": "MR》 MAFIA》 IGL",
+       "kills": 1
+      },
+      {
+       "name": "NASTYxZENON",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ZNXxAditya",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxRaìDéÑ",
+       "kills": 3
+      },
+      {
+       "name": "4WIZxPowerOG",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxMOhIT",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 15,
+     "players": [
+      {
+       "name": "XSxSTARCk",
+       "kills": 0
+      },
+      {
+       "name": "X s PRINCE",
+       "kills": 0
+      },
+      {
+       "name": "XspaceTHOR",
+       "kills": 0
+      },
+      {
+       "name": "X人SPACE人JOD",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 16,
+     "players": [
+      {
+       "name": "TeamDExLEGEND",
+       "kills": 0
+      },
+      {
+       "name": "DExMINATO",
+       "kills": 0
+      },
+      {
+       "name": "YoúrName—",
+       "kills": 0
+      },
+      {
+       "name": "⟜BAĐツBØY",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 17,
+     "players": [
+      {
+       "name": "CHACHAislive",
+       "kills": 0
+      },
+      {
+       "name": "PExRcord",
+       "kills": 1
+      },
+      {
+       "name": "OSxCLOWNN",
+       "kills": 1
+      },
+      {
+       "name": "A N M Ø L",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "file": "07.jpg",
+   "kind": "RESULTS",
+   "rows": [
+    {
+     "rank": 1,
+     "players": [
+      {
+       "name": "ROLLxBLLACK",
+       "kills": 13
+      },
+      {
+       "name": "RollxNickOP",
+       "kills": 0
+      },
+      {
+       "name": "MR》 MAFIA》 IGL",
+       "kills": 1
+      },
+      {
+       "name": "NASTYxZENON",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "players": [
+      {
+       "name": "ZNXxAditya",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxRaìDéÑ",
+       "kills": 3
+      },
+      {
+       "name": "4WIZxPowerOG",
+       "kills": 2
+      },
+      {
+       "name": "4WIZxMOhIT",
+       "kills": 2
+      }
+     ]
+    },
+    {
+     "rank": 18,
+     "players": [
+      {
+       "name": "TExRich",
+       "kills": 0
+      },
+      {
+       "name": "★NEO★",
+       "kills": 0
+      },
+      {
+       "name": "TExZarvissOG",
+       "kills": 0
+      },
+      {
+       "name": "TExZILLAOP",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 19,
+     "players": [
+      {
+       "name": "TRExNOXXY",
+       "kills": 0
+      },
+      {
+       "name": "ZGxMAULI",
+       "kills": 0
+      }
+     ]
+    },
+    {
+     "rank": 20,
+     "players": [
+      {
+       "name": "AWDSxPRIYAM",
+       "kills": 0
+      },
+      {
+       "name": "VZNxYOURNAME",
+       "kills": 0
+      },
+      {
+       "name": "BÁGAD BILLA",
+       "kills": 0
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
