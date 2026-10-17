@@ -8,5 +8,6 @@ storage/
 models/
 debug/
 eval/runs/
+eval/verify/predictions*.json
 eval/dataset/synthetic/
 eval/dataset/testingss/**/*.jpg

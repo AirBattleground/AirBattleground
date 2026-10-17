@@ -120,6 +120,17 @@ describe("mergeResults", () => {
     expect(out.teams.find((t) => t.slotNumber === 5)).toMatchObject({ placement: 2, kills: 6 });
   });
 
+  it("a block cut off at the panel edge on a later screenshot keeps the full team finishes", () => {
+    const first = mergeResults(lineup(), resultsShot(), ctx);
+    const later = base("RESULTS");
+    // rank 1 again, but only its last two rows were visible (top of the block cut off)
+    later.rows = [{ rank: 1, rankConfidence: 0.6, inferredSlot: 7, players: [pl("GExMoOnGOD", { kills: 1 }), pl("GExFireGod", { kills: 2 })] }];
+    const out = mergeResults(first.teams, later, ctx);
+    const s7 = out.teams.find((t) => t.slotNumber === 7)!;
+    expect(s7).toMatchObject({ placement: 1, kills: 13 });
+    expect(s7.players.map((p) => p.kills)).toEqual([5, 5, 1, 2]);
+  });
+
   it("warns when the same rank is read for two different teams", () => {
     const first = mergeResults(lineup(), resultsShot(), ctx);
     const clash = base("RESULTS");

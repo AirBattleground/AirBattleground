@@ -1,0 +1,5334 @@
+[
+ {
+  "image": "g01/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    14,
+    17
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "〆OKANE〆",
+    "read": "OKANE",
+    "conf": 0.9582
+   },
+   {
+    "what": "name",
+    "rank": 20,
+    "pos": 2,
+    "expected": "Ｇｕｎｄａ⋆",
+    "read": "Gunda",
+    "conf": 0.9959
+   },
+   {
+    "what": "name",
+    "rank": 22,
+    "pos": 3,
+    "expected": "ZD¬شيفان",
+    "read": "ZD¬jl",
+    "conf": 0.7214
+   }
+  ]
+ },
+ {
+  "image": "g01/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    13,
+    18
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "〆OKANE〆",
+    "read": "OKANE",
+    "conf": 0.9582
+   },
+   {
+    "what": "name",
+    "rank": 15,
+    "pos": 1,
+    "expected": "◉Xəиoи◉",
+    "read": "e",
+    "conf": 0.7474
+   },
+   {
+    "what": "name",
+    "rank": 15,
+    "pos": 2,
+    "expected": "ＳＫＹＬＡ",
+    "read": "SKYLA",
+    "conf": 0.9997
+   },
+   {
+    "what": "name",
+    "rank": 16,
+    "pos": 1,
+    "expected": "op或ＲＡＶＡＮ",
+    "read": "叩或RAVAN",
+    "conf": 0.9607
+   },
+   {
+    "what": "name",
+    "rank": 17,
+    "pos": 2,
+    "expected": "· Δrsħ ·",
+    "read": "· Arsh",
+    "conf": 0.6996
+   }
+  ]
+ },
+ {
+  "image": "g01/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    17,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "〆OKANE〆",
+    "read": "OKANE",
+    "conf": 0.9578
+   },
+   {
+    "what": "name",
+    "rank": 6,
+    "pos": 3,
+    "expected": "MTB · Ãɯaη",
+    "read": "MTB · Ãwan",
+    "conf": 0.8588
+   }
+  ]
+ },
+ {
+  "image": "g01/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    17,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "〆OKANE〆",
+    "read": "OKANE",
+    "conf": 0.9581
+   },
+   {
+    "what": "name",
+    "rank": 4,
+    "pos": 4,
+    "expected": "S͜aurabh⋆",
+    "read": "Saurabh",
+    "conf": 0.9887
+   }
+  ]
+ },
+ {
+  "image": "g01/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    18,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "〆OKANE〆",
+    "read": "OKANE",
+    "conf": 0.9582
+   }
+  ]
+ },
+ {
+  "image": "g01/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    19
+   ],
+   "name": [
+    15,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "〆OKANE〆",
+    "read": "OKANE",
+    "conf": 0.9582
+   },
+   {
+    "what": "name",
+    "rank": 12,
+    "pos": 1,
+    "expected": "⋆HΔRSHiTΔ⋆",
+    "read": "HARSHiTA",
+    "conf": 0.9571
+   },
+   {
+    "what": "finishes",
+    "rank": 12,
+    "pos": 1,
+    "player": "⋆HΔRSHiTΔ⋆",
+    "expected": 6,
+    "read": 8
+   },
+   {
+    "what": "name",
+    "rank": 13,
+    "pos": 2,
+    "expected": "7x فيضان",
+    "read": "7x",
+    "conf": 0.7149
+   },
+   {
+    "what": "name",
+    "rank": 13,
+    "pos": 4,
+    "expected": "Lalá¹",
+    "read": "Lalá1",
+    "conf": 0.9699
+   }
+  ]
+ },
+ {
+  "image": "g01/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    16,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "〆OKANE〆",
+    "read": "OKANE",
+    "conf": 0.9624
+   },
+   {
+    "what": "name",
+    "rank": 18,
+    "pos": 4,
+    "expected": "ＳｏＭｅＯｎＥ",
+    "read": "SoMeOnE",
+    "conf": 0.9999
+   },
+   {
+    "what": "name",
+    "rank": 20,
+    "pos": 2,
+    "expected": "Ｇｕｎｄａ⋆",
+    "read": "Gunda",
+    "conf": 0.9971
+   }
+  ]
+ },
+ {
+  "image": "g02/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "⋆HΔRSHiTΔ⋆",
+    "read": "HARSHiTA",
+    "conf": 0.8817
+   }
+  ]
+ },
+ {
+  "image": "g02/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    18,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "⋆HΔRSHiTΔ⋆",
+    "read": "HARSHiTA",
+    "conf": 0.8789
+   },
+   {
+    "what": "name",
+    "rank": 6,
+    "pos": 3,
+    "expected": "MTB · Ãɯaη",
+    "read": "MTB · Āwan",
+    "conf": 0.8238
+   }
+  ]
+ },
+ {
+  "image": "g02/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    18,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "⋆HΔRSHiTΔ⋆",
+    "read": "HARSHiTA",
+    "conf": 0.8773
+   }
+  ]
+ },
+ {
+  "image": "g02/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    18,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "⋆HΔRSHiTΔ⋆",
+    "read": "HARSHiTA",
+    "conf": 0.8767
+   },
+   {
+    "what": "name",
+    "rank": 21,
+    "pos": 2,
+    "expected": "S͜aurabh⋆",
+    "read": "Saurabh",
+    "conf": 0.9948
+   }
+  ]
+ },
+ {
+  "image": "g02/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    17,
+    18
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "⋆HΔRSHiTΔ⋆",
+    "read": "HARSHiTA",
+    "conf": 0.8817
+   }
+  ]
+ },
+ {
+  "image": "g02/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    13,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "⋆HΔRSHiTΔ⋆",
+    "read": "HARSHiTA",
+    "conf": 0.8767
+   },
+   {
+    "what": "name",
+    "rank": 18,
+    "pos": 2,
+    "expected": "ＳＫＹＬＡ",
+    "read": "SKYLA",
+    "conf": 0.9998
+   },
+   {
+    "what": "name",
+    "rank": 18,
+    "pos": 3,
+    "expected": "◉Xəиoи◉",
+    "read": "e",
+    "conf": 0.7318
+   },
+   {
+    "what": "name",
+    "rank": 19,
+    "pos": 1,
+    "expected": "ZD¬سعاد",
+    "read": "ZD乛slew",
+    "conf": 0.8414
+   },
+   {
+    "what": "name",
+    "rank": 19,
+    "pos": 3,
+    "expected": "ZD¬شيفان",
+    "read": "ZD¬jle",
+    "conf": 0.7725
+   },
+   {
+    "what": "name",
+    "rank": 20,
+    "pos": 2,
+    "expected": "『Mr』⟜PRAsad",
+    "read": "PMrs-PRAsad",
+    "conf": 0.886
+   }
+  ]
+ },
+ {
+  "image": "g02/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    17,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "⋆HΔRSHiTΔ⋆",
+    "read": "HARSHiTA",
+    "conf": 0.8836
+   },
+   {
+    "what": "name",
+    "rank": 9,
+    "pos": 4,
+    "expected": "ＳｏＭｅＯｎＥ",
+    "read": "SoMeOnE",
+    "conf": 0.9999
+   },
+   {
+    "what": "name",
+    "rank": 11,
+    "pos": 1,
+    "expected": "〆OKANE〆",
+    "read": "OKANE",
+    "conf": 0.9766
+   }
+  ]
+ },
+ {
+  "image": "g03/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    15,
+    15
+   ],
+   "name": [
+    12,
+    15
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "ZD¬شيفان",
+    "read": "D¬",
+    "conf": 0.7411
+   },
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 2,
+    "expected": "ZD¬سوزان",
+    "read": "ZD¬",
+    "conf": 0.9238
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "ÁÑASOP",
+    "read": "ANASOP",
+    "conf": 0.9924
+   }
+  ]
+ },
+ {
+  "image": "g03/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    11,
+    16
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "ZD¬شيفان",
+    "read": "D¬",
+    "conf": 0.7411
+   },
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 2,
+    "expected": "ZD¬سوزان",
+    "read": "ZD¬",
+    "conf": 0.9238
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "ÁÑASOP",
+    "read": "ANASOP",
+    "conf": 0.9924
+   },
+   {
+    "what": "name",
+    "rank": 17,
+    "pos": 1,
+    "expected": "◉Xəиoи◉",
+    "read": "e",
+    "conf": 0.7421
+   },
+   {
+    "what": "name",
+    "rank": 17,
+    "pos": 2,
+    "expected": "ＳＫＹＬＡ",
+    "read": "SKYLA",
+    "conf": 0.9998
+   }
+  ]
+ },
+ {
+  "image": "g03/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    11,
+    16
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "ZD¬شيفان",
+    "read": "D¬",
+    "conf": 0.7411
+   },
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 2,
+    "expected": "ZD¬سوزان",
+    "read": "ZD¬",
+    "conf": 0.9238
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "ÁÑASOP",
+    "read": "ANASOP",
+    "conf": 0.9924
+   },
+   {
+    "what": "name",
+    "rank": 12,
+    "pos": 2,
+    "expected": "S͜aurabh⋆",
+    "read": "Saurabh",
+    "conf": 0.9909
+   },
+   {
+    "what": "name",
+    "rank": 14,
+    "pos": 1,
+    "expected": "〆OKANE〆",
+    "read": "OKANE",
+    "conf": 0.9713
+   }
+  ]
+ },
+ {
+  "image": "g03/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    13,
+    16
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "ZD¬شيفان",
+    "read": "D¬",
+    "conf": 0.7411
+   },
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 2,
+    "expected": "ZD¬سوزان",
+    "read": "ZD¬",
+    "conf": 0.9238
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "ÁÑASOP",
+    "read": "ANASOP",
+    "conf": 0.9924
+   }
+  ]
+ },
+ {
+  "image": "g03/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    14,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "ZD¬شيفان",
+    "read": "ZD",
+    "conf": 0.7709
+   },
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 2,
+    "expected": "ZD¬سوزان",
+    "read": "ZD¬j",
+    "conf": 0.802
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "ÁÑASOP",
+    "read": "ANASOP",
+    "conf": 0.9928
+   },
+   {
+    "what": "name",
+    "rank": 6,
+    "pos": 4,
+    "expected": "Lalá¹",
+    "read": "Lalá1",
+    "conf": 0.9742
+   },
+   {
+    "what": "name",
+    "rank": 7,
+    "pos": 4,
+    "expected": "ＳｏＭｅＯｎＥ",
+    "read": "SoMeOnE",
+    "conf": 0.9999
+   }
+  ]
+ },
+ {
+  "image": "g03/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    13,
+    18
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "ZD¬شيفان",
+    "read": "D¬",
+    "conf": 0.7411
+   },
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 2,
+    "expected": "ZD¬سوزان",
+    "read": "ZD¬",
+    "conf": 0.9238
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "ÁÑASOP",
+    "read": "ANASOP",
+    "conf": 0.9924
+   },
+   {
+    "what": "name",
+    "rank": 10,
+    "pos": 4,
+    "expected": "⋆HΔRSHiTΔ⋆",
+    "read": "HARSHiTA",
+    "conf": 0.9656
+   },
+   {
+    "what": "name",
+    "rank": 11,
+    "pos": 1,
+    "expected": "Ｇｕｎｄａ⋆",
+    "read": "Gunda",
+    "conf": 0.9961
+   }
+  ]
+ },
+ {
+  "image": "g03/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    15,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 1,
+    "expected": "ZD¬شيفان",
+    "read": "D¬",
+    "conf": 0.7411
+   },
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 2,
+    "expected": "ZD¬سوزان",
+    "read": "ZD¬",
+    "conf": 0.9238
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "ÁÑASOP",
+    "read": "ANASOP",
+    "conf": 0.9924
+   },
+   {
+    "what": "name",
+    "rank": 5,
+    "pos": 3,
+    "expected": "MTB · Ãɯaη",
+    "read": "MTB · Āwan",
+    "conf": 0.8819
+   }
+  ]
+ },
+ {
+  "image": "g04/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g04/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g04/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    17,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 12,
+    "pos": 3,
+    "expected": "ㅤ",
+    "read": "",
+    "conf": 0.0
+   },
+   {
+    "what": "name",
+    "rank": 14,
+    "pos": 2,
+    "expected": "7x فيضان",
+    "read": "7x",
+    "conf": 0.6914
+   }
+  ]
+ },
+ {
+  "image": "g04/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g04/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g04/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    18,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 10,
+    "pos": 1,
+    "expected": "Ｍｒ·ＬａＬａ",
+    "read": "Mr · LaLa",
+    "conf": 0.9885
+   }
+  ]
+ },
+ {
+  "image": "g04/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g04/08.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g05/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g05/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 6,
+    "pos": 3,
+    "expected": "ㅤ",
+    "read": "",
+    "conf": 0.0
+   }
+  ]
+ },
+ {
+  "image": "g05/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 23,
+    "pos": 2,
+    "expected": "7x فيضان",
+    "read": "7x",
+    "conf": 0.7923
+   }
+  ]
+ },
+ {
+  "image": "g05/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g05/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    16,
+    17
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 23,
+    "pos": 2,
+    "expected": "7x فيضان",
+    "read": "7x",
+    "conf": 0.7561
+   }
+  ]
+ },
+ {
+  "image": "g05/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    17,
+    17
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g05/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g05/08.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 14,
+    "pos": 1,
+    "expected": "Ｍｒ·ＬａＬａ",
+    "read": "Mr · LaLa",
+    "conf": 0.9913
+   }
+  ]
+ },
+ {
+  "image": "g06/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    17,
+    17
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g06/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    18,
+    18
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g06/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    18,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 9,
+    "pos": 1,
+    "expected": "BHOSडीWALA",
+    "read": "BHOSSTWALA",
+    "conf": 0.9411
+   }
+  ]
+ },
+ {
+  "image": "g06/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g06/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g06/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    18,
+    18
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g06/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g06/08.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    16,
+    18
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 18,
+    "pos": 3,
+    "expected": "ㅤ",
+    "read": "",
+    "conf": 0.0
+   },
+   {
+    "what": "name",
+    "rank": 19,
+    "pos": 1,
+    "expected": "Ｍｒ·ＬａＬａ",
+    "read": "Mr · LaLa",
+    "conf": 0.9903
+   }
+  ]
+ },
+ {
+  "image": "g07/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g07/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g07/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g07/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g07/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    17,
+    17
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g07/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    18,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 13,
+    "pos": 1,
+    "expected": "· Aꜱaulter",
+    "read": "· Asaulter",
+    "conf": 1.0
+   },
+   {
+    "what": "name",
+    "rank": 14,
+    "pos": 3,
+    "expected": "⋆NEO⋆",
+    "read": "NEO",
+    "conf": 1.0
+   }
+  ]
+ },
+ {
+  "image": "g07/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    18,
+    18
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g08/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g08/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g08/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g08/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 3,
+    "pos": 3,
+    "expected": "PixelÌsLive",
+    "read": "PixelisLive",
+    "conf": 1.0
+   }
+  ]
+ },
+ {
+  "image": "g08/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g08/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 16,
+    "pos": 4,
+    "expected": "⟜BAĐツBØY",
+    "read": "BADツBDY",
+    "conf": 0.8643
+   }
+  ]
+ },
+ {
+  "image": "g08/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    16,
+    17
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 18,
+    "pos": 2,
+    "expected": "★NEO★",
+    "read": "NEO",
+    "conf": 1.0
+   }
+  ]
+ },
+ {
+  "image": "g09/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 2,
+    "expected": "TSxAʟᴏɴɛ",
+    "read": "TSxALoNε",
+    "conf": 0.8243
+   }
+  ]
+ },
+ {
+  "image": "g09/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 2,
+    "expected": "TSxAʟᴏɴɛ",
+    "read": "TSxALoNε",
+    "conf": 0.8243
+   }
+  ]
+ },
+ {
+  "image": "g09/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    16,
+    18
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 2,
+    "expected": "TSxAʟᴏɴɛ",
+    "read": "TSxALoNε",
+    "conf": 0.8243
+   },
+   {
+    "what": "name",
+    "rank": 22,
+    "pos": 3,
+    "expected": "PHØËÑÎX彡x",
+    "read": "PHPENIX三x",
+    "conf": 0.8769
+   }
+  ]
+ },
+ {
+  "image": "g09/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 2,
+    "expected": "TSxAʟᴏɴɛ",
+    "read": "TSxALoNε",
+    "conf": 0.8243
+   }
+  ]
+ },
+ {
+  "image": "g09/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 2,
+    "expected": "TSxAʟᴏɴɛ",
+    "read": "TSxALoNε",
+    "conf": 0.8243
+   }
+  ]
+ },
+ {
+  "image": "g09/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    18,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 2,
+    "expected": "TSxAʟᴏɴɛ",
+    "read": "TSxALoNε",
+    "conf": 0.8243
+   }
+  ]
+ },
+ {
+  "image": "g09/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    18,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 2,
+    "expected": "TSxAʟᴏɴɛ",
+    "read": "TSxALoNε",
+    "conf": 0.8243
+   },
+   {
+    "what": "name",
+    "rank": 11,
+    "pos": 2,
+    "expected": "★DEMON★",
+    "read": "DEMON",
+    "conf": 0.8581
+   }
+  ]
+ },
+ {
+  "image": "g10/01.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    34,
+    34
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g10/02.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    32,
+    32
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g10/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 13,
+    "pos": 3,
+    "expected": "ㅤ",
+    "read": "",
+    "conf": 0.0
+   }
+  ]
+ },
+ {
+  "image": "g10/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g10/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    18,
+    18
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g10/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g10/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g10/08.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    18,
+    18
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g10/09.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g10/10.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g10/11.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    33,
+    33
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g11/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    17,
+    17
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g11/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    18,
+    18
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g11/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g11/04.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    7,
+    7
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    23,
+    23
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g11/05.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    33,
+    33
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g11/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    17,
+    17
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g11/07.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    34,
+    34
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g11/08.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    17,
+    18
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 15,
+    "pos": 3,
+    "expected": "ㅤ",
+    "read": "",
+    "conf": 0.0
+   }
+  ]
+ },
+ {
+  "image": "g11/09.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    17,
+    17
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g12/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    17,
+    17
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g12/02.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    35,
+    35
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g12/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    18,
+    18
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g12/04.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    8,
+    8
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    28,
+    28
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g12/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    18,
+    18
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g12/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g12/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    18,
+    18
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g12/08.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    32,
+    32
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g12/09.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g12/10.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    17,
+    17
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g13/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    16,
+    17
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 23,
+    "pos": 2,
+    "expected": "▢MrS⊸NoVa▢",
+    "read": "MrSe-NoVa",
+    "conf": 0.9343
+   }
+  ]
+ },
+ {
+  "image": "g13/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    18,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 11,
+    "pos": 1,
+    "expected": "Dεᴠɪʟ⊸ŠK",
+    "read": "DEVILe-SK",
+    "conf": 0.7721
+   },
+   {
+    "what": "name",
+    "rank": 11,
+    "pos": 2,
+    "expected": "TSxAʟᴏɴɛ",
+    "read": "TSxALONE",
+    "conf": 0.9435
+   }
+  ]
+ },
+ {
+  "image": "g13/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g13/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 3,
+    "pos": 4,
+    "expected": "Fł�s OP",
+    "read": "Fls OP",
+    "conf": 0.8578
+   }
+  ]
+ },
+ {
+  "image": "g13/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g13/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g13/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 17,
+    "pos": 3,
+    "expected": "ӂØӂ 《MadMax",
+    "read": "《MadMax",
+    "conf": 0.9413
+   }
+  ]
+ },
+ {
+  "image": "g14/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    17,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "Fł�s OP",
+    "read": "Fls OP",
+    "conf": 0.8034
+   },
+   {
+    "what": "name",
+    "rank": 18,
+    "pos": 3,
+    "expected": "ӂØӂ 《MadMax",
+    "read": "《MadMax",
+    "conf": 0.9531
+   }
+  ]
+ },
+ {
+  "image": "g14/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    17,
+    18
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "Fł�s OP",
+    "read": "Fls OP",
+    "conf": 0.8034
+   }
+  ]
+ },
+ {
+  "image": "g14/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    17,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "Fł�s OP",
+    "read": "Fls OP",
+    "conf": 0.8034
+   },
+   {
+    "what": "name",
+    "rank": 10,
+    "pos": 3,
+    "expected": "▢MrS⊸NoVa▢",
+    "read": "MrSe-NoVa",
+    "conf": 0.9593
+   }
+  ]
+ },
+ {
+  "image": "g14/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    16,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "Fł�s OP",
+    "read": "Fls OP",
+    "conf": 0.8034
+   },
+   {
+    "what": "name",
+    "rank": 15,
+    "pos": 1,
+    "expected": "Dεᴠɪʟ⊸ŠK",
+    "read": "DEvlLe-ŠK",
+    "conf": 0.7756
+   },
+   {
+    "what": "name",
+    "rank": 15,
+    "pos": 2,
+    "expected": "TSxAʟᴏɴɛ",
+    "read": "TSxALONE",
+    "conf": 0.9554
+   }
+  ]
+ },
+ {
+  "image": "g14/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    17,
+    18
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "Fł�s OP",
+    "read": "Fls OP",
+    "conf": 0.8034
+   }
+  ]
+ },
+ {
+  "image": "g14/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    18,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "Fł�s OP",
+    "read": "Fls OP",
+    "conf": 0.8034
+   }
+  ]
+ },
+ {
+  "image": "g14/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    18,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 3,
+    "expected": "Fł�s OP",
+    "read": "Fls OP",
+    "conf": 0.8034
+   }
+  ]
+ },
+ {
+  "image": "g15/01.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    35,
+    35
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g15/02.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    35,
+    35
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g16/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g16/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    4,
+    4
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": [
+   {
+    "what": "extra ranks read",
+    "read": [
+     14
+    ]
+   }
+  ]
+ },
+ {
+  "image": "g16/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g16/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g16/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g16/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    4,
+    4
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": [
+   {
+    "what": "extra ranks read",
+    "read": [
+     11
+    ]
+   }
+  ]
+ },
+ {
+  "image": "g17/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g17/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g17/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g17/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 12,
+    "pos": 1,
+    "expected": "⟜BÄBŸ⟜",
+    "read": "BÄBYe",
+    "conf": 0.814
+   }
+  ]
+ },
+ {
+  "image": "g17/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    18,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 22,
+    "pos": 3,
+    "expected": "WRLD¬MERCY",
+    "read": "WRLD乛MERCY",
+    "conf": 1.0
+   },
+   {
+    "what": "name",
+    "rank": 23,
+    "pos": 3,
+    "expected": "ɧɛllメPaddy",
+    "read": "hell×Paddy",
+    "conf": 0.9212
+   }
+  ]
+ },
+ {
+  "image": "g17/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 6,
+    "pos": 3,
+    "expected": "⋆ SHUBH ⋆",
+    "read": "SHUBH",
+    "conf": 0.8467
+   }
+  ]
+ },
+ {
+  "image": "g17/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    19,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 20,
+    "pos": 3,
+    "expected": "〖Ṁohan〗",
+    "read": "〖Mohan",
+    "conf": 0.9228
+   }
+  ]
+ },
+ {
+  "image": "g18/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g18/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g18/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g18/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g18/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g18/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    17,
+    17
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g18/07.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    34,
+    34
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g18/08.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g18/09.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    36,
+    36
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g18/10.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    7,
+    7
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    24,
+    24
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g19/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    15,
+    17
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 3,
+    "expected": "⋆ SHUBH ⋆",
+    "read": "SHUBH",
+    "conf": 0.9262
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 1,
+    "expected": "〖Ṁohan〗",
+    "read": "〖Mohan",
+    "conf": 0.9428
+   }
+  ]
+ },
+ {
+  "image": "g19/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    14,
+    16
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 3,
+    "expected": "⋆ SHUBH ⋆",
+    "read": "SHUBH",
+    "conf": 0.9262
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 1,
+    "expected": "〖Ṁohan〗",
+    "read": "〖Mohan",
+    "conf": 0.9428
+   }
+  ]
+ },
+ {
+  "image": "g19/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    18,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 3,
+    "expected": "⋆ SHUBH ⋆",
+    "read": "SHUBH",
+    "conf": 0.9279
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 1,
+    "expected": "〖Ṁohan〗",
+    "read": "〖Mohan",
+    "conf": 0.9458
+   }
+  ]
+ },
+ {
+  "image": "g19/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    18,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 3,
+    "expected": "⋆ SHUBH ⋆",
+    "read": "SHUBH",
+    "conf": 0.9262
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 1,
+    "expected": "〖Ṁohan〗",
+    "read": "〖Mohan",
+    "conf": 0.9428
+   }
+  ]
+ },
+ {
+  "image": "g19/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    17,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 3,
+    "expected": "⋆ SHUBH ⋆",
+    "read": "SHUBH",
+    "conf": 0.9325
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 1,
+    "expected": "〖Ṁohan〗",
+    "read": "〖Mohan",
+    "conf": 0.9459
+   }
+  ]
+ },
+ {
+  "image": "g19/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    18,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 3,
+    "expected": "⋆ SHUBH ⋆",
+    "read": "SHUBH",
+    "conf": 0.9262
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 1,
+    "expected": "〖Ṁohan〗",
+    "read": "〖Mohan",
+    "conf": 0.9428
+   }
+  ]
+ },
+ {
+  "image": "g19/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    17,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 3,
+    "expected": "⋆ SHUBH ⋆",
+    "read": "SHUBH",
+    "conf": 0.9262
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 1,
+    "expected": "〖Ṁohan〗",
+    "read": "〖Mohan",
+    "conf": 0.9434
+   }
+  ]
+ },
+ {
+  "image": "g19/08.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    17,
+    17
+   ],
+   "name": [
+    14,
+    17
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 1,
+    "pos": 3,
+    "expected": "⋆ SHUBH ⋆",
+    "read": "SHUBH",
+    "conf": 0.9262
+   },
+   {
+    "what": "name",
+    "rank": 2,
+    "pos": 1,
+    "expected": "〖Ṁohan〗",
+    "read": "〖Mohan",
+    "conf": 0.9428
+   },
+   {
+    "what": "name",
+    "rank": 17,
+    "pos": 2,
+    "expected": "WRLD¬MERCY",
+    "read": "WRLD乛MERCY",
+    "conf": 1.0
+   }
+  ]
+ },
+ {
+  "image": "g20/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g20/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g20/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    18,
+    19
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 15,
+    "pos": 3,
+    "expected": "⋆ SHUBH ⋆",
+    "read": "SHUBH",
+    "conf": 0.8684
+   }
+  ]
+ },
+ {
+  "image": "g20/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    18,
+    18
+   ],
+   "name": [
+    17,
+    18
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 14,
+    "pos": 1,
+    "expected": "〖Ṁohan〗",
+    "read": "〖Mohan",
+    "conf": 0.9282
+   }
+  ]
+ },
+ {
+  "image": "g20/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g20/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g20/07.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/01.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/02.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    4,
+    4
+   ],
+   "kills": [
+    16,
+    16
+   ],
+   "name": [
+    16,
+    16
+   ]
+  },
+  "misses": [
+   {
+    "what": "extra ranks read",
+    "read": [
+     9
+    ]
+   }
+  ]
+ },
+ {
+  "image": "g21/03.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/04.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/05.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/06.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/07.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    36,
+    36
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/08.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    8,
+    8
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    31,
+    31
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/09.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    8,
+    8
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    31,
+    31
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/10.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/11.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/12.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/13.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    36,
+    36
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/14.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/15.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/16.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/17.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    35,
+    35
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/18.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/19.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/20.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/21.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/22.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    18,
+    20
+   ]
+  },
+  "misses": [
+   {
+    "what": "name",
+    "rank": 7,
+    "pos": 1,
+    "expected": "ʎeɯɹer2",
+    "read": "ama",
+    "conf": 0.7757
+   },
+   {
+    "what": "name",
+    "rank": 7,
+    "pos": 2,
+    "expected": "आशीष्",
+    "read": "3π2f可々",
+    "conf": 0.7773
+   }
+  ]
+ },
+ {
+  "image": "g21/23.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "g21/24.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    35,
+    35
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "real/lobby-1.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    9,
+    9
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    36,
+    36
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "real/lobby-2.jpg",
+  "kind": "SLOT_LIST",
+  "counts": {
+   "slot": [
+    8,
+    8
+   ],
+   "rank": [
+    0,
+    0
+   ],
+   "kills": [
+    0,
+    0
+   ],
+   "name": [
+    31,
+    31
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "real/result-1.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    19,
+    19
+   ],
+   "name": [
+    19,
+    19
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "real/result-2.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "real/result-3.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "real/result-4.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ },
+ {
+  "image": "real/result-5.jpg",
+  "kind": "RESULTS",
+  "counts": {
+   "slot": [
+    0,
+    0
+   ],
+   "rank": [
+    5,
+    5
+   ],
+   "kills": [
+    20,
+    20
+   ],
+   "name": [
+    20,
+    20
+   ]
+  },
+  "misses": []
+ }
+]

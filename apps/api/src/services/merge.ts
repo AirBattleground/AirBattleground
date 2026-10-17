@@ -283,8 +283,10 @@ export function mergeResults(draft: DraftTeam[], ex: ExtractionResult, ctx: Merg
         warnings.push(`Couldn't match player "${p.name}" to slot ${slot}'s lineup`);
       }
     }
-    const kills = row.players.map((p) => p.kills);
-    team.kills = kills.some((k) => k != null) ? kills.reduce<number>((s, k) => s + (k ?? 0), 0) : team.kills;
+    // Team finishes = sum over ALL of the team's players, not just this row: a block cut off at the
+    // panel edge (2 of 4 players visible) must not wipe out finishes read from another screenshot.
+    const playerKills = team.players.map((p) => p.kills).filter((k): k is number => k != null);
+    if (playerKills.length) team.kills = playerKills.reduce((sum, k) => sum + k, 0);
     changedSlots.add(slot);
   }
   return { teams: sortTeams(teams), changedSlots, warnings };
