@@ -24,6 +24,18 @@ function SessionRedirect({ area }: { area: "manager" | "team" }) {
   );
 }
 
+/** Breadcrumb targets under a tournament that aren't pages (…/stages, …/stages/:id/matches) → the nearest real page. */
+function TournamentRedirect() {
+  const { tournamentId = "", stageId } = useParams();
+  return <Navigate replace to={stageId ? `/manager/tournaments/${tournamentId}/stages/${stageId}` : `/manager/tournaments/${tournamentId}?tab=stages`} />;
+}
+
+/** Team side: breadcrumb targets under a tournament that aren't pages (…/stages, …/matches) → the tournament hub. */
+function TeamTournamentRedirect() {
+  const { id = "" } = useParams();
+  return <Navigate replace to={`/team/tournaments/${id}`} />;
+}
+
 const LoginPage = () => page(() => import("@/pages/auth/LoginPage"));
 const NotFoundPage = () => page(() => import("@/pages/NotFoundPage"));
 const ManagerLayout = lazy(() => import("@/layouts/ManagerLayout"));
@@ -53,6 +65,14 @@ export const router = createBrowserRouter([
       { path: "scrims/:scrimId/:date/matches/:matchId", element: page(() => import("@/pages/manager/MatchCenterPage")) },
       { path: "scrims/:scrimId/:date/standings", element: page(() => import("@/pages/manager/StandingsPage")) },
       { path: "teams", element: page(() => import("@/pages/manager/TeamsPage")) },
+      { path: "tournaments", element: page(() => import("@/pages/manager/tournaments/TournamentsPage")) },
+      { path: "tournaments/new", element: page(() => import("@/pages/manager/tournaments/TournamentWizardPage")) },
+      { path: "tournaments/:tournamentId", element: page(() => import("@/pages/manager/tournaments/TournamentDetailPage")) },
+      { path: "tournaments/:tournamentId/edit", element: page(() => import("@/pages/manager/tournaments/TournamentWizardPage")) },
+      { path: "tournaments/:tournamentId/stages", element: <TournamentRedirect /> },
+      { path: "tournaments/:tournamentId/stages/:stageId", element: page(() => import("@/pages/manager/tournaments/StagePage")) },
+      { path: "tournaments/:tournamentId/stages/:stageId/matches", element: <TournamentRedirect /> },
+      { path: "tournaments/:tournamentId/stages/:stageId/matches/:matchId", element: page(() => import("@/pages/manager/tournaments/TournamentMatchPage")) },
     ],
   },
   {
@@ -74,6 +94,12 @@ export const router = createBrowserRouter([
       { path: "results/:scrimId/:date", element: page(() => import("@/pages/team/SessionResultsPage")) },
       { path: "results/:scrimId/:date/matches", element: <SessionRedirect area="team" /> },
       { path: "results/:scrimId/:date/matches/:matchId", element: page(() => import("@/pages/team/MatchScorecardPage")) },
+      { path: "tournaments", element: page(() => import("@/pages/team/tournaments/TournamentsPage")) },
+      { path: "tournaments/:id", element: page(() => import("@/pages/team/tournaments/TournamentHubPage")) },
+      { path: "tournaments/:id/stages", element: <TeamTournamentRedirect /> },
+      { path: "tournaments/:id/stages/:stageId", element: page(() => import("@/pages/team/tournaments/StagePage")) },
+      { path: "tournaments/:id/matches", element: <TeamTournamentRedirect /> },
+      { path: "tournaments/:id/matches/:matchId", element: page(() => import("@/pages/team/tournaments/TournamentMatchPage")) },
     ],
   },
   { path: "*", element: <NotFoundPage /> },

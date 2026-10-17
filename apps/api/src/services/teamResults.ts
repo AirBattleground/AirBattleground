@@ -1,6 +1,7 @@
 /** Team-facing results (phase 2): sessions played, standings, match scorecards, roster. */
 import {
   MAX_ROSTER_PLAYERS,
+  todayInAppTz,
   type GameMap,
   type MatchScorecard,
   type SaveRosterInput,
@@ -79,6 +80,14 @@ export async function teamMatchScorecard(teamId: string, matchId: string): Promi
     where: { id: matchId },
     include: {
       session: { select: { id: true, date: true, scrim: { select: { id: true, title: true } } } },
+      group: {
+        select: {
+          id: true,
+          name: true,
+          startsAt: true,
+          stage: { select: { id: true, name: true, tournament: { select: { id: true, title: true, status: true } } } },
+        },
+      },
       teams: {
         where: { teamId: { not: null }, placement: { not: null } },
         orderBy: { placement: "asc" },
@@ -87,11 +96,25 @@ export async function teamMatchScorecard(teamId: string, matchId: string): Promi
     },
   });
   if (!m || m.status !== "PUBLISHED" || !m.publishedAt) throw notFound("Results for this match aren't published yet");
-  await assertPlayed(teamId, m.session.id);
+  let header: Pick<MatchScorecard, "scrim" | "date" | "tournament">;
+  if (m.session) {
+    await assertPlayed(teamId, m.session.id);
+    header = { scrim: m.session.scrim, date: dateToStr(m.session.date), tournament: null };
+  } else if (m.group && m.group.stage.tournament.status !== "DRAFT") {
+    // published tournament matches are public to every team
+    const g = m.group;
+    const t = g.stage.tournament;
+    header = {
+      scrim: { id: t.id, title: `${t.title} · ${g.stage.name} · Group ${g.name}` },
+      date: todayInAppTz(m.scheduledAt ?? g.startsAt ?? m.publishedAt),
+      tournament: { id: t.id, title: t.title, stageId: g.stage.id, stageName: g.stage.name, groupId: g.id, groupName: g.name },
+    };
+  } else {
+    throw notFound("Results for this match aren't published yet");
+  }
   return {
     match: { id: m.id, number: m.number, map: m.map as GameMap, publishedAt: m.publishedAt.toISOString() },
-    scrim: m.session.scrim,
-    date: dateToStr(m.session.date),
+    ...header,
     teams: m.teams.map((t) => ({
       rank: t.placement!,
       slotNumber: t.slotNumber,

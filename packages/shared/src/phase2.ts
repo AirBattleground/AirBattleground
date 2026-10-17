@@ -208,6 +208,8 @@ export interface MatchDetail {
   /** approved registrations of the session (slot → team), for the reviewer's slot picker */
   sessionSlots: { slotNumber: number; team: TeamSummary }[];
   warnings: string[];
+  /** phase 3: set when the match is a tournament group match (then `scrim` is the tournament-as-scrim view) */
+  tournament?: { id: string; title: string; stageId: string; stageName: string; groupId: string; groupName: string } | null;
 }
 
 export const saveLineupSchema = z.object({
@@ -267,6 +269,8 @@ export interface MatchScorecard {
   match: { id: string; number: number; map: GameMap; publishedAt: string };
   scrim: { id: string; title: string };
   date: string;
+  /** phase 3: set for tournament group matches */
+  tournament?: { id: string; title: string; stageId: string; stageName: string; groupId: string; groupName: string } | null;
   teams: {
     rank: number;
     slotNumber: number;

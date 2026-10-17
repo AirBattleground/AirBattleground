@@ -24,6 +24,8 @@ import * as training from "../services/training.js";
 import { AppError } from "../lib/errors.js";
 import { sendStoredFile } from "../lib/storage.js";
 import { parseMultipart, singleImage } from "../lib/upload.js";
+import { mountMatchCenter } from "./matchCenter.js";
+import { tournamentManageRouter } from "./tournaments.js";
 
 const kindField = z.enum(SCREENSHOT_KINDS, { errorMap: () => ({ message: "Choose team list (SLOT_LIST) or results (RESULTS)" }) });
 const sampleQuerySchema = z.object({
@@ -159,6 +161,10 @@ export function adminRouter() {
   r.get("/extractor/status", async (_req, res) => {
     res.json(await training.extractorStatus());
   });
+
+  // ---- phase 3: tournaments (any manager's) + the match center for any match ----
+  r.use("/tournaments", tournamentManageRouter(true));
+  mountMatchCenter(r, true);
 
   return r;
 }

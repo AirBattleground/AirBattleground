@@ -6,6 +6,7 @@ import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import { cancelRegistration, registerTeam } from "../services/registrations.js";
 import * as team from "../services/team.js";
 import * as results from "../services/teamResults.js";
+import { tournamentTeamRouter } from "./tournaments.js";
 
 function teamId(req: Request): string {
   const t = currentUser(req).team;
@@ -56,6 +57,9 @@ export function teamRouter() {
   r.put("/roster", async (req, res) => {
     res.json(await results.saveRoster(teamId(req), parse(saveRosterSchema, req.body)));
   });
+
+  // ---- phase 3: tournaments ----
+  r.use("/tournaments", tournamentTeamRouter(teamId));
 
   return r;
 }

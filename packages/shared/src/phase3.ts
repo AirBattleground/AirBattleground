@@ -323,6 +323,8 @@ export interface MyTournamentStatus {
   registerBlockedReason: string | null;
   /** time slot the team was placed in (stage 1), if drawn */
   assignedSlot: string | null;
+  /** soft warning (never blocks), e.g. roster smaller than the tournament's team size */
+  rosterWarning?: string | null;
 }
 export interface TeamTournamentDetail extends TournamentDetail {
   me: MyTournamentStatus;

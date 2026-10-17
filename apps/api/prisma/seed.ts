@@ -2,7 +2,7 @@
  * Seeds the admin account from env (ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_NAME) and the real
  * screenshots in services/extractor/eval/dataset/real as training samples (source SEED, unverified).
  * With SEED_DEMO=1 also creates demo managers, teams, scrims, registrations, rosters and published
- * match results (idempotent).
+ * match results and an open demo tournament (idempotent).
  */
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 import { PrismaClient, type Prisma, type RegistrationStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { DEFAULT_POINTS_SYSTEM, addDays, matchPoints, teamNameKey, todayInAppTz, weekdayOf } from "@7xen/shared";
+import { createDemoTournament } from "../src/services/tournaments/demo.js";
 import { imageInfo, saveBuffer, sha256, splitForSha, storageRoot } from "../src/lib/storage.js";
 
 const prisma = new PrismaClient();
@@ -224,6 +225,8 @@ async function seedDemo() {
   ]);
 
   await seedDemoResults(daily, m1.id, teams);
+  // phase 3: an open tournament with the demo teams registered (8 of 16 spots taken)
+  await createDemoTournament(prisma, { managerId: m1.id, teamIds: teams.map((t) => t.id), maxTeams: 16, lobbySize: 8 });
 }
 
 // ---------------------------------------------------------------- phase 2: real screenshots as training samples

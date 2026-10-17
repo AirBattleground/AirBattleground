@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AlertTriangle, Crown, Mail, Phone, RefreshCw, SearchX, Shield, ShieldPlus } from "lucide-react";
+import { AlertTriangle, Crown, Mail, Phone, RefreshCw, SearchX, Shield, ShieldCheck, ShieldPlus, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import type { TeamRow } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
@@ -15,6 +16,7 @@ import { RowActions } from "@/components/RowActions";
 import { SearchInput } from "@/components/SearchInput";
 import { ActivePill } from "@/components/StatusPill";
 import { ToggleActiveDialog, type ToggleTarget } from "@/components/ToggleActiveDialog";
+import { useAdminStats } from "@/features/stats/api";
 import { useResetTeamPassword, useTeams, useUpdateTeam } from "@/features/teams/api";
 import { CreateTeamDialog, EditTeamDialog } from "@/features/teams/dialogs";
 import { useCreateParam } from "@/hooks/use-create-param";
@@ -34,6 +36,8 @@ const TOUR: TourStep[] = [
 export default function TeamsPage() {
   usePageTour("admin.teams", TOUR);
   const isDesktop = useIsDesktop();
+  const stats = useAdminStats();
+  const approvals = stats.data?.teamRequests.pending ?? 0;
   // ?q= prefills the search (e.g. "View team" from Team approvals)
   const [search, setSearch] = useState(() => new URLSearchParams(window.location.search).get("q") ?? "");
   const q = useDebounced(search.trim(), 300);
@@ -182,6 +186,22 @@ export default function TeamsPage() {
         <SearchInput value={search} onChange={setSearch} placeholder="Search teams…" loading={list.isFetching && !list.isPending} data-tour="search" />
         {list.data && <p className="text-sm text-muted-foreground">{items.length} {items.length === 1 ? "team" : "teams"}{q && " found"}</p>}
       </div>
+      {/* Phones have no "Team approvals" tab (folded into Teams), so link to it from here. */}
+      {!isDesktop && (
+        <Link
+          to="/team-requests"
+          className="mb-4 flex items-center gap-3 rounded-xl border bg-card p-3 text-sm shadow-sm transition-colors hover:border-primary/50"
+        >
+          <ShieldCheck className="size-5 text-primary" />
+          <span className="min-w-0 flex-1 font-medium">Team approvals</span>
+          {approvals > 0 ? (
+            <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-primary-foreground">{approvals} waiting</span>
+          ) : (
+            <span className="text-xs text-muted-foreground">None waiting</span>
+          )}
+          <ChevronRight className="size-4 text-muted-foreground" />
+        </Link>
+      )}
       <div data-tour="teams-list">{body}</div>
 
       <CreateTeamDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={setCreds} />

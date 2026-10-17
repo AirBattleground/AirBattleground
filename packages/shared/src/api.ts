@@ -44,6 +44,7 @@
  *   GET    /api/manager/team-requests                            → ListResponse<TeamRequestRow> (own requests, newest first)
  *   POST   /api/manager/team-requests      CreateTeamInput       → TeamRequestRow (201; 409 CONFLICT + fields teamName|username if taken or pending elsewhere)
  *   DELETE /api/manager/team-requests/:id                        → 204 (withdraw; PENDING only)
+ *   GET    /api/manager/teams?q=                                   → ListResponse<TeamSummary> (active teams, max 20; for tournament invites)
  *   GET    /api/manager/teams/availability?teamName=&username=   → TeamAvailability
  *
  * TEAM (role TEAM)
@@ -70,6 +71,18 @@
  *            /api/admin/training/models[/:version/activate] · /api/admin/training/runs[/:id] · /api/admin/extractor/status
  *   Errors: publish 400 VALIDATION_ERROR with fields keyed "teams.<slotNumber>.placement"; 413 VALIDATION_ERROR for
  *   an image over MAX_SCREENSHOT_BYTES; 503 EXTRACTOR_OFFLINE when an admin proxy call can't reach the extractor.
+ *
+ * PHASE 3 (tournaments) — full list with inputs and DTOs in the header of ./phase3.ts. Summary:
+ *   MANAGER  /api/manager/tournaments[/:id[/publish|/close-registration|/reopen-registration|/cancel|/complete]]
+ *            /api/manager/tournaments/:id/entries[/:entryId] · /invites · /matches/:matchId/schedule
+ *            /api/manager/tournaments/:id/stages/:stageId[/schedule|/draw|/redraw|/groups|/start|/promotion|/promote|/teams/:teamId/disqualify]
+ *            Group matches use the match center above (MatchDetail.tournament is set for them).
+ *   TEAM     GET /api/team/tournaments?scope= · GET /api/team/tournaments/:id · POST|PUT|DELETE /api/team/tournaments/:id/entry
+ *            GET /api/team/tournaments/:id/stages/:stageId · GET /api/team/matches/:matchId (published tournament matches: any team)
+ *   ADMIN    GET /api/admin/tournaments (all) + every manager tournament path under /api/admin/tournaments/... (any owner)
+ *            Match center for ANY match (scrim or tournament): GET /api/admin/matches/:matchId · PUT …/lineup · PUT …/results ·
+ *            POST …/publish · POST …/unpublish · POST …/screenshots · GET /api/admin/screenshots/:id/image · POST …/retry ·
+ *            DELETE /api/admin/screenshots/:id   (same bodies/responses as the manager routes)
  */
 export const API_PREFIX = "/api";
 export const APP_COOKIE = "sx_app";

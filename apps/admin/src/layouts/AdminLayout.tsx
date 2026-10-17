@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Compass, GraduationCap, LayoutDashboard, LogOut, Shield, ShieldCheck, Users, type LucideIcon } from "lucide-react";
+import { ChevronLeft, Compass, GraduationCap, LayoutDashboard, LogOut, Shield, ShieldCheck, Trophy, Users, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { AnimatedBackground } from "@7xen/ui/components/brand/animated-background";
 import { LogoMark } from "@7xen/ui/components/brand/logo";
@@ -32,13 +32,19 @@ interface NavDef {
   icon: LucideIcon;
   tour: string;
   end: boolean;
+  /** hidden from the 5-slot phone tab bar (reachable from another tab instead) */
+  desktopOnly?: boolean;
+  /** phone tab bar: also highlight this tab (and add their badges) on these routes */
+  mobileAlso?: string[];
 }
 
 const NAV: NavDef[] = [
   { to: "/", label: "Overview", short: "Home", icon: LayoutDashboard, tour: "nav-overview", end: true },
   { to: "/managers", label: "Managers", short: "Managers", icon: Users, tour: "nav-managers", end: false },
-  { to: "/teams", label: "Teams", short: "Teams", icon: Shield, tour: "nav-teams", end: false },
-  { to: "/team-requests", label: "Team approvals", short: "Approvals", icon: ShieldCheck, tour: "nav-team-requests", end: false },
+  { to: "/teams", label: "Teams", short: "Teams", icon: Shield, tour: "nav-teams", end: false, mobileAlso: ["/team-requests"] },
+  // Phones: approvals fold into the Teams tab (badge + highlight carry over; Teams page links to it).
+  { to: "/team-requests", label: "Team approvals", short: "Approvals", icon: ShieldCheck, tour: "nav-team-requests", end: false, desktopOnly: true },
+  { to: "/tournaments", label: "Tournaments", short: "Tourneys", icon: Trophy, tour: "nav-tournaments", end: false },
   { to: "/training", label: "Training", short: "Training", icon: GraduationCap, tour: "nav-training", end: false },
 ];
 
@@ -148,6 +154,8 @@ function SidebarNav({ collapsed }: { collapsed: boolean }) {
 /** App-style bottom navigation for phones/tablets. */
 function MobileTabBar() {
   const badges = useBadges();
+  const { pathname } = useLocation();
+  const items = NAV.filter((n) => !n.desktopOnly);
   return (
     <nav
       aria-label="Main"
@@ -155,8 +163,9 @@ function MobileTabBar() {
       style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
     >
       <ul className="mx-auto grid h-16 max-w-lg grid-cols-5">
-        {NAV.map(({ to, label, short, icon: Icon, tour, end }) => {
-          const badge = badges[to] ?? 0;
+        {items.map(({ to, label, short, icon: Icon, tour, end, mobileAlso = [] }) => {
+          const badge = (badges[to] ?? 0) + mobileAlso.reduce((n, p) => n + (badges[p] ?? 0), 0);
+          const alsoActive = mobileAlso.some((p) => pathname.startsWith(p));
           return (
             <li key={to} className="min-w-0">
               <NavLink
@@ -164,14 +173,16 @@ function MobileTabBar() {
                 end={end}
                 data-tour={tour}
                 aria-label={badge ? `${label} (${badge})` : label}
-                className={({ isActive }: { isActive: boolean }) =>
+                className={({ isActive: routeActive }: { isActive: boolean }) =>
                   cn(
                     "relative flex h-full flex-col items-center justify-center gap-1 outline-none select-none transition-transform duration-150 active:scale-95 focus-visible:bg-accent/40",
-                    isActive ? "text-primary" : "text-muted-foreground",
+                    routeActive || alsoActive ? "text-primary" : "text-muted-foreground",
                   )
                 }
               >
-                {({ isActive }: { isActive: boolean }) => (
+                {({ isActive: routeActive }: { isActive: boolean }) => {
+                  const isActive = routeActive || alsoActive;
+                  return (
                   <>
                     <span className="relative flex h-8 w-14 items-center justify-center">
                       {isActive && (
@@ -190,7 +201,8 @@ function MobileTabBar() {
                     </span>
                     <span className={cn("max-w-full truncate px-1 text-[11px] leading-none", isActive ? "font-semibold" : "font-medium")}>{short}</span>
                   </>
-                )}
+                  );
+                }}
               </NavLink>
             </li>
           );

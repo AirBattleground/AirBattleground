@@ -4,15 +4,25 @@ import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { cn } from "@7xen/ui/lib/utils";
 import { useAuth } from "@/lib/auth";
+import { useIsDesktop } from "@/lib/use-media-query";
 import { AppShell, type NavItem, type SidebarSlot, type WelcomeStep } from "@/components/shell";
+import { useTeamTournamentCrumbLabels } from "@/features/tournaments/team/crumbs";
 
-const NAV: NavItem[] = [
+const PROFILE_NAV: NavItem = { key: "profile", to: "/team/profile", label: "Team profile", short: "Team", icon: Shield };
+
+/**
+ * Phones: the bottom tab bar fits 5 items, so "Team profile" moves to the avatar menu (top right) there.
+ * Desktop: the sidebar shows all 6 (the team card at the top also links to the profile).
+ */
+const MOBILE_NAV: NavItem[] = [
   { key: "home", to: "/team", label: "Home", icon: Home, end: true },
   { key: "scrims", to: "/team/scrims", label: "Find scrims", short: "Scrims", icon: Search },
+  { key: "tournaments", to: "/team/tournaments", label: "Tournaments", short: "Cups", icon: Trophy },
   { key: "registrations", to: "/team/registrations", label: "My registrations", short: "My slots", icon: Ticket },
   { key: "results", to: "/team/results", label: "Results", icon: Medal },
-  { key: "profile", to: "/team/profile", label: "Team profile", short: "Team", icon: Shield },
 ];
+const DESKTOP_NAV: NavItem[] = [...MOBILE_NAV, PROFILE_NAV];
+
 
 const WELCOME_STEPS: WelcomeStep[] = [
   { icon: CalendarSearch, title: "Find a scrim", text: "Pick a day and browse the scrims running that day." },
@@ -61,13 +71,15 @@ function TeamCard({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-const SEGMENT_LABELS = { matches: "Match", standings: "Points table" };
+const SEGMENT_LABELS: Record<string, string> = { matches: "Match", standings: "Points table" };
 
 const teamHeader: SidebarSlot = (s) => <TeamCard {...s} />;
 
 export default function TeamLayout() {
+  const isDesktop = useIsDesktop();
+  const tournamentLabels = useTeamTournamentCrumbLabels(SEGMENT_LABELS);
   return (
-    <AppShell nav={NAV} homeHref="/team" sidebarHeader={teamHeader} segmentLabels={SEGMENT_LABELS} welcomeSteps={WELCOME_STEPS}>
+    <AppShell nav={isDesktop ? DESKTOP_NAV : MOBILE_NAV} homeHref="/team" sidebarHeader={teamHeader} segmentLabels={tournamentLabels ?? SEGMENT_LABELS} welcomeSteps={WELCOME_STEPS}>
       <Outlet />
     </AppShell>
   );

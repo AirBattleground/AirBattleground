@@ -12,6 +12,7 @@ import { ActivePill } from "@/components/StatusPill";
 import { useManagers } from "@/features/managers/api";
 import { useAdminStats } from "@/features/stats/api";
 import { useTeams } from "@/features/teams/api";
+import { useAdminTournaments } from "@/features/tournaments/api";
 import { useExtractorStatus, useModels, useSamples } from "@/features/training/api";
 import { pct } from "@/features/training/format";
 import { useAuth } from "@/lib/auth";
@@ -22,6 +23,7 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="stats"]', title: "Welcome to your control room", description: "These numbers show how many managers and teams are active, scrims running, and registrations waiting for approval.", side: "bottom" },
   { element: '[data-tour="quick-actions"]', title: "Create logins", description: "Teams and managers can't sign up on their own yet. Make their logins here in a few clicks.", side: "bottom" },
   { element: '[data-tour="reader-card"]', title: "Screenshot reader", description: "Reads match screenshots for managers. Check new samples here so it keeps getting more accurate.", side: "bottom" },
+  { element: '[data-tour="tournaments-card"]', title: "Tournaments", description: "How many tournaments are live or open for registration right now. Click to see them all.", side: "bottom" },
   { element: '[data-tour="how-it-works"]', title: "How 7xen works", description: "You create logins, managers run scrims, teams register and get slots. That's it!", side: "top" },
   { element: '[data-tour="nav-managers"]', title: "Your menu", description: "Managers and Teams live here. Open them to search, edit, reset passwords or disable a login.", side: "right" },
   { element: '[data-tour="tour-btn"]', title: "Need a refresher?", description: "Click here any time to replay the tour for the page you're on.", side: "bottom" },
@@ -87,6 +89,45 @@ function Stats() {
       ))}
     </div>
     </>
+  );
+}
+
+/** Small "Tournaments" card: live / open counts, links to the section. */
+function TournamentsCard() {
+  const { data, isPending, isError } = useAdminTournaments({ refetchInterval: 60_000 });
+  const items = data?.items ?? [];
+  const live = items.filter((t) => t.status === "LIVE").length;
+  const open = items.filter((t) => t.status === "REGISTRATION_OPEN").length;
+  return (
+    <Link
+      to={live ? "/tournaments?status=LIVE" : open ? "/tournaments?status=REGISTRATION_OPEN" : "/tournaments"}
+      data-tour="tournaments-card"
+      className="group flex items-center gap-4 rounded-xl border bg-card p-5 shadow-sm transition-all outline-none hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    >
+      <div className="relative flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary [&_svg]:size-6">
+        <Trophy />
+        {live > 0 && <span className="absolute -top-0.5 -right-0.5 size-3 animate-pulse rounded-full border-2 border-card bg-primary" aria-hidden />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="font-display text-xl font-bold">Tournaments</div>
+        <div className="text-sm text-muted-foreground">
+          {isPending ? <Skeleton className="mt-1 h-4 w-40" /> : isError ? "Couldn't load tournaments" : items.length ? `${items.length} in total, from every manager` : "None yet — managers create them"}
+        </div>
+      </div>
+      {!isPending && !isError && (
+        <div className="flex shrink-0 gap-4 text-center">
+          <div>
+            <div className="font-display text-2xl leading-none font-bold text-primary">{live}</div>
+            <div className="mt-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Live</div>
+          </div>
+          <div>
+            <div className="font-display text-2xl leading-none font-bold">{open}</div>
+            <div className="mt-1 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Open</div>
+          </div>
+        </div>
+      )}
+      <ArrowRight className="hidden size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary sm:block" />
+    </Link>
   );
 }
 
@@ -245,6 +286,7 @@ export default function DashboardPage() {
           <QuickAction to="/managers?create=1" icon={<UserPlus />} title="Create manager login" text="For someone who will run scrims" />
           <QuickAction to="/teams?create=1" icon={<ShieldPlus />} title="Create team login" text="For a squad that wants to play" />
         </div>
+        <TournamentsCard />
         <ReaderCard />
         <HowItWorks />
         <div className="grid gap-4 lg:grid-cols-2">

@@ -22,6 +22,7 @@ import {
 import { prisma, type Tx } from "../db.js";
 import { AppError, conflict, notFound } from "../lib/errors.js";
 import type { RosterSlot } from "../lib/extractor.js";
+import { todayInAppTz } from "@7xen/shared";
 import { dateToStr, iso, pointsSystemOf, strToDate, toTeamSummary } from "../lib/serialize.js";
 import { datedKey, deleteKey, newFileId, saveBuffer } from "../lib/storage.js";
 import type { UploadedImage } from "../lib/upload.js";
@@ -44,30 +45,78 @@ export const lineupLocked = (s: DbMatchStatus) => STATUS_ORDER[s] >= STATUS_ORDE
 
 // ---------------------------------------------------------------- loading
 
-async function loadOwnMatch(matchId: string, managerId: string) {
-  const m = await prisma.match.findUnique({
-    where: { id: matchId },
-    include: { session: { include: { scrim: true } } },
-  });
-  if (!m || m.session.scrim.managerId !== managerId) throw notFound(MATCH_NOT_FOUND);
+/**
+ * A match belongs to a scrim session OR a tournament group. Everything owner-specific (who may edit it,
+ * which team sits on which slot, which points system applies, how it's titled) goes through these helpers,
+ * so the match center works the same for both.
+ */
+const ownerInclude = {
+  session: { include: { scrim: true } },
+  group: {
+    include: {
+      stage: { select: { id: true, name: true, lobbySize: true, tournament: { select: { id: true, title: true, managerId: true, firstSlot: true, pointsSystem: true } } } },
+    },
+  },
+} satisfies Prisma.MatchInclude;
+type MatchWithOwner = Prisma.MatchGetPayload<{ include: typeof ownerInclude }>;
+
+/** Manager who owns the match (scrim manager or tournament manager). */
+const ownerManagerId = (m: Pick<MatchWithOwner, "session" | "group">): string | null =>
+  m.session?.scrim.managerId ?? m.group?.stage.tournament.managerId ?? null;
+
+/** `bypass` = admin acting on any match. */
+async function loadOwnMatch(matchId: string, managerId: string, bypass = false): Promise<MatchWithOwner> {
+  const m = await prisma.match.findUnique({ where: { id: matchId }, include: ownerInclude });
+  if (!m || (!bypass && ownerManagerId(m) !== managerId)) throw notFound(MATCH_NOT_FOUND);
   return m;
 }
 
-async function loadOwnScreenshot(id: string, managerId: string) {
+async function loadOwnScreenshot(id: string, managerId: string, bypass = false) {
   const s = await prisma.screenshot.findUnique({
     where: { id },
-    include: { match: { select: { id: true, status: true, session: { select: { scrim: { select: { managerId: true } } } } } } },
+    include: {
+      match: {
+        select: {
+          id: true,
+          status: true,
+          session: { select: { scrim: { select: { managerId: true } } } },
+          group: { select: { stage: { select: { tournament: { select: { managerId: true } } } } } },
+        },
+      },
+    },
   });
-  if (!s || s.match.session.scrim.managerId !== managerId) throw notFound(SCREENSHOT_NOT_FOUND);
+  if (!s) throw notFound(SCREENSHOT_NOT_FOUND);
+  const owner = s.match.session?.scrim.managerId ?? s.match.group?.stage.tournament.managerId;
+  if (!bypass && owner !== managerId) throw notFound(SCREENSHOT_NOT_FOUND);
   return s;
 }
 
-const approvedRegs = (sessionId: string, db: Tx = prisma) =>
-  db.registration.findMany({
-    where: { sessionId, status: "APPROVED", slotNumber: { not: null } },
-    select: { slotNumber: true, team: { select: { id: true, name: true, tag: true, players: { orderBy: { position: "asc" }, select: { ign: true } } } } },
-    orderBy: { slotNumber: "asc" },
-  });
+export type SlotTeam = { slotNumber: number; team: { id: string; name: string; tag: string; players: { ign: string }[] } };
+const slotTeamSelect = { id: true, name: true, tag: true, players: { orderBy: { position: "asc" as const }, select: { ign: true } } };
+
+/** Who sits on which slot: the session's APPROVED registrations, or the group's teams. */
+export async function matchSlots(owner: { sessionId: string | null; groupId: string | null }, db: Tx = prisma): Promise<SlotTeam[]> {
+  if (owner.sessionId) {
+    const regs = await db.registration.findMany({
+      where: { sessionId: owner.sessionId, status: "APPROVED", slotNumber: { not: null } },
+      select: { slotNumber: true, team: { select: slotTeamSelect } },
+      orderBy: { slotNumber: "asc" },
+    });
+    return regs.map((r) => ({ slotNumber: r.slotNumber!, team: r.team }));
+  }
+  if (owner.groupId) {
+    return db.groupTeam.findMany({
+      where: { groupId: owner.groupId },
+      select: { slotNumber: true, team: { select: slotTeamSelect } },
+      orderBy: { slotNumber: "asc" },
+    });
+  }
+  return [];
+}
+
+/** Points system for a match: the scrim's or the tournament's. */
+const matchPointsSystem = (m: Pick<MatchWithOwner, "session" | "group">) =>
+  pointsSystemOf(m.session?.scrim.pointsSystem ?? m.group?.stage.tournament.pointsSystem);
 
 // ---------------------------------------------------------------- DTO mapping
 
@@ -198,9 +247,34 @@ export async function ensureMatches(sessionId: string, maps: string[]) {
   }
 }
 
-export async function getMatchDetail(matchId: string, managerId: string): Promise<MatchDetail> {
-  await loadOwnMatch(matchId, managerId);
+export async function getMatchDetail(matchId: string, managerId: string, bypass = false): Promise<MatchDetail> {
+  await loadOwnMatch(matchId, managerId, bypass);
   return buildMatchDetail(matchId);
+}
+
+/** The scrim-shaped header of MatchDetail (+ tournament context for group matches). */
+export function matchHeader(m: MatchWithOwner): Pick<MatchDetail, "scrim" | "date" | "tournament"> {
+  if (m.session) {
+    const sc = m.session.scrim;
+    return {
+      scrim: { id: sc.id, title: sc.title, slotCount: sc.slotCount, firstSlot: sc.firstSlot, pointsSystem: pointsSystemOf(sc.pointsSystem) },
+      date: dateToStr(m.session.date),
+      tournament: null,
+    };
+  }
+  const g = m.group!;
+  const t = g.stage.tournament;
+  return {
+    scrim: {
+      id: t.id,
+      title: `${t.title} · ${g.stage.name} · Group ${g.name}`,
+      slotCount: g.stage.lobbySize,
+      firstSlot: t.firstSlot,
+      pointsSystem: pointsSystemOf(t.pointsSystem),
+    },
+    date: todayInAppTz(m.scheduledAt ?? g.startsAt ?? m.createdAt),
+    tournament: { id: t.id, title: t.title, stageId: g.stage.id, stageName: g.stage.name, groupId: g.id, groupName: g.name },
+  };
 }
 
 async function buildMatchDetail(matchId: string): Promise<MatchDetail> {
@@ -209,7 +283,7 @@ async function buildMatchDetail(matchId: string): Promise<MatchDetail> {
       where: { id: matchId },
       include: {
         ...summaryInclude,
-        session: { include: { scrim: true } },
+        ...ownerInclude,
         teams: {
           orderBy: { slotNumber: "asc" },
           include: { team: { select: { id: true, name: true, tag: true } }, players: { orderBy: { position: "asc" } } },
@@ -217,8 +291,8 @@ async function buildMatchDetail(matchId: string): Promise<MatchDetail> {
       },
     });
   let m = await load();
-  const regs = await approvedRegs(m.sessionId);
-  const slotToTeam = new Map(regs.map((r) => [r.slotNumber!, r.team]));
+  const regs = await matchSlots(m);
+  const slotToTeam = new Map(regs.map((r) => [r.slotNumber, r.team]));
 
   // keep team assignments in sync with the session's registrations until results are published
   if (m.status !== "PUBLISHED") {
@@ -262,17 +336,10 @@ async function buildMatchDetail(matchId: string): Promise<MatchDetail> {
 
   return {
     match: toMatchSummary(m),
-    scrim: {
-      id: m.session.scrim.id,
-      title: m.session.scrim.title,
-      slotCount: m.session.scrim.slotCount,
-      firstSlot: m.session.scrim.firstSlot,
-      pointsSystem: pointsSystemOf(m.session.scrim.pointsSystem),
-    },
-    date: dateToStr(m.session.date),
+    ...matchHeader(m),
     screenshots: screenshots.map(toScreenshotRow),
     teams: teams.map((t) => toMatchTeamRow(t, teams)),
-    sessionSlots: regs.map((r) => ({ slotNumber: r.slotNumber!, team: toTeamSummary(r.team) })),
+    sessionSlots: regs.map((r) => ({ slotNumber: r.slotNumber, team: toTeamSummary(r.team) })),
     warnings,
   };
 }
@@ -284,8 +351,9 @@ export async function uploadScreenshots(
   managerId: string,
   kind: ScreenshotKind,
   images: UploadedImage[],
+  bypass = false,
 ): Promise<{ items: ScreenshotRow[]; skipped: number }> {
-  const m = await loadOwnMatch(matchId, managerId);
+  const m = await loadOwnMatch(matchId, managerId, bypass);
   if (m.status === "PUBLISHED") throw conflict("Results are published. Unpublish the match to add screenshots.");
   if (!images.length) throw new AppError("VALIDATION_ERROR", "Choose at least one screenshot", { files: "Choose a screenshot" });
 
@@ -328,13 +396,13 @@ export async function uploadScreenshots(
   return { items, skipped };
 }
 
-export async function screenshotFile(id: string, managerId: string) {
-  const s = await loadOwnScreenshot(id, managerId);
+export async function screenshotFile(id: string, managerId: string, bypass = false) {
+  const s = await loadOwnScreenshot(id, managerId, bypass);
   return { storageKey: s.storageKey, mimeType: s.mimeType };
 }
 
-export async function retryScreenshot(id: string, managerId: string): Promise<ScreenshotRow> {
-  const s = await loadOwnScreenshot(id, managerId);
+export async function retryScreenshot(id: string, managerId: string, bypass = false): Promise<ScreenshotRow> {
+  const s = await loadOwnScreenshot(id, managerId, bypass);
   if (s.status !== "FAILED") throw conflict("Only screenshots that failed can be retried");
   const row = await prisma.screenshot.update({
     where: { id },
@@ -343,8 +411,8 @@ export async function retryScreenshot(id: string, managerId: string): Promise<Sc
   return toScreenshotRow(row);
 }
 
-export async function deleteScreenshot(id: string, managerId: string): Promise<void> {
-  const s = await loadOwnScreenshot(id, managerId);
+export async function deleteScreenshot(id: string, managerId: string, bypass = false): Promise<void> {
+  const s = await loadOwnScreenshot(id, managerId, bypass);
   if (s.match.status === "PUBLISHED") throw conflict("Results are published. Unpublish the match to remove screenshots.");
   await prisma.screenshot.delete({ where: { id } });
   await deleteKey(s.storageKey);
@@ -369,8 +437,8 @@ function lineupErrors(input: SaveLineupInput) {
 
 const lockMatch = (tx: Tx, matchId: string) => tx.$queryRaw`SELECT id FROM "Match" WHERE id = ${matchId} FOR UPDATE`;
 
-export async function saveLineup(matchId: string, managerId: string, input: SaveLineupInput): Promise<MatchDetail> {
-  const m = await loadOwnMatch(matchId, managerId);
+export async function saveLineup(matchId: string, managerId: string, input: SaveLineupInput, bypass = false): Promise<MatchDetail> {
+  const m = await loadOwnMatch(matchId, managerId, bypass);
   if (m.status === "PUBLISHED") throw conflict("Results are published. Unpublish the match to change the lineup.");
   lineupErrors(input);
   if (input.confirm && !input.teams.some((t) => t.players.length > 0)) {
@@ -380,8 +448,8 @@ export async function saveLineup(matchId: string, managerId: string, input: Save
   await prisma.$transaction(
     async (tx) => {
       await lockMatch(tx, matchId);
-      const regs = await approvedRegs(m.sessionId, tx);
-      const slotToTeam = new Map(regs.map((r) => [r.slotNumber!, r.team.id]));
+      const regs = await matchSlots(m, tx);
+      const slotToTeam = new Map(regs.map((r) => [r.slotNumber, r.team.id]));
       const current = await tx.matchTeam.findMany({ where: { matchId }, include: { players: true } });
       const keep = new Set(input.teams.map((t) => t.slotNumber));
       await tx.matchTeam.deleteMany({ where: { matchId, slotNumber: { notIn: [...keep] } } });
@@ -469,8 +537,8 @@ async function recordLineupSamples(matchId: string, userId: string) {
 
 // ---------------------------------------------------------------- results
 
-export async function saveResults(matchId: string, managerId: string, input: SaveResultsInput): Promise<MatchDetail> {
-  const m = await loadOwnMatch(matchId, managerId);
+export async function saveResults(matchId: string, managerId: string, input: SaveResultsInput, bypass = false): Promise<MatchDetail> {
+  const m = await loadOwnMatch(matchId, managerId, bypass);
   if (m.status === "PUBLISHED") throw conflict("Results are published. Unpublish the match to change them.");
   const fields: Record<string, string> = {};
   const seen = new Set<number>();
@@ -508,8 +576,8 @@ export async function saveResults(matchId: string, managerId: string, input: Sav
   return buildMatchDetail(matchId);
 }
 
-export async function publishMatch(matchId: string, managerId: string): Promise<MatchDetail> {
-  const m = await loadOwnMatch(matchId, managerId);
+export async function publishMatch(matchId: string, managerId: string, bypass = false): Promise<MatchDetail> {
+  const m = await loadOwnMatch(matchId, managerId, bypass);
   if (m.status === "PUBLISHED") return buildMatchDetail(matchId);
 
   const teams = await prisma.matchTeam.findMany({ where: { matchId }, orderBy: { slotNumber: "asc" } });
@@ -532,7 +600,7 @@ export async function publishMatch(matchId: string, managerId: string): Promise<
     throw new AppError("VALIDATION_ERROR", message, fields);
   }
 
-  const ps = pointsSystemOf(m.session.scrim.pointsSystem);
+  const ps = matchPointsSystem(m);
   await prisma.$transaction(async (tx) => {
     await lockMatch(tx, matchId);
     await tx.matchTeam.updateMany({ where: { matchId, kills: null, placement: { not: null } }, data: { kills: 0 } });
@@ -568,8 +636,8 @@ async function recordResultsSamples(matchId: string, userId: string) {
   }
 }
 
-export async function unpublishMatch(matchId: string, managerId: string): Promise<MatchDetail> {
-  const m = await loadOwnMatch(matchId, managerId);
+export async function unpublishMatch(matchId: string, managerId: string, bypass = false): Promise<MatchDetail> {
+  const m = await loadOwnMatch(matchId, managerId, bypass);
   if (m.status !== "PUBLISHED") throw conflict("This match isn't published");
   await prisma.$transaction(async (tx) => {
     await lockMatch(tx, matchId);
@@ -594,12 +662,12 @@ export async function managerStandings(scrimId: string, managerId: string, date:
 export async function rosterForScreenshot(screenshotId: string): Promise<RosterSlot[]> {
   const s = await prisma.screenshot.findUniqueOrThrow({
     where: { id: screenshotId },
-    select: { kind: true, match: { select: { id: true, sessionId: true } } },
+    select: { kind: true, match: { select: { id: true, sessionId: true, groupId: true } } },
   });
-  const regs = await approvedRegs(s.match.sessionId);
+  const regs = await matchSlots(s.match);
   const bySlot = new Map<number, RosterSlot>();
   for (const r of regs) {
-    bySlot.set(r.slotNumber!, { slot: r.slotNumber!, teamName: r.team.name, players: r.team.players.map((p) => p.ign) });
+    bySlot.set(r.slotNumber, { slot: r.slotNumber, teamName: r.team.name, players: r.team.players.map((p) => p.ign) });
   }
   if (s.kind === "RESULTS") {
     const lineup = await prisma.matchTeam.findMany({
@@ -632,10 +700,10 @@ export async function applyExtraction(screenshotId: string, result: ExtractionRe
         where: { id: s.matchId },
         include: { teams: { include: { players: { orderBy: { position: "asc" } } } } },
       });
-      const regs = await approvedRegs(m.sessionId, tx);
+      const regs = await matchSlots(m, tx);
       const ctx = {
-        slotToTeam: new Map(regs.map((r) => [r.slotNumber!, r.team.id])),
-        rosterBySlot: new Map(regs.map((r) => [r.slotNumber!, r.team.players.map((p) => p.ign)])),
+        slotToTeam: new Map(regs.map((r) => [r.slotNumber, r.team.id])),
+        rosterBySlot: new Map(regs.map((r) => [r.slotNumber, r.team.players.map((p) => p.ign)])),
         lineupLocked: lineupLocked(m.status),
         resultsLocked: m.status === "PUBLISHED",
       };

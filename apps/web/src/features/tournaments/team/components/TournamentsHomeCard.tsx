@@ -1,0 +1,95 @@
+import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { ArrowRight, Clock, Trophy } from "lucide-react";
+import type { TournamentSummary } from "@7xen/shared";
+import { Pill } from "@7xen/ui/components/brand/status";
+import { cn } from "@7xen/ui/lib/utils";
+import { Countdown } from "../../shared/Countdown";
+import { RegistrationMeter } from "../../shared/RegistrationMeter";
+import { fmtWhen } from "../../shared/format";
+import { useTeamTournament, useTeamTournaments } from "../api";
+import { journeyCopy, meChip } from "../journey";
+
+const ACTIVE = new Set(["REGISTRATION_OPEN", "REGISTRATION_CLOSED", "LIVE"]);
+
+function Shell({ to, children, highlight }: { to: string; children: ReactNode; highlight?: boolean }) {
+  return (
+    <Link
+      to={to}
+      data-tour="home-tournaments"
+      className={cn(
+        "group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-row sm:items-center sm:p-5",
+        highlight && "border-primary/40",
+      )}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
+      <span className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-warning/15 text-warning-foreground dark:text-warning">
+        <Trophy className="size-6" />
+      </span>
+      {children}
+      <ArrowRight className="relative hidden size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary sm:block" />
+    </Link>
+  );
+}
+
+function MineSummary({ t }: { t: TournamentSummary }) {
+  const d = useTeamTournament(t.id).data;
+  const chip = d ? meChip(d.me) : null;
+  const nm = d?.me.nextMatch;
+  return (
+    <Shell to={`/team/tournaments/${t.id}`} highlight>
+      <div className="relative min-w-0 flex-1">
+        <p className="flex flex-wrap items-center gap-2 text-xs font-semibold tracking-[0.2em] text-primary uppercase">
+          Your tournament {chip && <Pill tone={chip.tone} className="tracking-normal normal-case">{chip.text}</Pill>}
+        </p>
+        <p className="truncate font-display text-xl leading-tight font-bold">{t.title}</p>
+        <p className="text-sm text-muted-foreground">
+          {nm ? (
+            <>
+              Next: Match {nm.number} · Group {nm.groupName} · {fmtWhen(nm.scheduledAt)}
+            </>
+          ) : d ? (
+            (d.me.nextGoal ?? journeyCopy(d).body)
+          ) : (
+            "Loading your status…"
+          )}
+        </p>
+      </div>
+      {nm?.scheduledAt && (
+        <div className="relative shrink-0 text-left sm:text-right">
+          <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Starts in</p>
+          <p className="flex items-center gap-1 font-display text-2xl font-bold">
+            <Clock className="size-4 text-primary" />
+            <Countdown to={nm.scheduledAt} doneText="Now!" />
+          </p>
+        </div>
+      )}
+    </Shell>
+  );
+}
+
+/** Compact dashboard card: your next tournament match, or an open tournament to join. Renders nothing if neither. */
+export function TournamentsHomeCard() {
+  const mine = useTeamTournaments("mine");
+  const open = useTeamTournaments("open");
+  const active = (mine.data ?? []).find((t) => ACTIVE.has(t.status));
+  if (active) return <MineSummary t={active} />;
+  const mineIds = new Set((mine.data ?? []).map((t) => t.id));
+  const join = (open.data ?? []).find((t) => !mineIds.has(t.id));
+  if (!join) return null;
+  return (
+    <Shell to={`/team/tournaments/${join.id}`}>
+      <div className="relative min-w-0 flex-1">
+        <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Tournament · registration open</p>
+        <p className="truncate font-display text-xl leading-tight font-bold">
+          {join.title}
+          {join.prize && <span className="ml-2 text-base text-warning-foreground dark:text-warning">· {join.prize}</span>}
+        </p>
+        <RegistrationMeter confirmed={join.confirmedCount} max={join.maxTeams} waitlist={join.waitlistCount} size="sm" className="mt-1.5 max-w-sm" />
+      </div>
+      <span className="relative inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow">
+        View & register
+      </span>
+    </Shell>
+  );
+}
