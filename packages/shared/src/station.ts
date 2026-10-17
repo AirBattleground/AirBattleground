@@ -60,7 +60,46 @@ export interface StationStatus {
   version: string;
   /** (additive) title of the busy match, e.g. "Evening Scrim · Sat, 18 Oct · Match 2"; filled in by the API */
   matchTitle?: string | null;
+  /** (additive) the Android device the station drives */
+  device?: StationDevice;
 }
+
+/**
+ * (additive) Game device. Local AVD on the station PC, or a REMOTE device over Wi-Fi: BlueStacks / Android emulator
+ * on another machine running scripts/mac-adb-relay.py (address "host:port"), or a phone with wireless debugging.
+ */
+export interface StationDevice {
+  /** "LOCAL_AVD" when no address is configured, else "REMOTE" */
+  mode: "LOCAL_AVD" | "REMOTE";
+  /** configured remote "host:port" (null in LOCAL_AVD mode) */
+  address: string | null;
+  /** adb serial in use (null when not connected) */
+  serial: string | null;
+  /** adb connection state: "device" | "offline" | "unauthorized" | null (not found) */
+  state: string | null;
+  /** e.g. "BlueStacks · Samsung SM-S908E · Android 13" (manufacturer + model + release), null when unknown */
+  label: string | null;
+}
+
+/**
+ * Admin sets the game device. address "host:port" (IPv4 or hostname, port 1-65535) or null = local AVD.
+ *   API:     PUT /api/admin/station/device  { address } → StationStatus   (admin only; 503 when the station is offline;
+ *            409 while a match is live on the station)
+ *   Station: PUT /config/device              { address } → StationStatus   (persisted in STATION_WORK_DIR/device.json,
+ *            overrides REMOTE_DEVICE from .env; connects right away with `adb connect`)
+ */
+export const stationDeviceInputSchema = z.object({
+  address: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z0-9.-]+:\d{1,5}$/, "Use the form 192.168.0.50:5556")
+    .refine((a) => {
+      const port = Number(a.split(":")[1]);
+      return port >= 1 && port <= 65535;
+    }, "Port must be 1-65535")
+    .nullable(),
+});
+export type StationDeviceInput = z.infer<typeof stationDeviceInputSchema>;
 
 /** (additive) body of POST .../station/prepare — `{}` is fine (launchBgmi defaults to true) */
 export const stationPrepareInputSchema = z
