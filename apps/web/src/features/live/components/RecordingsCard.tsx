@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Download, Film, Play, Smartphone, Video } from "lucide-react";
 import type { RecordingRow } from "@7xen/shared";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -91,7 +90,8 @@ function RecordingItem({ r, onPlay }: { r: RecordingRow; onPlay: () => void }) {
 /** Live banner: shown above the match center while the phone app is recording this match. */
 export function LiveBanner({ matchId }: { matchId: string }) {
   const q = useRecordings(matchId);
-  const live = q.data?.find((r) => r.status === "LIVE");
+  // the 7XEN Station has its own panel above, so only phone recordings get this banner
+  const live = q.data?.find((r) => r.status === "LIVE" && r.deviceName !== "7XEN Station");
   if (!live) return null;
   return (
     <div role="status" className="flex items-center gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-3 sm:p-4" data-tour="live-banner">
@@ -108,7 +108,7 @@ export function LiveBanner({ matchId }: { matchId: string }) {
   );
 }
 
-/** Every recording of a match (from the 7XEN Manager app), with upload progress and a player. */
+/** Every recording of a match (7XEN Station or phone), with upload progress and a player. */
 export function RecordingsCard({ matchId, title }: { matchId: string; title: string }) {
   const q = useRecordings(matchId);
   const [playing, setPlaying] = useState<RecordingRow | null>(null);
@@ -135,11 +135,8 @@ export function RecordingsCard({ matchId, title }: { matchId: string; title: str
         </div>
       ) : items.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No recordings yet. Tap <span className="font-semibold text-foreground">Go live</span> on this match in the 7XEN Manager app — the whole game is recorded and
-          uploaded here.{" "}
-          <Link to="/manager/app" className="font-medium text-primary underline-offset-4 hover:underline">
-            Get the app
-          </Link>
+          No recordings yet. Press <span className="font-semibold text-foreground">Prepare</span> above — the station opens BGMI, records the whole game and saves it
+          here when you stop.
         </p>
       ) : (
         <ul className="-m-1.5 space-y-1">

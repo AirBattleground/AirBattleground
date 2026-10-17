@@ -28,6 +28,10 @@ const envSchema = z.object({
   VIDEO_DIR: z.string().optional(),
   /** phase 4: ffmpeg binary used for video duration/size + poster */
   FFMPEG_PATH: z.string().default("ffmpeg"),
+  /** phase 4b: the 7XEN Station service on the host PC (read lazily by lib/stationClient.ts so tests can override) */
+  STATION_URL: z.string().url().default("http://127.0.0.1:4500"),
+  /** shared secret for API ↔ station calls (X-Station-Token); empty = station features disabled */
+  STATION_TOKEN: z.string().default(""),
   /** run the in-process screenshot worker (index.ts); set to 0 to disable */
   SCREENSHOT_WORKER: z
     .string()

@@ -1,0 +1,25 @@
+# 7XEN Station — systemd --user unit (rendered by scripts/station-install.sh; @REPO@/@NODE@ are filled in).
+# Runs on the host (needs /dev/kvm, the desktop's DISPLAY, adb, scrcpy, ffmpeg) — never in Docker.
+#   systemctl --user status 7xen-station     journalctl --user -u 7xen-station -f
+[Unit]
+Description=7XEN Station (BGMI emulator recorder + live stream)
+After=network-online.target graphical-session.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=@REPO@/services/station
+# config + STATION_TOKEN live in services/station/.env (read by the station itself)
+Environment=NODE_ENV=production
+Environment=PATH=@NODE_DIR@:/usr/local/bin:/usr/bin:/bin
+ExecStart=@NODE@ --import tsx src/index.ts
+Restart=on-failure
+RestartSec=5
+# On stop the station finishes the active recording itself (SIGTERM → stop scrcpy, flush ffmpeg, report to the API).
+# KillMode=process leaves the emulator it may have started (detached) running across station restarts.
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=120
+
+[Install]
+WantedBy=default.target

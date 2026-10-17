@@ -21,6 +21,7 @@ import * as teamRequests from "../services/teamRequests.js";
 import { mountMatchCenter } from "./matchCenter.js";
 import { tournamentManageRouter } from "./tournaments.js";
 import { mountManagerLive } from "./live.js";
+import { mountStation } from "./station.js";
 
 export function managerRouter() {
   const r = Router();
@@ -80,6 +81,8 @@ export function managerRouter() {
 
   // ---- phase 4: manager app (today, room, recordings, recipes) ----
   mountManagerLive(r);
+  // ---- phase 4b: 7XEN Station (emulator recording + live stream) ----
+  mountStation(r, false);
 
   // ---- team login requests (admin approves) ----
   // team search for tournament invites (active team logins only)

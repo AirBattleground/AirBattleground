@@ -14,9 +14,11 @@ import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
 import { LastResultCard } from "@/features/results/components/LastResultCard";
 import { TournamentsHomeCard } from "@/features/tournaments/team/components/TournamentsHomeCard";
 import { NextRoomCard } from "@/features/live/components/TeamRoom";
+import { TeamLiveCards } from "@/features/station/components/TeamLiveCard";
 
 const STEPS: TourStep[] = [
   { title: "Welcome to 7xen!", description: "This is your team's home. Here's a quick look around — it takes 20 seconds." },
+  { element: '[data-tour="watch-live"]', title: "Watch live", description: "When one of your matches is being streamed, it shows up right here. Tap it to watch the game live.", side: "bottom" },
   { element: '[data-tour="next-match"]', title: "Your next match", description: "Once an organiser approves you, your slot number, time and maps show up here with a live countdown.", side: "bottom" },
   { element: '[data-tour="next-room"]', title: "Room ID & password", description: "Before each match the room ID and password appear here, with copy buttons. Until then it shows when they'll appear.", side: "bottom" },
   { element: '[data-tour="home-tournaments"]', title: "Tournaments", description: "Your next tournament match, or an open tournament you can join. Tap it for the full details.", side: "bottom" },
@@ -64,6 +66,8 @@ export default function DashboardPage() {
         }
         className="mb-0"
       />
+
+      <TeamLiveCards />
 
       {q.isError && !d ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your dashboard" />

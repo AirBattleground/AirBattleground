@@ -13,6 +13,7 @@ import { adminAuthRouter, appAuthRouter } from "./routes/auth.js";
 import { managerRouter } from "./routes/manager.js";
 import { teamRouter } from "./routes/team.js";
 import { appReleaseRouter } from "./routes/appRelease.js";
+import { internalStationRouter, liveRouter } from "./routes/station.js";
 
 /** Friendly message for a unique-constraint violation, based on the columns involved. */
 /** Friendly message + the form field that clashed, so UIs can show the error in the right place. */
@@ -43,7 +44,7 @@ const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     body = { error: { code: err.code, message: err.message }, offset: err.offset } as ApiErrorBody;
   } else if (err instanceof AppError) {
     status = err.status;
-    body = { error: { code: err.code, message: err.message, ...(err.fields ? { fields: err.fields } : {}) } };
+    body = { error: { code: err.code as ApiErrorBody["error"]["code"], message: err.message, ...(err.fields ? { fields: err.fields } : {}) } };
   } else if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
     status = 409;
     const { message, fields } = uniqueError(err);
@@ -95,6 +96,9 @@ export function createApp() {
   app.use(`${API_PREFIX}/manager`, managerRouter());
   app.use(`${API_PREFIX}/team`, teamRouter());
   app.use(`${API_PREFIX}/app`, appReleaseRouter());
+  // phase 4b: 7XEN Station live streams (viewer auth inside) + station → API hooks (X-Station-Token)
+  app.use(`${API_PREFIX}/live`, liveRouter());
+  app.use(`${API_PREFIX}/internal/station`, internalStationRouter());
 
   app.use((_req, res) => {
     const body: ApiErrorBody = { error: { code: "NOT_FOUND", message: "Not found" } };

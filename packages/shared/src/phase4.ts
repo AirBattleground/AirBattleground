@@ -175,7 +175,7 @@ export interface UploadState {
   chunkSize: number;
   complete: boolean;
 }
-export type ScreenshotSource = "WEB" | "APP_AUTO" | "APP_MANUAL";
+export type ScreenshotSource = "WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION";
 
 // ---------- recipes (assisted / automatic touch steps) ----------
 export const RECIPE_KEYS = ["CREATE_ROOM", "OPEN_TEAM_LIST", "SCROLL_RESULTS"] as const;

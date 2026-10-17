@@ -8,6 +8,7 @@ import * as team from "../services/team.js";
 import * as results from "../services/teamResults.js";
 import { tournamentTeamRouter } from "./tournaments.js";
 import { teamRooms } from "../services/live.js";
+import { teamLive } from "../services/station.js";
 
 function teamId(req: Request): string {
   const t = currentUser(req).team;
@@ -65,6 +66,11 @@ export function teamRouter() {
   // ---- phase 4: room details for upcoming matches (shown once revealed) ----
   r.get("/rooms", async (req, res) => {
     res.json({ items: await teamRooms(teamId(req)) });
+  });
+  // ---- phase 4b: matches of this team being streamed by the 7XEN Station right now ----
+  r.get("/live", async (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ items: await teamLive(teamId(req)) });
   });
 
   return r;

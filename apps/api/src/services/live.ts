@@ -21,6 +21,8 @@ import { ensureSession } from "./registrations.js";
 import { mayOccurOnWhere, scrimOccursOn } from "./schedule.js";
 import { capturesFor, recordingShotSelect, toRecordingRow } from "./recordings.js";
 import { matchContext } from "./matchContext.js";
+import { liveInfoFor } from "./station.js";
+import type { MatchLiveInfo } from "@7xen/shared";
 
 // ---------------------------------------------------------------- room
 
@@ -116,7 +118,7 @@ export async function liveToday(managerId: string, days: number, now = new Date(
     const ctx = matchContext(m);
     const shots = m.screenshots;
     const rec = m.recordings[0];
-    const card: LiveMatchCard = {
+    const card: LiveMatchCard & { live: MatchLiveInfo | null } = {
       matchId: m.id,
       kind: ctx.kind,
       title: ctx.title,
@@ -130,6 +132,8 @@ export async function liveToday(managerId: string, days: number, now = new Date(
       room: toRoomDetails(m),
       recording: rec ? toRecordingRow(rec, capturesFor(rec, shots)) : null,
       screenshotCounts: { slotList: shots.filter((s) => s.kind === "SLOT_LIST").length, results: shots.filter((s) => s.kind === "RESULTS").length },
+      // phase 4b (additive): the 7XEN Station is streaming this match
+      live: liveInfoFor(rec),
     };
     return card;
   });

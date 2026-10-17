@@ -1,4 +1,7 @@
-import type { ApiErrorCode } from "@7xen/shared";
+import type { ApiErrorCode as SharedErrorCode, StationErrorCode } from "@7xen/shared";
+
+/** API error codes, plus the station's (phase 4b, additive). */
+export type ApiErrorCode = SharedErrorCode | StationErrorCode;
 
 const STATUS: Record<ApiErrorCode, number> = {
   VALIDATION_ERROR: 400,
@@ -12,6 +15,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   EXTRACTOR_OFFLINE: 503,
   OFFSET_MISMATCH: 409,
   STORAGE_FULL: 507,
+  STATION_OFFLINE: 503,
   INTERNAL: 500,
 };
 

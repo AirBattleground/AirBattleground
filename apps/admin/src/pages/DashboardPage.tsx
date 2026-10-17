@@ -16,6 +16,7 @@ import { useAdminTournaments } from "@/features/tournaments/api";
 import { useExtractorStatus, useModels, useSamples } from "@/features/training/api";
 import { pct } from "@/features/training/format";
 import { ManagerAppCard } from "@/features/managerApp/ManagerAppCard";
+import { StationCard } from "@/features/station/StationCard";
 import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/forms";
 import { relativeTime } from "@/lib/format";
@@ -26,6 +27,7 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="reader-card"]', title: "Screenshot reader", description: "Reads match screenshots for managers. Check new samples here so it keeps getting more accurate.", side: "bottom" },
   { element: '[data-tour="tournaments-card"]', title: "Tournaments", description: "How many tournaments are live or open for registration right now. Click to see them all.", side: "bottom" },
   { element: '[data-tour="manager-app-card"]', title: "Manager app", description: "Match videos recorded by managers' phones, the room-creation recipes, and how long videos are kept.", side: "bottom" },
+  { element: '[data-tour="station-card"]', title: "7XEN Station", description: "The game phone that runs on the server PC. It records and streams matches for managers. Shows whether it's online and what it's doing.", side: "bottom" },
   { element: '[data-tour="how-it-works"]', title: "How 7xen works", description: "You create logins, managers run scrims, teams register and get slots. That's it!", side: "top" },
   { element: '[data-tour="nav-managers"]', title: "Your menu", description: "Managers and Teams live here. Open them to search, edit, reset passwords or disable a login.", side: "right" },
   { element: '[data-tour="tour-btn"]', title: "Need a refresher?", description: "Click here any time to replay the tour for the page you're on.", side: "bottom" },
@@ -291,6 +293,7 @@ export default function DashboardPage() {
         <TournamentsCard />
         <ReaderCard />
         <ManagerAppCard />
+        <StationCard />
         <HowItWorks />
         <div className="grid gap-4 lg:grid-cols-2">
           <RecentList

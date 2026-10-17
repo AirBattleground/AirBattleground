@@ -30,6 +30,7 @@ import { parseMultipart, singleImage } from "../lib/upload.js";
 import { mountMatchCenter } from "./matchCenter.js";
 import { tournamentManageRouter } from "./tournaments.js";
 import { mountLive } from "./live.js";
+import { mountStation } from "./station.js";
 import * as recordings from "../services/recordings.js";
 import * as recipes from "../services/recipes.js";
 
@@ -198,6 +199,8 @@ export function adminRouter() {
   });
   // room + recordings of any match (video/poster streaming, uploads on a manager's behalf)
   mountLive(r, true);
+  // phase 4b: 7XEN Station for any match
+  mountStation(r, true);
 
   return r;
 }

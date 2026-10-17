@@ -58,7 +58,19 @@ export interface StationStatus {
   rotation: 0 | 1 | 2 | 3 | null;
   error: string | null;
   version: string;
+  /** (additive) title of the busy match, e.g. "Evening Scrim · Sat, 18 Oct · Match 2"; filled in by the API */
+  matchTitle?: string | null;
 }
+
+/** (additive) body of POST .../station/prepare — `{}` is fine (launchBgmi defaults to true) */
+export const stationPrepareInputSchema = z
+  .object({
+    launchBgmi: z.boolean().default(true),
+    bitrateMbps: z.number().min(1).max(20).optional(),
+    maxFps: z.number().int().min(10).max(60).optional(),
+  })
+  .default({});
+export type StationPrepareInput = z.infer<typeof stationPrepareInputSchema>;
 
 export interface StationPrepareRequest {
   matchId: string;
@@ -107,4 +119,61 @@ export interface TeamLiveCard {
   map: GameMap;
   startedAt: string;
   hlsUrl: string;
+  /** (additive) tournament id for tournament matches, null for scrims */
+  tournamentId?: string | null;
+}
+
+// ---------------------------------------------------------------- additions (phase 4b, additive)
+/*
+ * Additional internal hook (station → API, header X-Station-Token):
+ *   POST /api/internal/station/recordings/:id/fail  { error, durationSec? } → 204
+ *        (the station could not produce any video: the recording becomes FAILED with that error)
+ * Station request bodies (API → station):
+ *   POST /sessions/stop     StationStopRequest           (answers at once with phase STOPPING; finalising runs in the background)
+ *   POST /sessions/capture  StationCaptureRequest        → StationCaptureResponse
+ *   POST /sessions/input    StationSessionInput          → 204 (409 when `matchId` is not the active session)
+ * HLS (viewer endpoints) are served while the match's station recording is LIVE, and for ~10 minutes after it
+ * stopped (the playlist then carries #EXT-X-ENDLIST); afterwards 404.
+ * LiveMatchCard (GET /api/manager/live/today) gains an optional `live: MatchLiveInfo | null`.
+ */
+
+/** MatchRecording.deviceName of recordings made by the station. */
+export const STATION_DEVICE_NAME = "7XEN Station";
+/** Error code (HTTP 503) when the station PC can't be reached. */
+export const STATION_OFFLINE_CODE = "STATION_OFFLINE" as const;
+export type StationErrorCode = typeof STATION_OFFLINE_CODE;
+export const STATION_OFFLINE_MESSAGE = "The 7XEN Station PC isn't running. Start it on the station PC, then try again.";
+/** Header carrying the shared secret on every API ↔ station call. */
+export const STATION_TOKEN_HEADER = "X-Station-Token";
+
+export interface StationStopRequest {
+  matchId: string;
+}
+export interface StationCaptureRequest {
+  matchId: string;
+  kind: "SLOT_LIST" | "RESULTS";
+}
+export interface StationCaptureResponse {
+  /** PNG path relative to STORAGE_DIR */
+  file: string;
+}
+export type StationSessionInput = StationInput & { matchId: string };
+
+export const stationCompleteSchema = z.object({
+  videoKey: z.string().min(1).max(300),
+  sizeBytes: z.number().int().min(0),
+  durationSec: z.number().int().min(0).max(24 * 3600).optional(),
+});
+export type StationCompleteInput = z.infer<typeof stationCompleteSchema>;
+export const stationFailSchema = z.object({
+  error: z.string().min(1).max(300),
+  durationSec: z.number().int().min(0).max(24 * 3600).optional(),
+});
+export type StationFailInput = z.infer<typeof stationFailSchema>;
+
+/** Live-stream info added to LiveMatchCard (and used by the web player). */
+export interface MatchLiveInfo {
+  streaming: boolean;
+  hlsUrl: string | null;
+  startedAt: string | null;
 }

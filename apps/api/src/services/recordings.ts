@@ -44,7 +44,7 @@ import { matchContext } from "./matchContext.js";
 import { loadOwnMatch, ownerInclude, ownerManagerId } from "./matches.js";
 
 const NOT_FOUND = "Recording not found";
-const MAX_EVENTS = 500;
+export const MAX_EVENTS = 500;
 /** A LIVE recording not touched for this long is treated as abandoned (app crashed / phone died). */
 const STALE_LIVE_MS = 6 * 60 * 60 * 1000;
 const APP_SOURCES = ["APP_AUTO", "APP_MANUAL"];
@@ -62,7 +62,7 @@ export function capturesFor(rec: Pick<MatchRecording, "startedAt" | "endedAt">, 
   return { slotList: mine.filter((s) => s.kind === "SLOT_LIST").length, results: mine.filter((s) => s.kind === "RESULTS").length };
 }
 
-const eventsOf = (raw: Prisma.JsonValue): RecordingEvent[] => (Array.isArray(raw) ? (raw as unknown as RecordingEvent[]) : []);
+export const eventsOf = (raw: Prisma.JsonValue): RecordingEvent[] => (Array.isArray(raw) ? (raw as unknown as RecordingEvent[]) : []);
 const num = (b: bigint | null): number | null => (b == null ? null : Number(b));
 
 export function toRecordingRow(r: MatchRecording, captures: { slotList: number; results: number }): RecordingRow {
@@ -85,7 +85,7 @@ export function toRecordingRow(r: MatchRecording, captures: { slotList: number; 
   };
 }
 
-async function rowFor(r: MatchRecording): Promise<RecordingRow> {
+export async function rowFor(r: MatchRecording): Promise<RecordingRow> {
   const shots = await prisma.screenshot.findMany({ where: { matchId: r.matchId }, select: recordingShotSelect });
   return toRecordingRow(r, capturesFor(r, shots));
 }
@@ -307,7 +307,7 @@ export async function completeUpload(id: string, managerId: string, bypass = fal
 }
 
 /** ffmpeg: duration, size and a poster at ~10%. Failures still end READY (no poster) and are logged. */
-async function processVideo(id: string, videoKey: string, startedAt: Date): Promise<MatchRecording> {
+export async function processVideo(id: string, videoKey: string, startedAt: Date): Promise<MatchRecording> {
   const abs = resolveVideoKey(videoKey);
   const data: Prisma.MatchRecordingUpdateInput = { status: "READY" };
   try {

@@ -81,8 +81,8 @@ export function RoomCard({ matchId, label, readOnly = false }: { matchId: string
       ) : !room ? (
         <div className="relative flex flex-1 flex-col items-start gap-3">
           <p className="text-sm text-muted-foreground">
-            No room yet. The <span className="font-semibold text-foreground">7XEN Manager app</span> fills this in when it creates the custom room — or add the room ID and
-            password yourself.
+            No room yet. Create the custom room in BGMI on the station, then add the room ID and password here — teams see them at the time you
+            choose.
           </p>
           {!readOnly && (
             <Button onClick={() => setEditing(true)} data-tour="room-edit">
@@ -179,7 +179,7 @@ function RoomDialog({ matchId, room, onClose }: { matchId: string; room: RoomDet
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">{room ? "Edit room details" : "Add room details"}</DialogTitle>
-          <DialogDescription>Teams in this match see these on their dashboard. The app normally fills them in for you.</DialogDescription>
+          <DialogDescription>Teams in this match see these on their dashboard.</DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           <div className="grid gap-4 sm:grid-cols-2">

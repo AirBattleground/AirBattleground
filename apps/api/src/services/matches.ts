@@ -35,7 +35,9 @@ import { loadOwnScrim } from "./scrims.js";
 import { standingsForSession, storeMatchPoints } from "./standings.js";
 
 const MATCH_NOT_FOUND = "Match not found";
+/** Sources a client may claim on upload. "STATION" is only set by the station hooks. */
 export const SCREENSHOT_SOURCES = ["WEB", "APP_AUTO", "APP_MANUAL"] as const satisfies readonly ScreenshotSource[];
+const ALL_SCREENSHOT_SOURCES: readonly string[] = [...SCREENSHOT_SOURCES, "STATION"];
 const SCREENSHOT_NOT_FOUND = "Screenshot not found";
 export const LOW_CONFIDENCE = 0.85;
 
@@ -141,7 +143,7 @@ export function toScreenshotRow(s: ScreenshotRecord): ScreenshotRow {
     createdAt: s.createdAt.toISOString(),
     processedAt: iso(s.processedAt),
     extraction,
-    source: (SCREENSHOT_SOURCES as readonly string[]).includes(s.source) ? (s.source as ScreenshotSource) : "WEB",
+    source: ALL_SCREENSHOT_SOURCES.includes(s.source) ? (s.source as ScreenshotSource) : "WEB",
   };
 }
 

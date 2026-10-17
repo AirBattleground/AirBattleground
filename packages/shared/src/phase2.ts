@@ -174,8 +174,8 @@ export interface ScreenshotRow {
   processedAt: string | null;
   /** present when status DONE */
   extraction: ExtractionResult | null;
-  /** phase 4: where the screenshot came from ("WEB" | "APP_AUTO" | "APP_MANUAL") */
-  source: "WEB" | "APP_AUTO" | "APP_MANUAL";
+  /** phase 4: where the screenshot came from ("WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION") */
+  source: "WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION";
 }
 
 export interface MatchPlayerRow {

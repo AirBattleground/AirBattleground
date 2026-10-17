@@ -16,9 +16,11 @@ import { FormatSummary, OnFire, RulesSection, TournamentHero } from "@/features/
 import { JourneyCard } from "@/features/tournaments/team/components/JourneyCard";
 import { RegistrationPanel } from "@/features/tournaments/team/components/RegistrationPanel";
 import { youFromMe } from "@/features/tournaments/team/journey";
+import { TeamLiveCards } from "@/features/station/components/TeamLiveCard";
 
 const STEPS: TourStep[] = [
   { element: '[data-tour="hero"]', title: "The tournament", description: "Prize, dates, organiser and how many teams have registered so far.", side: "bottom" },
+  { element: '[data-tour="watch-live"]', title: "Watch live", description: "When your match in this tournament is being streamed, tap here to watch it live.", side: "bottom" },
   { element: '[data-tour="journey"]', title: "Your journey", description: "Where your team stands right now, your next goal and a countdown to your next match.", side: "bottom" },
   { element: '[data-tour="room-details"]', title: "Room details", description: "The room ID and password for your next match show up here before it starts — tap to copy.", side: "bottom" },
   { element: '[data-tour="stage-flow"]', title: "The road to the trophy", description: "Every stage from registration to the final. The glowing stage is happening now and the YOU marker shows where your team is. Tap a stage for groups, schedule and live standings.", side: "bottom" },
@@ -124,7 +126,9 @@ export default function TournamentHubPage() {
           />
         </section>
 
-        <div className="order-2 lg:col-start-1 lg:row-start-3">
+        <div className="order-2 space-y-5 lg:col-start-1 lg:row-start-3">
+          {/* TeamLiveCard has no tournamentId — match by the next match or the tournament title */}
+          <TeamLiveCards filter={(c) => c.matchId === t.me.nextMatch?.matchId || c.title === t.title} />
           <JourneyCard t={t} />
         </div>
 

@@ -9,6 +9,7 @@ import { Label } from "@7xen/ui/components/ui/label";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAppSettings, useLatestRelease, useUpdateSettings } from "@/features/managerApp/api";
+import { StationHowTo } from "@/features/station/StationHowTo";
 import { fmtBytes, ManagerAppHeader, StorageBar } from "@/features/managerApp/components";
 import { errorMessage } from "@/lib/forms";
 import { shortDate } from "@/lib/format";
@@ -17,6 +18,7 @@ const TOUR: TourStep[] = [
   { title: "Manager app settings", description: "How long match videos are kept, and how much space they use." },
   { element: '[data-tour="retention"]', title: "Keep videos for…", description: "Videos older than this are deleted automatically to free up disk space. Results and screenshots are never deleted.", side: "bottom" },
   { element: '[data-tour="storage"]', title: "Storage", description: "Space used by match videos on the server's disk.", side: "top" },
+  { element: '[data-tour="station-settings"]', title: "7XEN Station", description: "Status of the game phone on the server PC, and how it runs.", side: "top" },
   { element: '[data-tour="tab-recipes"]', title: "Recipes", description: "The touch steps the app follows to create a room. Edit them when BGMI changes its screens.", side: "bottom" },
 ];
 
@@ -157,6 +159,8 @@ export default function SettingsPage() {
             </Link>
           </Button>
         </section>
+
+        <StationHowTo className="lg:col-span-2" />
       </div>
     </>
   );

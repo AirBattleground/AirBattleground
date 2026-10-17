@@ -101,6 +101,8 @@ export const router = createBrowserRouter([
       { path: "tournaments/:id/stages/:stageId", element: page(() => import("@/pages/team/tournaments/StagePage")) },
       { path: "tournaments/:id/matches", element: <TeamTournamentRedirect /> },
       { path: "tournaments/:id/matches/:matchId", element: page(() => import("@/pages/team/tournaments/TournamentMatchPage")) },
+      { path: "live", element: <Navigate replace to="/team" /> },
+      { path: "live/:matchId", element: page(() => import("@/pages/team/LiveViewerPage")) },
     ],
   },
   { path: "*", element: <NotFoundPage /> },
