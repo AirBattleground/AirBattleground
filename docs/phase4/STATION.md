@@ -171,3 +171,15 @@ API side: `STATION_URL` (default `http://127.0.0.1:4500`; compose uses `http://h
 | Recording stuck LIVE after a station crash | Restart the station: it recovers `storage/station/sessions/*`. The manager's Stop also marks a lost recording FAILED. |
 | Taps land in the wrong place | Check `status.rotation`. Set `INPUT_COORDS=natural` only if the device wants panel coordinates. Turn on Settings → pointer location to see where taps land. |
 | ffprobe/ffmpeg segfaults reading `.ts` on the host | The static ffmpeg 7.0.2 in `~/.local/bin` crashes when demuxing MPEG-TS. The station only *writes* TS, so it's unaffected. To inspect segments, use the api image: `docker run --rm -v $PWD/storage:/s --entrypoint ffprobe 7xen-api:latest /s/live/<id>/p0-00000.ts`. |
+
+## Remote device (emulator on a Mac)
+
+BGMI is ARM-only; on this x86 PC the AVD runs it through ARM translation and it hangs on "Starting…". An Apple
+Silicon Mac runs the arm64 Android emulator natively. The station stays on the PC and drives the Mac's emulator over Wi-Fi:
+
+1. Mac: Android Studio → Device Manager → Pixel, Android 14 **Google Play arm64-v8a** image (4 GB RAM). Install BGMI.
+2. Mac: `curl -O http://192.168.0.199/tools/mac-adb-relay.py && python3 mac-adb-relay.py` — relays
+   `<Mac IP>:5556 → 127.0.0.1:5555` (the emulator's adb port), accepting only 192.168.0.199. Keep it open.
+3. PC: `REMOTE_DEVICE=<Mac IP>:5556` in `services/station/.env`, then `systemctl --user restart 7xen-station`.
+   The station `adb connect`s it whenever it's missing and never boots the local AVD. Prepare fails with
+   "Can't reach the Android device at …" when the Mac/emulator/relay isn't running.

@@ -17,7 +17,7 @@ if (cfg.token.length < 16) {
   process.exit(1);
 }
 
-const device = new AdbDevice(cfg.adb, cfg.serial, cfg.bgmiPackage);
+const device = new AdbDevice(cfg.adb, cfg.serial, cfg.bgmiPackage, cfg.remoteDevice);
 const api = makeApiHooks(cfg.apiUrl, cfg.token);
 
 /** SIGINT a leftover scrcpy/ffmpeg from a crashed run (only if the pid still is one of ours). */
@@ -47,6 +47,7 @@ const station = new Station({
     args: cfg.emulatorArgs,
     bootTimeoutMs: cfg.bootTimeoutMs,
     logDir: cfg.workDir,
+    remote: cfg.remoteDevice,
   }),
   makePipeline: (req) =>
     new CapturePipeline({

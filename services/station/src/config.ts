@@ -44,8 +44,10 @@ export interface StationConfig {
   avd: string;
   display: string;
   emulatorArgs: string[];
-  /** adb serial to use; empty = first emulator-* device */
+  /** adb serial to use; empty = first emulator-* device (REMOTE_DEVICE sets it to host:port) */
   serial: string;
+  /** "host:port" of an Android device/emulator reached over the network (e.g. an emulator on a Mac); "" = local AVD */
+  remoteDevice: string;
   bootTimeoutMs: number;
   bgmiPackage: string;
   /** longest side of the captured video (0 = native) */
@@ -83,7 +85,8 @@ export function loadConfig(): StationConfig {
     avd: str("AVD_NAME", "bgmi14"),
     display: str("DISPLAY", ":0"),
     emulatorArgs: str("EMULATOR_ARGS", "-gpu host -feature -GLAsyncSwap -no-boot-anim -no-snapshot-save").split(/\s+/).filter(Boolean),
-    serial: str("ADB_SERIAL", ""),
+    serial: str("REMOTE_DEVICE", "") || str("ADB_SERIAL", ""),
+    remoteDevice: str("REMOTE_DEVICE", ""),
     bootTimeoutMs: num("EMULATOR_BOOT_TIMEOUT_SEC", 240) * 1000,
     bgmiPackage: str("BGMI_PACKAGE", "com.pubg.imobile"),
     maxSize: num("CAPTURE_MAX_SIZE", 1280),

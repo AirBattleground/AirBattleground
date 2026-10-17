@@ -46,16 +46,27 @@ export class AdbDevice implements Device {
     private readonly adbPath: string,
     private readonly wantSerial: string,
     private readonly bgmiPackage: string,
+    /** "host:port" reached over the network: `adb connect` it whenever it isn't listed */
+    private readonly remote = "",
   ) {}
 
   private sh(serial: string, args: string[], timeoutMs = 15_000) {
     return run(this.adbPath, ["-s", serial, ...args], { timeoutMs });
   }
 
-  async find() {
+  private async list() {
     const r = await run(this.adbPath, ["devices"], { timeoutMs: 10_000 });
-    if (r.code !== 0) return null;
-    const all = parseDevices(r.stdout.toString());
+    return r.code === 0 ? parseDevices(r.stdout.toString()) : null;
+  }
+
+  async find() {
+    let all = await this.list();
+    if (!all) return null;
+    if (this.remote && !all.some((d) => d.serial === this.remote && d.state === "device")) {
+      if (all.some((d) => d.serial === this.remote)) await run(this.adbPath, ["disconnect", this.remote], { timeoutMs: 5000 });
+      await run(this.adbPath, ["connect", this.remote], { timeoutMs: 8000 });
+      all = (await this.list()) ?? [];
+    }
     if (this.wantSerial) return all.find((d) => d.serial === this.wantSerial) ?? null;
     return all.find((d) => d.serial.startsWith("emulator-") && d.state === "device") ?? all.find((d) => d.serial.startsWith("emulator-")) ?? null;
   }

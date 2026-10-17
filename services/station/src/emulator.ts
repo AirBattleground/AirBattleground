@@ -19,6 +19,9 @@ export interface EmulatorOptions {
   bootTimeoutMs: number;
   logDir: string;
   pollMs?: number;
+  /** "host:port" of a network device (e.g. emulator on a Mac): never start the local AVD, just wait for it */
+  remote?: string;
+  remoteTimeoutMs?: number;
 }
 
 export type EnsureEmulator = (onBooting?: () => void) => Promise<string>;
@@ -41,6 +44,13 @@ export function makeEnsureEmulator(device: Device, spawner: Spawner, o: Emulator
     const dev = await device.find();
     if (dev && dev.state === "device" && (await device.isBooted(dev.serial))) return dev.serial;
     onBooting?.();
+    if (o.remote) {
+      try {
+        return await waitBoot(null, Date.now() + (o.remoteTimeoutMs ?? 30_000));
+      } catch {
+        throw new Error(`Can't reach the Android device at ${o.remote}. Start the emulator on the Mac and check it's on the same Wi-Fi.`);
+      }
+    }
     if (dev) return waitBoot(null, Date.now() + o.bootTimeoutMs); // running, still booting
     if (!starting) {
       starting = (async () => {
