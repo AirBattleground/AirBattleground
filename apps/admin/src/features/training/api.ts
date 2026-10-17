@@ -40,7 +40,13 @@ async function postForm<T>(path: string, form: FormData): Promise<T> {
   if (!res.ok) {
     const err = (data as ApiErrorBody | null)?.error;
     if (res.status === 401) queryClient.setQueryData(["admin", "me"], null);
-    throw new ApiError(res.status, err?.code ?? "INTERNAL", err?.message ?? "Something went wrong. Please try again.", err?.fields);
+    const fallback =
+      res.status === 413
+        ? "That screenshot is too large to upload (max 10 MB each)."
+        : res.status >= 502 && res.status <= 504
+          ? "The server is restarting or busy. Please try again in a moment."
+          : "Something went wrong. Please try again.";
+    throw new ApiError(res.status, err?.code ?? (res.status === 413 ? "VALIDATION_ERROR" : "INTERNAL"), err?.message ?? fallback, err?.fields);
   }
   return data as T;
 }

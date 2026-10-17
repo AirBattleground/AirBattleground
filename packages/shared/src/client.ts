@@ -14,6 +14,19 @@ export class ApiError extends Error {
 
 type Method = "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
 
+/** Errors that come from a proxy (nginx) rather than the API have no JSON body — explain them plainly. */
+function fallbackMessage(status: number): string {
+  if (status === 413) return "That upload is too large. Each screenshot can be up to 10 MB, and up to 10 at a time.";
+  if (status === 502 || status === 503 || status === 504) return "The server is restarting or busy. Please try again in a moment.";
+  if (status === 404) return "That wasn't found. It may have been deleted.";
+  return "Something went wrong. Please try again.";
+}
+function fallbackCode(status: number): ApiErrorCode {
+  if (status === 413) return "VALIDATION_ERROR";
+  if (status === 404) return "NOT_FOUND";
+  return "INTERNAL";
+}
+
 /**
  * Tiny fetch wrapper used by both frontends. Sends cookies, JSON in/out, throws ApiError.
  * `onUnauthenticated` fires on 401 so the app can drop its session and redirect to login.
@@ -44,7 +57,7 @@ export function createApiClient(opts: { baseUrl?: string; onUnauthenticated?: ()
     if (!res.ok) {
       const err = (data as ApiErrorBody | null)?.error;
       if (res.status === 401) opts.onUnauthenticated?.();
-      throw new ApiError(res.status, err?.code ?? "INTERNAL", err?.message ?? "Something went wrong. Please try again.", err?.fields);
+      throw new ApiError(res.status, err?.code ?? fallbackCode(res.status), err?.message ?? fallbackMessage(res.status), err?.fields);
     }
     return data as T;
   }
