@@ -4,9 +4,10 @@
  * gradients, breakpoints and motion; the panel colour comes from the theme (--ls-panel = --card), so the scene
  * blends into both light and dark themes.
  */
-.ls-shell { min-height: 100svh; padding: 34px 32px 20px; display: flex; flex-direction: column; justify-content: center; max-width: 1864px; margin: 0 auto; width: 100%; }
-.ls-portal { --ls-panel: var(--card); --mx: 0px; --my: 0px; position: relative; isolation: isolate; overflow: hidden; background: var(--ls-panel); border: 1px solid var(--border); border-radius: 28px; box-shadow: 0 30px 120px #0005, inset 0 1px 0 #ffffff06; }
-.ls-grid { display: grid; grid-template-columns: 61% 39%; min-height: max(744px, calc(100svh - 112px)); }
+.ls-shell { min-height: 100svh; width: 100%; }
+/* full-bleed: no card frame — the scene and form blend straight into the page background */
+.ls-portal { --ls-panel: var(--background); --mx: 0px; --my: 0px; position: relative; isolation: isolate; overflow: hidden; min-height: 100svh; background: var(--ls-panel); }
+.ls-grid { display: grid; grid-template-columns: 61% 39%; min-height: max(680px, 100svh); }
 .ls-scene { position: absolute; inset: 0; pointer-events: none; z-index: -1; overflow: hidden; }
 .ls-map-window { width: 75%; height: 100%; position: absolute; top: 0; left: 0; overflow: hidden; }
 .ls-map { width: 100%; height: 100%; object-fit: cover; object-position: 59% 42%; filter: brightness(.68) saturate(.55) sepia(.12); transform: scale(1.12); animation: ls-map-drift 25s ease-in-out infinite alternate; }
@@ -26,12 +27,13 @@
 .ls-hero { position: relative; min-width: 0; }
 .ls-pane { position: relative; padding: 105px 48px 48px 32px; display: flex; align-items: center; justify-content: center; z-index: 3; min-width: 0; }
 .ls-content { width: 100%; max-width: 380px; animation: ls-reveal .9s cubic-bezier(.2,.6,.2,1) both; animation-delay: .2s; }
-.ls-footer { display: flex; justify-content: space-between; gap: 16px; padding: 14px 6px 0; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); }
+.ls-footer { position: absolute; z-index: 5; left: 38px; right: 38px; bottom: 22px; display: flex; justify-content: space-between; gap: 16px; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); pointer-events: none; }
+.ls-footer > :first-child { color: color-mix(in oklab, white 70%, transparent); text-shadow: 0 1px 8px #0008; }
 
 /* light theme: lift the photo a little so it doesn't read as a dark hole against a light panel */
 :root:not(.dark) .ls-map { filter: brightness(.86) saturate(.6) sepia(.1); }
 :root:not(.dark) .ls-squad { filter: brightness(.96) saturate(.8) contrast(1.02) drop-shadow(0 12px 20px #080b1030); }
-:root:not(.dark) .ls-portal { box-shadow: 0 30px 90px #0002; }
+
 
 @keyframes ls-reveal { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes ls-map-drift { from { transform: scale(1.12); } to { transform: scale(1.15); } }
@@ -40,13 +42,10 @@
 @keyframes ls-mote-drift { 0% { opacity: 0; transform: translate(0, 25px); } 20% { opacity: .25; } 80% { opacity: .12; } 100% { opacity: 0; transform: translate(20px, -140px); } }
 
 @media (min-width: 1700px) {
-  .ls-shell { padding-top: 42px; padding-bottom: 28px; }
-  .ls-grid { min-height: max(860px, calc(100svh - 125px)); }
   .ls-header { left: 46px; top: 38px; right: 46px; }
   .ls-content { max-width: 410px; }
 }
 @media (max-width: 1200px) and (min-width: 851px) {
-  .ls-shell { padding: 24px 22px 19px; }
   .ls-grid { grid-template-columns: 56% 44%; }
   .ls-pane { padding-left: 24px; padding-right: 34px; }
   .ls-header { left: 28px; right: 30px; }
@@ -59,10 +58,8 @@
   }
 }
 @media (max-width: 850px) {
-  .ls-shell { padding: 17px 16px 22px; padding-top: max(17px, env(safe-area-inset-top)); padding-bottom: max(22px, env(safe-area-inset-bottom)); }
-  .ls-portal { border-radius: 24px; }
   .ls-grid { display: block; min-height: 0; }
-  .ls-header { left: 22px; right: 20px; top: 20px; }
+  .ls-header { left: 22px; right: 20px; top: max(20px, env(safe-area-inset-top)); }
   .ls-hero { height: 600px; }
   .ls-map-window { width: 100%; height: 630px; }
   .ls-map-tone { height: 660px; background: linear-gradient(180deg, #29201a20, transparent 50%, var(--ls-panel)); }
@@ -71,11 +68,11 @@
   .ls-atmosphere { inset: 0 0 auto 0; height: 600px; }
   .ls-pane { padding: 0 28px 34px; margin-top: -60px; }
   .ls-content { max-width: 460px; margin: 0 auto; }
-  .ls-footer { justify-content: center; }
+  .ls-footer { position: static; justify-content: center; padding: 0 0 max(22px, env(safe-area-inset-bottom)); }
+  .ls-footer > :first-child { color: var(--muted-foreground); text-shadow: none; }
   .ls-footer > :not(:first-child) { display: none; }
 }
 @media (max-width: 540px) {
-  .ls-shell { padding-left: 10px; padding-right: 10px; }
   .ls-hero { height: 470px; }
   .ls-squad { width: 124%; top: 105px; left: -11.5%; }
   .ls-map-window, .ls-map-tone { height: 500px; }

@@ -78,8 +78,8 @@ export function LoginScene({ header, footer, children, className }: { header?: R
             <div className="ls-content">{children}</div>
           </main>
         </div>
+        {footer && <div className="ls-footer">{footer}</div>}
       </div>
-      {footer && <div className="ls-footer">{footer}</div>}
     </div>
   );
 }
