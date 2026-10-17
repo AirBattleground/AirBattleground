@@ -29,7 +29,8 @@ RUN pnpm --filter @7xen/api deploy --prod --legacy /out \
 
 # ---------- runtime ----------
 FROM node:${NODE_VERSION} AS runtime
-RUN apk add --no-cache openssl libc6-compat tini
+# ffmpeg: phase 4 match videos (duration, size, poster frame)
+RUN apk add --no-cache openssl libc6-compat tini ffmpeg
 WORKDIR /app
 ENV NODE_ENV=production PORT=4000
 COPY --from=build /prisma-version /tmp/prisma-version

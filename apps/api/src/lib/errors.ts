@@ -10,6 +10,8 @@ const STATUS: Record<ApiErrorCode, number> = {
   REGISTRATION_CLOSED: 409,
   RATE_LIMITED: 429,
   EXTRACTOR_OFFLINE: 503,
+  OFFSET_MISMATCH: 409,
+  STORAGE_FULL: 507,
   INTERNAL: 500,
 };
 
@@ -24,6 +26,16 @@ export class AppError extends Error {
     super(message);
     this.name = "AppError";
     this.status = status ?? STATUS[code];
+  }
+}
+
+/** 409 OFFSET_MISMATCH for resumable uploads: the body carries `offset`, plus an `Upload-Offset` header. */
+export class OffsetMismatchError extends AppError {
+  constructor(
+    public readonly offset: number,
+    message = "The upload is out of sync. Resume from the server's offset.",
+  ) {
+    super("OFFSET_MISMATCH", message);
   }
 }
 

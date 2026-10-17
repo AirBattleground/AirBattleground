@@ -6,12 +6,13 @@ import { pinoHttp } from "pino-http";
 import { Prisma } from "@prisma/client";
 import { API_PREFIX, type ApiErrorBody } from "@7xen/shared";
 import { env } from "./env.js";
-import { AppError } from "./lib/errors.js";
+import { AppError, OffsetMismatchError } from "./lib/errors.js";
 import { logger } from "./logger.js";
 import { adminRouter } from "./routes/admin.js";
 import { adminAuthRouter, appAuthRouter } from "./routes/auth.js";
 import { managerRouter } from "./routes/manager.js";
 import { teamRouter } from "./routes/team.js";
+import { appReleaseRouter } from "./routes/appRelease.js";
 
 /** Friendly message for a unique-constraint violation, based on the columns involved. */
 /** Friendly message + the form field that clashed, so UIs can show the error in the right place. */
@@ -35,7 +36,12 @@ const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   let status = 500;
   let body: ApiErrorBody = { error: { code: "INTERNAL", message: "Something went wrong" } };
 
-  if (err instanceof AppError) {
+  if (err instanceof OffsetMismatchError) {
+    status = err.status;
+    res.setHeader("Upload-Offset", String(err.offset));
+    res.setHeader("Cache-Control", "no-store");
+    body = { error: { code: err.code, message: err.message }, offset: err.offset } as ApiErrorBody;
+  } else if (err instanceof AppError) {
     status = err.status;
     body = { error: { code: err.code, message: err.message, ...(err.fields ? { fields: err.fields } : {}) } };
   } else if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
@@ -54,6 +60,7 @@ const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   } else {
     (req.log ?? logger).error({ err }, "unhandled error");
   }
+  if (res.headersSent || res.destroyed) return; // e.g. a client that dropped mid-upload
   res.status(status).json(body);
 };
 
@@ -87,6 +94,7 @@ export function createApp() {
   app.use(`${API_PREFIX}/admin`, adminRouter());
   app.use(`${API_PREFIX}/manager`, managerRouter());
   app.use(`${API_PREFIX}/team`, teamRouter());
+  app.use(`${API_PREFIX}/app`, appReleaseRouter());
 
   app.use((_req, res) => {
     const body: ApiErrorBody = { error: { code: "NOT_FOUND", message: "Not found" } };

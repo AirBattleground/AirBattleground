@@ -28,16 +28,21 @@
  *   PUT    /api/manager/recipes/:key            SaveRecipeInput     → Recipe  (upsert the manager's own version of a recipe)
  *   GET    /api/app/manager/latest              (public)            → AppRelease | null
  *
+ *   GET    /api/app/manager/download        (public)            → the APK (application/vnd.android.package-archive); 404 when none
+ *
+ * Errors added in phase 4: 409 OFFSET_MISMATCH (body = UploadOffsetMismatchBody, also an `Upload-Offset` header),
+ *   507 STORAGE_FULL (not enough disk space for a video), 409 CONFLICT (a LIVE recording already exists / upload busy).
+ *
  * TEAM
  *   GET    /api/team/rooms                                          → ListResponse<TeamRoomCard>  (upcoming matches of the team; room shown once revealed)
  *
  * ADMIN
- *   GET    /api/admin/recordings?status=&q=                         → ListResponse<RecordingRow & { manager; matchTitle }>
+ *   GET    /api/admin/recordings?status=&q=                         → ListResponse<AdminRecordingRow>
  *   DELETE /api/admin/recordings/:id                                → 204 (deletes the video file)
  *   GET    /api/admin/recordings/:id/video | /poster                → same as manager
  *   GET    /api/admin/settings                                      → AppSettings
  *   PATCH  /api/admin/settings                  UpdateSettingsInput → AppSettings
- *   GET    /api/admin/recipes                                       → ListResponse<Recipe>
+ *   GET    /api/admin/recipes                                       → ListResponse<Recipe>  (defaults + every manager's, `manager` set)
  *   PUT    /api/admin/recipes/:key              SaveRecipeInput     → Recipe  (the default version every manager starts from)
  *   DELETE /api/admin/recipes/:id                                   → 204
  */
@@ -143,6 +148,25 @@ export const createUploadSchema = z.object({
   height: z.number().int().min(1).max(4096).optional(),
 });
 export type CreateUploadInput = z.infer<typeof createUploadSchema>;
+/** Largest PATCH chunk the server accepts (HTTP 413 above it). */
+export const MAX_UPLOAD_CHUNK_BYTES = 16 * 1024 * 1024;
+/** Chunk size the server suggests (UploadState.chunkSize). */
+export const UPLOAD_CHUNK_BYTES = 8 * 1024 * 1024;
+/** Body of a 409 OFFSET_MISMATCH: resume from `offset`. */
+export interface UploadOffsetMismatchBody {
+  error: { code: "OFFSET_MISMATCH"; message: string };
+  offset: number;
+}
+export const liveTodayQuerySchema = z.object({ days: z.coerce.number().int().min(0).max(14).default(2) });
+export const adminRecordingsQuerySchema = z.object({
+  status: z.enum(RECORDING_STATUSES).optional().or(z.literal("").transform(() => undefined)),
+  q: z.string().trim().max(60).optional(),
+});
+export interface AdminRecordingRow extends RecordingRow {
+  manager: { id: string; displayName: string };
+  /** e.g. "Evening Scrim · Sat, 18 Oct · Match 2" */
+  matchTitle: string;
+}
 export interface UploadState {
   recordingId: string;
   offset: number;
@@ -187,6 +211,8 @@ export interface Recipe {
   deviceProfile: string | null;
   steps: RecipeStep[];
   updatedAt: string;
+  /** set on admin listings for MANAGER-scope recipes */
+  manager?: { id: string; displayName: string } | null;
 }
 export const saveRecipeSchema = z.object({
   name: z.string().trim().min(2).max(60),

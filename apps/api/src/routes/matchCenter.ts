@@ -13,6 +13,11 @@ import * as matches from "../services/matches.js";
 
 const screenshotKindSchema = z.object({
   kind: z.enum(SCREENSHOT_KINDS, { errorMap: () => ({ message: "Choose what the screenshots show: team list or results" }) }),
+  /** phase 4: who took it (the manager app tags its uploads) */
+  source: z
+    .enum(matches.SCREENSHOT_SOURCES, { errorMap: () => ({ message: "Source must be WEB, APP_AUTO or APP_MANUAL" }) })
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 export function mountMatchCenter(r: Router, bypass: boolean) {
@@ -21,9 +26,9 @@ export function mountMatchCenter(r: Router, bypass: boolean) {
   });
   r.post("/matches/:matchId/screenshots", async (req, res) => {
     await parseMultipart(req, res);
-    const { kind } = parse(screenshotKindSchema, req.body);
+    const { kind, source } = parse(screenshotKindSchema, req.body);
     const images = uploadedImages(req, ["files", "files[]", "file"]);
-    res.status(201).json(await matches.uploadScreenshots(req.params.matchId as string, currentUser(req).id, kind, images, bypass));
+    res.status(201).json(await matches.uploadScreenshots(req.params.matchId as string, currentUser(req).id, kind, images, bypass, source ?? "WEB"));
   });
   r.get("/screenshots/:id/image", async (req, res) => {
     const f = await matches.screenshotFile(req.params.id as string, currentUser(req).id, bypass);

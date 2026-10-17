@@ -58,7 +58,8 @@ export interface SessionStatus {
   /** last detected screen (when autoCapture) */
   screen: ScreenKind | null;
   captures: { slotList: number; results: number; pendingUploads: number };
-  checklist: { stepId: string; done: boolean }[];
+  /** `label` added (additive) so the app can render the checklist without the recipe at hand */
+  checklist: { stepId: string; done: boolean; label?: string }[];
   videoPath: string | null;
   error: string | null;
 }

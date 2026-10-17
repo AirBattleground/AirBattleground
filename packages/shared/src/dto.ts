@@ -16,6 +16,10 @@ export type ApiErrorCode =
   | "RATE_LIMITED"
   /** phase 2: the screenshot reader service is unreachable (HTTP 503) */
   | "EXTRACTOR_OFFLINE"
+  /** phase 4: resumable upload chunk sent at the wrong offset (HTTP 409; body also carries `offset`) */
+  | "OFFSET_MISMATCH"
+  /** phase 4: not enough free disk space for a video upload (HTTP 507) */
+  | "STORAGE_FULL"
   | "INTERNAL";
 
 export interface ApiErrorBody {

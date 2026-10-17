@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, LogOut, Shield } from "lucide-react";
+import { ChevronDown, LogOut, Shield, Smartphone } from "lucide-react";
 import { toast } from "sonner";
 import type { SessionUser } from "@7xen/shared";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
@@ -67,6 +67,12 @@ export function UserMenu() {
           <DropdownMenuItem onSelect={() => navigate("/team/profile")} className="cursor-pointer">
             <Shield />
             Team profile
+          </DropdownMenuItem>
+        )}
+        {user.role === "MANAGER" && (
+          <DropdownMenuItem onSelect={() => navigate("/manager/app")} className="cursor-pointer">
+            <Smartphone />
+            Manager app
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onSelect={() => void signOut()} className="cursor-pointer">

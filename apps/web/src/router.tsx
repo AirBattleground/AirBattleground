@@ -56,6 +56,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: page(() => import("@/pages/manager/DashboardPage")) },
       { path: "requests", element: page(() => import("@/pages/manager/RequestsPage")) },
+      { path: "app", element: page(() => import("@/pages/manager/AppPage")) },
       { path: "scrims", element: page(() => import("@/pages/manager/ScrimsPage")) },
       { path: "scrims/new", element: page(() => import("@/pages/manager/ScrimFormPage")) },
       { path: "scrims/:scrimId", element: page(() => import("@/pages/manager/ScrimDetailPage")) },

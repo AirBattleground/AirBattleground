@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="gameops_accessibility_label">7XEN Manager — Auto mode</string>
+  <string name="gameops_accessibility_description">7XEN Manager uses this service ONLY when you turn on Auto mode or Teach mode for a live match. It performs the taps and swipes of a room-creation recipe inside BGMI on your behalf (for example: Custom Room → Create → map → password), and in Teach mode it replays the taps you make so the game still receives them. It does not read your messages, passwords or other apps, and it does nothing while no 7XEN session is running. Warning: automated taps may be flagged by the game\'s anti-cheat — use a spare host account.</string>
+  <string name="gameops_channel_session">Live match session</string>
+  <string name="gameops_channel_upload">Video uploads</string>
+</resources>

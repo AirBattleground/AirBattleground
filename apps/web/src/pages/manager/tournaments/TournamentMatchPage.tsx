@@ -17,11 +17,13 @@ import { MatchStepper, stepForStatus, type StepKey } from "@/features/matches/co
 import { emptyResultsDraft, ResultsStep, resultsDirty, type ResultsDraft } from "@/features/matches/components/ResultsStep";
 import { ScreenshotUploader } from "@/features/matches/components/ScreenshotUploader";
 import { ScorecardList } from "@/features/results/components/Scorecard";
+import { MATCH_OPS_TOUR, MatchOps } from "@/features/live/components/MatchOps";
 import { useStage } from "@/features/tournaments/manager/api";
 import { fmtWhen } from "@/features/tournaments/shared/format";
 
 const TOUR: TourStep[] = [
   { title: "Tournament match", description: "Same three steps as a scrim match: team list → results → publish. Publishing updates the group standings." },
+  ...MATCH_OPS_TOUR,
   { element: '[data-tour="match-stepper"]', title: "Where you are", description: "The highlighted step is what to do next. Finished steps get a tick — click them to go back." },
   { element: '[data-tour="uploader"]', title: "Upload screenshots", description: "Drag them in, click to choose, or paste with Ctrl+V. 7xen reads them for you." },
   { element: '[data-tour="lineup-grid"]', title: "Check what was read", description: "One card per slot. Fix any name by typing, then confirm the lineup." },
@@ -156,6 +158,7 @@ function Center({ m, stage, back, base }: { m: MatchDetail; stage?: StageDetail;
       />
 
       <div className="space-y-6">
+        <MatchOps matchId={m.match.id} label={{ title, number: m.match.number, map: m.match.map }} />
         <MatchStepper status={status} active={step} onSelect={setStep} />
 
         {step === "lineup" && (

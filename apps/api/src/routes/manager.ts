@@ -20,6 +20,7 @@ import * as scrims from "../services/scrims.js";
 import * as teamRequests from "../services/teamRequests.js";
 import { mountMatchCenter } from "./matchCenter.js";
 import { tournamentManageRouter } from "./tournaments.js";
+import { mountManagerLive } from "./live.js";
 
 export function managerRouter() {
   const r = Router();
@@ -76,6 +77,9 @@ export function managerRouter() {
 
   // ---- phase 3: tournaments ----
   r.use("/tournaments", tournamentManageRouter(false));
+
+  // ---- phase 4: manager app (today, room, recordings, recipes) ----
+  mountManagerLive(r);
 
   // ---- team login requests (admin approves) ----
   // team search for tournament invites (active team logins only)

@@ -46,6 +46,11 @@ const KEY_RE = /^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_.-]+)*$/;
 
 /** Resolve a storage key to an absolute path inside the root, or throw. Blocks traversal. */
 export function resolveKey(key: string): string {
+  return resolveUnder(storageRoot(), key);
+}
+
+/** Resolve `key` inside `root` (absolute), or throw. Blocks traversal. */
+export function resolveUnder(root: string, key: string): string {
   if (
     typeof key !== "string" ||
     !key ||
@@ -55,7 +60,6 @@ export function resolveKey(key: string): string {
   ) {
     throw new AppError("VALIDATION_ERROR", "Invalid file path");
   }
-  const root = storageRoot();
   const abs = path.resolve(root, key);
   if (abs !== root && !abs.startsWith(root + path.sep)) throw new AppError("VALIDATION_ERROR", "Invalid file path");
   return abs;

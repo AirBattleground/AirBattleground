@@ -7,6 +7,7 @@ import { cancelRegistration, registerTeam } from "../services/registrations.js";
 import * as team from "../services/team.js";
 import * as results from "../services/teamResults.js";
 import { tournamentTeamRouter } from "./tournaments.js";
+import { teamRooms } from "../services/live.js";
 
 function teamId(req: Request): string {
   const t = currentUser(req).team;
@@ -60,6 +61,11 @@ export function teamRouter() {
 
   // ---- phase 3: tournaments ----
   r.use("/tournaments", tournamentTeamRouter(teamId));
+
+  // ---- phase 4: room details for upcoming matches (shown once revealed) ----
+  r.get("/rooms", async (req, res) => {
+    res.json({ items: await teamRooms(teamId(req)) });
+  });
 
   return r;
 }

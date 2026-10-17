@@ -1,22 +1,64 @@
 {
-  "name": "mobile",
+  "name": "7xen-manager",
   "version": "1.0.0",
-  "main": "index.ts",
+  "main": "expo-router/entry",
   "dependencies": {
+    "@expo-google-fonts/inter": "^0.4.2",
+    "@expo-google-fonts/rajdhani": "^0.4.1",
+    "@expo/vector-icons": "^15.0.2",
+    "babel-preset-expo": "~58.0.0",
     "expo": "~58.0.14",
+    "expo-application": "~58.1.2",
+    "expo-build-properties": "~58.0.11",
+    "expo-constants": "~58.0.12",
+    "expo-device": "~58.0.5",
+    "expo-font": "~58.0.8",
+    "expo-image": "~58.0.15",
+    "expo-linear-gradient": "~58.0.3",
+    "expo-linking": "~58.0.13",
+    "expo-router": "~58.0.23",
+    "expo-secure-store": "~58.0.2",
+    "expo-splash-screen": "~58.0.10",
     "expo-status-bar": "~58.0.3",
+    "expo-system-ui": "~58.0.6",
+    "expo-web-browser": "~58.0.6",
     "react": "19.3.0",
-    "react-native": "0.88.0"
+    "react-native": "0.88.0",
+    "react-native-safe-area-context": "~5.10.1",
+    "react-native-screens": "~4.30.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@react-native/jest-preset": "^0.88.0",
+    "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
+    "jest": "~30.5.2",
+    "jest-expo": "~58.0.11",
     "typescript": "~6.0.3"
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "android": "expo run:android",
+    "typecheck": "tsc --noEmit",
+    "test": "jest",
+    "prebuild": "expo prebuild --platform android",
+    "build:apk": "bash scripts/build-apk.sh",
+    "publish:apk": "node scripts/publish-apk.mjs"
   },
-  "private": true
+  "private": true,
+  "jest": {
+    "preset": "jest-expo",
+    "roots": [
+      "<rootDir>/src"
+    ],
+    "moduleNameMapper": {
+      "^@7xen/shared$": "<rootDir>/../../packages/shared/src/index.ts",
+      "^zod$": "<rootDir>/node_modules/zod",
+      "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "moduleDirectories": [
+      "node_modules",
+      "<rootDir>/node_modules"
+    ]
+  }
 }

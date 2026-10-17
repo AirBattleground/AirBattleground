@@ -15,6 +15,9 @@ import {
   searchQuerySchema,
   updateManagerSchema,
   updateTeamSchema,
+  adminRecordingsQuerySchema,
+  saveRecipeSchema,
+  updateSettingsSchema,
 } from "@7xen/shared";
 import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
@@ -26,6 +29,9 @@ import { sendStoredFile } from "../lib/storage.js";
 import { parseMultipart, singleImage } from "../lib/upload.js";
 import { mountMatchCenter } from "./matchCenter.js";
 import { tournamentManageRouter } from "./tournaments.js";
+import { mountLive } from "./live.js";
+import * as recordings from "../services/recordings.js";
+import * as recipes from "../services/recipes.js";
 
 const kindField = z.enum(SCREENSHOT_KINDS, { errorMap: () => ({ message: "Choose team list (SLOT_LIST) or results (RESULTS)" }) });
 const sampleQuerySchema = z.object({
@@ -165,6 +171,33 @@ export function adminRouter() {
   // ---- phase 3: tournaments (any manager's) + the match center for any match ----
   r.use("/tournaments", tournamentManageRouter(true));
   mountMatchCenter(r, true);
+
+  // ---- phase 4: recordings, settings, recipes ----
+  r.get("/recordings", async (req, res) => {
+    res.json({ items: await recordings.adminListRecordings(parse(adminRecordingsQuerySchema, req.query)) });
+  });
+  r.delete("/recordings/:id", async (req, res) => {
+    await recordings.adminDeleteRecording(req.params.id);
+    res.status(204).end();
+  });
+  r.get("/settings", async (_req, res) => {
+    res.json(await recordings.getSettings());
+  });
+  r.patch("/settings", async (req, res) => {
+    res.json(await recordings.updateSettings(parse(updateSettingsSchema, req.body)));
+  });
+  r.get("/recipes", async (_req, res) => {
+    res.json({ items: await recipes.adminRecipes() });
+  });
+  r.put("/recipes/:key", async (req, res) => {
+    res.json(await recipes.saveRecipe(recipes.parseRecipeKey(req.params.key), null, parse(saveRecipeSchema, req.body)));
+  });
+  r.delete("/recipes/:id", async (req, res) => {
+    await recipes.deleteRecipe(req.params.id);
+    res.status(204).end();
+  });
+  // room + recordings of any match (video/poster streaming, uploads on a manager's behalf)
+  mountLive(r, true);
 
   return r;
 }

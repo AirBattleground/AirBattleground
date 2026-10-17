@@ -18,9 +18,11 @@ import { MatchStepper, stepForStatus, type StepKey } from "@/features/matches/co
 import { emptyResultsDraft, ResultsStep, resultsDirty, type ResultsDraft } from "@/features/matches/components/ResultsStep";
 import { ScreenshotUploader } from "@/features/matches/components/ScreenshotUploader";
 import { ScorecardList } from "@/features/results/components/Scorecard";
+import { MATCH_OPS_TOUR, MatchOps } from "@/features/live/components/MatchOps";
 
 const TOUR: TourStep[] = [
   { title: "Match center", description: "Three simple steps: team list → results → publish. 7xen reads your screenshots; you just check them." },
+  ...MATCH_OPS_TOUR,
   { element: '[data-tour="match-stepper"]', title: "Where you are", description: "The highlighted step is what to do next. Finished steps get a tick — click them to go back." },
   { element: '[data-tour="uploader"]', title: "Upload screenshots", description: "Drag them in, click to choose, or copy a screenshot and press Ctrl+V. You can add several at once." },
   { element: '[data-tour="lineup-grid"]', title: "Check what was read", description: "One card per slot. Names in amber need a second look — the hint shows what was read. Fix anything by typing." },
@@ -155,6 +157,7 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
       />
 
       <div className="space-y-6">
+        <MatchOps matchId={m.match.id} label={{ title: m.scrim.title, number: m.match.number, map: m.match.map }} />
         <MatchStepper status={status} active={step} onSelect={setStep} />
 
         {step === "lineup" && (

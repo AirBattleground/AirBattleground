@@ -1,0 +1,28 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.sevenxen.gameops'
+version = '0.1.0'
+
+android {
+  namespace "com.sevenxen.gameops"
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+    consumerProguardFiles 'proguard-rules.pro'
+  }
+  testOptions {
+    unitTests.returnDefaultValues = true
+  }
+}
+
+dependencies {
+  implementation 'androidx.core:core-ktx:1.17.0'
+  implementation 'androidx.work:work-runtime:2.10.5'
+  // OkHttp is already on the classpath through React Native; declared explicitly for uploads.
+  implementation 'com.squareup.okhttp3:okhttp:4.9.2'
+
+  testImplementation 'junit:junit:4.13.2'
+}

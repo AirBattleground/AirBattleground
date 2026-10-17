@@ -10,12 +10,14 @@ import { useDashboard } from "@/features/manager/api";
 import { formatDate } from "@/features/manager/format";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { SessionCard, SessionCardSkeleton } from "@/features/manager/components/SessionCard";
+import { GetAppCard } from "@/features/live/components/GetAppCard";
 
 const TOUR: TourStep[] = [
   { title: "Welcome to your control room", description: "This is where you run your scrims. Let's take a 20-second look around." },
   { element: '[data-tour="stat-pending"]', title: "Teams waiting for you", description: "When teams ask to join a scrim, they show up here. Click it to approve or reject them." },
   { element: '[data-tour="stats"]', title: "Your numbers at a glance", description: "Active scrims, teams already confirmed, and how many sessions run today." },
   { element: '[data-tour="today"]', title: "Today's sessions", description: "Every scrim running today, how full it is, and a Manage button to handle its teams." },
+  { element: '[data-tour="get-app"]', title: "The Manager app", description: "Run match day from your Android phone — it records games, helps create the room and uploads screenshots for you." },
   { element: '[data-tour="new-scrim"]', title: "Create a scrim", description: "Set it up once — one-time, daily or weekends — and teams can start registering." },
 ];
 
@@ -78,6 +80,10 @@ export default function DashboardPage() {
             ) : (
               Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-[124px] rounded-xl" />)
             )}
+          </div>
+
+          <div className="mt-6 empty:hidden">
+            <GetAppCard />
           </div>
 
           <section data-tour="today" className="mt-8">

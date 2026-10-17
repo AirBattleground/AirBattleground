@@ -11,6 +11,7 @@ import { PrismaClient, type Prisma, type RegistrationStatus } from "@prisma/clie
 import bcrypt from "bcryptjs";
 import { DEFAULT_POINTS_SYSTEM, addDays, matchPoints, teamNameKey, todayInAppTz, weekdayOf } from "@7xen/shared";
 import { createDemoTournament } from "../src/services/tournaments/demo.js";
+import { ensureDefaultRecipes } from "../src/services/recipes.js";
 import { imageInfo, saveBuffer, sha256, splitForSha, storageRoot } from "../src/lib/storage.js";
 
 const prisma = new PrismaClient();
@@ -354,11 +355,13 @@ async function seedDemoResults(scrim: { id: string; maps: string[] }, managerId:
 async function main() {
   const admin = await seedAdmin();
   const samples = await seedSamples();
+  const recipes = await ensureDefaultRecipes(prisma);
   const demo = process.env.SEED_DEMO === "1" || process.env.SEED_DEMO === "true";
   if (demo) await seedDemo();
 
   console.log("\nSeed complete.\n");
   console.log(`  Admin console : ${admin.username} / ${admin.password}`);
+  console.log(`  Recipes       : ${recipes} default manager-app recipe(s) created`);
   console.log(`  Training      : ${samples} new real screenshot sample(s) in ${storageRoot()}/samples/seed`);
   if (demo) {
     console.log(`  Managers      : manager1, manager2  /  ${MANAGER_PASSWORD}`);

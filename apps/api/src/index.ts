@@ -3,6 +3,8 @@ import { prisma } from "./db.js";
 import { env } from "./env.js";
 import { logger } from "./logger.js";
 import { startScreenshotWorker } from "./services/screenshotWorker.js";
+import { ensureDefaultRecipes } from "./services/recipes.js";
+import { startRetentionSweeper } from "./services/recordings.js";
 
 const app = createApp();
 const server = app.listen(env.PORT, () => {
@@ -10,10 +12,14 @@ const server = app.listen(env.PORT, () => {
 });
 
 const stopWorker = env.SCREENSHOT_WORKER ? startScreenshotWorker() : () => {};
+// phase 4: built-in recipe checklists + daily video retention sweep
+void ensureDefaultRecipes().catch((err) => logger.error({ err }, "could not create the default recipes"));
+const stopSweeper = startRetentionSweeper();
 
 function shutdown(signal: string) {
   logger.info(`${signal} received, shutting down`);
   stopWorker();
+  stopSweeper();
   server.close(() => {
     void prisma.$disconnect().finally(() => process.exit(0));
   });

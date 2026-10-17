@@ -20,6 +20,7 @@ import { youFromMe } from "@/features/tournaments/team/journey";
 const STEPS: TourStep[] = [
   { element: '[data-tour="hero"]', title: "The tournament", description: "Prize, dates, organiser and how many teams have registered so far.", side: "bottom" },
   { element: '[data-tour="journey"]', title: "Your journey", description: "Where your team stands right now, your next goal and a countdown to your next match.", side: "bottom" },
+  { element: '[data-tour="room-details"]', title: "Room details", description: "The room ID and password for your next match show up here before it starts — tap to copy.", side: "bottom" },
   { element: '[data-tour="stage-flow"]', title: "The road to the trophy", description: "Every stage from registration to the final. The glowing stage is happening now and the YOU marker shows where your team is. Tap a stage for groups, schedule and live standings.", side: "bottom" },
   { element: '[data-tour="register"]', title: "Register", description: "First come, first served. Pick the time slots you can play (or “Any time works”) and register. When registration is closed, you'll see why here.", side: "left" },
   { element: '[data-tour="on-fire"]', title: "Who's on fire", description: "The teams scoring the most points per match and the players with the most finishes.", side: "top" },

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
-import { AlertTriangle, CheckCircle2, ClipboardPaste, ImagePlus, Loader2, RotateCw, Trash2, UploadCloud, WifiOff, ZoomIn } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardPaste, ImagePlus, Loader2, RotateCw, Smartphone, Trash2, UploadCloud, WifiOff, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
 import {
   MAX_SCREENSHOT_BYTES,
@@ -45,6 +45,18 @@ function StatusChip({ s }: { s: ScreenshotRow }) {
         </Pill>
       );
   }
+}
+
+/** Phase 4: screenshots captured by the 7XEN Manager app are tagged with their source. */
+function SourceBadge({ s }: { s: ScreenshotRow }) {
+  const source = s.source;
+  if (source !== "APP_AUTO" && source !== "APP_MANUAL") return null;
+  return (
+    <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background/85 px-1.5 py-0.5 text-[11px] font-semibold text-primary backdrop-blur-sm">
+      <Smartphone className="size-3" />
+      {source === "APP_AUTO" ? "From app (auto)" : "From app"}
+    </span>
+  );
 }
 
 interface Pending {
@@ -223,6 +235,7 @@ export function ScreenshotUploader({
                 aria-label={`View screenshot ${i + 1} full size`}
               >
                 <img src={screenshotUrl(s.id)} alt="" loading="lazy" className="size-full object-cover transition-transform group-hover:scale-105" />
+                <SourceBadge s={s} />
                 <span className="absolute inset-0 grid place-items-center bg-background/0 opacity-0 transition-all group-hover:bg-background/40 group-hover:opacity-100">
                   <ZoomIn className="size-6" />
                 </span>

@@ -16,6 +16,7 @@ import {
   type SaveResultsInput,
   type ScreenshotKind,
   type ScreenshotRow,
+  type ScreenshotSource,
   type SessionStandings,
   type SlotListLabels,
 } from "@7xen/shared";
@@ -34,6 +35,7 @@ import { loadOwnScrim } from "./scrims.js";
 import { standingsForSession, storeMatchPoints } from "./standings.js";
 
 const MATCH_NOT_FOUND = "Match not found";
+export const SCREENSHOT_SOURCES = ["WEB", "APP_AUTO", "APP_MANUAL"] as const satisfies readonly ScreenshotSource[];
 const SCREENSHOT_NOT_FOUND = "Screenshot not found";
 export const LOW_CONFIDENCE = 0.85;
 
@@ -50,7 +52,7 @@ export const lineupLocked = (s: DbMatchStatus) => STATUS_ORDER[s] >= STATUS_ORDE
  * which team sits on which slot, which points system applies, how it's titled) goes through these helpers,
  * so the match center works the same for both.
  */
-const ownerInclude = {
+export const ownerInclude = {
   session: { include: { scrim: true } },
   group: {
     include: {
@@ -58,14 +60,14 @@ const ownerInclude = {
     },
   },
 } satisfies Prisma.MatchInclude;
-type MatchWithOwner = Prisma.MatchGetPayload<{ include: typeof ownerInclude }>;
+export type MatchWithOwner = Prisma.MatchGetPayload<{ include: typeof ownerInclude }>;
 
 /** Manager who owns the match (scrim manager or tournament manager). */
-const ownerManagerId = (m: Pick<MatchWithOwner, "session" | "group">): string | null =>
+export const ownerManagerId = (m: Pick<MatchWithOwner, "session" | "group">): string | null =>
   m.session?.scrim.managerId ?? m.group?.stage.tournament.managerId ?? null;
 
 /** `bypass` = admin acting on any match. */
-async function loadOwnMatch(matchId: string, managerId: string, bypass = false): Promise<MatchWithOwner> {
+export async function loadOwnMatch(matchId: string, managerId: string, bypass = false): Promise<MatchWithOwner> {
   const m = await prisma.match.findUnique({ where: { id: matchId }, include: ownerInclude });
   if (!m || (!bypass && ownerManagerId(m) !== managerId)) throw notFound(MATCH_NOT_FOUND);
   return m;
@@ -139,6 +141,7 @@ export function toScreenshotRow(s: ScreenshotRecord): ScreenshotRow {
     createdAt: s.createdAt.toISOString(),
     processedAt: iso(s.processedAt),
     extraction,
+    source: (SCREENSHOT_SOURCES as readonly string[]).includes(s.source) ? (s.source as ScreenshotSource) : "WEB",
   };
 }
 
@@ -352,6 +355,7 @@ export async function uploadScreenshots(
   kind: ScreenshotKind,
   images: UploadedImage[],
   bypass = false,
+  source: ScreenshotSource = "WEB",
 ): Promise<{ items: ScreenshotRow[]; skipped: number }> {
   const m = await loadOwnMatch(matchId, managerId, bypass);
   if (m.status === "PUBLISHED") throw conflict("Results are published. Unpublish the match to add screenshots.");
@@ -380,6 +384,7 @@ export async function uploadScreenshots(
           sha256: img.sha256,
           width: img.info.width,
           height: img.info.height,
+          source,
           uploadedById: managerId,
         },
       });

@@ -6,6 +6,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   JWT_SECRET: z.string().min(16, "JWT_SECRET must be at least 16 characters"),
   SESSION_TTL_DAYS: z.coerce.number().int().positive().default(7),
+  /** phase 4: lifetime of the manager app's bearer token (POST /api/auth/token) */
+  MOBILE_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
   CORS_ORIGINS: z
     .string()
     .default("")
@@ -22,6 +24,10 @@ const envSchema = z.object({
   STORAGE_DIR: z.string().optional(),
   /** phase 2: screenshot reader service */
   EXTRACTOR_URL: z.string().url().default("http://localhost:8090"),
+  /** phase 4: where match videos live (default <STORAGE_DIR>/videos); can point to a bigger disk */
+  VIDEO_DIR: z.string().optional(),
+  /** phase 4: ffmpeg binary used for video duration/size + poster */
+  FFMPEG_PATH: z.string().default("ffmpeg"),
   /** run the in-process screenshot worker (index.ts); set to 0 to disable */
   SCREENSHOT_WORKER: z
     .string()

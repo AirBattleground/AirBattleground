@@ -11,6 +11,7 @@ import { Countdown } from "../../shared/Countdown";
 import { fmtWhen } from "../../shared/format";
 import { journeyCopy, slotLabel, stageByOrder } from "../journey";
 import { Confetti } from "./Confetti";
+import { MatchRoom } from "@/features/live/components/TeamRoom";
 
 const ICON_TONE: Record<Tone, string> = {
   neutral: "bg-muted text-muted-foreground",
@@ -105,6 +106,7 @@ export function JourneyCard({ t, className }: { t: TeamTournamentDetail; classNa
                 </div>
               </div>
               {nm.scheduledAt && <Countdown to={nm.scheduledAt} variant="blocks" doneText="Match time!" label="Time until your next match" />}
+              <MatchRoom matchId={nm.matchId} className="sm:grid-cols-1" />
               {stage && (
                 <Link to={`/team/tournaments/${t.id}/stages/${stage.id}`} className="text-xs font-semibold text-primary underline-offset-4 hover:underline">
                   See your group →
