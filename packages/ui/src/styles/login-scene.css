@@ -1,0 +1,94 @@
+/*
+ * Login scene — Erangel map + squad artwork blending into the sign-in panel.
+ * Ported from the "SLOT / TABLE — Final Edition" design (downloads/slot-table-final): same layers, grading,
+ * gradients, breakpoints and motion; the panel colour comes from the theme (--ls-panel = --card), so the scene
+ * blends into both light and dark themes.
+ */
+.ls-shell { min-height: 100svh; padding: 34px 32px 20px; display: flex; flex-direction: column; justify-content: center; max-width: 1864px; margin: 0 auto; width: 100%; }
+.ls-portal { --ls-panel: var(--card); --mx: 0px; --my: 0px; position: relative; isolation: isolate; overflow: hidden; background: var(--ls-panel); border: 1px solid var(--border); border-radius: 28px; box-shadow: 0 30px 120px #0005, inset 0 1px 0 #ffffff06; }
+.ls-grid { display: grid; grid-template-columns: 61% 39%; min-height: max(744px, calc(100svh - 112px)); }
+.ls-scene { position: absolute; inset: 0; pointer-events: none; z-index: -1; overflow: hidden; }
+.ls-map-window { width: 75%; height: 100%; position: absolute; top: 0; left: 0; overflow: hidden; }
+.ls-map { width: 100%; height: 100%; object-fit: cover; object-position: 59% 42%; filter: brightness(.68) saturate(.55) sepia(.12); transform: scale(1.12); animation: ls-map-drift 25s ease-in-out infinite alternate; }
+.ls-map-tone { position: absolute; inset: 0; background: linear-gradient(180deg, #1f1b1630, transparent 50%), linear-gradient(90deg, #30241910, var(--ls-panel) 79%); }
+.ls-squad { position: absolute; width: 66%; height: auto; max-width: none; bottom: -3.5%; left: -.3%; filter: brightness(.87) saturate(.74) contrast(1.025) drop-shadow(0 12px 20px #080b1050); transform-origin: 53% 90%; animation: ls-squad-breathe 22s ease-in-out infinite alternate; will-change: transform; }
+.ls-shade {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(90deg, transparent 8%, transparent 45%, color-mix(in oklab, var(--ls-panel) 20%, transparent) 54%, color-mix(in oklab, var(--ls-panel) 79%, transparent) 64%, var(--ls-panel) 72%),
+    linear-gradient(180deg, #0a101559, transparent 25%, transparent 55%, color-mix(in oklab, var(--ls-panel) 55%, transparent) 79%, color-mix(in oklab, var(--ls-panel) 94%, transparent) 100%);
+}
+.ls-light { position: absolute; width: 75%; height: 100%; left: 0; top: 0; background: radial-gradient(ellipse at 24% 22%, #ffc17c11, transparent 58%); mix-blend-mode: screen; animation: ls-light-drift 19s ease-in-out infinite alternate; }
+.ls-atmosphere { position: absolute; inset: 0 36% 0 0; overflow: hidden; }
+.ls-mote { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: #eec39c; opacity: 0; animation: ls-mote-drift var(--duration) linear infinite; animation-delay: var(--delay); }
+.ls-grain { position: absolute; inset: 0; opacity: .055; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23fff' filter='url(%23g)' d='M0 0h180v180H0z'/%3E%3C/svg%3E"); }
+.ls-header { position: absolute; z-index: 5; left: 38px; right: 38px; top: 31px; display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.ls-hero { position: relative; min-width: 0; }
+.ls-pane { position: relative; padding: 105px 48px 48px 32px; display: flex; align-items: center; justify-content: center; z-index: 3; min-width: 0; }
+.ls-content { width: 100%; max-width: 380px; animation: ls-reveal .9s cubic-bezier(.2,.6,.2,1) both; animation-delay: .2s; }
+.ls-footer { display: flex; justify-content: space-between; gap: 16px; padding: 14px 6px 0; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted-foreground); }
+
+/* light theme: lift the photo a little so it doesn't read as a dark hole against a light panel */
+:root:not(.dark) .ls-map { filter: brightness(.86) saturate(.6) sepia(.1); }
+:root:not(.dark) .ls-squad { filter: brightness(.96) saturate(.8) contrast(1.02) drop-shadow(0 12px 20px #080b1030); }
+:root:not(.dark) .ls-portal { box-shadow: 0 30px 90px #0002; }
+
+@keyframes ls-reveal { from { transform: translateY(14px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ls-map-drift { from { transform: scale(1.12); } to { transform: scale(1.15); } }
+@keyframes ls-squad-breathe { from { transform: scale(1) translate(var(--mx, 0px), var(--my, 0px)); } to { transform: scale(1.018) translate(var(--mx, 0px), var(--my, 0px)); } }
+@keyframes ls-light-drift { from { opacity: .5; transform: translateX(-2%); } to { opacity: 1; transform: translateX(2%); } }
+@keyframes ls-mote-drift { 0% { opacity: 0; transform: translate(0, 25px); } 20% { opacity: .25; } 80% { opacity: .12; } 100% { opacity: 0; transform: translate(20px, -140px); } }
+
+@media (min-width: 1700px) {
+  .ls-shell { padding-top: 42px; padding-bottom: 28px; }
+  .ls-grid { min-height: max(860px, calc(100svh - 125px)); }
+  .ls-header { left: 46px; top: 38px; right: 46px; }
+  .ls-content { max-width: 410px; }
+}
+@media (max-width: 1200px) and (min-width: 851px) {
+  .ls-shell { padding: 24px 22px 19px; }
+  .ls-grid { grid-template-columns: 56% 44%; }
+  .ls-pane { padding-left: 24px; padding-right: 34px; }
+  .ls-header { left: 28px; right: 30px; }
+  .ls-squad { width: 69%; left: -8%; bottom: 0; }
+  .ls-map-window { width: 70%; }
+  .ls-shade {
+    background:
+      linear-gradient(90deg, transparent 0%, transparent 36%, color-mix(in oklab, var(--ls-panel) 36%, transparent) 49%, color-mix(in oklab, var(--ls-panel) 93%, transparent) 59%, var(--ls-panel) 67%),
+      linear-gradient(180deg, #0a101559, transparent 30%, transparent 55%, color-mix(in oklab, var(--ls-panel) 65%, transparent) 82%, color-mix(in oklab, var(--ls-panel) 96%, transparent));
+  }
+}
+@media (max-width: 850px) {
+  .ls-shell { padding: 17px 16px 22px; padding-top: max(17px, env(safe-area-inset-top)); padding-bottom: max(22px, env(safe-area-inset-bottom)); }
+  .ls-portal { border-radius: 24px; }
+  .ls-grid { display: block; min-height: 0; }
+  .ls-header { left: 22px; right: 20px; top: 20px; }
+  .ls-hero { height: 600px; }
+  .ls-map-window { width: 100%; height: 630px; }
+  .ls-map-tone { height: 660px; background: linear-gradient(180deg, #29201a20, transparent 50%, var(--ls-panel)); }
+  .ls-squad { width: 103%; left: -.5%; top: 145px; bottom: auto; }
+  .ls-shade { background: linear-gradient(180deg, #15192033 0, transparent 200px, transparent 360px, color-mix(in oklab, var(--ls-panel) 45%, transparent) 490px, var(--ls-panel) 600px, var(--ls-panel)); }
+  .ls-atmosphere { inset: 0 0 auto 0; height: 600px; }
+  .ls-pane { padding: 0 28px 34px; margin-top: -60px; }
+  .ls-content { max-width: 460px; margin: 0 auto; }
+  .ls-footer { justify-content: center; }
+  .ls-footer > :not(:first-child) { display: none; }
+}
+@media (max-width: 540px) {
+  .ls-shell { padding-left: 10px; padding-right: 10px; }
+  .ls-hero { height: 470px; }
+  .ls-squad { width: 124%; top: 105px; left: -11.5%; }
+  .ls-map-window, .ls-map-tone { height: 500px; }
+  .ls-shade { background: linear-gradient(180deg, #15192033, transparent 170px, transparent 280px, color-mix(in oklab, var(--ls-panel) 57%, transparent) 390px, var(--ls-panel) 470px, var(--ls-panel)); }
+  .ls-atmosphere { height: 470px; }
+  .ls-pane { padding: 0 20px 28px; margin-top: -40px; }
+}
+@media (max-width: 360px) {
+  .ls-hero { height: 430px; }
+  .ls-squad { top: 105px; width: 127%; left: -13%; }
+  .ls-shade { background: linear-gradient(180deg, #15192033, transparent 160px, transparent 260px, color-mix(in oklab, var(--ls-panel) 60%, transparent) 360px, var(--ls-panel) 430px, var(--ls-panel)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ls-map, .ls-squad, .ls-light, .ls-mote, .ls-content { animation: none !important; }
+  .ls-portal { --mx: 0px !important; --my: 0px !important; }
+}

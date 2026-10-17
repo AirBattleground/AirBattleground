@@ -4,9 +4,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
 import type { z } from "zod";
-import { AlertCircle, ArrowRight, Lock, User } from "lucide-react";
+import { AlertCircle, ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
 import { ApiError, loginSchema, type LoginInput } from "@7xen/shared";
-import { AnimatedBackground } from "@7xen/ui/components/brand/animated-background";
+import { LoginScene } from "@7xen/ui/components/brand/login-scene";
 import { Logo } from "@7xen/ui/components/brand/logo";
 import { FullPageLoader } from "@7xen/ui/components/brand/page";
 import { ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
@@ -53,103 +53,101 @@ export default function LoginPage() {
   const busy = form.formState.isSubmitting;
 
   return (
-    <div className="relative isolate flex min-h-dvh items-center justify-center overflow-hidden px-4 py-12">
-      <AnimatedBackground intensity="hero" />
-      <div className="absolute top-4 right-4">
-        <ThemeToggle />
-      </div>
+    <div className="bg-background">
+      <LoginScene
+        header={
+          <>
+            <Logo subtitle="Admin Console" className="drop-shadow-[0_2px_12px_rgb(0_0_0/0.45)] [&_.text-muted-foreground]:text-white/70 [&>span>span:first-child]:text-white" />
+            <ThemeToggle className="max-[850px]:border-white/15 max-[850px]:bg-black/30 max-[850px]:text-white/80 max-[850px]:backdrop-blur max-[850px]:hover:text-white" />
+          </>
+        }
+        footer={
+          <>
+            <span>© {new Date().getFullYear()} 7XEN</span>
+            <span>Owners only</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-primary shadow-glow" /> Admin Console
+            </span>
+          </>
+        }
+      >
+        <p className="mb-4 flex items-center gap-2.5 text-[11px] font-semibold tracking-[0.25em] text-primary uppercase">
+          <span className="h-px w-6 bg-primary" /> Admin access
+        </p>
+        <h1 className="font-display text-4xl leading-none font-bold tracking-tight sm:text-5xl">Command center.</h1>
+        <p className="mt-3 text-sm text-muted-foreground">Logins, teams, tournaments and the screenshot reader — all in one place.</p>
 
-      <div className="w-full max-w-md">
-        <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} className="mb-8 flex flex-col items-center text-center">
-          <Logo subtitle="Admin Console" className="scale-125" />
-          <h1 className="mt-8 font-display text-4xl font-bold sm:text-5xl">
-            Control the <span className="text-gradient-brand">drop zone</span>
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">Create logins for managers and teams. Keep the lobby running.</p>
-        </motion.div>
+        <AnimatePresence initial={false}>
+          {error && (
+            <motion.div
+              key="err"
+              role="alert"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto", x: [0, -6, 6, -4, 4, 0] }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.35 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-6 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <motion.div
-          initial={{ opacity: 0, y: 24, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.55, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-          className="relative rounded-2xl border bg-card/80 p-6 shadow-glow backdrop-blur-xl sm:p-8"
-        >
-          <div className="pointer-events-none absolute inset-x-8 -top-px h-px bg-gradient-to-r from-transparent via-primary to-transparent" />
-          <h2 className="font-display text-2xl font-bold">Admin sign in</h2>
-          <p className="mb-6 text-sm text-muted-foreground">Owners only. Use the admin username and password.</p>
+        <Form {...form}>
+          <form onSubmit={submit} className="mt-8 grid gap-5" noValidate>
+            <FormField
+              control={form.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Username</FormLabel>
+                  <div className="relative">
+                    <User className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <FormControl>
+                      <Input {...field} autoFocus autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="admin" className="h-12 rounded-xl bg-background/60 pl-10" />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Password</FormLabel>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <FormControl>
+                      <PasswordInput value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} name={field.name} ref={field.ref} placeholder="Enter your password" className="h-12 rounded-xl bg-background/60 pl-10" />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <Button type="submit" size="lg" disabled={busy} className="group mt-1 h-12 justify-between rounded-xl px-5 text-base font-semibold shadow-glow">
+              {busy ? (
+                <span className="inline-flex items-center gap-2">
+                  <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" /> Signing in…
+                </span>
+              ) : (
+                <>
+                  Open the console <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+                </>
+              )}
+            </Button>
+          </form>
+        </Form>
 
-          <AnimatePresence initial={false}>
-            {error && (
-              <motion.div
-                key="err"
-                role="alert"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto", x: [0, -6, 6, -4, 4, 0] }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.35 }}
-                className="overflow-hidden"
-              >
-                <div className="mb-4 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                  <AlertCircle className="mt-0.5 size-4 shrink-0" />
-                  <span>{error}</span>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <Form {...form}>
-            <form onSubmit={submit} className="grid gap-4" noValidate>
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <div className="relative">
-                      <User className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <FormControl>
-                        <Input {...field} autoFocus autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="admin" className="h-11 pl-9" />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <div className="relative">
-                      <Lock className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
-                      <FormControl>
-                        <PasswordInput value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} name={field.name} ref={field.ref} placeholder="••••••••" className="h-11 pl-9" />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" size="lg" disabled={busy} className="group mt-2 h-11 text-base font-semibold">
-                {busy ? (
-                  <>
-                    <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" /> Signing in…
-                  </>
-                ) : (
-                  <>
-                    Sign in <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
-                  </>
-                )}
-              </Button>
-            </form>
-          </Form>
-        </motion.div>
-
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6 text-center text-xs text-muted-foreground">
-          Manager or team? Sign in on the player portal instead.
-        </motion.p>
-      </div>
+        <p className="mt-8 flex items-center gap-2 border-t pt-5 text-xs text-muted-foreground">
+          <ShieldCheck className="size-4 text-primary" /> Manager or team? Sign in on the player portal instead.
+        </p>
+      </LoginScene>
     </div>
   );
 }
