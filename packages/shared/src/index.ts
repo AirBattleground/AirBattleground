@@ -8,3 +8,4 @@ export * from "./points";
 export * from "./phase2";
 export * from "./phase3";
 export * from "./tournament";
+export * from "./phase4";

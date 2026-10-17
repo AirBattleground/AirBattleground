@@ -97,6 +97,16 @@ enum GroupTeamStatus {
   DISQUALIFIED
 }
 
+enum RecordingStatus {
+  LIVE
+  STOPPED
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+  DELETED
+}
+
 enum RegistrationStatus {
   PENDING
   APPROVED
@@ -126,6 +136,8 @@ model User {
   screenshots        Screenshot[]
   trainingSamples    TrainingSample[]
   tournaments        Tournament[]   @relation("TournamentManager")
+  recordings         MatchRecording[]
+  recipes            Recipe[]
   reviewedTeamRequests TeamRequest[] @relation("TeamRequestReviewer")
 
   @@index([role])
@@ -275,6 +287,11 @@ model Match {
   group       TournamentGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
   scheduledAt DateTime?
   lobbyIndex  Int?
+  /// phase 4: custom room details shared with teams (revealed at roomRevealAt; null = immediately)
+  roomId        String?
+  roomPassword  String?
+  roomRevealAt  DateTime?
+  roomUpdatedAt DateTime?
   number      Int
   map         String
   status      MatchStatus  @default(SCHEDULED)
@@ -284,6 +301,7 @@ model Match {
 
   screenshots Screenshot[]
   teams       MatchTeam[]
+  recordings  MatchRecording[]
 
   @@unique([sessionId, number])
   @@unique([groupId, number])
@@ -303,6 +321,8 @@ model Screenshot {
   width        Int?
   height       Int?
   status       ScreenshotStatus @default(QUEUED)
+  /// "WEB" | "APP_AUTO" | "APP_MANUAL"
+  source       String           @default("WEB")
   attempts     Int              @default(0)
   /// ExtractionResult JSON (camelCase, see shared/phase2.ts)
   extraction   Json?
@@ -493,4 +513,59 @@ model GroupTeam {
   @@unique([groupId, teamId])
   @@unique([groupId, slotNumber])
   @@index([teamId])
+}
+
+/// Phase 4: a full-match screen recording made by the manager app (video uploaded to VIDEO_DIR).
+model MatchRecording {
+  id            String          @id @default(cuid())
+  matchId       String
+  match         Match           @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  managerId     String
+  manager       User            @relation(fields: [managerId], references: [id])
+  status        RecordingStatus @default(LIVE)
+  deviceName    String?
+  appVersion    String?
+  startedAt     DateTime        @default(now())
+  endedAt       DateTime?
+  durationSec   Int?
+  /// path relative to VIDEO_DIR
+  videoKey      String?
+  posterKey     String?
+  sizeBytes     BigInt?
+  uploadedBytes BigInt          @default(0)
+  width         Int?
+  height        Int?
+  /// RecordingEvent[] JSON
+  events        Json            @default("[]")
+  error         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([matchId])
+  @@index([status, createdAt])
+}
+
+/// Phase 4: assisted/automatic touch steps for the manager app (admin default or a manager's taught copy).
+model Recipe {
+  id            String   @id @default(cuid())
+  key           String
+  name          String
+  version       Int      @default(1)
+  /// null = admin default
+  managerId     String?
+  manager       User?    @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  deviceProfile String?
+  /// RecipeStep[] JSON
+  steps         Json
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([key, managerId])
+}
+
+/// Phase 4: small key/value settings (e.g. videoRetentionDays).
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
 }
