@@ -2,7 +2,6 @@ import { Link, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarPlus, CheckCircle2, Inbox, LayoutDashboard, Plus, Shield, Swords, Users } from "lucide-react";
 import type { ListResponse, PendingRequest } from "@7xen/shared";
-import { Button } from "@7xen/ui/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { cn } from "@7xen/ui/lib/utils";
 import { api } from "@/lib/api";
@@ -16,29 +15,31 @@ const WELCOME_STEPS: WelcomeStep[] = [
 
 const SEGMENT_LABELS = { new: "New scrim", edit: "Edit scrim", matches: "Matches", standings: "Points table" };
 
-const NewScrimButton: SidebarSlot = ({ collapsed, close }) => {
-  const btn = (
-    <Button
-      asChild
-      size={collapsed ? "icon-lg" : "lg"}
-      className={cn("w-full shadow-glow", collapsed ? "mx-auto" : "justify-start font-semibold")}
-    >
-      <Link to="/manager/scrims/new" onClick={close} data-tour="nav-new-scrim" aria-label="New scrim">
-        <Plus className="size-5" />
-        {!collapsed && "New scrim"}
+/** Same fixed-icon layout as the nav rows, so collapsing just narrows the button and fades its label. */
+const NewScrimButton: SidebarSlot = ({ collapsed }) => (
+  <Tooltip open={collapsed ? undefined : false}>
+    <TooltipTrigger asChild>
+      <Link
+        to="/manager/scrims/new"
+        data-tour="nav-new-scrim"
+        aria-label="New scrim"
+        className={cn(
+          "flex h-11 items-center gap-3 overflow-hidden rounded-xl bg-primary pl-4 text-sm font-semibold whitespace-nowrap text-primary-foreground shadow-glow outline-none",
+          "transition-[width,background-color] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary/90 focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50",
+          collapsed ? "w-[52px]" : "w-full",
+        )}
+      >
+        <Plus className="size-5 shrink-0" />
+        <span className={cn("transition-opacity duration-200", collapsed ? "opacity-0" : "opacity-100 delay-100")}>New scrim</span>
       </Link>
-    </Button>
-  );
-  if (!collapsed) return btn;
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{btn}</TooltipTrigger>
-      <TooltipContent side="right" sideOffset={8}>
-        New scrim
-      </TooltipContent>
-    </Tooltip>
-  );
-};
+    </TooltipTrigger>
+    <TooltipContent side="right" sideOffset={12}>
+      New scrim
+    </TooltipContent>
+  </Tooltip>
+);
+
+const NEW_SCRIM_FAB = { to: "/manager/scrims/new", label: "New scrim", icon: Plus, tour: "nav-new-scrim" };
 
 export default function ManagerLayout() {
   // Same key as the Approvals page so approving/rejecting there refreshes this badge.
@@ -51,14 +52,14 @@ export default function ManagerLayout() {
   const pending = requests.data?.length ?? 0;
 
   const nav: NavItem[] = [
-    { key: "dashboard", to: "/manager", label: "Dashboard", icon: LayoutDashboard, end: true },
+    { key: "dashboard", to: "/manager", label: "Dashboard", short: "Home", icon: LayoutDashboard, end: true },
     { key: "requests", to: "/manager/requests", label: "Approvals", icon: Inbox, badge: pending },
     { key: "scrims", to: "/manager/scrims", label: "Scrims", icon: Swords },
     { key: "teams", to: "/manager/teams", label: "Teams", icon: Shield },
   ];
 
   return (
-    <AppShell nav={nav} homeHref="/manager" sidebarAction={NewScrimButton} segmentLabels={SEGMENT_LABELS} welcomeSteps={WELCOME_STEPS}>
+    <AppShell nav={nav} homeHref="/manager" sidebarAction={NewScrimButton} mobileAction={NEW_SCRIM_FAB} segmentLabels={SEGMENT_LABELS} welcomeSteps={WELCOME_STEPS}>
       <Outlet />
     </AppShell>
   );

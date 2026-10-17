@@ -11,12 +11,23 @@ export interface NavItem {
   badge?: number;
   /** Only active on an exact path match (use for index routes like /manager). */
   end?: boolean;
+  /** Short label for the mobile bottom tab bar (defaults to `label`). */
+  short?: string;
+}
+
+/** Floating action button shown on phones (e.g. "New scrim"). */
+export interface MobileAction {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  /** `data-tour` value */
+  tour?: string;
 }
 
 export interface SidebarSlotState {
   /** Desktop sidebar is in icon-only mode. */
   collapsed: boolean;
-  /** Close the mobile drawer (no-op on desktop). */
+  /** No-op (kept for compatibility; phones use the bottom tab bar). */
   close: () => void;
 }
 

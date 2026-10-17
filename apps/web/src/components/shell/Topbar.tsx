@@ -1,6 +1,6 @@
 import { Fragment, useMemo } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronRight, Compass, Menu } from "lucide-react";
+import { ChevronRight, Compass } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { DATE_RE } from "@7xen/shared";
@@ -45,7 +45,7 @@ function useCrumbs(nav: NavItem[], segmentLabels: Record<string, string>): Crumb
   }, [nav, pathname, segmentLabels]);
 }
 
-export function Topbar({ nav, segmentLabels, onOpenMenu, showMenuButton }: { nav: NavItem[]; segmentLabels: Record<string, string>; onOpenMenu: () => void; showMenuButton: boolean }) {
+export function Topbar({ nav, segmentLabels, homeHref, compact }: { nav: NavItem[]; segmentLabels: Record<string, string>; homeHref: string; compact: boolean }) {
   const crumbs = useCrumbs(nav, segmentLabels);
   const tour = useTour();
 
@@ -56,16 +56,16 @@ export function Topbar({ nav, segmentLabels, onOpenMenu, showMenuButton }: { nav
 
   return (
     <header
-      className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-3 border-b bg-background/70 px-4 backdrop-blur-xl supports-[backdrop-filter]:bg-background/55 sm:px-6"
-      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      className={cn(
+        "sticky top-0 z-30 flex shrink-0 items-center gap-3 border-b bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/55",
+        compact ? "h-14 px-4" : "h-16 px-6",
+      )}
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)", boxSizing: "content-box" }}
     >
-      {showMenuButton && (
-        <>
-          <Button variant="ghost" size="icon" onClick={onOpenMenu} aria-label="Open menu" className="-ml-2">
-            <Menu className="size-5" />
-          </Button>
-          <LogoMark className="size-7 sm:hidden" />
-        </>
+      {compact && (
+        <Link to={homeHref} aria-label="7XEN home" className="-ml-1 shrink-0 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+          <LogoMark className="size-8" />
+        </Link>
       )}
 
       <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
@@ -93,9 +93,16 @@ export function Topbar({ nav, segmentLabels, onOpenMenu, showMenuButton }: { nav
       </nav>
 
       <div className="flex shrink-0 items-center gap-2">
-        <Button variant="outline" size="sm" onClick={startTour} data-tour="tour-btn" aria-label="Take a tour" className="h-9 gap-2 border-primary/30 hover:border-primary/60">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={startTour}
+          data-tour="tour-btn"
+          aria-label="Take a tour"
+          className={cn("gap-2 border-primary/30 hover:border-primary/60", compact ? "size-9 p-0" : "h-9")}
+        >
           <Compass className="size-4 text-primary" />
-          <span className="hidden sm:inline">Take a tour</span>
+          {!compact && <span>Take a tour</span>}
         </Button>
         <ThemeToggle />
         <UserMenu />

@@ -1,0 +1,28 @@
+{
+ "name": "7XEN Admin",
+ "short_name": "7XEN Admin",
+ "start_url": "/admin-ui/",
+ "scope": "/admin-ui/",
+ "display": "standalone",
+ "orientation": "any",
+ "background_color": "#16181f",
+ "theme_color": "#16181f",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
