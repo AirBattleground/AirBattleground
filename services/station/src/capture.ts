@@ -34,6 +34,11 @@ export interface PipelineOptions {
   hlsTime: number;
   hlsListSize: number;
   maxRestarts: number;
+  /**
+   * Replaces scrcpy: starts whatever writes the H.264 stream into the FIFO (BlueStacks: FrameSource). When set,
+   * ffmpeg reads raw Annex-B (`-f h264`, wall-clock timestamps) instead of Matroska.
+   */
+  startSource?: (fifo: string) => Proc;
   /** how long both processes must stay up for a part to count as started */
   settleMs?: number;
   restartDelayMs?: number;
@@ -77,7 +82,7 @@ export function scrcpyArgs(o: Pick<PipelineOptions, "serial" | "maxSize" | "bitr
   return args;
 }
 
-export function ffmpegArgs(o: Pick<PipelineOptions, "hlsTime" | "hlsListSize" | "liveDir">, fifo: string, partFile: string, part: number): string[] {
+export function ffmpegArgs(o: Pick<PipelineOptions, "hlsTime" | "hlsListSize" | "liveDir"> & { startSource?: unknown }, fifo: string, partFile: string, part: number): string[] {
   const flags = ["delete_segments", "independent_segments", "omit_endlist", ...(part > 0 ? ["append_list"] : [])].join("+");
   const hls = [
     "f=hls",
@@ -91,6 +96,8 @@ export function ffmpegArgs(o: Pick<PipelineOptions, "hlsTime" | "hlsListSize" | 
     "-hide_banner",
     "-loglevel",
     "warning",
+    // raw Annex-B has no timestamps: stamp frames as they arrive
+    ...(o.startSource ? ["-use_wallclock_as_timestamps", "1", "-probesize", "200000", "-analyzeduration", "0", "-f", "h264"] : []),
     "-fflags",
     "+genpts",
     "-i",
@@ -161,9 +168,11 @@ export class CapturePipeline extends EventEmitter {
     this.parts.push(part);
 
     const ffmpeg = this.o.spawner(this.o.ffmpeg, ffmpegArgs(this.o, fifo, part, n));
-    const scrcpy = this.o.spawner(this.o.scrcpy, scrcpyArgs(this.o, fifo), {
-      env: { ...process.env, ADB: this.o.adb, SCRCPY_SERVER_PATH: this.o.scrcpyServer },
-    });
+    const scrcpy = this.o.startSource
+      ? this.o.startSource(fifo)
+      : this.o.spawner(this.o.scrcpy, scrcpyArgs(this.o, fifo), {
+          env: { ...process.env, ADB: this.o.adb, SCRCPY_SERVER_PATH: this.o.scrcpyServer },
+        });
     this.ffmpeg = ffmpeg;
     this.scrcpy = scrcpy;
     log.info("capture part started", { part: n, scrcpy: scrcpy.pid, ffmpeg: ffmpeg.pid });

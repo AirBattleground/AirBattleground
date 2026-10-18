@@ -38,6 +38,9 @@ export const isPreparing = (p: StationPhase | undefined) => p === "STARTING_EMUL
 /** Phases where a match holds the station. */
 export const isActive = (p: StationPhase | undefined) => isPreparing(p) || p === "LIVE" || p === "STOPPING";
 
+/** BlueStacks is starting/stopping (background job running or emulator booting): poll fast. */
+export const deviceBusy = (s: StationStatus | undefined | null) => !!s && (s.device?.job?.phase === "running" || s.emulator === "BOOTING");
+
 // ---------- manager ----------
 
 /** Station health, polled every 5 s while the page is open. Never errors: an unreachable API reads as offline. */
@@ -52,7 +55,7 @@ export function useStationStatus() {
         throw e;
       }
     },
-    refetchInterval: 5_000,
+    refetchInterval: (q) => (deviceBusy(q.state.data) ? 2_000 : 5_000),
     refetchIntervalInBackground: false,
   });
 }
@@ -73,6 +76,7 @@ export function useMatchLive(matchId: string, opts: { enabled?: boolean } = {}) 
     refetchInterval: (q) => {
       const d = q.state.data;
       const mine = d?.station.matchId === matchId;
+      if (deviceBusy(d?.station)) return 2_000;
       if (mine && (isPreparing(d?.station.phase) || d?.station.phase === "STOPPING")) return 2_000;
       if (d?.streaming || (mine && d?.station.phase === "LIVE")) return 4_000;
       return 15_000;
@@ -90,6 +94,40 @@ export function usePrepareStation(matchId: string) {
       void qc.invalidateQueries({ queryKey: liveKeys.recordings(matchId) });
     },
     onError: (err) => toast.error("Couldn't prepare the station", { description: errorMessage(err) }),
+  });
+}
+
+/** BlueStacks mode: start the emulator (+ BGMI) in the background. Progress comes from polling live/status. */
+export function useDeviceStart(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { launchBgmi?: boolean } = {}) => api.post<StationStatus>(`/api/manager/matches/${matchId}/station/device/start`, body),
+    onSuccess: (status) => {
+      qc.setQueryData(stationKeys.status, status);
+      qc.setQueryData<MatchLive | null | undefined>(stationKeys.live(matchId), (d) => (d ? { ...d, station: status } : d));
+    },
+    onError: (err) => toast.error("Couldn't start the emulator", { description: errorMessage(err) }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: stationKeys.status });
+      void qc.invalidateQueries({ queryKey: stationKeys.live(matchId) });
+    },
+  });
+}
+
+/** BlueStacks mode: shut down the game (target "game") or the whole emulator ("all", default). 409 while a match is live. */
+export function useDeviceStop(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { target?: "game" | "all" } = {}) => api.post<StationStatus>(`/api/manager/matches/${matchId}/station/device/stop`, body),
+    onSuccess: (status) => {
+      qc.setQueryData(stationKeys.status, status);
+      qc.setQueryData<MatchLive | null | undefined>(stationKeys.live(matchId), (d) => (d ? { ...d, station: status } : d));
+    },
+    onError: (err) => toast.error("Couldn't shut down the emulator", { description: errorMessage(err) }),
+    onSettled: () => {
+      void qc.invalidateQueries({ queryKey: stationKeys.status });
+      void qc.invalidateQueries({ queryKey: stationKeys.live(matchId) });
+    },
   });
 }
 

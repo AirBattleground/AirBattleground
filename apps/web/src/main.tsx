@@ -9,6 +9,7 @@ import { TooltipProvider } from "@7xen/ui/components/ui/tooltip";
 import { queryClient } from "@/lib/query";
 import { AuthProvider } from "@/lib/auth";
 import { router } from "@/router";
+import { dismissSplash } from "@/lib/splash";
 import "./index.css";
 
 createRoot(document.getElementById("root")!).render(
@@ -27,3 +28,5 @@ createRoot(document.getElementById("root")!).render(
     </ThemeProvider>
   </StrictMode>,
 );
+
+dismissSplash();

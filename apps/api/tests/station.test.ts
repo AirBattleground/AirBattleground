@@ -8,6 +8,8 @@ import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { WebSocket, WebSocketServer } from "ws";
+import { attachStationStream } from "../src/lib/stationStream.js";
 import type { MatchLive, StationStatus } from "@7xen/shared";
 import { storageRoot } from "../src/lib/storage.js";
 import { resolveVideoKey } from "../src/lib/video.js";
@@ -31,6 +33,8 @@ const fake = {
   status: null as unknown as StationStatus,
   /** override a route's answer: [status, body] */
   reply: {} as Record<string, [number, unknown]>,
+  /** matchId the fake station refuses to stream for (409) */
+  busyMatch: "",
 };
 
 const idle = (): StationStatus => ({
@@ -94,9 +98,31 @@ function startFake(): Promise<void> {
       }
       case "POST /sessions/input":
         return json(204);
+      case "POST /device/start":
+        fake.status = { ...fake.status, emulator: "BOOTING" };
+        return json(200, fake.status);
+      case "POST /device/stop":
+        fake.status = { ...fake.status, emulator: "OFF" };
+        return json(200, fake.status);
       default:
         return json(404, { error: { code: "NOT_FOUND", message: "nope" } });
     }
+  });
+  // the station's /device/stream: greets, echoes every client message back as a text line
+  const wss = new WebSocketServer({ noServer: true });
+  fake.server.on("upgrade", (req, socket, head) => {
+    const u = new URL(req.url!, "http://x");
+    fake.seen.push({ method: "UPGRADE", url: req.url!, token: req.headers["x-station-token"] as string | undefined, body: {} });
+    if (req.headers["x-station-token"] !== TOKEN) return void socket.destroy();
+    if (u.searchParams.get("matchId") === fake.busyMatch) {
+      socket.write("HTTP/1.1 409 Conflict\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
+      return void socket.destroy();
+    }
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      ws.send(JSON.stringify({ type: "config", codec: "avc1.640034", stream: "live" }));
+      ws.send(Buffer.from([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0x67]), { binary: true });
+      ws.on("message", (m) => ws.send(`echo:${Buffer.from(m as Buffer).toString("hex")}`));
+    });
   });
   return new Promise((resolve) =>
     fake.server!.listen(0, "127.0.0.1", () => {
@@ -107,6 +133,7 @@ function startFake(): Promise<void> {
 }
 
 beforeAll(async () => {
+  attachStationStream(server);
   await startFake();
   process.env.STATION_TOKEN = TOKEN;
 });
@@ -115,6 +142,7 @@ beforeEach(async () => {
   await createAdminUser();
   fake.seen = [];
   fake.reply = {};
+  fake.busyMatch = "";
   fake.status = idle();
   process.env.STATION_URL = fake.url;
   resetLiveCaches();
@@ -425,5 +453,77 @@ describe("station: internal hooks", () => {
     const detail = await w.mgr.get(`/api/manager/matches/${w.matchId}`);
     expect(detail.body.screenshots[0].source).toBe("STATION");
     expect((await hook(`/api/internal/station/matches/nope/screenshots`).field("kind", "SLOT_LIST").attach("files", PNG("x"), "a.png")).status).toBe(404);
+  });
+});
+
+
+// ---------------------------------------------------------------- BlueStacks device control
+
+describe("station: BlueStacks device control", () => {
+  const cookieOf = (a: TestAgent) =>
+    (a as unknown as { jar: { getCookies: (o: object) => { toValueString(): string }[] } }).jar
+      .getCookies({ domain: "127.0.0.1", path: "/", script: false, secure: false })
+      .map((c) => c.toValueString())
+      .join("; ");
+  const wsUrl = (area: string, matchId: string) => `ws://127.0.0.1:${(server.address() as AddressInfo).port}/api/${area}/matches/${matchId}/station/stream`;
+  /** open → {ws, messages}, or the HTTP status the upgrade was refused with */
+  const connect = (url: string, headers: Record<string, string>) =>
+    new Promise<{ ws: WebSocket; msgs: (string | Buffer)[] } | number>((resolve) => {
+      const ws = new WebSocket(url, { headers });
+      const msgs: (string | Buffer)[] = [];
+      ws.on("message", (d, bin) => msgs.push(bin ? (d as Buffer) : d.toString()));
+      ws.on("open", () => resolve({ ws, msgs }));
+      ws.on("unexpected-response", (_q, res) => resolve(res.statusCode ?? 0));
+      ws.on("error", () => {});
+    });
+
+  it("device start/stop go to the station; stop is refused while a match records", async () => {
+    const w = await world();
+    const st = await w.mgr.post(`/api/manager/matches/${w.matchId}/station/device/start`).send({});
+    expect(st.status, JSON.stringify(st.body)).toBe(200);
+    expect(st.body.emulator).toBe("BOOTING");
+    expect(fake.seen.find((s) => s.url === "/device/start")?.body).toEqual({ launchBgmi: true });
+    fake.status = idle();
+    expect((await prepare(w.mgr, w.matchId, {})).status).toBe(200);
+    const stop = await w.mgr.post(`/api/manager/matches/${w.matchId}/station/device/stop`).send({});
+    expect(stop.status).toBe(409);
+    expect(fake.seen.some((s) => s.url === "/device/stop")).toBe(false);
+    await w.mgr.post(`/api/manager/matches/${w.matchId}/station/stop`);
+    fake.status = idle();
+    const down = await w.mgr.post(`/api/manager/matches/${w.matchId}/station/device/stop`).send({ target: "game" });
+    expect(down.status).toBe(200);
+    expect(fake.seen.find((s) => s.url === "/device/stop")?.body).toEqual({ target: "game" });
+    // ownership + validation
+    expect((await w.other.post(`/api/manager/matches/${w.matchId}/station/device/start`).send({})).status).toBe(404);
+    expect((await w.mgr.post(`/api/manager/matches/${w.matchId}/station/device/stop`).send({ target: "x" })).status).toBe(400);
+    // station held by another match
+    fake.status = { ...idle(), phase: "LIVE", matchId: "someone-else", recordingId: "r" };
+    expect((await w.mgr.post(`/api/manager/matches/${w.matchId}/station/device/start`).send({})).status).toBe(409);
+  });
+
+  it("the stream WebSocket is relayed both ways for the match owner only", async () => {
+    const w = await world();
+    const c = await connect(wsUrl("manager", w.matchId), { cookie: cookieOf(w.mgr) });
+    expect(typeof c, "owner connects").not.toBe("number");
+    const { ws, msgs } = c as { ws: WebSocket; msgs: (string | Buffer)[] };
+    ws.send(Buffer.from([0, 0, 0, 1, 2, 3, 4, 0, 0, 0, 0]));
+    await new Promise((r) => setTimeout(r, 300));
+    expect(msgs.some((m) => typeof m === "string" && m.includes('"config"'))).toBe(true);
+    expect(msgs.some((m) => Buffer.isBuffer(m) && m[0] === 1)).toBe(true);
+    expect(msgs.some((m) => typeof m === "string" && m.startsWith("echo:0000000102030400000000"))).toBe(true);
+    expect(fake.seen.find((s) => s.method === "UPGRADE")).toMatchObject({ token: TOKEN, url: `/device/stream?matchId=${w.matchId}` });
+    ws.close();
+
+    expect(await connect(wsUrl("manager", w.matchId), {})).toBe(401);
+    expect(await connect(wsUrl("manager", w.matchId), { cookie: cookieOf(w.other) })).toBe(404);
+    expect(await connect(wsUrl("manager", w.matchId), { cookie: cookieOf(w.playing) })).toBe(403); // a team session isn't a manager session
+    expect(await connect(wsUrl("manager", w.matchId), { cookie: cookieOf(w.mgr), origin: "http://evil.example" })).toBe(403);
+    expect(await connect(wsUrl("admin", w.matchId), { cookie: cookieOf(w.mgr) })).toBe(401);
+    const adm = await connect(wsUrl("admin", w.matchId), { cookie: cookieOf(w.admin) });
+    expect(typeof adm).not.toBe("number");
+    (adm as { ws: WebSocket }).ws.close();
+    // the station refuses (another match holds it)
+    fake.busyMatch = w.matchId;
+    expect(await connect(wsUrl("manager", w.matchId), { cookie: cookieOf(w.mgr) })).toBe(409);
   });
 });

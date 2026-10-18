@@ -17,6 +17,7 @@
     "date-fns": "^4.4.0",
     "framer-motion": "^12.43.0",
     "hls.js": "^1.7.3",
+    "jmuxer": "^2.1.4",
     "lucide-react": "^0.460.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

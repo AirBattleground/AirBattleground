@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { LogoMark } from "@7xen/ui/components/brand/logo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { cn } from "@7xen/ui/lib/utils";
-import type { NavItem, SidebarSlot, SidebarSlotState } from "./types";
+import type { NavItem, SidebarSlot, SidebarSlotState, ShellBrand } from "./types";
 
 /**
  * Collapse design: the sidebar content is laid out at full width and never reflows. Icons sit in a
@@ -23,6 +23,7 @@ interface SidebarContentProps {
   layoutId: string;
   header?: SidebarSlot;
   action?: SidebarSlot;
+  brand?: ShellBrand;
 }
 
 /** Text that fades out when the rail collapses (and back in slightly after it expands). */
@@ -114,7 +115,7 @@ function NavRow({ item, collapsed, layoutId }: { item: NavItem; collapsed: boole
   );
 }
 
-export function SidebarContent({ nav, homeHref, collapsed, layoutId, header, action }: SidebarContentProps) {
+export function SidebarContent({ nav, homeHref, collapsed, layoutId, header, action, brand }: SidebarContentProps) {
   const slot: SidebarSlotState = { collapsed, close: () => undefined };
   return (
     <div className="flex h-full flex-col" style={{ width: SIDEBAR_FULL }}>
@@ -122,15 +123,33 @@ export function SidebarContent({ nav, homeHref, collapsed, layoutId, header, act
         <Link
           to={homeHref}
           className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50"
-          aria-label="7XEN home"
+          aria-label={`${brand?.name ?? "7XEN"} home`}
         >
-          <LogoMark />
-          <Fade collapsed={collapsed} className="leading-none">
-            <span className="block font-display text-2xl font-bold tracking-wider">
-              7<span className="text-primary">XEN</span>
+          {brand ? (
+            // expanded: full wordmark; collapsed rail (76px): cross-fades to the compact mark
+            <span className="relative block h-10">
+              <Fade collapsed={collapsed} className="block h-full">
+                <img src={brand.wordmarkInk} alt="" className="h-full w-auto dark:hidden" />
+                <img src={brand.wordmark} alt="" className="hidden h-full w-auto dark:block" />
+              </Fade>
+              <img
+                src={brand.mark}
+                alt=""
+                aria-hidden
+                className={cn("absolute top-1/2 -left-1.5 h-7 w-auto -translate-y-1/2 transition-opacity duration-200", collapsed ? "opacity-100 delay-100" : "pointer-events-none opacity-0")}
+              />
             </span>
-            <span className="mt-0.5 block text-[10px] font-semibold tracking-[0.25em] text-muted-foreground uppercase">Scrim Portal</span>
-          </Fade>
+          ) : (
+            <>
+              <LogoMark />
+              <Fade collapsed={collapsed} className="leading-none">
+                <span className="block font-display text-2xl font-bold tracking-wider">
+                  7<span className="text-primary">XEN</span>
+                </span>
+                <span className="mt-0.5 block text-[10px] font-semibold tracking-[0.25em] text-muted-foreground uppercase">Scrim Portal</span>
+              </Fade>
+            </>
+          )}
         </Link>
       </div>
 

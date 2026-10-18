@@ -21,7 +21,7 @@ export function LiveBadge({ startedAt, className }: { startedAt?: string | null;
   );
 }
 
-function useElapsed(startedAt?: string | null): number | null {
+export function useElapsed(startedAt?: string | null): number | null {
   const start = startedAt ? new Date(startedAt).getTime() : NaN;
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {

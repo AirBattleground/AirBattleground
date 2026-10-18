@@ -16,8 +16,29 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
     <script>try{var t=localStorage.getItem("7xen.theme")||"dark";if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t==="dark")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}</script>
+    <style>
+      /* Boot splash: painted before any JS loads; src/lib/splash.ts fades it out once the app is ready (min 2s). */
+      /* backgrounds match the backdrop baked into each video: splash-light.mp4 (light theme) / splash.mp4 (dark) */
+      #splash { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center; background: #f5f7fa; cursor: pointer; transition: opacity .5s ease-out, transform .5s ease-out; }
+      .dark #splash { background: #17181d; }
+      #splash.splash-out { opacity: 0; transform: scale(1.04); pointer-events: none; }
+      #splash video { width: 100%; height: 100%; object-fit: contain; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent); }
+    </style>
   </head>
   <body>
+    <div id="splash" role="presentation" onclick="this.classList.add('splash-out')">
+      <video autoplay muted playsinline preload="auto" aria-label="AirBattleground"></video>
+    </div>
+    <script>
+      /* pick the video for the theme set above; the 4s intro plays at 2x so it lands inside the 2s overlay */
+      (function () {
+        var v = document.querySelector("#splash video");
+        if (!v) return;
+        v.src = document.documentElement.classList.contains("dark") ? "/brand/splash.mp4" : "/brand/splash-light.mp4";
+        v.defaultPlaybackRate = 2;
+        v.playbackRate = 2;
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

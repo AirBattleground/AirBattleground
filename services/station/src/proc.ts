@@ -94,9 +94,9 @@ export interface RunResult {
 }
 
 /** Run a short command and collect its output (binary-safe stdout). Never throws on a non-zero exit. */
-export function run(cmd: string, args: string[], opts: { timeoutMs?: number; env?: NodeJS.ProcessEnv; maxBuffer?: number } = {}): Promise<RunResult> {
+export function run(cmd: string, args: string[], opts: { timeoutMs?: number; env?: NodeJS.ProcessEnv; maxBuffer?: number; input?: Buffer } = {}): Promise<RunResult> {
   return new Promise((resolve) => {
-    execFile(
+    const child = execFile(
       cmd,
       args,
       { encoding: "buffer", timeout: opts.timeoutMs ?? 20_000, env: opts.env ?? process.env, maxBuffer: opts.maxBuffer ?? 64 * 1024 * 1024 },
@@ -105,5 +105,6 @@ export function run(cmd: string, args: string[], opts: { timeoutMs?: number; env
         resolve({ code: typeof code === "number" ? code : 1, stdout: stdout ?? Buffer.alloc(0), stderr: (stderr ?? Buffer.alloc(0)).toString() + (err && !stderr?.length ? err.message : "") });
       },
     );
+    if (opts.input) child.stdin?.on("error", () => {}).end(opts.input);
   });
 }

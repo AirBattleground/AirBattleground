@@ -25,6 +25,8 @@ export interface Device {
   screen(serial: string): Promise<ScreenSize | null>;
   isInstalled(serial: string, pkg: string): Promise<boolean>;
   launch(serial: string, pkg: string): Promise<void>;
+  /** optional: is the game already in the foreground/running (skip a relaunch that would restart it) */
+  gameRunning?(serial: string, pkg: string): Promise<boolean>;
   screencap(serial: string): Promise<Buffer>;
   input(serial: string, input: StationInput, mode: "logical" | "natural"): Promise<void>;
 }

@@ -183,3 +183,8 @@ Silicon Mac runs the arm64 Android emulator natively. The station stays on the P
 3. PC: `REMOTE_DEVICE=<Mac IP>:5556` in `services/station/.env`, then `systemctl --user restart 7xen-station`.
    The station `adb connect`s it whenever it's missing and never boots the local AVD. Prepare fails with
    "Can't reach the Android device at …" when the Mac/emulator/relay isn't running.
+
+## BlueStacks on a Mac (stream API)
+
+An alternative to the adb/scrcpy path with its own start/stop and live control from the web: see
+[BLUESTACKS.md](BLUESTACKS.md).

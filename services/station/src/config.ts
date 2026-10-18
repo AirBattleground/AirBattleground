@@ -48,6 +48,8 @@ export interface StationConfig {
   serial: string;
   /** "host:port" of an Android device/emulator reached over the network (e.g. an emulator on a Mac); "" = local AVD */
   remoteDevice: string;
+  /** BlueStacks on a Mac via its stream API (replaces adb/scrcpy/emulator when `url` is set) */
+  bluestacks: { url: string; token: string; insecureTls: boolean; jobTimeoutMs: number } | null;
   bootTimeoutMs: number;
   bgmiPackage: string;
   /** longest side of the captured video (0 = native) */
@@ -87,6 +89,14 @@ export function loadConfig(): StationConfig {
     emulatorArgs: str("EMULATOR_ARGS", "-gpu host -feature -GLAsyncSwap -no-boot-anim -no-snapshot-save").split(/\s+/).filter(Boolean),
     serial: str("REMOTE_DEVICE", "") || str("ADB_SERIAL", ""),
     remoteDevice: str("REMOTE_DEVICE", ""),
+    bluestacks: str("BLUESTACKS_URL", "")
+      ? {
+          url: str("BLUESTACKS_URL", "").replace(/\/+$/, ""),
+          token: str("BLUESTACKS_TOKEN", ""),
+          insecureTls: str("BLUESTACKS_INSECURE_TLS", "1") !== "0",
+          jobTimeoutMs: num("BLUESTACKS_JOB_TIMEOUT_SEC", 240) * 1000,
+        }
+      : null,
     bootTimeoutMs: num("EMULATOR_BOOT_TIMEOUT_SEC", 240) * 1000,
     bgmiPackage: str("BGMI_PACKAGE", "com.pubg.imobile"),
     maxSize: num("CAPTURE_MAX_SIZE", 1280),

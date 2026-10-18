@@ -13,7 +13,7 @@ import { MobileFab, MobileTabBar } from "./MobileTabBar";
 import { Topbar } from "./Topbar";
 import { WelcomeDialog } from "./WelcomeDialog";
 import { useSessionExpiryToast } from "./useSessionExpiryToast";
-import type { MobileAction, NavItem, SidebarSlot, WelcomeStep } from "./types";
+import type { MobileAction, NavItem, SidebarSlot, ShellBrand, WelcomeStep } from "./types";
 
 const COLLAPSED_KEY = "7xen.sidebar.collapsed";
 const NO_LABELS: Record<string, string> = {};
@@ -32,10 +32,12 @@ export interface AppShellProps {
   segmentLabels?: Record<string, string>;
   /** First-login welcome steps (dialog shows once per user per browser). */
   welcomeSteps?: WelcomeStep[];
+  /** Image logo; defaults to the 7XEN mark. */
+  brand?: ShellBrand;
   children: ReactNode;
 }
 
-export function AppShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAction, segmentLabels = NO_LABELS, welcomeSteps, children }: AppShellProps) {
+export function AppShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAction, segmentLabels = NO_LABELS, welcomeSteps, brand, children }: AppShellProps) {
   const { user } = useAuth();
   const { pathname } = useLocation();
   const isDesktop = useIsDesktop();
@@ -87,7 +89,7 @@ export function AppShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAc
             style={{ width: collapsed ? SIDEBAR_RAIL : SIDEBAR_FULL }}
           >
             <div className="h-full overflow-hidden">
-              <SidebarContent nav={nav} homeHref={homeHref} collapsed={collapsed} layoutId="nav-active-desktop" header={sidebarHeader} action={sidebarAction} />
+              <SidebarContent nav={nav} homeHref={homeHref} collapsed={collapsed} layoutId="nav-active-desktop" header={sidebarHeader} action={sidebarAction} brand={brand} />
             </div>
             {/* edge toggle: sits on the border, always reachable */}
             <Tooltip>
@@ -114,7 +116,7 @@ export function AppShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAc
         )}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar nav={nav} segmentLabels={segmentLabels} homeHref={homeHref} compact={!isDesktop} />
+          <Topbar nav={nav} segmentLabels={segmentLabels} homeHref={homeHref} compact={!isDesktop} brand={brand} />
           <main
             id="main"
             tabIndex={-1}

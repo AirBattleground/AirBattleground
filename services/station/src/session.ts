@@ -10,8 +10,9 @@
  */
 import { mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { EmulatorState, StationInput, StationPhase, StationPrepareRequest, StationStatus } from "@7xen/shared";
+import type { EmulatorState, StationDeviceStartInput, StationDeviceStopInput, StationInput, StationPhase, StationPrepareRequest, StationStatus } from "@7xen/shared";
 import type { Device, DeviceFacts } from "./adb.js";
+import type { BlueStacksControl } from "./bluestacks.js";
 import type { ApiHooks } from "./apiClient.js";
 import { endPlaylist } from "./capture.js";
 import type { EnsureEmulator } from "./emulator.js";
@@ -63,6 +64,8 @@ export interface StationDeps {
   /** how long POST /sessions waits for LIVE before answering with the current phase */
   prepareWaitMs?: number;
   factsCacheMs?: number;
+  /** BlueStacks mode: independent start/stop of the emulator + the live stream relay */
+  control?: BlueStacksControl;
   /** kill leftover capture processes from a crashed run (recover) */
   killPid?: (pid: number) => Promise<void>;
 }
@@ -129,6 +132,7 @@ export class Station {
     if (f.serial && f.state === "device" && f.booted) emulator = "READY";
     else if (f.serial || this.booting) emulator = "BOOTING";
     else if (this.phase === "ERROR" && /emulator/i.test(this.error ?? "")) emulator = "ERROR";
+    const device = this.d.control ? await this.d.control.info().catch(() => undefined) : undefined;
     return {
       online: true,
       emulator,
@@ -141,6 +145,7 @@ export class Station {
       rotation: f.rotation,
       error: this.error,
       version: this.d.version,
+      ...(device ? { device } : {}),
     };
   }
 
@@ -225,7 +230,10 @@ export class Station {
 
       this.setPhase("LAUNCHING_BGMI");
       this.bgmiInstalled = await this.d.device.isInstalled(this.serial, this.d.bgmiPackage).catch(() => false);
-      if (req.launchBgmi && this.bgmiInstalled) {
+      const alreadyRunning = (await this.d.device.gameRunning?.(this.serial, this.d.bgmiPackage).catch(() => false)) ?? false;
+      if (req.launchBgmi && this.bgmiInstalled && alreadyRunning) {
+        log.info("BGMI is already running; recording it as is");
+      } else if (req.launchBgmi && this.bgmiInstalled) {
         await this.d.device.launch(this.serial, this.d.bgmiPackage).catch((err) => log.warn("BGMI launch failed; recording anyway", { err }));
       } else if (req.launchBgmi) {
         log.warn("BGMI is not installed; recording the home screen");
@@ -370,6 +378,44 @@ export class Station {
   async input(matchId: string, input: StationInput): Promise<void> {
     const serial = await this.serialFor(matchId, true);
     await this.d.device.input(serial, input, this.d.inputCoords);
+  }
+
+  // ------------------------------------------------------------ BlueStacks device control
+
+  private requireControl() {
+    if (!this.d.control) throw new StationError(409, "CONFLICT", "This station doesn't drive BlueStacks. Set BLUESTACKS_URL and BLUESTACKS_TOKEN.");
+    return this.d.control;
+  }
+
+  /** Start BlueStacks (+BGMI) in the background; progress shows in status().device.job. */
+  async deviceStart(req: StationDeviceStartInput): Promise<StationStatus> {
+    const c = this.requireControl();
+    try {
+      await c.start(req.launchBgmi);
+    } catch (err) {
+      throw new StationError(409, "CONFLICT", err instanceof Error ? err.message : String(err));
+    }
+    this.facts = null;
+    return this.status(true);
+  }
+
+  async deviceStop(req: StationDeviceStopInput): Promise<StationStatus> {
+    const c = this.requireControl();
+    if (ACTIVE.includes(this.phase)) throw new StationError(409, "CONFLICT", "A match is on the station. Stop the match first.");
+    try {
+      await c.stop(req.target);
+    } catch (err) {
+      throw new StationError(409, "CONFLICT", err instanceof Error ? err.message : String(err));
+    }
+    this.facts = null;
+    return this.status(true);
+  }
+
+  /** May a manager's live view / control connect now? (idle, or this match's session) */
+  streamAllowed(matchId: string | null): boolean {
+    if (!this.d.control) return false;
+    if (!this.session || !ACTIVE.includes(this.phase)) return true;
+    return matchId === this.session.matchId;
   }
 
   async launchBgmi(): Promise<void> {

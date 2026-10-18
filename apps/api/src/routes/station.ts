@@ -14,6 +14,8 @@ import {
   STATION_TOKEN_HEADER,
   stationCaptureSchema,
   stationCompleteSchema,
+  stationDeviceStartSchema,
+  stationDeviceStopSchema,
   stationFailSchema,
   stationInputSchema,
   stationPrepareInputSchema,
@@ -45,6 +47,14 @@ export function mountStation(r: Router, bypass: boolean) {
   });
   r.post("/matches/:matchId/station/stop", async (req, res) => {
     res.json(await station.stop(p(req.params.matchId), currentUser(req).id, bypass));
+  });
+  r.post("/matches/:matchId/station/device/start", async (req, res) => {
+    const body = parse(stationDeviceStartSchema, req.body ?? {});
+    res.json(await station.deviceStart(p(req.params.matchId), currentUser(req).id, body, bypass));
+  });
+  r.post("/matches/:matchId/station/device/stop", async (req, res) => {
+    const body = parse(stationDeviceStopSchema, req.body ?? {});
+    res.json(await station.deviceStop(p(req.params.matchId), currentUser(req).id, body, bypass));
   });
   r.post("/matches/:matchId/station/capture", async (req, res) => {
     const { kind } = parse(stationCaptureSchema, req.body);

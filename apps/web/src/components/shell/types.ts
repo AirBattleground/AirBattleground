@@ -15,6 +15,17 @@ export interface NavItem {
   short?: string;
 }
 
+/** Image logo that replaces the default 7XEN mark + wordmark in the sidebar and phone topbar. */
+export interface ShellBrand {
+  name: string;
+  /** Full wordmark, light text (dark theme). */
+  wordmark: string;
+  /** Full wordmark, dark text (light theme). */
+  wordmarkInk: string;
+  /** Compact mark: collapsed sidebar rail and phone topbar. */
+  mark: string;
+}
+
 /** Floating action button shown on phones (e.g. "New scrim"). */
 export interface MobileAction {
   to: string;

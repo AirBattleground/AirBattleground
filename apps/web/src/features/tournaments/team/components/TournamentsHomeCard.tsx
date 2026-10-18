@@ -18,7 +18,8 @@ function Shell({ to, children, highlight }: { to: string; children: ReactNode; h
       to={to}
       data-tour="home-tournaments"
       className={cn(
-        "group relative flex flex-col gap-3 overflow-hidden rounded-2xl border bg-card p-4 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-row sm:items-center sm:p-5",
+        // phones: icon beside the text like the other dashboard cards, action full-width underneath
+        "group relative grid grid-cols-[3rem_1fr] items-start gap-4 overflow-hidden rounded-2xl border bg-card p-5 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex sm:items-center sm:p-6",
         highlight && "border-primary/40",
       )}
     >
@@ -56,7 +57,7 @@ function MineSummary({ t }: { t: TournamentSummary }) {
         </p>
       </div>
       {nm?.scheduledAt && (
-        <div className="relative shrink-0 text-left sm:text-right">
+        <div className="relative col-span-2 shrink-0 text-left sm:text-right">
           <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Starts in</p>
           <p className="flex items-center gap-1 font-display text-2xl font-bold">
             <Clock className="size-4 text-primary" />
@@ -85,9 +86,9 @@ export function TournamentsHomeCard() {
           {join.title}
           {join.prize && <span className="ml-2 text-base text-warning-foreground dark:text-warning">· {join.prize}</span>}
         </p>
-        <RegistrationMeter confirmed={join.confirmedCount} max={join.maxTeams} waitlist={join.waitlistCount} size="sm" className="mt-1.5 max-w-sm" />
+        <RegistrationMeter confirmed={join.confirmedCount} max={join.maxTeams} waitlist={join.waitlistCount} size="sm" className="mt-2" />
       </div>
-      <span className="relative inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow">
+      <span className="relative col-span-2 inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-glow sm:ml-2">
         View & register
       </span>
     </Shell>

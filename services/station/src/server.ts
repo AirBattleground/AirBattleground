@@ -5,7 +5,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { z } from "zod";
-import { stationCaptureSchema, stationInputSchema } from "@7xen/shared";
+import { stationCaptureSchema, stationDeviceStartSchema, stationDeviceStopSchema, stationInputSchema } from "@7xen/shared";
+import { WebSocketServer } from "ws";
+import type { BsFrame, BsLink } from "./bluestacks.js";
+import { sanitizeClientMessage } from "./bluestacks.js";
 import type { ApiHooks } from "./apiClient.js";
 import { log } from "./log.js";
 import { StationError, type Station } from "./session.js";
@@ -63,8 +66,70 @@ function parse<T>(schema: z.ZodType<T, z.ZodTypeDef, unknown>, data: unknown): T
   return r.data;
 }
 
-export function createStationServer(station: Station, opts: { token: string; api?: ApiHooks }): Server {
-  return createServer(async (req, res) => {
+/** Max bytes queued for one slow browser before it is skipped to the next keyframe. */
+const MAX_VIEWER_BACKLOG = 4 * 1024 * 1024;
+
+/** `GET /device/stream` (WebSocket): relays the BlueStacks stream + input to a manager's browser (via the API). */
+function attachStreamRelay(server: Server, station: Station, link: BsLink, token: string) {
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 });
+  server.on("upgrade", (req, socket, head) => {
+    const url = new URL(req.url ?? "/", "http://station");
+    if (url.pathname !== "/device/stream") return void socket.destroy();
+    const given = req.headers["x-station-token"] ?? url.searchParams.get("token") ?? undefined;
+    if (!tokenMatches(token, given ?? undefined)) {
+      socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+      return void socket.destroy();
+    }
+    const matchId = url.searchParams.get("matchId");
+    if (!station.streamAllowed(matchId)) {
+      socket.write("HTTP/1.1 409 Conflict\r\nConnection: close\r\n\r\n");
+      return void socket.destroy();
+    }
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      const release = link.acquire();
+      let needKey = true;
+      ws.send(JSON.stringify({ type: "hello", backend: "station" }));
+      if (link.lastMode) ws.send(link.lastMode);
+      if (link.lastConfig) ws.send(link.lastConfig);
+      const onFrame = (f: BsFrame) => {
+        if (needKey && !f.key) return;
+        if (ws.bufferedAmount > MAX_VIEWER_BACKLOG) {
+          needKey = true; // too slow: drop until the next keyframe
+          return;
+        }
+        needKey = false;
+        ws.send(f.raw, { binary: true });
+      };
+      const onText = (t: string) => {
+        if (t.includes('"config"')) needKey = true; // new codec/stream: wait for its keyframe
+        ws.send(t);
+      };
+      link.on("frame", onFrame);
+      link.on("config", onText);
+      link.on("mode", onText);
+      link.requestKeyframe();
+      ws.on("message", (data, isBinary) => {
+        if (!isBinary) return;
+        const msg = sanitizeClientMessage(data as Buffer);
+        if (!msg) return;
+        // only the match that owns the station may touch it
+        if (!station.streamAllowed(matchId)) return;
+        if (msg[0] === 2) needKey = true;
+        link.send(msg);
+      });
+      ws.on("close", () => {
+        link.off("frame", onFrame);
+        link.off("config", onText);
+        link.off("mode", onText);
+        release();
+      });
+      ws.on("error", () => ws.terminate());
+    });
+  });
+}
+
+export function createStationServer(station: Station, opts: { token: string; api?: ApiHooks; link?: BsLink }): Server {
+  const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? "/", "http://station");
     const route = `${req.method} ${url.pathname.replace(/\/+$/, "") || "/"}`;
     try {
@@ -100,6 +165,10 @@ export function createStationServer(station: Station, opts: { token: string; api
           await station.input(matchId, input);
           return send(res, 204);
         }
+        case "POST /device/start":
+          return send(res, 200, await station.deviceStart(parse(stationDeviceStartSchema, await readJson(req))));
+        case "POST /device/stop":
+          return send(res, 200, await station.deviceStop(parse(stationDeviceStopSchema, await readJson(req))));
         case "POST /bgmi/launch":
           await station.launchBgmi();
           return send(res, 204);
@@ -112,4 +181,6 @@ export function createStationServer(station: Station, opts: { token: string; api
       return fail(res, 500, "INTERNAL", err instanceof Error ? err.message : "Something went wrong");
     }
   });
+  if (opts.link) attachStreamRelay(server, station, opts.link, opts.token);
+  return server;
 }

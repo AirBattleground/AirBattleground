@@ -9,7 +9,7 @@ import { LogoMark } from "@7xen/ui/components/brand/logo";
 import { Button } from "@7xen/ui/components/ui/button";
 import { useTour } from "@7xen/ui/tour";
 import { cn } from "@7xen/ui/lib/utils";
-import type { NavItem } from "./types";
+import type { NavItem, ShellBrand } from "./types";
 import { UserMenu } from "./UserMenu";
 
 interface Crumb {
@@ -45,7 +45,7 @@ function useCrumbs(nav: NavItem[], segmentLabels: Record<string, string>): Crumb
   }, [nav, pathname, segmentLabels]);
 }
 
-export function Topbar({ nav, segmentLabels, homeHref, compact }: { nav: NavItem[]; segmentLabels: Record<string, string>; homeHref: string; compact: boolean }) {
+export function Topbar({ nav, segmentLabels, homeHref, compact, brand }: { nav: NavItem[]; segmentLabels: Record<string, string>; homeHref: string; compact: boolean; brand?: ShellBrand }) {
   const crumbs = useCrumbs(nav, segmentLabels);
   const tour = useTour();
 
@@ -63,8 +63,8 @@ export function Topbar({ nav, segmentLabels, homeHref, compact }: { nav: NavItem
       style={{ paddingTop: "env(safe-area-inset-top, 0px)", boxSizing: "content-box" }}
     >
       {compact && (
-        <Link to={homeHref} aria-label="7XEN home" className="-ml-1 shrink-0 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
-          <LogoMark className="size-8" />
+        <Link to={homeHref} aria-label={`${brand?.name ?? "7XEN"} home`} className="-ml-1 shrink-0 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+          {brand ? <img src={brand.mark} alt="" className="h-8 w-auto" /> : <LogoMark className="size-8" />}
         </Link>
       )}
 

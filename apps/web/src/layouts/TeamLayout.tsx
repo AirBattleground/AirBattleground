@@ -5,7 +5,10 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/
 import { cn } from "@7xen/ui/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { useIsDesktop } from "@/lib/use-media-query";
-import { AppShell, type NavItem, type SidebarSlot, type WelcomeStep } from "@/components/shell";
+import { AppShell, type NavItem, type ShellBrand, type SidebarSlot, type WelcomeStep } from "@/components/shell";
+import markUrl from "@/assets/brand/airbattleground-mark.webp";
+import wordmarkUrl from "@/assets/brand/airbattleground-wordmark.webp";
+import wordmarkInkUrl from "@/assets/brand/airbattleground-wordmark-ink.webp";
 import { useTeamTournamentCrumbLabels } from "@/features/tournaments/team/crumbs";
 
 const PROFILE_NAV: NavItem = { key: "profile", to: "/team/profile", label: "Team profile", short: "Team", icon: Shield };
@@ -75,11 +78,13 @@ const SEGMENT_LABELS: Record<string, string> = { matches: "Match", standings: "P
 
 const teamHeader: SidebarSlot = (s) => <TeamCard {...s} />;
 
+const BRAND: ShellBrand = { name: "AirBattleground", wordmark: wordmarkUrl, wordmarkInk: wordmarkInkUrl, mark: markUrl };
+
 export default function TeamLayout() {
   const isDesktop = useIsDesktop();
   const tournamentLabels = useTeamTournamentCrumbLabels(SEGMENT_LABELS);
   return (
-    <AppShell nav={isDesktop ? DESKTOP_NAV : MOBILE_NAV} homeHref="/team" sidebarHeader={teamHeader} segmentLabels={tournamentLabels ?? SEGMENT_LABELS} welcomeSteps={WELCOME_STEPS}>
+    <AppShell nav={isDesktop ? DESKTOP_NAV : MOBILE_NAV} homeHref="/team" sidebarHeader={teamHeader} segmentLabels={tournamentLabels ?? SEGMENT_LABELS} welcomeSteps={WELCOME_STEPS} brand={BRAND}>
       <Outlet />
     </AppShell>
   );

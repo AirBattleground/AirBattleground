@@ -8,17 +8,18 @@ import { ordinal, RankBadge } from "./Rank";
 
 /** Compact "Your last result" card for the team dashboard. */
 export function LastResultCard({ results, loading }: { results: TeamResultsSummary | null; loading?: boolean }) {
-  if (loading) return <Skeleton className="h-28 rounded-xl" />;
+  if (loading) return <Skeleton className="h-24 rounded-2xl" />;
   const last = results?.latest;
   if (!last)
     return (
-      <div data-tour="last-result" className="flex flex-wrap items-center gap-4 rounded-xl border border-dashed bg-card/60 p-4">
-        <div className="rounded-xl bg-primary/10 p-3 text-primary">
+      <div data-tour="last-result" className="flex items-start gap-4 rounded-2xl border bg-card p-5 shadow-sm sm:items-center sm:p-6">
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Trophy className="size-6" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="font-display text-lg font-bold">No results yet</p>
-          <p className="text-sm text-muted-foreground">After you play, your rank and points show up here once the organiser publishes them.</p>
+          <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">Your last result</p>
+          <p className="mt-0.5 font-display text-xl leading-tight font-bold">No results yet</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">After you play, your rank and points show up here once the organiser publishes them.</p>
         </div>
       </div>
     );
@@ -26,7 +27,7 @@ export function LastResultCard({ results, loading }: { results: TeamResultsSumma
     <Link
       to={`/team/results/${last.scrim.id}/${last.date}`}
       data-tour="last-result"
-      className="group relative flex flex-wrap items-center gap-4 overflow-hidden rounded-xl border bg-card p-4 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      className="group relative flex flex-wrap items-center gap-4 overflow-hidden rounded-2xl border bg-card p-5 shadow-sm sm:p-6 outline-none transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50"
     >
       <div className="pointer-events-none absolute -top-12 -left-12 size-40 rounded-full bg-gradient-to-br from-warning/25 to-transparent blur-2xl" />
       <RankBadge rank={last.rank} size="lg" className="relative" />

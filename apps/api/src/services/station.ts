@@ -18,6 +18,8 @@ import {
   type ScreenshotRow,
   type StationCaptureResponse,
   type StationCompleteInput,
+  type StationDeviceStartInput,
+  type StationDeviceStopInput,
   type StationFailInput,
   type StationInput,
   type StationPrepareInput,
@@ -148,6 +150,33 @@ export async function stop(matchId: string, userId: string, bypass = false): Pro
   }
   const next = await stationCall<StationStatus>("POST", "/sessions/stop", { matchId });
   return toMatchLive(matchId, { ...next, online: true, matchTitle: station.matchTitle }, recId ? await prisma.matchRecording.findUnique({ where: { id: recId } }) : rec);
+}
+
+// ---------------------------------------------------------------- BlueStacks device (start/stop the emulator on its own)
+
+/** Station must be reachable and not held by ANOTHER match. */
+async function deviceGate(matchId: string): Promise<StationStatus> {
+  const station = await stationStatus();
+  if (!station.online) throw stationOffline();
+  if (ACTIVE_PHASES.includes(station.phase) && station.matchId !== matchId) {
+    throw conflict(`The station is busy with ${station.matchTitle ?? "another match"}. Stop that match first.`);
+  }
+  return station;
+}
+
+export async function deviceStart(matchId: string, userId: string, input: StationDeviceStartInput, bypass = false): Promise<StationStatus> {
+  await loadOwnMatch(matchId, userId, bypass);
+  await deviceGate(matchId);
+  const next = await stationCall<StationStatus>("POST", "/device/start", input, 30_000);
+  return { ...next, online: true, matchTitle: null };
+}
+
+export async function deviceStop(matchId: string, userId: string, input: StationDeviceStopInput, bypass = false): Promise<StationStatus> {
+  await loadOwnMatch(matchId, userId, bypass);
+  const station = await deviceGate(matchId);
+  if (ACTIVE_PHASES.includes(station.phase)) throw conflict("A match is recording on the station. End the match first, then shut down the emulator.");
+  const next = await stationCall<StationStatus>("POST", "/device/stop", input, 30_000);
+  return { ...next, online: true, matchTitle: null };
 }
 
 // ---------------------------------------------------------------- capture / input

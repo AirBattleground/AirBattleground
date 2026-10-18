@@ -32,7 +32,7 @@ packages/ui      shadcn/ui components + 7xen theme (light/dark), brand component
 - Do not edit `packages/ui` or `packages/shared` unless your task says so — put app-specific components in the app.
 - Data fetching: TanStack Query + `api` from `@/lib/api` (methods get/post/patch/del, throws `ApiError` with `.code`, `.message`, `.fields`). Forms: react-hook-form + zodResolver with the shared schema; map `ApiError.fields` onto form errors.
 - UX bar: professional esports look, but dead simple for non-technical users. One primary action per screen, plain words ("Register for this scrim", "Waiting for manager approval"), big readable slot numbers, empty states that tell the user what to do next, skeletons while loading, toasts on success/failure, confirmation dialogs for destructive actions, mobile responsive.
-- Every page registers a guided tour: `usePageTour("<area>.<page>", STEPS)` with STEPS a module-level const; target elements via `data-tour="..."` attributes. Auto-runs on first visit; replay via topbar "Take a tour" button.
+- Every page registers a guided tour: `usePageTour("<area>.<page>", STEPS)` with STEPS a module-level const; target elements via `data-tour="..."` attributes. Off by default — runs only from the topbar "Take a tour" button (`<TourProvider autoRun>` re-enables first-visit auto-run).
 - Layouts own the page container (padding/max-width). Pages render `<PageHeader>` + content only.
 - Dates: always "YYYY-MM-DD" strings in IST; use helpers from `@7xen/shared` (`todayInAppTz`, `addDays`, `weekdayOf`). Format for display with date-fns (`format(parseISO(d), "EEE, d MMM")`).
 

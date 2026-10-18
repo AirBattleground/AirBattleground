@@ -69,8 +69,8 @@ export interface StationStatus {
  * on another machine running scripts/mac-adb-relay.py (address "host:port"), or a phone with wireless debugging.
  */
 export interface StationDevice {
-  /** "LOCAL_AVD" when no address is configured, else "REMOTE" */
-  mode: "LOCAL_AVD" | "REMOTE";
+  /** "LOCAL_AVD" when no address is configured, else "REMOTE"; "BLUESTACKS" = BlueStacks on a Mac driven through its stream API */
+  mode: "LOCAL_AVD" | "REMOTE" | "BLUESTACKS";
   /** configured remote "host:port" (null in LOCAL_AVD mode) */
   address: string | null;
   /** adb serial in use (null when not connected) */
@@ -79,6 +79,24 @@ export interface StationDevice {
   state: string | null;
   /** e.g. "BlueStacks · Samsung SM-S908E · Android 13" (manufacturer + model + release), null when unknown */
   label: string | null;
+  /**
+   * (additive) BLUESTACKS mode only: the background launch/quit job on the Mac. `phase` is idle | running | done | error;
+   * poll the status while it is "running". Absent in other modes.
+   */
+  job?: StationDeviceJob | null;
+  /**
+   * (additive) true when the device can be started/stopped and watched/controlled live straight from the web
+   * (BLUESTACKS mode). The web then shows Start emulator → control → Start match instead of a single Prepare.
+   */
+  controllable?: boolean;
+  /** (additive) BLUESTACKS: is BGMI running on the device right now */
+  gameRunning?: boolean;
+}
+
+export interface StationDeviceJob {
+  name: string;
+  phase: "idle" | "running" | "done" | "error";
+  error: string | null;
 }
 
 /**
@@ -216,3 +234,38 @@ export interface MatchLiveInfo {
   hlsUrl: string | null;
   startedAt: string | null;
 }
+
+// ---------------------------------------------------------------- BlueStacks device control (additive)
+/*
+ * BlueStacks mode (station env BLUESTACKS_URL + BLUESTACKS_TOKEN): the game device is BlueStacks on a Mac, driven
+ * through its H.264 stream API. The emulator is started/stopped on its own, BEFORE and independent of a match
+ * recording, so the manager can watch and play it first and press "Start match" (= prepare) when ready.
+ *
+ *   Station:  POST /device/start  { launchBgmi }  → StationStatus   (starts BlueStacks (+BGMI) in the background)
+ *             POST /device/stop   { target }      → StationStatus   (409 while a match is live on the station)
+ *             GET  /device/stream  (WebSocket)    low-latency H.264 for the manager, see below
+ *   API:      POST /api/manager/matches/:matchId/station/device/start  → StationStatus
+ *             POST /api/manager/matches/:matchId/station/device/stop   → StationStatus
+ *             GET  /api/manager/matches/:matchId/station/stream        (WebSocket upgrade, session cookie/bearer)
+ *             (all mirrored under /api/admin/...; 409 when another match holds the station)
+ *   prepare in this mode starts BlueStacks first when it isn't running (phases STARTING_EMULATOR → LAUNCHING_BGMI),
+ *   then the recording + HLS. stop ends only the recording; the emulator keeps running until device/stop.
+ *
+ * STREAM WebSocket (browser ↔ API ↔ station ↔ Mac) — the Mac's own protocol, passed through:
+ *   server → client  text JSON  {type:"hello"} | {type:"mode",...} | {type:"config", codec, stream}
+ *                    binary     [flag u8 (1=key,0=delta)][capture time µs f64 BE][H.264 Annex-B]
+ *   client → server  binary     [0, action(0 down,1 up,2 move), id, x u16, y u16, w u16, h u16]  touch, x/y 0..65535
+ *                               [2]                      request a keyframe (send after connecting)
+ *                               [3, action, "KeyName"…]  Enter, Backspace, Delete, Tab, Escape, arrows, …
+ *                               [4, utf8…]               type text (≤300 bytes)
+ *   Anything else from the client is dropped. Only the owner of the match (or an admin) may connect, and only while
+ *   the station is idle or running THAT match (409 on the upgrade otherwise). The socket stays open across device
+ *   restarts: when the emulator isn't running no frames arrive (show "emulator off" after a few seconds without
+ *   frames); a new "config" message + keyframe follow when it comes back.
+ */
+export const stationDeviceStartSchema = z.object({ launchBgmi: z.boolean().default(true) }).default({});
+export type StationDeviceStartInput = z.infer<typeof stationDeviceStartSchema>;
+export const stationDeviceStopSchema = z.object({ target: z.enum(["game", "all"]).default("all") }).default({});
+export type StationDeviceStopInput = z.infer<typeof stationDeviceStopSchema>;
+/** Path (below /api/manager or /api/admin) of the stream WebSocket of a match. */
+export const stationStreamPath = (matchId: string) => `/matches/${matchId}/station/stream`;

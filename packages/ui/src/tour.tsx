@@ -6,8 +6,9 @@ import { driver, type DriveStep } from "driver.js";
  *
  * - Wrap the app in <TourProvider>.
  * - Each page calls usePageTour("team.scrims", steps). Steps target elements by
- *   `[data-tour="..."]` selectors. The tour auto-runs the first time a user visits
- *   that page (remembered per browser + user key), and can be replayed any time.
+ *   `[data-tour="..."]` selectors. Tours only run when asked for (topbar "Take a tour").
+ *   <TourProvider autoRun> restores the old behaviour: auto-run on a user's first visit
+ *   to each page (remembered per browser + user key).
  * - The topbar "Take a tour" button calls useTour().start() → runs the current page's tour.
  */
 export interface TourStep {
@@ -58,7 +59,7 @@ function run(steps: TourStep[]) {
   d.drive();
 }
 
-export function TourProvider({ children }: { children: ReactNode }) {
+export function TourProvider({ children, autoRun = false }: { children: ReactNode; autoRun?: boolean }) {
   const current = useRef<{ key: string; steps: TourStep[] } | null>(null);
   const userKey = useRef<string | null>(null);
   const paused = useRef(0);
@@ -66,6 +67,10 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const value: TourCtx = {
     register: useCallback((key, steps) => {
       current.current = { key, steps };
+      const unregister = () => {
+        if (current.current?.key === key) current.current = null;
+      };
+      if (!autoRun) return unregister;
       const seenKey = `${SEEN_PREFIX}${userKey.current ?? "anon"}.${key}`;
       let seen = true;
       try {
@@ -87,9 +92,9 @@ export function TourProvider({ children }: { children: ReactNode }) {
       }
       return () => {
         if (timer) clearTimeout(timer);
-        if (current.current?.key === key) current.current = null;
+        unregister();
       };
-    }, []),
+    }, [autoRun]),
     start: useCallback(() => {
       if (current.current) run(current.current.steps);
     }, []),

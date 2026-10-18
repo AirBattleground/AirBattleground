@@ -12,21 +12,21 @@ import { MapChips } from "./MapChips";
 export function NextMatchCard({ match, today }: { match: TeamRegistration | null; today: string }) {
   if (!match) {
     return (
-      <div className="relative overflow-hidden rounded-2xl border border-dashed bg-card p-6 sm:p-8" data-tour="next-match">
+      <div className="relative overflow-hidden rounded-2xl border border-primary/25 bg-card p-5 shadow-sm sm:p-6" data-tour="next-match">
         <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
         <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-primary/15 blur-3xl" />
-        <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-4">
-            <div className="rounded-2xl bg-primary/10 p-3.5 text-primary">
-              <Crosshair className="size-7" />
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <Crosshair className="size-6" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Next match</p>
-              <h2 className="mt-1 font-display text-2xl font-bold sm:text-3xl">No match booked yet</h2>
-              <p className="mt-1 max-w-md text-sm text-muted-foreground">Pick a day, register for a scrim, and your slot will show up right here once the organiser approves.</p>
+              <h2 className="mt-1 font-display text-2xl leading-tight font-bold sm:text-3xl">No match booked yet</h2>
+              <p className="mt-1.5 max-w-md text-sm text-muted-foreground">Pick a day, register for a scrim, and your slot will show up right here once the organiser approves.</p>
             </div>
           </div>
-          <Button asChild size="lg" className="h-12 px-6 text-base shadow-glow">
+          <Button asChild size="lg" className="h-12 w-full shrink-0 px-6 text-base shadow-glow sm:w-auto" data-tour="find-scrim">
             <Link to="/team/scrims">
               <Search /> Find a scrim
             </Link>
@@ -40,7 +40,7 @@ export function NextMatchCard({ match, today }: { match: TeamRegistration | null
     <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-card shadow-glow" data-tour="next-match">
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-70" />
       <div className="pointer-events-none absolute -top-28 -left-20 size-80 rounded-full bg-primary/20 blur-3xl animate-aurora" />
-      <div className="relative grid gap-6 p-5 sm:p-7 md:grid-cols-[auto_1fr_auto] md:items-center">
+      <div className="relative grid gap-6 p-5 sm:p-6 md:grid-cols-[auto_1fr_auto] md:items-center">
         <motion.div
           initial={{ scale: 0.6, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -82,7 +82,7 @@ export function NextMatchCard({ match, today }: { match: TeamRegistration | null
 
 export function NextMatchSkeleton() {
   return (
-    <div className="grid gap-6 rounded-2xl border bg-card p-7 md:grid-cols-[auto_1fr_auto] md:items-center">
+    <div className="grid gap-6 rounded-2xl border bg-card p-5 sm:p-6 md:grid-cols-[auto_1fr_auto] md:items-center">
       <div className="h-24 w-32 animate-pulse rounded-xl bg-muted" />
       <div className="space-y-3">
         <div className="h-3 w-24 animate-pulse rounded bg-muted" />

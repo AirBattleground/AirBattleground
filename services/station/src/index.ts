@@ -1,6 +1,8 @@
 /** 7XEN Station entry point: wire config → adb/emulator/capture → state machine → HTTP server. */
 import { readFile } from "node:fs/promises";
 import { AdbDevice } from "./adb.js";
+import { BlueStacksControl, BlueStacksDevice, BsClient, BsLink, makeEnsureBlueStacks } from "./bluestacks.js";
+import { FrameSource } from "./frameSource.js";
 import { makeApiHooks } from "./apiClient.js";
 import { CapturePipeline } from "./capture.js";
 import { loadConfig } from "./config.js";
@@ -17,7 +19,16 @@ if (cfg.token.length < 16) {
   process.exit(1);
 }
 
-const device = new AdbDevice(cfg.adb, cfg.serial, cfg.bgmiPackage, cfg.remoteDevice);
+if (cfg.bluestacks && !cfg.bluestacks.token) {
+  console.error("BLUESTACKS_URL is set but BLUESTACKS_TOKEN is empty (the server prints it; see its .token file). Refusing to start.");
+  process.exit(1);
+}
+
+// BlueStacks mode: the game device is BlueStacks on a Mac, reached through its stream API instead of adb
+const bsClient = cfg.bluestacks ? new BsClient(cfg.bluestacks) : null;
+const bsLink = bsClient ? new BsLink(bsClient) : null;
+const bsDevice = bsClient && bsLink && cfg.bluestacks ? new BlueStacksDevice(bsClient, bsLink, { ffmpeg: cfg.ffmpeg, jobTimeoutMs: cfg.bluestacks.jobTimeoutMs }) : null;
+const device = bsDevice ?? new AdbDevice(cfg.adb, cfg.serial, cfg.bgmiPackage, cfg.remoteDevice);
 const api = makeApiHooks(cfg.apiUrl, cfg.token);
 
 /** SIGINT a leftover scrcpy/ffmpeg from a crashed run (only if the pid still is one of ours). */
@@ -38,17 +49,20 @@ async function killPid(pid: number) {
 
 const station = new Station({
   device,
-  ensureEmulator: makeEnsureEmulator(device, realSpawner, {
-    emulator: cfg.emulator,
-    avd: cfg.avd,
-    avdHome: cfg.avdHome,
-    androidHome: cfg.androidHome,
-    display: cfg.display,
-    args: cfg.emulatorArgs,
-    bootTimeoutMs: cfg.bootTimeoutMs,
-    logDir: cfg.workDir,
-    remote: cfg.remoteDevice,
-  }),
+  control: bsDevice && bsLink ? new BlueStacksControl(bsDevice, bsLink) : undefined,
+  ensureEmulator: bsDevice
+    ? makeEnsureBlueStacks(bsDevice)
+    : makeEnsureEmulator(device, realSpawner, {
+        emulator: cfg.emulator,
+        avd: cfg.avd,
+        avdHome: cfg.avdHome,
+        androidHome: cfg.androidHome,
+        display: cfg.display,
+        args: cfg.emulatorArgs,
+        bootTimeoutMs: cfg.bootTimeoutMs,
+        logDir: cfg.workDir,
+        remote: cfg.remoteDevice,
+      }),
   makePipeline: (req) =>
     new CapturePipeline({
       spawner: realSpawner,
@@ -65,6 +79,7 @@ const station = new Station({
       hlsTime: cfg.hlsTime,
       hlsListSize: cfg.hlsListSize,
       maxRestarts: cfg.maxRestarts,
+      startSource: bsLink ? (fifo) => new FrameSource(bsLink, fifo) : undefined,
     }),
   finalize: makeFinalizer(cfg.ffmpeg, cfg.videoDir),
   api,
@@ -79,9 +94,9 @@ const station = new Station({
   killPid,
 });
 
-const server = createStationServer(station, { token: cfg.token, api });
+const server = createStationServer(station, { token: cfg.token, api, link: bsLink ?? undefined });
 server.listen(cfg.port, cfg.host, () => {
-  log.info("7XEN Station listening", { host: cfg.host, port: cfg.port, api: cfg.apiUrl, storage: cfg.storageDir, videos: cfg.videoDir });
+  log.info("7XEN Station listening", { device: cfg.bluestacks ? `BlueStacks ${cfg.bluestacks.url}` : cfg.remoteDevice || "local AVD", host: cfg.host, port: cfg.port, api: cfg.apiUrl, storage: cfg.storageDir, videos: cfg.videoDir });
 });
 
 void station

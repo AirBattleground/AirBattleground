@@ -1,4 +1,5 @@
 import { createApp } from "./app.js";
+import { attachStationStream } from "./lib/stationStream.js";
 import { prisma } from "./db.js";
 import { env } from "./env.js";
 import { logger } from "./logger.js";
@@ -10,6 +11,8 @@ const app = createApp();
 const server = app.listen(env.PORT, () => {
   logger.info(`7xen API listening on http://localhost:${env.PORT}`);
 });
+
+attachStationStream(server); // live view/control WebSocket of the station's BlueStacks device
 
 const stopWorker = env.SCREENSHOT_WORKER ? startScreenshotWorker() : () => {};
 // phase 4: built-in recipe checklists + daily video retention sweep

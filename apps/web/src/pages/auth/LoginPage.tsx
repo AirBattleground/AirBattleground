@@ -6,12 +6,14 @@ import { motion } from "framer-motion";
 import { AlertCircle, ArrowRight, Eye, EyeOff, Loader2, Lock, ShieldCheck, User } from "lucide-react";
 import { ApiError, loginSchema, type LoginInput, type SessionUser } from "@7xen/shared";
 import { LoginScene } from "@7xen/ui/components/brand/login-scene";
-import { Logo } from "@7xen/ui/components/brand/logo";
 import { ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Input } from "@7xen/ui/components/ui/input";
 import { Label } from "@7xen/ui/components/ui/label";
 import { homeFor, useAuth } from "@/lib/auth";
+import { WelcomeHeading } from "./WelcomeHeading";
+import wordmarkUrl from "@/assets/brand/airbattleground-wordmark.webp";
+import markUrl from "@/assets/brand/airbattleground-mark.webp";
 
 /** Only honour a "from" path that belongs to this user's area. */
 function destinationFor(user: SessionUser, from: unknown) {
@@ -56,13 +58,17 @@ export default function LoginPage() {
       <LoginScene
         header={
           <>
-            <Logo subtitle="Battlegrounds Scrims" className="drop-shadow-[0_2px_12px_rgb(0_0_0/0.45)] [&_.text-muted-foreground]:text-white/70 [&>span>span:first-child]:text-white" />
+            {/* Header always sits over the dark map artwork, so the light-text logo works in both themes. */}
+            <picture className="block drop-shadow-[0_2px_12px_rgb(0_0_0/0.5)]">
+              <source media="(max-width: 850px)" srcSet={markUrl} />
+              <img src={wordmarkUrl} alt="AirBattleground" width={900} height={252} className="h-12 w-auto max-[850px]:h-14 sm:h-14 min-[1200px]:h-16" />
+            </picture>
             <ThemeToggle className="max-[850px]:border-white/15 max-[850px]:bg-black/30 max-[850px]:text-white/80 max-[850px]:backdrop-blur max-[850px]:hover:text-white" />
           </>
         }
         footer={
           <>
-            <span>© {new Date().getFullYear()} 7XEN</span>
+            <span>© {new Date().getFullYear()} AirBattleground</span>
             <span>Made for the game. Built for the players.</span>
             <span className="inline-flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-primary shadow-glow" /> Scrims · Tournaments
@@ -73,7 +79,7 @@ export default function LoginPage() {
         <p className="mb-4 flex items-center gap-2.5 text-[11px] font-semibold tracking-[0.25em] text-primary uppercase">
           <span className="h-px w-6 bg-primary" /> Player access
         </p>
-        <h1 className="font-display text-4xl leading-none font-bold tracking-tight sm:text-5xl">Welcome back.</h1>
+        <WelcomeHeading />
         <p className="mt-3 text-sm text-muted-foreground">Your next match starts with your squad.</p>
 
         <form onSubmit={onSubmit} noValidate className="mt-8 space-y-5">
@@ -164,7 +170,7 @@ export default function LoginPage() {
           <span className="h-px flex-1 bg-border" />
         </div>
         <p className="text-center text-sm leading-relaxed text-muted-foreground">
-          Ask your <span className="font-medium text-foreground">scrim manager</span> or the <span className="font-medium text-foreground">7xen admin</span> to register your team.
+          Ask your <span className="font-medium text-foreground">scrim manager</span> or the <span className="font-medium text-foreground">AirBattleground admin</span> to register your team.
         </p>
 
         <p className="mt-8 flex items-center gap-2 border-t pt-5 text-xs text-muted-foreground">
