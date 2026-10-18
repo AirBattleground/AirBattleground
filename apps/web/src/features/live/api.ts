@@ -26,7 +26,7 @@ async function orEmpty<T>(p: Promise<T>, empty: T): Promise<T> {
   }
 }
 
-export const isBusy = (r: RecordingRow) => r.status === "LIVE" || r.status === "STOPPED" || r.status === "UPLOADING" || r.status === "PROCESSING";
+const isBusy = (r: RecordingRow) => r.status === "LIVE" || r.status === "STOPPED" || r.status === "UPLOADING" || r.status === "PROCESSING";
 
 // ---------- manager: room ----------
 export function useRoom(matchId: string) {

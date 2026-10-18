@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Clock, Trophy } from "lucide-react";
 import type { TournamentSummary } from "@7xen/shared";
@@ -12,7 +12,23 @@ import { journeyCopy, meChip } from "../journey";
 
 const ACTIVE = new Set(["REGISTRATION_OPEN", "REGISTRATION_CLOSED", "LIVE"]);
 
-function Shell({ to, children, highlight }: { to: string; children: ReactNode; highlight?: boolean }) {
+/** Poster as the card's icon tile; falls back to the trophy tile when missing/broken. */
+function Tile({ poster, title }: { poster: string | null; title: string }) {
+  const [failed, setFailed] = useState(false);
+  if (poster && !failed)
+    return (
+      <span className="relative size-12 shrink-0 overflow-hidden rounded-2xl bg-muted ring-1 ring-border sm:size-14">
+        <img src={poster} alt={`${title} poster`} loading="lazy" decoding="async" onError={() => setFailed(true)} className="size-full object-cover" />
+      </span>
+    );
+  return (
+    <span className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-warning/15 text-warning-foreground dark:text-warning">
+      <Trophy className="size-6" />
+    </span>
+  );
+}
+
+function Shell({ to, children, highlight, t }: { to: string; children: ReactNode; highlight?: boolean; t: TournamentSummary }) {
   return (
     <Link
       to={to}
@@ -24,9 +40,7 @@ function Shell({ to, children, highlight }: { to: string; children: ReactNode; h
       )}
     >
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
-      <span className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-warning/15 text-warning-foreground dark:text-warning">
-        <Trophy className="size-6" />
-      </span>
+      <Tile poster={t.posterUrl} title={t.title} />
       {children}
       <ArrowRight className="relative hidden size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary sm:block" />
     </Link>
@@ -38,7 +52,7 @@ function MineSummary({ t }: { t: TournamentSummary }) {
   const chip = d ? meChip(d.me) : null;
   const nm = d?.me.nextMatch;
   return (
-    <Shell to={`/team/tournaments/${t.id}`} highlight>
+    <Shell to={`/team/tournaments/${t.id}`} t={t} highlight>
       <div className="relative min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-2 text-xs font-semibold tracking-[0.2em] text-primary uppercase">
           Your tournament {chip && <Pill tone={chip.tone} className="tracking-normal normal-case">{chip.text}</Pill>}
@@ -79,7 +93,7 @@ export function TournamentsHomeCard() {
   const join = (open.data ?? []).find((t) => !mineIds.has(t.id));
   if (!join) return null;
   return (
-    <Shell to={`/team/tournaments/${join.id}`}>
+    <Shell to={`/team/tournaments/${join.id}`} t={join}>
       <div className="relative min-w-0 flex-1">
         <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Tournament · registration open</p>
         <p className="truncate font-display text-xl leading-tight font-bold">

@@ -22,8 +22,10 @@ const envSchema = z.object({
   LOG_LEVEL: z.string().optional(),
   /** phase 2: where screenshots and training images live (default <repo>/storage) */
   STORAGE_DIR: z.string().optional(),
-  /** phase 2: screenshot reader service */
-  EXTRACTOR_URL: z.string().url().default("http://localhost:8090"),
+  /** phase 2: screenshot reader = the `claude` CLI (default ~/.local/bin/claude, else PATH); must be logged in */
+  CLAUDE_BIN: z.string().optional(),
+  /** model alias or full id passed to `claude --model` */
+  CLAUDE_MODEL: z.string().default("sonnet"),
   /** phase 4: where match videos live (default <STORAGE_DIR>/videos); can point to a bigger disk */
   VIDEO_DIR: z.string().optional(),
   /** phase 4: ffmpeg binary used for video duration/size + poster */

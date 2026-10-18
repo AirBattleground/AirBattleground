@@ -45,6 +45,7 @@ import { MapChips } from "@/features/manager/components/maps";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { RejectDialog } from "@/features/manager/components/RejectDialog";
 import { RequestCard } from "@/features/manager/components/RequestCard";
+import { ScrimPosterCard } from "@/features/manager/components/BrandingCards";
 import { ScrimStatusPill } from "@/features/manager/components/ScrimStatusPill";
 import { SlotBoard, slotListText } from "@/features/manager/components/SlotBoard";
 import { useNow } from "@/features/manager/components/useNow";
@@ -52,6 +53,7 @@ import { SessionMatches } from "@/features/matches/components/SessionMatches";
 
 const TOUR: TourStep[] = [
   { title: "Running a session", description: "Here you decide which teams play on a given day." },
+  { element: '[data-tour="detail-poster"]', title: "Scrim poster", description: "Upload a poster for this scrim. Teams see it when they browse and register." },
   { element: '[data-tour="detail-dates"]', title: "Pick the day", description: "Only days this scrim runs are shown. Each day has its own list of teams." },
   { element: '[data-tour="detail-tabs"]', title: "Teams or matches", description: "“Teams” is for approvals and slots. After the scrim starts, “Matches & results” is where you upload screenshots and publish results." },
   { element: '[data-tour="detail-summary"]', title: "How full is it?", description: "Confirmed teams, requests waiting, slots left — and when registration closes." },
@@ -140,16 +142,19 @@ function Detail({ scrim }: { scrim: Scrim }) {
         }
       />
 
-      <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-3 rounded-xl border bg-card p-4 text-sm shadow-sm">
-        <span className="flex items-center gap-2">
-          <Clock className="size-4 text-primary" />
-          <span className="font-display text-lg font-bold">{formatTime(scrim.startTime)}</span> IST
-        </span>
-        <span className="flex items-center gap-2 text-muted-foreground">
-          <Users className="size-4 text-primary" /> {slotRangeLabel(scrim.firstSlot, scrim.slotCount)}
-        </span>
-        <span className="text-muted-foreground">{dateRangeLabel(scrim)}</span>
-        <MapChips maps={scrim.maps} numbered className="w-full sm:w-auto" />
+      <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,440px)] xl:items-stretch">
+        <div className="flex flex-wrap content-center items-center gap-x-6 gap-y-3 rounded-xl border bg-card p-4 text-sm shadow-sm">
+          <span className="flex items-center gap-2">
+            <Clock className="size-4 text-primary" />
+            <span className="font-display text-lg font-bold">{formatTime(scrim.startTime)}</span> IST
+          </span>
+          <span className="flex items-center gap-2 text-muted-foreground">
+            <Users className="size-4 text-primary" /> {slotRangeLabel(scrim.firstSlot, scrim.slotCount)}
+          </span>
+          <span className="text-muted-foreground">{dateRangeLabel(scrim)}</span>
+          <MapChips maps={scrim.maps} numbered className="w-full sm:w-auto" />
+        </div>
+        <ScrimPosterCard scrimId={scrim.id} url={scrim.posterUrl} compact tour="detail-poster" />
       </div>
 
       {scrim.status !== "ACTIVE" && (

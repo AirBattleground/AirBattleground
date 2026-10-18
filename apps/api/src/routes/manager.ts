@@ -12,9 +12,11 @@ import {
 } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { toTeamSummary } from "../lib/serialize.js";
+import { parseMultipart, singleImage } from "../lib/upload.js";
 import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import { approveRegistration, rejectRegistration } from "../services/registrations.js";
+import * as branding from "../services/branding.js";
 import * as matches from "../services/matches.js";
 import * as scrims from "../services/scrims.js";
 import * as teamRequests from "../services/teamRequests.js";
@@ -43,6 +45,26 @@ export function managerRouter() {
   r.patch("/scrims/:id", async (req, res) => {
     res.json(await scrims.updateScrim(req.params.id, currentUser(req).id, parse(updateScrimSchema, req.body)));
   });
+  r.put("/scrims/:id/poster", async (req, res) => {
+    await parseMultipart(req, res);
+    res.json(await branding.setScrimPoster(req.params.id as string, currentUser(req).id, singleImage(req)));
+  });
+  r.delete("/scrims/:id/poster", async (req, res) => {
+    res.json(await branding.setScrimPoster(req.params.id as string, currentUser(req).id, null));
+  });
+
+  // ---- branding: organisation logo ----
+  r.get("/branding", async (req, res) => {
+    res.json(await branding.getOrgLogo(currentUser(req).id));
+  });
+  r.put("/branding/logo", async (req, res) => {
+    await parseMultipart(req, res);
+    res.json(await branding.setOrgLogo(currentUser(req).id, singleImage(req)));
+  });
+  r.delete("/branding/logo", async (req, res) => {
+    res.json(await branding.setOrgLogo(currentUser(req).id, null));
+  });
+
   r.get("/scrims/:id/sessions/:date", async (req, res) => {
     const date = parse(dateString, req.params.date);
     res.json(await scrims.sessionDetail(req.params.id, currentUser(req).id, date));

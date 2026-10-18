@@ -11,6 +11,7 @@ import { logger } from "./logger.js";
 import { adminRouter } from "./routes/admin.js";
 import { adminAuthRouter, appAuthRouter } from "./routes/auth.js";
 import { managerRouter } from "./routes/manager.js";
+import { mediaRouter } from "./routes/media.js";
 import { teamRouter } from "./routes/team.js";
 import { appReleaseRouter } from "./routes/appRelease.js";
 import { internalStationRouter, liveRouter } from "./routes/station.js";
@@ -95,6 +96,7 @@ export function createApp() {
   app.use(`${API_PREFIX}/admin`, adminRouter());
   app.use(`${API_PREFIX}/manager`, managerRouter());
   app.use(`${API_PREFIX}/team`, teamRouter());
+  app.use(`${API_PREFIX}/media`, mediaRouter());
   app.use(`${API_PREFIX}/app`, appReleaseRouter());
   // phase 4b: 7XEN Station live streams (viewer auth inside) + station → API hooks (X-Station-Token)
   app.use(`${API_PREFIX}/live`, liveRouter());

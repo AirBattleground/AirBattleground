@@ -17,7 +17,7 @@ type Match = SessionStandings["matches"][number];
 const slotText = (n: number | null) => (n == null ? "" : `#${String(n).padStart(2, "0")}`);
 
 /** Plain-text points table for WhatsApp / Discord. */
-export function standingsText(s: SessionStandings): string {
+function standingsText(s: SessionStandings): string {
   const published = s.matches.filter((m) => m.status === "PUBLISHED").length;
   const lines = [
     `🏆 ${s.scrim.title} — ${format(parseISO(s.date), "EEE, d MMM")}`,
@@ -33,11 +33,11 @@ export function standingsText(s: SessionStandings): string {
   return lines.join("\n");
 }
 
-export function pointsSummary(ps: PointsSystem): string {
+function pointsSummary(ps: PointsSystem): string {
   return `${ps.placement.join("/")} for 1st–${ordinal(ps.placement.length)} · ${ps.killPoints} per finish`;
 }
 
-export async function copyStandings(s: SessionStandings) {
+async function copyStandings(s: SessionStandings) {
   try {
     await navigator.clipboard.writeText(standingsText(s));
     toast.success("Points table copied", { description: "Paste it into WhatsApp or Discord." });
@@ -110,7 +110,7 @@ function MatchCell({ v }: { v: StandingsRow["perMatch"][number] | undefined }) {
   );
 }
 
-export interface StandingsBoardProps {
+interface StandingsBoardProps {
   standings: SessionStandings;
   /** highlight this team's row (team view) */
   highlightTeamId?: string;

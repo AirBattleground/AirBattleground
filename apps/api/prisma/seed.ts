@@ -1,6 +1,6 @@
 /**
  * Seeds the admin account from env (ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_NAME) and the real
- * screenshots in services/extractor/eval/dataset/real as training samples (source SEED, unverified).
+ * screenshots in datasets/bgmi-screenshots/real as training samples (source SEED, unverified).
  * With SEED_DEMO=1 also creates demo managers, teams, scrims, registrations, rosters and published
  * match results and an open demo tournament (idempotent).
  */
@@ -232,7 +232,7 @@ async function seedDemo() {
 
 // ---------------------------------------------------------------- phase 2: real screenshots as training samples
 
-const REAL_DATASET = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../services/extractor/eval/dataset/real");
+const REAL_DATASET = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../datasets/bgmi-screenshots/real");
 
 async function seedSamples(): Promise<number> {
   const labelsPath = path.join(REAL_DATASET, "labels.json");

@@ -6,7 +6,7 @@ export type { AdminRecordingRow };
 
 export const managerName = (r: AdminRecordingRow): string => r.manager?.displayName ?? "Unknown manager";
 
-export const mappKeys = {
+const mappKeys = {
   all: ["admin", "manager-app"] as const,
   recordings: (f: { status?: string; q?: string }) => ["admin", "manager-app", "recordings", f] as const,
   recordingsAll: ["admin", "manager-app", "recordings"] as const,

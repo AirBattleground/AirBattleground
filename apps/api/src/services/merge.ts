@@ -24,7 +24,7 @@ export interface DraftTeam {
   placement: number | null;
   kills: number | null;
 }
-export interface MergeContext {
+interface MergeContext {
   /** session's approved registrations: slot → team id */
   slotToTeam: Map<number, string>;
   /** known roster names per slot (TeamPlayer), used to infer slots for result rows */
@@ -34,7 +34,7 @@ export interface MergeContext {
   /** results published: RESULTS screenshots must not change them */
   resultsLocked?: boolean;
 }
-export interface MergeOutcome {
+interface MergeOutcome {
   teams: DraftTeam[];
   changedSlots: Set<number>;
   warnings: string[];

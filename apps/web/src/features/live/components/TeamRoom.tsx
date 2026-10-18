@@ -39,7 +39,7 @@ function useRooms() {
 }
 
 /** Room ID + password with copy buttons once revealed, otherwise when they'll appear. */
-export function TeamRoomBox({ card, className }: { card: TeamRoomCard; className?: string }) {
+function TeamRoomBox({ card, className }: { card: TeamRoomCard; className?: string }) {
   if (card.room) {
     return (
       <motion.div

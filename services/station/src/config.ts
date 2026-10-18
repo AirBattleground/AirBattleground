@@ -11,8 +11,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-export const STATION_DIR = path.resolve(here, "..");
-export const REPO_ROOT = path.resolve(STATION_DIR, "../..");
+const STATION_DIR = path.resolve(here, "..");
+const REPO_ROOT = path.resolve(STATION_DIR, "../..");
 
 const envFile = process.env.STATION_ENV_FILE ?? path.join(STATION_DIR, ".env");
 if (existsSync(envFile)) process.loadEnvFile(envFile);
@@ -26,7 +26,7 @@ const num = (k: string, d: number) => {
 };
 const expand = (p: string) => (p.startsWith("~/") ? path.join(home, p.slice(2)) : p);
 
-export interface StationConfig {
+interface StationConfig {
   port: number;
   host: string;
   token: string;

@@ -27,11 +27,11 @@ export default defineConfig({
       DATABASE_URL,
       JWT_SECRET: process.env.JWT_SECRET ?? "test-secret-test-secret-test-secret",
       CORS_ORIGINS: "http://localhost:5173",
-      // phase 2: files go to a throwaway dir; the extractor is deliberately unreachable (tests stub it)
+      // phase 2: files go to a throwaway dir; the reader CLI is deliberately missing (tests stub it)
       STORAGE_DIR: path.join(tmpdir(), "7xen-api-test-storage"),
       // phase 4: match videos in their own throwaway dir (like a separate disk)
       VIDEO_DIR: path.join(tmpdir(), "7xen-api-test-videos"),
-      EXTRACTOR_URL: "http://127.0.0.1:9",
+      CLAUDE_BIN: "/nonexistent/claude",
       SCREENSHOT_WORKER: "0",
     },
   },

@@ -26,7 +26,7 @@ export const matchKeys = {
 /** Screenshot image URL (cookie-authenticated, same origin). */
 export const screenshotUrl = (id: string) => `/api/manager/screenshots/${id}/image`;
 
-export const isWorking = (s: { status: ScreenshotRow["status"] }) => s.status === "QUEUED" || s.status === "PROCESSING";
+const isWorking = (s: { status: ScreenshotRow["status"] }) => s.status === "QUEUED" || s.status === "PROCESSING";
 
 // ---------- queries ----------
 export function useSessionMatches(scrimId: string | undefined, date: string | undefined, opts: { enabled?: boolean } = {}) {

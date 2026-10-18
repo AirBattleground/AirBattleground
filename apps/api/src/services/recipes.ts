@@ -11,7 +11,7 @@ import { AppError, notFound } from "../lib/errors.js";
 
 const stepsSchema = z.array(recipeStepSchema);
 
-export function toRecipe(r: DbRecipe & { manager?: { id: string; displayName: string } | null }): Recipe {
+function toRecipe(r: DbRecipe & { manager?: { id: string; displayName: string } | null }): Recipe {
   const parsed = stepsSchema.safeParse(r.steps);
   return {
     id: r.id,

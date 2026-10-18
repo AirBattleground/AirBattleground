@@ -86,8 +86,8 @@ async function fakeMac() {
     state.wsClients++;
     ws.send(JSON.stringify({ type: "hello", backend: "hybrid" }));
     ws.send(JSON.stringify({ type: "config", codec: "avc1.640034", stream: "live" }));
-    // 4 s test pattern at 25 fps, GOP 25, Annex-B on stdout; sent frame by frame in real time
-    const ff = spawn(FFMPEG, ["-loglevel", "error", "-re", "-f", "lavfi", "-i", "testsrc=size=320x240:rate=25", "-t", "30", "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-g", "25", "-bsf:v", "h264_mp4toannexb", "-f", "h264", "pipe:1"]);
+    // 4 s test pattern at 25 fps, GOP 25, one slice per picture (like the Mac), Annex-B on stdout; sent frame by frame in real time
+    const ff = spawn(FFMPEG, ["-loglevel", "error", "-re", "-f", "lavfi", "-i", "testsrc=size=320x240:rate=25", "-t", "30", "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency", "-threads", "1", "-g", "25", "-bsf:v", "h264_mp4toannexb", "-f", "h264", "pipe:1"]);
     let buf = Buffer.alloc(0);
     let n = 0;
     ff.stdout.on("data", (d: Buffer) => {

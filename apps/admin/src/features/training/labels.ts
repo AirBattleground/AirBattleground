@@ -214,7 +214,7 @@ export function draftStats(d: LabelDraft) {
 }
 
 // ---------- look-alike / invisible characters ----------
-export type GlyphClass = "one" | "zero" | "space" | "invisible" | "unicode" | "plain";
+type GlyphClass = "one" | "zero" | "space" | "invisible" | "unicode" | "plain";
 const ONE_LIKE = new Set(["I", "l", "1", "|", "!", "ǀ", "Ι", "І", "ӏ"]);
 const ZERO_LIKE = new Set(["O", "0", "o", "Ο", "О", "〇"]);
 const INVISIBLE = /[­͏؜ᅟᅠ឴឵᠎​-‏‪-‮⁠-⁯ㅤ︀-️﻿]/u;
@@ -241,7 +241,7 @@ export const CHAR_PALETTE: { label: string; chars: string[] }[] = [
 
 // ---------- model readings cache (keeps confidences from the upload/re-read until the admin saves) ----------
 const READING_PREFIX = "7xen.admin.training.reading.";
-export interface StoredReading {
+interface StoredReading {
   extraction: ExtractionResult;
   /** true until the admin saves: the editor starts from the full model output (incl. fields that weren't savable yet) */
   fresh: boolean;
@@ -259,13 +259,6 @@ export function loadReading(sampleId: string): StoredReading | null {
     return raw ? (JSON.parse(raw) as StoredReading) : null;
   } catch {
     return null;
-  }
-}
-export function clearReading(sampleId: string) {
-  try {
-    sessionStorage.removeItem(READING_PREFIX + sampleId);
-  } catch {
-    /* ignore */
   }
 }
 

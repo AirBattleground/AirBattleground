@@ -5,14 +5,14 @@ the manager checks/fixes them, publishes, and the points table updates for every
 confirmed screenshot becomes labelled training data; the admin retrains the reader from the
 current model ("train the old trainer model with the new set"), compares metrics, and promotes.
 
-## Real input (see `services/extractor/eval/dataset/real/`, labels in `labels.json`)
+## Real input (see `datasets/bgmi-screenshots/real/`, labels in `labels.json`)
 
 | Screenshot | What it shows | Notes |
 |---|---|---|
 | **SLOT_LIST** (`lobby-*.jpg`) | 3×3 grid of dark cards: coloured slot number (05, 06 …) + up to 4 player names + "/0 Eliminations" | 25 slots → 3 screenshots; empty slots skipped (no slot 10); teams of 3 exist (slot 20); names contain `多 シ 《》 £ · Ā Ø Û`, Devanagari, upside-down Latin, `I/l/1`, `O/0` |
 | **RESULTS** (`result-*.jpg`) | Left panel pinned: rank 1 (wings icon, no digit!) and rank 2. Right panel scrolls: 3 rank blocks per screenshot, each = big rank number + up to 4 names + "N finishes"/"1 finish" | **No slot numbers** — slot comes from matching names to the confirmed lineup. Ranks 1–2 repeat in every screenshot → dedupe by rank. Top/bottom rows may be cut off → drop partial blocks |
 
-All samples are 1600×720 (20:9). Layout ratios live in `services/extractor/app/config/layout.yaml`.
+All samples are 1600×720 (20:9).
 
 ## Components
 
@@ -20,44 +20,43 @@ All samples are 1600×720 (20:9). Layout ratios live in `services/extractor/app/
 flowchart LR
   subgraph Browser
     W[apps/web<br/>manager match center<br/>team results]:::fe
-    A[apps/admin<br/>training center]:::fe
+    A[apps/admin<br/>samples · reader status]:::fe
   end
   W & A -->|/api| API[apps/api Node<br/>matches · points · samples<br/>screenshot worker]
   API --> PG[(Postgres)]
   API <-->|files| ST[(storage/<br/>screenshots · samples)]
-  API -->|HTTP multipart / JSON| EX[services/extractor<br/>FastAPI · OpenCV · PaddleOCR]
-  EX <-->|read images| ST
-  EX <--> MD[(models/<version>/<br/>registry)]
-  EX -.optional.-> OL[Ollama VLM]
+  API -->|spawn claude -p<br/>image + JSON schema| CL[claude CLI<br/>logged in on this machine]
   classDef fe fill:#ff5f0f22,stroke:#ff5f0f
 ```
 
 * **apps/api** owns all business data. A background worker (in-process, polls `Screenshot` rows
-  `QUEUED` with `FOR UPDATE SKIP LOCKED`, max 2 concurrent) sends each image to the extractor with
-  the session roster, stores the `ExtractionResult`, and merges it into the match draft. If the
-  extractor is down: screenshot → `FAILED` "Screenshot reader is offline — enter results by hand or
+  `QUEUED` with `FOR UPDATE SKIP LOCKED`, max 2 concurrent) reads each image with the session roster,
+  stores the `ExtractionResult`, and merges it into the match draft. If the reader can't run (CLI missing
+  or not logged in): screenshot → `FAILED` "Screenshot reader is offline — enter results by hand or
   retry", nothing else breaks.
-* **services/extractor** is stateless for extraction; it owns model versions and training runs on
-  disk (`MODELS_DIR`). Images for training/eval are read from the shared `STORAGE_DIR`.
-* Env: API `STORAGE_DIR` (default `<repo>/storage`), `EXTRACTOR_URL` (default `http://localhost:8090`);
-  extractor `STORAGE_DIR` (same dir), `MODELS_DIR` (default `services/extractor/models`), `VLM_ENABLED=false`.
+* **The reader** (`apps/api/src/lib/extractor.ts`) runs `claude -p --input-format stream-json` with the
+  image as a base64 content block, a fixed system prompt, `--json-schema` per screenshot kind, no tools,
+  in an empty temp dir. It uses whatever login `claude` has on the machine (run `claude` once to log in).
+  ~20–30 s per screenshot.
+* Env: API `STORAGE_DIR` (default `<repo>/storage`), `CLAUDE_BIN` (default `~/.local/bin/claude`, else
+  `claude` on PATH), `CLAUDE_MODEL` (default `sonnet`). The Docker `full` profile has no CLI in the API image,
+  so screenshots show "reader offline" there — run the API on the host.
+* The old Python/PaddleOCR service (`services/extractor`) was removed on 2026-10-18; a copy lives outside
+  the repo in `~/7xen-backups/extractor-2026-10-18`.
 
-## Extraction pipeline (services/extractor)
+## Reading (apps/api/src/lib/extractor.ts)
 
-1. **detect** — SLOT_LIST: threshold dark card panels → contours → 9 boxes, row-major; fallback to the
-   % grid in layout.yaml. RESULTS: left panel (rank 1–2 blocks) + right panel; split right panel into
-   blocks by the dark separators / big rank digit positions; drop blocks cut by the panel edge.
-2. **crop** — per card/block: slot/rank region, name strips (4), finishes strips (results).
-3. **preprocess** — names: 3× INTER_CUBIC, grayscale, keep bright text, invert, pad. Slot digits: HSV
-   (coloured). Results on gold background: separate threshold profile (dark-on-gold vs white).
-4. **OCR** — PaddleOCR recognition-only per strip (PP-OCRv5 multilingual), digits-only paths for
-   slot/rank/finishes. Rank 1 has no digit → detect the wings icon / "first block in left panel" = 1.
-5. **postprocess** — NFC, strip edge noise, evidence-backed lookalike fixes (from the model bundle),
-   "N finishes" → int, validation.
-6. **roster match** — when a roster (slot → names) is sent: rapidfuzz per name; `matched_slot` per
-   player; results rows get `inferred_slot` by majority. Also the bundle `lexicon` (all names ever
-   confirmed) snaps near-misses.
-7. **VLM fallback** (off by default; the dev GPU has 2 GB) — Ollama Qwen-VL on low-confidence strips.
+1. **Prompt** — SLOT_LIST: every visible card → slot + names in order. RESULTS: every fully visible rank
+   block (rank 1 = wings icon, no digit) → rank + names + finishes. Names copied character for character;
+   ambiguous glyphs → `unsure: true`; cut-off blocks skipped; warnings only for real problems.
+2. **Roster** — when a roster (slot → names) is sent, Claude returns `roster_match` per name; the API keeps
+   it only if it is an exact roster name, sets `matched_slot`, and RESULTS rows get `inferred_slot` by majority.
+3. **Mapping** — confidence 0.97 (sure) / 0.6 (unsure, so the review screen flags it); `needsReview` when any
+   name is unsure, unmatched against a given roster, or there are warnings; duplicate ranks dropped.
+
+Measured on the 7 real screenshots (2026-10-18, sonnet): slots 17/17, kills 99/99, results rows → right slot
+25/25, names exact 142/166 (misses are lookalike glyphs: Û/U, g/q, I/1/l; several labels themselves are flagged
+`needs_human_check`).
 
 ## Data model (apps/api/prisma/schema.prisma)
 
@@ -81,31 +80,18 @@ Contract: `packages/shared/src/phase2.ts` (endpoints in its header), points rule
 `computeStandings()` in shared — placement table + kill points, tie-breakers total → wins → placement
 points → kills → last match placement. Stored per MatchTeam on publish; standings computed on read.
 
-## Training loop ("admin trains the model")
+## Labelled samples
 
-1. **Samples**: every lineup confirmation/publish creates `TrainingSample(source=MANAGER_CORRECTION,
-   verified=true)` per screenshot with labels = confirmed values (SLOT_LIST: teams on that screenshot;
-   RESULTS: ranks on that screenshot). Admin can upload screenshots + labels (pre-filled by the current
-   model, then corrected in a label editor). Split TRAIN/TEST 70/30 by sha256 (stable), admin can change.
-   The 7 real screenshots are seeded as `source=SEED, verified=false` until the admin confirms them.
-2. **Run**: admin starts a run → API sends verified, non-excluded samples to `POST /v1/training/runs`
-   with `base_version` = active. The trainer **starts from the base version's artifacts** and produces
-   version N+1 (`parent` = base):
-   * `adaptive` trainer (always available, CPU, seconds–minutes): lexicon = base lexicon ∪ label names;
-     char_fixes learned from the confusion report on TRAIN; layout ratios/thresholds grid-searched on TRAIN.
-   * `paddle_finetune` trainer (when training deps + enough samples, ≥ 200 name crops): fine-tunes the
-     recognition model **initialised from the base version's rec model** on name-strip crops cut with the
-     labels. Slow on CPU; runs in a subprocess with progress + log tail.
-3. **Evaluate**: metrics on the TEST split for base and new version (`eval/run_eval.py` logic).
-4. **Promote**: admin activates the new version (or auto-activate if test name accuracy improved).
-   Rollback = activate an older version. Never claim accuracy that run_eval didn't measure.
+Every lineup confirmation/publish still creates `TrainingSample(source=MANAGER_CORRECTION, verified=true)`
+per screenshot; admins can upload screenshots + labels (pre-filled by the reader, corrected in the label editor).
+There is no model to train any more — samples are a labelled test set for checking the reader (e.g. after
+changing the prompt or `CLAUDE_MODEL`).
 
 ## Ownership for parallel work
 
 | Workstream | Owns |
 |---|---|
-| Extractor · pipeline | `services/extractor/app/{api/extract.py,pipeline/**,config/**,settings.py,logging.py}`, `tests/test_pipeline*`, Dockerfile, extractor service in docker-compose |
-| Extractor · ML | `services/extractor/{app/training/**,app/api/training.py,eval/**,synth/**}`, `tests/test_training*`, `tests/test_eval*` |
+| Reader | `apps/api/src/lib/extractor.ts`, `apps/api/tests/merge.test.ts` (mapping) |
 | API | `apps/api/**` |
 | Web | `apps/web/src/**` (manager match center, team results/roster) |
-| Admin | `apps/admin/src/**` (training center, model versions, extractor status) |
+| Admin | `apps/admin/src/**` (samples, reader status) |

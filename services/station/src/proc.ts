@@ -87,7 +87,7 @@ export async function terminate(p: Proc, first: NodeJS.Signals = "SIGTERM", grac
   await waitExit(p, 2000);
 }
 
-export interface RunResult {
+interface RunResult {
   code: number | null;
   stdout: Buffer;
   stderr: string;

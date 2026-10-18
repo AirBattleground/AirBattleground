@@ -23,12 +23,6 @@ export function formatInstant(iso: string | null | undefined): string {
   return `${formatDate(p.date)} · ${formatTime(p.time)}`;
 }
 
-/** ISO → "6:00 PM" */
-export function formatInstantTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  return formatTime(istParts(iso).time);
-}
-
 export function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }

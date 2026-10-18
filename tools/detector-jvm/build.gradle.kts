@@ -1,6 +1,6 @@
 // Standalone JVM harness for the on-device screen detector.
 // Compiles the SAME Kotlin sources the Android app ships (no android.* imports) and runs JUnit 5 over the
-// labelled BGMI screenshots in services/extractor/eval/dataset.
+// labelled BGMI screenshots in datasets/bgmi-screenshots.
 plugins {
     kotlin("jvm") version "2.2.0"
 }

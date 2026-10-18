@@ -18,8 +18,11 @@ Contract: the "BlueStacks device control" section of `packages/shared/src/statio
    key `[3,…]`, text `[4,…]`). The page is plain http on the LAN, so it decodes with MSE (jmuxer), not WebCodecs.
    Only the owner of the match (or an admin) may connect, and only while the station is idle or running that match.
 3. **Start match** → `POST …/station/prepare`. The station starts a recording pipeline on the *same* upstream stream:
-   FrameSource → FIFO → `ffmpeg -f h264 -use_wallclock_as_timestamps 1 -c copy -f tee` → fragmented MP4 part +
-   HLS in `storage/live/<match>/` (teams watch the HLS). If BGMI is already running it is not relaunched.
+   FrameSource → FIFO (FLV, each frame stamped with the Mac's capture time) → `ffmpeg -f flv -c copy -f tee` →
+   fragmented MP4 part + HLS in `storage/live/<match>/` (teams watch the HLS). If BGMI is already running it is not
+   relaunched. Capture-time stamps keep the recording and HLS smooth however bursty the Wi-Fi is; the manager's control
+   view plays frames as they arrive (low latency, may stutter). Arrival-time stamps used to bunch frames up and, when two
+   arrived < 11 µs apart, collided in MPEG-TS's 90 kHz clock and silently stopped the live HLS (recording went on).
 4. **End match** → `POST …/station/stop`: the recording is finalised and reported to the API (→ Recordings). The emulator
    keeps running, so the next match starts instantly.
 5. **Shut down emulator** → `POST …/station/device/stop` (refused while a match is recording) → `/api/quit {target}`.

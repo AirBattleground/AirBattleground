@@ -17,7 +17,7 @@ import path from "node:path";
 import { log } from "./log.js";
 import { run, terminate, waitExit, type Proc, type Spawner } from "./proc.js";
 
-export interface PipelineOptions {
+interface PipelineOptions {
   spawner: Spawner;
   scrcpy: string;
   scrcpyServer: string;
@@ -36,7 +36,7 @@ export interface PipelineOptions {
   maxRestarts: number;
   /**
    * Replaces scrcpy: starts whatever writes the H.264 stream into the FIFO (BlueStacks: FrameSource). When set,
-   * ffmpeg reads raw Annex-B (`-f h264`, wall-clock timestamps) instead of Matroska.
+   * ffmpeg reads FLV (`-f flv`, the source's capture timestamps) instead of Matroska.
    */
   startSource?: (fifo: string) => Proc;
   /** how long both processes must stay up for a part to count as started */
@@ -47,7 +47,7 @@ export interface PipelineOptions {
   unblockFifo?: (file: string) => Promise<void>;
 }
 
-export const PLAYLIST = "index.m3u8";
+const PLAYLIST = "index.m3u8";
 
 async function realMkfifo(file: string) {
   await rm(file, { force: true });
@@ -65,7 +65,7 @@ async function realUnblockFifo(file: string) {
   }
 }
 
-export function scrcpyArgs(o: Pick<PipelineOptions, "serial" | "maxSize" | "bitrateMbps" | "maxFps">, fifo: string): string[] {
+function scrcpyArgs(o: Pick<PipelineOptions, "serial" | "maxSize" | "bitrateMbps" | "maxFps">, fifo: string): string[] {
   const args = [
     `--serial=${o.serial}`,
     "--no-window",
@@ -82,7 +82,7 @@ export function scrcpyArgs(o: Pick<PipelineOptions, "serial" | "maxSize" | "bitr
   return args;
 }
 
-export function ffmpegArgs(o: Pick<PipelineOptions, "hlsTime" | "hlsListSize" | "liveDir"> & { startSource?: unknown }, fifo: string, partFile: string, part: number): string[] {
+function ffmpegArgs(o: Pick<PipelineOptions, "hlsTime" | "hlsListSize" | "liveDir"> & { startSource?: unknown }, fifo: string, partFile: string, part: number): string[] {
   const flags = ["delete_segments", "independent_segments", "omit_endlist", ...(part > 0 ? ["append_list"] : [])].join("+");
   const hls = [
     "f=hls",
@@ -96,8 +96,9 @@ export function ffmpegArgs(o: Pick<PipelineOptions, "hlsTime" | "hlsListSize" | 
     "-hide_banner",
     "-loglevel",
     "warning",
-    // raw Annex-B has no timestamps: stamp frames as they arrive
-    ...(o.startSource ? ["-use_wallclock_as_timestamps", "1", "-probesize", "200000", "-analyzeduration", "0", "-f", "h264"] : []),
+    // FrameSource writes FLV stamped with the Mac's capture time (smooth playback whatever the Wi-Fi does)
+    // (the FLV sequence header describes the stream: no probing, so the live view starts in ~0.5 s)
+    ...(o.startSource ? ["-probesize", "32", "-analyzeduration", "0", "-fpsprobesize", "0", "-f", "flv"] : []),
     "-fflags",
     "+genpts",
     "-i",

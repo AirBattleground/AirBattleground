@@ -39,7 +39,7 @@ function cookieValue(header: string | undefined, name: string): string | null {
 }
 
 /** Browsers always send Origin on a WebSocket handshake: it must be this site (or an allowed origin). */
-export function originAllowed(origin: string | undefined, host: string | undefined): boolean {
+function originAllowed(origin: string | undefined, host: string | undefined): boolean {
   if (!origin) return true; // not a browser (curl / native app with a bearer token)
   try {
     const o = new URL(origin);

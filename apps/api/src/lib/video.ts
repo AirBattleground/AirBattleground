@@ -84,14 +84,14 @@ function runFfmpeg(args: string[], timeoutMs = 120_000): Promise<{ code: number 
   });
 }
 
-export interface VideoProbe {
+interface VideoProbe {
   durationSec: number | null;
   width: number | null;
   height: number | null;
 }
 
 /** Parse `ffmpeg -i` output (no ffprobe needed). Exported for tests. */
-export function parseFfmpegInfo(stderr: string): VideoProbe {
+function parseFfmpegInfo(stderr: string): VideoProbe {
   const d = /Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(stderr);
   const durationSec = d ? Math.round(Number(d[1]) * 3600 + Number(d[2]) * 60 + Number(d[3])) : null;
   let width: number | null = null;
@@ -150,7 +150,7 @@ export async function makePoster(videoAbs: string, posterAbs: string, atSec: num
 // ---------------------------------------------------------------- streaming
 
 /** Parse a single `Range: bytes=…` header. null = no/unsupported range (send everything); "invalid" = 416. */
-export function parseRange(header: string | undefined, size: number): { start: number; end: number } | null | "invalid" {
+function parseRange(header: string | undefined, size: number): { start: number; end: number } | null | "invalid" {
   if (!header) return null;
   const m = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
   if (!m) return null; // multi-range etc.: ignore, send the whole file

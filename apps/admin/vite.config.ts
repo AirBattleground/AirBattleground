@@ -9,7 +9,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   server: {
-    host: true,
+    // this machine only — open it through the web dev server: http://<host>:5173/admin-ui
+    host: "localhost",
     port: 5174,
     strictPort: true,
     // same-origin API in dev so the httpOnly session cookie just works

@@ -153,7 +153,7 @@ export async function scheduleForDate(managerId: string, date: string, now = new
 
 const STATUS_ORDER = { PENDING: 0, APPROVED: 1, REJECTED: 2, CANCELLED: 3 } as const;
 
-export function sortRegistrations(regs: Registration[]): Registration[] {
+function sortRegistrations(regs: Registration[]): Registration[] {
   return [...regs].sort((a, b) => {
     const d = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
     if (d !== 0) return d;

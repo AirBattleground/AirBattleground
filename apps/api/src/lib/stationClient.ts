@@ -48,7 +48,7 @@ export async function stationCall<T>(method: "GET" | "POST", path: string, body?
   throw new AppError("INTERNAL", `The 7XEN Station had a problem: ${message}`, undefined, 502);
 }
 
-export function offlineStatus(error: string | null = null): StationStatus {
+function offlineStatus(error: string | null = null): StationStatus {
   return {
     online: false,
     emulator: "OFF",

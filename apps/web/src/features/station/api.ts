@@ -17,7 +17,7 @@ export const stationKeys = {
 export const liveHlsUrl = (matchId: string) => `/api/live/${matchId}/index.m3u8`;
 
 /** What the panel shows while the station can't be reached (or the API predates the station). */
-export const OFFLINE_STATUS: StationStatus = {
+const OFFLINE_STATUS: StationStatus = {
   online: false,
   emulator: "OFF",
   bgmiInstalled: false,
@@ -39,7 +39,7 @@ export const isPreparing = (p: StationPhase | undefined) => p === "STARTING_EMUL
 export const isActive = (p: StationPhase | undefined) => isPreparing(p) || p === "LIVE" || p === "STOPPING";
 
 /** BlueStacks is starting/stopping (background job running or emulator booting): poll fast. */
-export const deviceBusy = (s: StationStatus | undefined | null) => !!s && (s.device?.job?.phase === "running" || s.emulator === "BOOTING");
+const deviceBusy = (s: StationStatus | undefined | null) => !!s && (s.device?.job?.phase === "running" || s.emulator === "BOOTING");
 
 // ---------- manager ----------
 

@@ -47,6 +47,17 @@
  *   GET    /api/manager/teams?q=                                   → ListResponse<TeamSummary> (active teams, max 20; for tournament invites)
  *   GET    /api/manager/teams/availability?teamName=&username=   → TeamAvailability
  *
+ * BRANDING (images; multipart field "file", PNG/JPEG/WebP, max MAX_BRANDING_IMAGE_BYTES)
+ *   GET    /api/manager/branding                                 → ImageUrlResponse (own org logo)
+ *   PUT    /api/manager/branding/logo      multipart file        → ImageUrlResponse
+ *   DELETE /api/manager/branding/logo                            → ImageUrlResponse ({ url: null })
+ *   PUT    /api/manager/scrims/:id/poster  multipart file        → ImageUrlResponse
+ *   DELETE /api/manager/scrims/:id/poster                        → ImageUrlResponse
+ *   PUT    /api/manager/tournaments/:id/poster multipart file    → ImageUrlResponse
+ *   DELETE /api/manager/tournaments/:id/poster                   → ImageUrlResponse
+ *   GET    /api/media/branding/:file       (any signed-in user)  → the image. Scrim.posterUrl, TournamentSummary.posterUrl
+ *                                          and manager.logoUrl point here.
+ *
  * TEAM (role TEAM)
  *   GET    /api/team/dashboard                                   → TeamDashboard
  *   GET    /api/team/scrims?date=                                → ListResponse<TeamScrimOnDate> (ACTIVE scrims of all managers on that date)
@@ -68,9 +79,9 @@
  *   TEAM     GET  /api/team/results · /api/team/sessions/:scrimId/:date/standings · /api/team/matches/:matchId
  *            GET|PUT /api/team/roster          (dashboard gains `results`)
  *   ADMIN    /api/admin/training/samples[/:id[/image|/prefill]] · /api/admin/training/preview
- *            /api/admin/training/models[/:version/activate] · /api/admin/training/runs[/:id] · /api/admin/extractor/status
+ *            /api/admin/extractor/status
  *   Errors: publish 400 VALIDATION_ERROR with fields keyed "teams.<slotNumber>.placement"; 413 VALIDATION_ERROR for
- *   an image over MAX_SCREENSHOT_BYTES; 503 EXTRACTOR_OFFLINE when an admin proxy call can't reach the extractor.
+ *   an image over MAX_SCREENSHOT_BYTES; 503 EXTRACTOR_OFFLINE when preview/prefill can't run the reader (claude CLI missing / not logged in / failed).
  *
  * PHASE 3 (tournaments) — full list with inputs and DTOs in the header of ./phase3.ts. Summary:
  *   MANAGER  /api/manager/tournaments[/:id[/publish|/close-registration|/reopen-registration|/cancel|/complete]]
@@ -87,3 +98,5 @@
 export const API_PREFIX = "/api";
 export const APP_COOKIE = "sx_app";
 export const ADMIN_COOKIE = "sx_admin";
+/** Max size of an org logo / poster upload. */
+export const MAX_BRANDING_IMAGE_BYTES = 5 * 1024 * 1024;

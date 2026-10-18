@@ -1,32 +1,50 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarDays, ChevronDown, Crosshair, Flame, Gamepad2, Layers, ScrollText, Sparkles, Trophy, User, Users, UsersRound } from "lucide-react";
+import { CalendarDays, ChevronDown, Crosshair, Flame, Gamepad2, Layers, ScrollText, Sparkles, Trophy, Users, UsersRound } from "lucide-react";
 import type { StageDetail, StageSummary, TeamTournamentDetail } from "@7xen/shared";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { cn } from "@7xen/ui/lib/utils";
 import { RankBadge } from "@/features/results/components/Rank";
+import { OrganizerBadge, PosterThumb } from "@/features/team/components/Branding";
 import { MapChips } from "@/features/team/components/MapChips";
 import { RegistrationMeter } from "../../shared/RegistrationMeter";
 import { StatusPill } from "../../shared/StatusPill";
 import { fmtRange, plural } from "../../shared/format";
 
-export function tournamentDates(t: Pick<TeamTournamentDetail, "startsAt" | "stages">) {
+function tournamentDates(t: Pick<TeamTournamentDetail, "startsAt" | "stages">) {
   const first = t.startsAt ?? t.stages[0]?.startsAt ?? null;
   const last = [...t.stages].reverse().find((s) => s.endsAt)?.endsAt ?? null;
   return fmtRange(first, last);
 }
 
-/** Hero: title, prize, organiser, dates, status (+ registration meter while open). */
+/** Faint, blurred poster wash behind the hero. Nothing when missing/broken. */
+function PosterWash({ url }: { url: string | null }) {
+  const [failed, setFailed] = useState(false);
+  if (!url || failed) return null;
+  return (
+    <img
+      src={url}
+      alt=""
+      aria-hidden
+      decoding="async"
+      onError={() => setFailed(true)}
+      className="pointer-events-none absolute inset-0 size-full scale-110 object-cover opacity-15 blur-3xl dark:opacity-20"
+    />
+  );
+}
+
+/** Hero: poster, title, prize, organiser, dates, status (+ registration meter while open). */
 export function TournamentHero({ t }: { t: TeamTournamentDetail }) {
   const showMeter = t.status === "REGISTRATION_OPEN" || t.status === "REGISTRATION_CLOSED";
   return (
     <section data-tour="hero" className="relative overflow-hidden rounded-2xl border bg-card shadow-sm">
+      <PosterWash url={t.posterUrl} />
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-70" />
       <div className="pointer-events-none absolute -top-28 -left-20 size-80 animate-aurora rounded-full bg-primary/20 blur-3xl motion-reduce:animate-none" />
       <motion.div
         aria-hidden
-        className={cn("pointer-events-none absolute top-1/2 right-4 hidden -translate-y-1/2 text-primary/10", !showMeter && "sm:block")}
+        className={cn("pointer-events-none absolute top-1/2 right-4 hidden -translate-y-1/2 text-primary/10", !showMeter && !t.posterUrl && "sm:block")}
         initial={{ rotate: -10, scale: 0.8, opacity: 0 }}
         animate={{ rotate: 8, scale: 1, opacity: 1 }}
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
@@ -34,32 +52,39 @@ export function TournamentHero({ t }: { t: TeamTournamentDetail }) {
         <Trophy className="size-44" strokeWidth={1.25} />
       </motion.div>
       <div className="relative grid gap-5 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusPill status={t.status} />
-            <span className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Tournament</span>
+        <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+          <PosterThumb url={t.posterUrl} title={t.title} className="size-28 rounded-2xl shadow-lg sm:size-40 lg:size-48" />
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <StatusPill status={t.status} />
+              <span className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Tournament</span>
+            </div>
+            <h1 className="mt-2 font-display text-3xl leading-[1.05] font-bold text-balance sm:text-5xl">{t.title}</h1>
+            {t.prize && (
+              <p className="mt-2 inline-flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-1.5 font-display text-xl font-bold text-warning-foreground sm:text-2xl dark:text-warning">
+                <Trophy className="size-5" /> {t.prize}
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5">
+                <CalendarDays className="size-4 text-primary" /> {tournamentDates(t)}
+              </span>
+              <OrganizerBadge
+                manager={t.manager}
+                prefix="by"
+                iconClassName="size-4 text-primary"
+                logoClassName="size-6"
+                nameClassName="font-semibold text-foreground"
+              />
+              <span className="inline-flex items-center gap-1.5">
+                <UsersRound className="size-4 text-primary" /> {t.teamSize}-player squads
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Users className="size-4 text-primary" /> {t.maxTeams} teams
+              </span>
+            </div>
+            {t.description && <p className="mt-3 max-w-2xl text-sm whitespace-pre-line text-foreground/80">{t.description}</p>}
           </div>
-          <h1 className="mt-2 font-display text-3xl leading-[1.05] font-bold text-balance sm:text-5xl">{t.title}</h1>
-          {t.prize && (
-            <p className="mt-2 inline-flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-1.5 font-display text-xl font-bold text-warning-foreground sm:text-2xl dark:text-warning">
-              <Trophy className="size-5" /> {t.prize}
-            </p>
-          )}
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <CalendarDays className="size-4 text-primary" /> {tournamentDates(t)}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <User className="size-4 text-primary" /> by {t.manager.displayName}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <UsersRound className="size-4 text-primary" /> {t.teamSize}-player squads
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <Users className="size-4 text-primary" /> {t.maxTeams} teams
-            </span>
-          </div>
-          {t.description && <p className="mt-3 max-w-2xl text-sm whitespace-pre-line text-foreground/80">{t.description}</p>}
         </div>
         {showMeter && (
           <div className="rounded-xl border bg-background/70 p-4 backdrop-blur">

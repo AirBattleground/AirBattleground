@@ -13,7 +13,7 @@ import { api } from "@/lib/api";
 
 export type RegistrationScope = "upcoming" | "past";
 
-export const teamKeys = {
+const teamKeys = {
   all: ["team"] as const,
   dashboard: ["team", "dashboard"] as const,
   scrimsAll: ["team", "scrims"] as const,
@@ -56,11 +56,6 @@ function trackRegistrations(items: TeamRegistration[]) {
   for (const r of items) track(r.id, r.status, r.slotNumber, r.scrim.title);
 }
 
-/** Forget remembered statuses (e.g. on logout); exported for completeness. */
-export function resetApprovalWatcher() {
-  lastSeen.clear();
-}
-
 // ---------------------------------------------------------------------------
 // Queries
 // ---------------------------------------------------------------------------
@@ -101,14 +96,6 @@ export function useMyRegistrations(scope: RegistrationScope, opts: { poll?: bool
     },
     refetchInterval: poll ? POLL_MS : false,
   });
-}
-
-/**
- * Mount on any team page to keep approval notifications flowing (polls upcoming
- * registrations every 30s; shares the cache with the My registrations page).
- */
-export function useApprovalWatcher() {
-  useMyRegistrations("upcoming", { poll: true });
 }
 
 // ---------------------------------------------------------------------------

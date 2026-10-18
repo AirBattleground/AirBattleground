@@ -1,10 +1,10 @@
 /** Pure helpers for the BlueStacks live stream WebSocket (binary client messages, frame header, finger ids). */
 
-export type TouchAction = "down" | "up" | "move";
+type TouchAction = "down" | "up" | "move";
 const ACTION: Record<TouchAction, number> = { down: 0, up: 1, move: 2 };
 
 /** Max simultaneous fingers. */
-export const MAX_FINGERS = 10;
+const MAX_FINGERS = 10;
 
 const clamp16 = (f: number) => Math.min(65535, Math.max(0, Math.round(f * 65535)));
 
@@ -36,7 +36,7 @@ export function encodeKey(action: "down" | "up", key: KeyName): Uint8Array {
   return b;
 }
 
-export const MAX_TEXT_BYTES = 300;
+const MAX_TEXT_BYTES = 300;
 
 /** Text messages: [4, ...utf8], each at most `maxChars` characters (a few per message) and under 300 bytes. */
 export function encodeText(text: string, maxChars = 8): Uint8Array[] {
@@ -54,7 +54,7 @@ export function encodeText(text: string, maxChars = 8): Uint8Array[] {
 }
 
 /** Server video frame: [flag u8 (1 = key)][capture time µs f64 BE][H.264 Annex-B]. */
-export interface VideoFrame {
+interface VideoFrame {
   key: boolean;
   captureUs: number;
   data: Uint8Array;

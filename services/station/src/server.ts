@@ -26,7 +26,7 @@ const prepareSchema = z.object({
 const matchSchema = z.object({ matchId: id });
 
 /** Constant-time comparison of the shared secret (hashing first makes lengths equal). */
-export function tokenMatches(expected: string, given: string | string[] | undefined): boolean {
+function tokenMatches(expected: string, given: string | string[] | undefined): boolean {
   if (!expected || typeof given !== "string" || !given) return false;
   const a = createHash("sha256").update(expected).digest();
   const b = createHash("sha256").update(given).digest();

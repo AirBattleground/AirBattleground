@@ -6,7 +6,7 @@ import { MapChip } from "@/features/team/components/MapChips";
 import { useTeamLive } from "../api";
 import { LiveBadge } from "./HlsPlayer";
 
-export const liveViewerHref = (matchId: string) => `/team/live/${matchId}`;
+const liveViewerHref = (matchId: string) => `/team/live/${matchId}`;
 
 /**
  * Prominent "Watch live" card(s) for the team's matches streaming right now. Renders nothing when none are.

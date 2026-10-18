@@ -3,7 +3,6 @@ import { z } from "zod";
 import {
   SAMPLE_SPLITS,
   SCREENSHOT_KINDS,
-  startTrainingSchema,
   updateSampleSchema,
   ADMIN_COOKIE,
   createManagerSchema,
@@ -149,21 +148,6 @@ export function adminRouter() {
     await parseMultipart(req, res);
     const { kind } = parse(z.object({ kind: kindField }), req.body);
     res.json(await training.preview(singleImage(req, "file"), kind));
-  });
-  r.get("/training/models", async (_req, res) => {
-    res.json(await training.listModels());
-  });
-  r.post("/training/models/:version/activate", async (req, res) => {
-    res.json(await training.activateModel(req.params.version));
-  });
-  r.get("/training/runs", async (_req, res) => {
-    res.json({ items: await training.listRuns() });
-  });
-  r.post("/training/runs", async (req, res) => {
-    res.status(202).json(await training.startRun(parse(startTrainingSchema, req.body)));
-  });
-  r.get("/training/runs/:id", async (req, res) => {
-    res.json(await training.getRun(req.params.id));
   });
   r.get("/extractor/status", async (_req, res) => {
     res.json(await training.extractorStatus());

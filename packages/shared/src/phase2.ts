@@ -5,8 +5,9 @@
  *   SCHEDULED ──upload SLOT_LIST screenshots──▶ LINEUP_REVIEW ──manager confirms lineup──▶ LIVE
  *   LIVE ──upload RESULTS screenshots──▶ RESULTS_REVIEW ──manager publishes──▶ PUBLISHED
  *   PUBLISHED ──unpublish──▶ RESULTS_REVIEW   (edit + publish again; points recomputed)
- * Screenshots are read asynchronously by the extractor service (services/extractor). The manager can
- * always type/fix values by hand — OCR only pre-fills. Confirmed data becomes training data.
+ * Screenshots are read asynchronously by the API's screenshot worker, which runs the `claude` CLI
+ * (apps/api/src/lib/extractor.ts). The manager can always type/fix values by hand — the reader only
+ * pre-fills. Confirmed data becomes labelled samples (a test set for checking the reader).
  *
  * ENDPOINTS (add to the catalogue in api.ts; same auth/cookies/error shape as phase 1)
  *
@@ -33,7 +34,7 @@
  *   PUT    /api/team/roster                          SaveRosterInput   → TeamRoster
  *   (TeamDashboard gains `results: TeamResultsSummary | null`)
  *
- * ADMIN — training center (models + runs are proxied to the extractor service)
+ * ADMIN — training center (labelled samples; the reader is Claude, so there are no models/runs to manage)
  *   GET    /api/admin/training/samples?kind=&split=&q=                 → ListResponse<TrainingSampleRow>
  *   POST   /api/admin/training/samples   multipart: file, kind, labels (JSON string, SlotListLabels|ResultsLabels), split?
  *                                                                      → TrainingSampleRow (201)
@@ -41,14 +42,11 @@
  *   PATCH  /api/admin/training/samples/:id         UpdateSampleInput   → TrainingSampleDetail (labels/split/excluded/verified)
  *   DELETE /api/admin/training/samples/:id                             → 204
  *   GET    /api/admin/training/samples/:id/image                       → image bytes
- *   POST   /api/admin/training/preview   multipart: file, kind         → ExtractionResult (run the current model on an image to pre-fill labels)
- *   POST   /api/admin/training/samples/:id/prefill                     → TrainingSampleDetail (labels := current model output, verified=false)
- *   GET    /api/admin/training/models                                  → ModelList
- *   POST   /api/admin/training/models/:version/activate                → ModelList
- *   GET    /api/admin/training/runs                                    → ListResponse<TrainingRun>
- *   POST   /api/admin/training/runs                  StartTrainingInput → TrainingRun (202; uses all non-excluded, verified samples)
- *   GET    /api/admin/training/runs/:id                                → TrainingRun
- *   GET    /api/admin/extractor/status                                 → ExtractorStatus (never throws; online=false when unreachable)
+ *   POST   /api/admin/training/preview   multipart: file, kind         → ExtractionResult (run the reader on an image to pre-fill labels)
+ *   POST   /api/admin/training/samples/:id/prefill                     → TrainingSampleDetail (labels := reader output, verified=false)
+ *   GET    /api/admin/extractor/status                                 → ExtractorStatus (never throws; online=false when the
+ *                                                                      claude CLI is missing or not logged in; activeModel = Claude model alias)
+ *   (removed: /api/admin/training/models* and /api/admin/training/runs* — ModelList/TrainingRun types kept for old clients)
  */
 import { z } from "zod";
 import type { GameMap } from "./enums";
@@ -88,12 +86,11 @@ export const MAX_SCREENSHOT_BYTES = 10 * 1024 * 1024;
 export const MAX_SCREENSHOTS_PER_UPLOAD = 10;
 export const MAX_ROSTER_PLAYERS = 6;
 
-// ---------- extractor output (what services/extractor returns; JSON field names are snake_case there,
-// the API converts to these camelCase shapes) ----------
+// ---------- reader output (built by apps/api/src/lib/extractor.ts from Claude's structured output) ----------
 export interface ExtractedPlayer {
   name: string;
   confidence: number;
-  /** "paddle" | "vlm" | "lexicon" … */
+  /** "claude" (older rows: "paddle" | "vlm" | "lexicon") */
   source: string;
   /** closest roster name when a roster was supplied and the score passed the threshold */
   rosterMatch: string | null;

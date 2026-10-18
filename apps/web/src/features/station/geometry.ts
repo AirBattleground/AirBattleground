@@ -3,7 +3,7 @@
  * letterboxed (bars left/right for a portrait stream in a wide box, top/bottom for a landscape stream in a tall one),
  * so pointer → frame fractions must subtract the bars.
  */
-export interface ContentBox {
+interface ContentBox {
   /** offset of the picture inside the element, in CSS px */
   left: number;
   top: number;
@@ -11,7 +11,7 @@ export interface ContentBox {
   height: number;
 }
 
-export function containBox(boxW: number, boxH: number, videoW: number, videoH: number): ContentBox | null {
+function containBox(boxW: number, boxH: number, videoW: number, videoH: number): ContentBox | null {
   if (!(boxW > 0 && boxH > 0 && videoW > 0 && videoH > 0)) return null;
   const scale = Math.min(boxW / videoW, boxH / videoH);
   const width = videoW * scale;

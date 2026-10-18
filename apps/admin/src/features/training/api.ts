@@ -5,13 +5,10 @@ import {
   type ExtractionResult,
   type ExtractorStatus,
   type ListResponse,
-  type ModelList,
   type ResultsLabels,
   type SampleSplit,
   type ScreenshotKind,
   type SlotListLabels,
-  type StartTrainingInput,
-  type TrainingRun,
   type TrainingSampleDetail,
   type TrainingSampleRow,
   type UpdateSampleInput,
@@ -19,12 +16,10 @@ import {
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/query";
 
-export const trainingKey = ["admin", "training"] as const;
-export const samplesKey = [...trainingKey, "samples"] as const;
-export const sampleKey = (id: string) => [...trainingKey, "sample", id] as const;
-export const modelsKey = [...trainingKey, "models"] as const;
-export const runsKey = [...trainingKey, "runs"] as const;
-export const extractorStatusKey = ["admin", "extractor", "status"] as const;
+const trainingKey = ["admin", "training"] as const;
+const samplesKey = [...trainingKey, "samples"] as const;
+const sampleKey = (id: string) => [...trainingKey, "sample", id] as const;
+const extractorStatusKey = ["admin", "extractor", "status"] as const;
 
 export const sampleImageUrl = (id: string) => `/api/admin/training/samples/${encodeURIComponent(id)}/image`;
 
@@ -61,7 +56,7 @@ export function useExtractorStatus(opts: { refetchInterval?: number } = {}) {
 }
 
 // ---------- samples ----------
-export interface SampleQuery {
+interface SampleQuery {
   kind?: ScreenshotKind;
   split?: SampleSplit;
   q?: string;
@@ -138,7 +133,7 @@ export function useCreateSample() {
   });
 }
 
-/** Run the current model on an image (nothing is saved). */
+/** Have the screenshot reader (Claude) read an image (nothing is saved). */
 export function previewExtraction(file: Blob, kind: ScreenshotKind, filename = "screenshot.jpg") {
   const fd = new FormData();
   fd.append("file", file, filename);
@@ -146,7 +141,7 @@ export function previewExtraction(file: Blob, kind: ScreenshotKind, filename = "
   return postForm<ExtractionResult>("/api/admin/training/preview", fd);
 }
 
-/** Server-side re-read: labels := current model output, verified=false. */
+/** Server-side re-read: labels := screenshot reader output, verified=false. */
 export function usePrefillSample() {
   const invalidate = useInvalidateSamples();
   return useMutation({
@@ -155,64 +150,5 @@ export function usePrefillSample() {
   });
 }
 
-/** models + runs live in the extractor: don't call them while it's known to be offline */
-const noRetryWhenOffline = (count: number, err: unknown) => !(err instanceof ApiError && err.status >= 400) && count < 2;
-function useReaderOnline() {
-  const status = useExtractorStatus();
-  return { online: status.data?.online === true, offline: status.data?.online === false };
-}
-
-// ---------- models ----------
-export function useModels() {
-  const { online, offline } = useReaderOnline();
-  const q = useQuery({ queryKey: modelsKey, queryFn: () => api.get<ModelList>("/api/admin/training/models"), enabled: online, retry: noRetryWhenOffline });
-  return Object.assign(q, { offline: offline && !q.data });
-}
-
-export function useActivateModel() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (version: string) => api.post<ModelList>(`/api/admin/training/models/${encodeURIComponent(version)}/activate`),
-    onSuccess: (list) => {
-      qc.setQueryData(modelsKey, list);
-      return qc.invalidateQueries({ queryKey: extractorStatusKey });
-    },
-  });
-}
-
-// ---------- runs ----------
-const isLive = (r: TrainingRun) => r.status === "QUEUED" || r.status === "RUNNING";
-
-export function useRuns() {
-  const qc = useQueryClient();
-  const { online, offline } = useReaderOnline();
-  const q = useQuery({
-    queryKey: runsKey,
-    queryFn: async () => {
-      const prev = qc.getQueryData<ListResponse<TrainingRun>>(runsKey);
-      const next = await api.get<ListResponse<TrainingRun>>("/api/admin/training/runs");
-      // a run just finished → new model version / metrics are available
-      const finished = prev?.items.some((p) => isLive(p) && next.items.some((n) => n.id === p.id && !isLive(n)));
-      if (finished) void Promise.all([qc.invalidateQueries({ queryKey: modelsKey }), qc.invalidateQueries({ queryKey: extractorStatusKey })]);
-      return next;
-    },
-    refetchInterval: (q) => (q.state.data?.items.some(isLive) ? 2_000 : false),
-    enabled: online,
-    retry: noRetryWhenOffline,
-  });
-  return Object.assign(q, { offline: offline && !q.data });
-}
-
 /** true when the last status check said the reader is offline */
 export const readerKnownOffline = () => queryClient.getQueryData<ExtractorStatus>(extractorStatusKey)?.online === false;
-
-export function useStartRun() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (input: StartTrainingInput) => api.post<TrainingRun>("/api/admin/training/runs", input),
-    onSuccess: (run) => {
-      qc.setQueryData<ListResponse<TrainingRun>>(runsKey, (old) => (old ? { ...old, items: [run, ...old.items.filter((r) => r.id !== run.id)] } : old));
-      return qc.invalidateQueries({ queryKey: runsKey });
-    },
-  });
-}

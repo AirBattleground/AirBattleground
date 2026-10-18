@@ -44,7 +44,7 @@ function effective(row: MatchTeamRow, d: ResultsDraft): Eff {
   return { row, placement, players, playerSum, kills };
 }
 
-export function resultsInput(m: MatchDetail, d: ResultsDraft): SaveResultsInput {
+function resultsInput(m: MatchDetail, d: ResultsDraft): SaveResultsInput {
   return {
     teams: m.teams.map((row) => {
       const e = effective(row, d);

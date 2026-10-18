@@ -23,13 +23,12 @@ import { errorMessage } from "@/lib/forms";
 import { relativeTime } from "@/lib/format";
 
 const TOUR: TourStep[] = [
-  { title: "Training center", description: "This is where the screenshot reader gets better. You check what it read, and train new versions from your corrections." },
-  { element: '[data-tour="extractor-status"]', title: "Is the reader running?", description: "Shows whether the reader service is online, which model version is in use, and how many screenshots are waiting.", side: "bottom" },
-  { element: '[data-tour="training-metrics"]', title: "How accurate is it?", description: "Measured on test screenshots the model never learned from. 'Not measured yet' means no training run has checked it.", side: "bottom" },
-  { element: '[data-tour="add-screenshots"]', title: "Add screenshots", description: "Upload BGMI screenshots. The model reads them first, so you only fix mistakes.", side: "bottom" },
+  { title: "Training center", description: "A labelled test set of screenshots with the right answers. Use it to check how accurately Claude reads BGMI screenshots." },
+  { element: '[data-tour="extractor-status"]', title: "Is the reader running?", description: "Shows whether Claude is set up on the server, which Claude model is in use, and how many screenshots are waiting.", side: "bottom" },
+  { element: '[data-tour="training-metrics"]', title: "Your test set", description: "How many samples you have, how many are checked, and how many still need a look.", side: "bottom" },
+  { element: '[data-tour="add-screenshots"]', title: "Add screenshots", description: "Upload BGMI screenshots. Claude reads them first, so you only fix mistakes.", side: "bottom" },
   { element: '[data-tour="sample-filters"]', title: "Filter", description: "Show team-list or results screenshots, training or test ones, and those that still need checking.", side: "bottom" },
-  { element: '[data-tour="sample-grid"]', title: "Your samples", description: "Click a screenshot to open the label editor. Only samples marked 'Checked' are used for training.", side: "top" },
-  { element: '[data-tour="tab-runs"]', title: "Then train", description: "When you've checked enough samples, start a training run here.", side: "bottom" },
+  { element: '[data-tour="sample-grid"]', title: "Your samples", description: "Click a screenshot to open the label editor. Only samples marked 'Checked' count as right answers.", side: "top" },
 ];
 
 type StatusFilter = "ALL" | "UNVERIFIED" | "VERIFIED" | "EXCLUDED";
@@ -176,7 +175,7 @@ export default function SamplesPage() {
         }
       />
     ) : (
-      <EmptyState icon={<Images />} title="No samples yet" description="Add a few BGMI screenshots. The model reads them, you fix the names, and then you can train a better version." action={addBtn} />
+      <EmptyState icon={<Images />} title="No samples yet" description="Add a few BGMI screenshots. Claude reads them, you fix the names, and they become a test set for checking the reader." action={addBtn} />
     );
   else
     body = (
@@ -273,7 +272,7 @@ export default function SamplesPage() {
             {filtered && " shown"}
           </span>
           <span className="inline-flex items-center gap-1">
-            <BadgeCheck className="size-4 text-success" /> {counts.ready} ready for training
+            <BadgeCheck className="size-4 text-success" /> {counts.ready} checked
           </span>
           {items.length > 0 && (
             <button

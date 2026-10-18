@@ -85,7 +85,7 @@ export function toRecordingRow(r: MatchRecording, captures: { slotList: number; 
   };
 }
 
-export async function rowFor(r: MatchRecording): Promise<RecordingRow> {
+async function rowFor(r: MatchRecording): Promise<RecordingRow> {
   const shots = await prisma.screenshot.findMany({ where: { matchId: r.matchId }, select: recordingShotSelect });
   return toRecordingRow(r, capturesFor(r, shots));
 }
@@ -346,8 +346,8 @@ async function dropFiles(r: Pick<MatchRecording, "id" | "videoKey" | "posterKey"
 
 // ---------------------------------------------------------------- settings + retention
 
-export const VIDEO_RETENTION_KEY = "videoRetentionDays";
-export const DEFAULT_VIDEO_RETENTION_DAYS = 30;
+const VIDEO_RETENTION_KEY = "videoRetentionDays";
+const DEFAULT_VIDEO_RETENTION_DAYS = 30;
 
 export async function videoRetentionDays(): Promise<number> {
   const s = await prisma.appSetting.findUnique({ where: { key: VIDEO_RETENTION_KEY } });

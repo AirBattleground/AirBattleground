@@ -58,7 +58,7 @@ import { errorMessage, useCreateTournament, usePublishTournament, useTournament,
 import { fittingSchedule, groupSizes, normalizeStages, planSchedule, suggestFormat, validateFormat } from "@/features/tournaments/manager/engine";
 import { formatInstant } from "@/features/tournaments/manager/format";
 import { DateTimeInput } from "@/features/tournaments/manager/components/DateTimeInput";
-import { Advanced, Field, Section } from "@/features/tournaments/manager/components/form";
+import { Field, Section } from "@/features/tournaments/manager/components/form";
 import { FormatFlow } from "@/features/tournaments/manager/components/FormatFlow";
 import { FormatIssues } from "@/features/tournaments/manager/components/FormatIssues";
 import { PointsPicker, pointsLabel } from "@/features/tournaments/manager/components/PointsPicker";

@@ -12,7 +12,7 @@ import { api } from "@/lib/api";
 
 /** Admin mirrors every manager tournament endpoint under this prefix (ownership not checked). */
 const BASE = "/api/admin/tournaments";
-export const tournamentsKey = ["admin", "tournaments"] as const;
+const tournamentsKey = ["admin", "tournaments"] as const;
 
 export function useAdminTournaments(opts: { refetchInterval?: number } = {}) {
   return useQuery({

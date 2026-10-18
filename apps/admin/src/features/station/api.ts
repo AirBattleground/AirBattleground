@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ApiError, type StationStatus } from "@7xen/shared";
 import { api } from "@/lib/api";
 
-export const OFFLINE_STATION: StationStatus = {
+const OFFLINE_STATION: StationStatus = {
   online: false,
   emulator: "OFF",
   bgmiInstalled: false,

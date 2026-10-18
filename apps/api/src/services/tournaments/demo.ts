@@ -6,7 +6,7 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { DEFAULT_SCHEDULE, addDays, suggestFormat, todayInAppTz, type ScheduleConfig } from "@7xen/shared";
 
-export interface DemoTournamentOptions {
+interface DemoTournamentOptions {
   managerId: string;
   /** registered in this order */
   teamIds: string[];

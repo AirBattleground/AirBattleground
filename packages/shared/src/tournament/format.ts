@@ -2,7 +2,7 @@
 import { MAX_ROOM_SLOTS, type GameMap } from "../enums";
 import { DEFAULT_LOBBY_SIZE, type FormatIssue, type StageSpec } from "../phase3";
 
-export const DEFAULT_MAP_CYCLE: GameMap[] = ["ERANGEL", "MIRAMAR", "SANHOK", "ERANGEL", "VIKENDI", "MIRAMAR"];
+const DEFAULT_MAP_CYCLE: GameMap[] = ["ERANGEL", "MIRAMAR", "SANHOK", "ERANGEL", "VIKENDI", "MIRAMAR"];
 
 /** teamsOut = groupCount × advancePerGroup + wildcardCount (0 for the last stage). */
 export function teamsOut(stage: StageSpec, isLast: boolean): number {

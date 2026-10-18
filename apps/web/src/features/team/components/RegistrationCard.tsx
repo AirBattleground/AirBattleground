@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Clock, MessageSquareWarning, User } from "lucide-react";
+import { Clock, MessageSquareWarning } from "lucide-react";
 import type { TeamRegistration } from "@7xen/shared";
 import { SlotChip } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -8,6 +8,7 @@ import { cn } from "@7xen/ui/lib/utils";
 import { useCancelRegistration } from "../api";
 import { dayLabel, formatTime } from "../format";
 import { useNow } from "../useNow";
+import { OrganizerBadge, PosterThumb } from "./Branding";
 import { CancelDialog } from "./ConfirmDialogs";
 import { MapChips } from "./MapChips";
 import { TeamStatusBadge } from "./TeamStatus";
@@ -62,11 +63,13 @@ export function RegistrationCard({
         <span className="text-[10px] font-semibold tracking-widest text-muted-foreground">IST</span>
       </div>
 
+      {!compact && <PosterThumb url={reg.scrim.posterUrl} title={reg.scrim.title} className="hidden size-16 shrink-0 sm:block" />}
+
       {/* details */}
       <div className="min-w-0 flex-1 space-y-1.5">
         <p className="truncate font-display text-lg leading-tight font-bold">{reg.scrim.title}</p>
-        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <User className="size-3.5" /> {reg.scrim.manager.displayName}
+        <p className="flex min-w-0 text-sm text-muted-foreground">
+          <OrganizerBadge manager={reg.scrim.manager} />
         </p>
         {!compact && <MapChips maps={reg.scrim.maps} />}
         {reg.status === "REJECTED" && reg.rejectionReason && (

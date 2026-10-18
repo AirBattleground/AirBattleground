@@ -42,7 +42,7 @@ function buildCards(m: MatchDetail, draft: LineupDraft): { cards: Card[]; missin
 }
 
 /** The lineup the manager sees right now (server values overlaid with typed edits). */
-export function lineupInput(m: MatchDetail, draft: LineupDraft, confirm: boolean): SaveLineupInput {
+function lineupInput(m: MatchDetail, draft: LineupDraft, confirm: boolean): SaveLineupInput {
   const { cards } = buildCards(m, draft);
   return {
     confirm,

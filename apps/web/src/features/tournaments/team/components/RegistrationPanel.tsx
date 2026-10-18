@@ -120,7 +120,9 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
           <p className="mb-3 text-xs text-muted-foreground">
             The {t.stages[0]?.name ?? "first stage"} is already scheduled. The draw honours preferences in registration order, so registering early helps.
           </p>
-          <SlotPicker options={t.slotOptions} value={prefs} onChange={setPrefs} disabled={busy} />
+          <div className="-mx-1 max-h-72 overflow-y-auto overscroll-contain px-1 py-0.5 [scrollbar-width:thin] [mask-image:linear-gradient(to_bottom,#000_calc(100%-1.5rem),transparent)] pb-6">
+            <SlotPicker options={t.slotOptions} value={prefs} onChange={setPrefs} disabled={busy} />
+          </div>
         </div>
       )}
 

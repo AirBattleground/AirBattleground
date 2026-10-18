@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import {
+  API_PREFIX,
   DEFAULT_POINTS_SYSTEM,
   pointsSystemSchema,
   type PointsSystem,
@@ -8,6 +9,7 @@ import type {
   TeamRequestRow,
   GameMap,
   ManagerRow,
+  OrganizerRef,
   Registration,
   Scrim,
   SessionUser,
@@ -27,14 +29,25 @@ export function pointsSystemOf(raw: Prisma.JsonValue | null | undefined): Points
 
 export const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 // ---------- shared include shapes ----------
+/** branding storage key ("branding/<id>.png") → URL the frontends load; null stays null. */
+export const brandingUrl = (key: string | null | undefined): string | null => (key ? `${API_PREFIX}/media/${key}` : null);
+
+export const organizerSelect = { id: true, displayName: true, orgLogoKey: true } satisfies Prisma.UserSelect;
+/** manager row → OrganizerRef (adds the org logo URL) */
+export const toOrganizer = (m: { id: string; displayName: string; orgLogoKey: string | null }): OrganizerRef => ({
+  id: m.id,
+  displayName: m.displayName,
+  logoUrl: brandingUrl(m.orgLogoKey),
+});
+
 export const scrimInclude = {
-  manager: { select: { id: true, displayName: true } },
+  manager: { select: organizerSelect },
 } satisfies Prisma.ScrimInclude;
 export type ScrimWithManager = Prisma.ScrimGetPayload<{ include: typeof scrimInclude }>;
 
 export const teamSelect = { id: true, name: true, tag: true, captainName: true } satisfies Prisma.TeamSelect;
 export const registrationInclude = { team: { select: teamSelect } } satisfies Prisma.RegistrationInclude;
-export type RegistrationWithTeam = Prisma.RegistrationGetPayload<{ include: typeof registrationInclude }>;
+type RegistrationWithTeam = Prisma.RegistrationGetPayload<{ include: typeof registrationInclude }>;
 
 export const userWithTeamInclude = { team: { select: { id: true, name: true, tag: true } } } satisfies Prisma.UserInclude;
 export type UserWithTeam = Prisma.UserGetPayload<{ include: typeof userWithTeamInclude }>;
@@ -70,7 +83,8 @@ export function toScrim(s: ScrimWithManager): Scrim {
     firstSlot: s.firstSlot,
     status: s.status,
     pointsSystem: pointsSystemOf(s.pointsSystem),
-    manager: { id: s.manager.id, displayName: s.manager.displayName },
+    manager: toOrganizer(s.manager),
+    posterUrl: brandingUrl(s.posterKey),
     createdAt: s.createdAt.toISOString(),
   };
 }
@@ -88,7 +102,7 @@ export function toRegistration(r: RegistrationWithTeam): Registration {
 }
 
 export const managerRowInclude = { _count: { select: { scrims: true } } } satisfies Prisma.UserInclude;
-export type ManagerWithCount = Prisma.UserGetPayload<{ include: typeof managerRowInclude }>;
+type ManagerWithCount = Prisma.UserGetPayload<{ include: typeof managerRowInclude }>;
 
 export function toManagerRow(u: ManagerWithCount): ManagerRow {
   return {
@@ -109,7 +123,7 @@ export const teamRowInclude = {
   _count: { select: { registrations: true } },
   request: { select: { manager: { select: { id: true, displayName: true } } } },
 } satisfies Prisma.TeamInclude;
-export type TeamWithUser = Prisma.TeamGetPayload<{ include: typeof teamRowInclude }>;
+type TeamWithUser = Prisma.TeamGetPayload<{ include: typeof teamRowInclude }>;
 
 export function toTeamRow(t: TeamWithUser): TeamRow {
   return {
@@ -130,7 +144,7 @@ export function toTeamRow(t: TeamWithUser): TeamRow {
 }
 
 export const teamRequestInclude = { manager: { select: { id: true, displayName: true } } } satisfies Prisma.TeamRequestInclude;
-export type TeamRequestWithManager = Prisma.TeamRequestGetPayload<{ include: typeof teamRequestInclude }>;
+type TeamRequestWithManager = Prisma.TeamRequestGetPayload<{ include: typeof teamRequestInclude }>;
 
 export function toTeamRequestRow(r: TeamRequestWithManager): TeamRequestRow {
   return {

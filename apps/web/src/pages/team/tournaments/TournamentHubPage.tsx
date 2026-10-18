@@ -132,18 +132,22 @@ export default function TournamentHubPage() {
           <JourneyCard t={t} />
         </div>
 
-        <aside className={cn("contents lg:col-start-2 lg:row-start-3 lg:flex lg:flex-col lg:gap-5", stageQ.data ? "lg:row-span-3" : "lg:row-span-2")}>
-          <div className="order-3 empty:hidden lg:order-none">
-            <RegistrationPanel t={t} />
-          </div>
-          <div className="order-7 lg:order-none">
-            <PointsLegend ps={t.pointsSystem} className="rounded-2xl" />
-          </div>
-          {t.rules && (
-            <div className="order-8 lg:order-none">
-              <RulesSection rules={t.rules} />
+        {/* desktop: the side column takes exactly the height of the left boxes and scrolls inside it,
+            so a long registration panel never stretches the grid */}
+        <aside className={cn("contents lg:relative lg:col-start-2 lg:row-start-3 lg:block lg:min-h-[26rem]", stageQ.data ? "lg:row-span-3" : "lg:row-span-2")}>
+          <div className="contents lg:absolute lg:inset-0 lg:flex lg:flex-col lg:gap-5 lg:overflow-y-auto lg:overscroll-contain lg:rounded-2xl lg:pr-1 lg:[scrollbar-gutter:stable] lg:[scrollbar-width:thin]">
+            <div className="order-3 shrink-0 empty:hidden lg:order-none">
+              <RegistrationPanel t={t} />
             </div>
-          )}
+            <div className="order-7 shrink-0 lg:order-none">
+              <PointsLegend ps={t.pointsSystem} className="rounded-2xl" />
+            </div>
+            {t.rules && (
+              <div className="order-8 shrink-0 lg:order-none">
+                <RulesSection rules={t.rules} />
+              </div>
+            )}
+          </div>
         </aside>
 
         {stageQ.data && (

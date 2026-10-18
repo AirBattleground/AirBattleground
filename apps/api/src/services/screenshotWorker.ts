@@ -10,8 +10,8 @@ import { readBuffer } from "../lib/storage.js";
 import { logger } from "../logger.js";
 import { applyExtraction, rosterForScreenshot } from "./matches.js";
 
-export const WORKER_CONCURRENCY = 2;
-export const MAX_ATTEMPTS = 3;
+const WORKER_CONCURRENCY = 2;
+const MAX_ATTEMPTS = 3;
 const POLL_MS = 2_000;
 const backoffMs = (attempt: number) => Math.min(60_000, 5_000 * 2 ** (attempt - 1));
 
@@ -43,7 +43,7 @@ async function fail(id: string, error: string) {
 }
 
 /** Read one claimed screenshot and merge it. Never throws. */
-export async function processScreenshot(id: string): Promise<void> {
+async function processScreenshot(id: string): Promise<void> {
   const s = await prisma.screenshot.findUnique({ where: { id } });
   if (!s) return;
   try {
@@ -92,7 +92,7 @@ export async function runWorkerOnce(): Promise<number> {
 }
 
 /** Screenshots stuck in PROCESSING after a crash/restart go back to the queue. */
-export async function requeueStale(olderThanMs = 10 * 60_000) {
+async function requeueStale(olderThanMs = 10 * 60_000) {
   await prisma.$executeRaw`
     UPDATE "Screenshot" SET status = 'QUEUED'
     WHERE status = 'PROCESSING' AND "createdAt" < ${new Date(Date.now() - olderThanMs)}`;

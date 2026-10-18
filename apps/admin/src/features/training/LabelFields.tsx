@@ -102,7 +102,7 @@ const GLYPH_TITLE = {
   plain: "",
 } as const;
 
-export function GlyphView({ text }: { text: string }) {
+function GlyphView({ text }: { text: string }) {
   if (!text) return null;
   return (
     <div className="mt-1 flex flex-wrap items-center gap-px font-mono text-sm leading-6" aria-label={`Characters: ${[...text].map((c) => `${c} ${codePoint(c)}`).join(", ")}`}>
@@ -138,7 +138,7 @@ export function GlyphLegend() {
 }
 
 // ---------- confidence ----------
-export function ConfidenceBadge({ hint, className }: { hint: OcrHint | undefined; className?: string }) {
+function ConfidenceBadge({ hint, className }: { hint: OcrHint | undefined; className?: string }) {
   if (!hint) return null;
   const low = hint.confidence < LOW_CONFIDENCE;
   return (
@@ -155,7 +155,7 @@ export function ConfidenceBadge({ hint, className }: { hint: OcrHint | undefined
           {Math.round(hint.confidence * 100)}%
         </span>
       </TooltipTrigger>
-      <TooltipContent>{low ? "The model wasn't sure — please double-check" : "How sure the model was"}</TooltipContent>
+      <TooltipContent>{low ? "The reader wasn't sure — please double-check" : "How sure the reader was"}</TooltipContent>
     </Tooltip>
   );
 }
@@ -163,13 +163,13 @@ export function ConfidenceBadge({ hint, className }: { hint: OcrHint | undefined
 /** "Model read: X" under a field when the value differs from what OCR read. */
 function OcrNote({ hint, value, onRestore }: { hint: OcrHint | undefined; value: string; onRestore: () => void }) {
   if (!hint) return null;
-  if (hint.text === value) return hint.confidence < LOW_CONFIDENCE ? <p className="mt-1 text-[11px] text-warning-foreground dark:text-warning">Model wasn't sure — check against the screenshot</p> : null;
+  if (hint.text === value) return hint.confidence < LOW_CONFIDENCE ? <p className="mt-1 text-[11px] text-warning-foreground dark:text-warning">Reader wasn't sure — check against the screenshot</p> : null;
   return (
     <p className="mt-1 flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
-      <span className="shrink-0">Model read:</span>
+      <span className="shrink-0">Claude read:</span>
       <span className="truncate font-mono text-foreground/80 line-through decoration-destructive/60">{hint.text || "(nothing)"}</span>
       {hint.text && (
-        <button type="button" onClick={onRestore} className="ml-1 inline-flex shrink-0 items-center gap-0.5 rounded px-1 text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50" aria-label={`Use what the model read: ${hint.text}`}>
+        <button type="button" onClick={onRestore} className="ml-1 inline-flex shrink-0 items-center gap-0.5 rounded px-1 text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50" aria-label={`Use what Claude read: ${hint.text}`}>
           <RotateCcw className="size-3" /> use
         </button>
       )}
@@ -329,7 +329,7 @@ export function GroupCard({
             {isSlots ? position(index) : `Block ${index + 1}`} · {filled} {filled === 1 ? "player" : "players"}
             {!isSlots && <> · {totalKills} finishes</>}
           </div>
-          {group.numOcr && group.numOcr.text !== group.num && <div className="text-[11px] text-muted-foreground">Model read: <span className="font-mono line-through decoration-destructive/60">{group.numOcr.text || "(nothing)"}</span></div>}
+          {group.numOcr && group.numOcr.text !== group.num && <div className="text-[11px] text-muted-foreground">Claude read: <span className="font-mono line-through decoration-destructive/60">{group.numOcr.text || "(nothing)"}</span></div>}
         </div>
         <Tooltip>
           <TooltipTrigger asChild>

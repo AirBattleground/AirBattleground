@@ -30,7 +30,7 @@ export function TimePick({ value, onChange, label, invalid }: { value: string; o
   );
 }
 
-export interface ScheduleErrors {
+interface ScheduleErrors {
   startDate?: string;
   endDate?: string;
   windows?: string;

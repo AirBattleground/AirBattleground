@@ -121,6 +121,20 @@ export interface ListResponse<T> {
   items: T[];
 }
 
+// ---------- branding (org logo + posters) ----------
+/** The manager running a scrim/tournament, with their organisation logo. */
+export interface OrganizerRef {
+  id: string;
+  displayName: string;
+  /** organisation logo URL; null/absent = none uploaded */
+  logoUrl?: string | null;
+}
+
+/** Response of every image upload/remove endpoint (org logo, scrim poster, tournament poster). */
+export interface ImageUrlResponse {
+  url: string | null;
+}
+
 // ---------- scrims ----------
 export interface Scrim {
   id: string;
@@ -136,7 +150,9 @@ export interface Scrim {
   status: ScrimStatus;
   /** phase 2: points table rules */
   pointsSystem: { placement: number[]; killPoints: number };
-  manager: { id: string; displayName: string };
+  manager: OrganizerRef;
+  /** poster image URL (GET it with the session cookie); null = none uploaded */
+  posterUrl: string | null;
   createdAt: string;
 }
 
@@ -199,7 +215,7 @@ export interface TeamRegistration {
   startsAt: string;
   createdAt: string;
   decidedAt: string | null;
-  scrim: Pick<Scrim, "id" | "title" | "maps" | "startTime" | "slotCount" | "firstSlot" | "manager">;
+  scrim: Pick<Scrim, "id" | "title" | "maps" | "startTime" | "slotCount" | "firstSlot" | "manager" | "posterUrl">;
 }
 
 export interface TeamDashboard {

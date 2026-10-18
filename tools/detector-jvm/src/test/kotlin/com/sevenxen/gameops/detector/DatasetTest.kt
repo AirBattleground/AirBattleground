@@ -11,7 +11,7 @@ class DatasetTest {
     @Test
     fun labelledScreenshotsAreDetected() {
         val items = TestImages.labelled()
-        assertEquals(181, items.size, "labelled screenshots in services/extractor/eval/dataset")
+        assertEquals(181, items.size, "labelled screenshots in datasets/bgmi-screenshots")
         ScreenDetector.debug = true
         val perGroup = LinkedHashMap<String, IntArray>() // ok, total
         val confusion = LinkedHashMap<String, Int>()

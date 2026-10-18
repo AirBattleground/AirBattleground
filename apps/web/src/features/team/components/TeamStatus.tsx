@@ -4,7 +4,7 @@ import type { RegistrationStatus } from "@7xen/shared";
 import { Pill, type Tone } from "@7xen/ui/components/brand/status";
 
 /** Plain words a team captain understands at a glance. */
-export const TEAM_STATUS_TEXT: Record<RegistrationStatus, string> = {
+const TEAM_STATUS_TEXT: Record<RegistrationStatus, string> = {
   PENDING: "Waiting for approval",
   APPROVED: "You're in",
   REJECTED: "Not accepted",

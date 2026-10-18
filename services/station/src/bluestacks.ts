@@ -17,7 +17,7 @@ import type { EnsureEmulator } from "./emulator.js";
 import { log } from "./log.js";
 import { run } from "./proc.js";
 
-export interface BsOptions {
+interface BsOptions {
   /** e.g. https://192.168.0.50:8080 */
   url: string;
   token: string;
@@ -25,7 +25,7 @@ export interface BsOptions {
   insecureTls: boolean;
 }
 
-export interface BsStatus {
+interface BsStatus {
   active: boolean;
   streaming: boolean;
   viewers: number;
@@ -37,7 +37,7 @@ export interface BsStatus {
   };
 }
 
-export class BsUnreachable extends Error {}
+class BsUnreachable extends Error {}
 
 // ---------------------------------------------------------------- REST
 
@@ -308,8 +308,8 @@ export function touchMessage(action: 0 | 1 | 2, id: number, x: number, y: number
   b.writeUInt16BE(0, 9);
   return b;
 }
-export const keyMessage = (action: 0 | 1, name: string) => Buffer.concat([Buffer.from([3, action]), Buffer.from(name, "utf8")]);
-export const textMessage = (text: string) => Buffer.concat([Buffer.from([4]), Buffer.from(text, "utf8")]);
+const keyMessage = (action: 0 | 1, name: string) => Buffer.concat([Buffer.from([3, action]), Buffer.from(name, "utf8")]);
+const textMessage = (text: string) => Buffer.concat([Buffer.from([4]), Buffer.from(text, "utf8")]);
 
 /** Which browser → Mac messages the relay passes on. Returns null for anything else. */
 export function sanitizeClientMessage(buf: Buffer): Buffer | null {
@@ -332,7 +332,7 @@ export function sanitizeClientMessage(buf: Buffer): Buffer | null {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export interface BsDeviceOptions {
+interface BsDeviceOptions {
   ffmpeg: string;
   jobTimeoutMs: number;
   pollMs?: number;

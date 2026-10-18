@@ -13,8 +13,7 @@ import { useManagers } from "@/features/managers/api";
 import { useAdminStats } from "@/features/stats/api";
 import { useTeams } from "@/features/teams/api";
 import { useAdminTournaments } from "@/features/tournaments/api";
-import { useExtractorStatus, useModels, useSamples } from "@/features/training/api";
-import { pct } from "@/features/training/format";
+import { useExtractorStatus, useSamples } from "@/features/training/api";
 import { ManagerAppCard } from "@/features/managerApp/ManagerAppCard";
 import { StationCard } from "@/features/station/StationCard";
 import { useAuth } from "@/lib/auth";
@@ -24,7 +23,7 @@ import { relativeTime } from "@/lib/format";
 const TOUR: TourStep[] = [
   { element: '[data-tour="stats"]', title: "Welcome to your control room", description: "These numbers show how many managers and teams are active, scrims running, and registrations waiting for approval.", side: "bottom" },
   { element: '[data-tour="quick-actions"]', title: "Create logins", description: "Teams and managers can't sign up on their own yet. Make their logins here in a few clicks.", side: "bottom" },
-  { element: '[data-tour="reader-card"]', title: "Screenshot reader", description: "Reads match screenshots for managers. Check new samples here so it keeps getting more accurate.", side: "bottom" },
+  { element: '[data-tour="reader-card"]', title: "Screenshot reader", description: "Claude reads match screenshots for managers. Checked samples here are a test set for spotting what it gets wrong.", side: "bottom" },
   { element: '[data-tour="tournaments-card"]', title: "Tournaments", description: "How many tournaments are live or open for registration right now. Click to see them all.", side: "bottom" },
   { element: '[data-tour="manager-app-card"]', title: "Manager app", description: "Match videos recorded by managers' phones, the room-creation recipes, and how long videos are kept.", side: "bottom" },
   { element: '[data-tour="station-card"]', title: "7XEN Station", description: "The game phone that runs on the server PC. It records and streams matches for managers. Shows whether it's online and what it's doing.", side: "bottom" },
@@ -227,13 +226,11 @@ function RecentList({ title, to, empty, loading, rows }: { title: string; to: st
 
 function ReaderCard() {
   const status = useExtractorStatus({ refetchInterval: 30_000 });
-  const models = useModels();
   const samples = useSamples();
   const s = status.data;
   const online = !!s?.online;
-  const active = models.data?.items.find((m) => m.active);
-  const accuracy = pct(active?.metrics?.nameExact ?? null);
   const unverified = samples.data?.items.filter((x) => !x.verified && !x.excluded).length ?? 0;
+  const checked = samples.data?.items.filter((x) => x.verified && !x.excluded).length ?? 0;
   const loading = status.isPending;
   return (
     <Link
@@ -247,14 +244,14 @@ function ReaderCard() {
           {online && <span className="absolute -top-0.5 -right-0.5 size-3 animate-pulse rounded-full border-2 border-card bg-success" aria-hidden />}
         </div>
         <div className="min-w-0">
-          <div className="font-display text-xl font-bold">Screenshot reader</div>
+          <div className="font-display text-xl font-bold">Screenshot reader · Claude</div>
           <div className="text-sm text-muted-foreground">
             {loading ? (
               <Skeleton className="mt-1 h-4 w-48" />
             ) : online ? (
-              <>Online · model <strong className="text-foreground">{s?.activeModel ?? active?.version ?? "—"}</strong>{accuracy ? <> · {accuracy} of names read exactly right</> : " · accuracy not measured yet"}</>
+              <>Online · model <strong className="text-foreground">{s?.activeModel ?? "—"}</strong> · {checked} checked {checked === 1 ? "sample" : "samples"} in the test set</>
             ) : (
-              "Offline — managers can still type results by hand"
+              "Offline — Claude CLI not found or not logged in. Managers can still type results by hand"
             )}
           </div>
         </div>

@@ -35,7 +35,7 @@ export function isWeekend(date: string): boolean {
 
 export const pad2 = (n: number) => String(n).padStart(2, "0");
 
-export interface Remaining {
+interface Remaining {
   totalMs: number;
   days: number;
   hours: number;

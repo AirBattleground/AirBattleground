@@ -50,3 +50,17 @@ export function MapChips({ maps, className, numbered = true }: { maps: GameMap[]
     </div>
   );
 }
+
+/** Compact one-line map list ("● Erangel  ● Miramar  ● Sanhok") for dense rows. */
+export function MapDots({ maps, className }: { maps: GameMap[]; className?: string }) {
+  return (
+    <span className={cn("flex min-w-0 items-center gap-x-2.5 overflow-hidden whitespace-nowrap text-xs font-medium text-muted-foreground", className)}>
+      {maps.map((m, i) => (
+        <span key={`${m}-${i}`} className="inline-flex shrink-0 items-center gap-1">
+          <span className={cn("size-1.5 rounded-full", MAP_DOT[m])} />
+          {MAP_LABELS[m]}
+        </span>
+      ))}
+    </span>
+  );
+}

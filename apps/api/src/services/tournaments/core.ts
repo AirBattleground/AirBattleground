@@ -27,7 +27,7 @@ import {
 } from "@7xen/shared";
 import { prisma, type Tx } from "../../db.js";
 import { AppError, notFound } from "../../lib/errors.js";
-import { iso, pointsSystemOf, teamSelect, toTeamSummary } from "../../lib/serialize.js";
+import { brandingUrl, iso, organizerSelect, pointsSystemOf, teamSelect, toOrganizer, toTeamSummary } from "../../lib/serialize.js";
 
 export const TOURNAMENT_NOT_FOUND = "Tournament not found";
 
@@ -40,7 +40,7 @@ export interface Actor {
 // ---------------------------------------------------------------- loading + locks
 
 export const tournamentInclude = {
-  manager: { select: { id: true, displayName: true } },
+  manager: { select: organizerSelect },
   champion: { select: teamSelect },
   stages: {
     orderBy: { order: "asc" },
@@ -123,7 +123,7 @@ export function planFor(spec: StageSpec, sizes: number[]): SchedulePlan | null {
   return planSchedule(spec.schedule, sizes, spec.matchesPerGroup, spec.maps);
 }
 
-export const stagePlan = (s: StageWithGroups): SchedulePlan | null => planFor(specOf(s), plannedSizes(s));
+const stagePlan = (s: StageWithGroups): SchedulePlan | null => planFor(specOf(s), plannedSizes(s));
 
 /** Stage-1 time slots teams pick from when registering. */
 export function stageOneOptions(t: TournamentFull): TimeSlotOption[] {
@@ -242,7 +242,8 @@ function summaryOf(t: TournamentFull, counts: Counts, times: StageTimes): Tourna
     startsAt: firstSummary?.startsAt ?? null,
     stagesCount: t.stages.length,
     currentStage: cur ? { order: cur.order, name: cur.name, status: cur.status } : null,
-    manager: t.manager,
+    manager: toOrganizer(t.manager),
+    posterUrl: brandingUrl(t.posterKey),
     champion: t.champion ? toTeamSummary(t.champion) : null,
     createdAt: t.createdAt.toISOString(),
   };
@@ -338,7 +339,7 @@ async function nextAction(t: TournamentFull, issues: FormatIssue[]): Promise<Man
 // ---------------------------------------------------------------- entries
 
 export const entryInclude = { team: { select: teamSelect } } satisfies Prisma.TournamentEntryInclude;
-export type EntryWithTeam = Prisma.TournamentEntryGetPayload<{ include: typeof entryInclude }>;
+type EntryWithTeam = Prisma.TournamentEntryGetPayload<{ include: typeof entryInclude }>;
 
 export function toEntryRow(e: EntryWithTeam, waitlistPosition: number | null = null): TournamentEntryRow {
   return {

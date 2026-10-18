@@ -3,7 +3,7 @@ import type { CreateManagerInput, ListResponse, ManagerRow, ResetPasswordInput, 
 import { api } from "@/lib/api";
 import { statsKey } from "@/features/stats/api";
 
-export const managersKey = ["admin", "managers"] as const;
+const managersKey = ["admin", "managers"] as const;
 
 export function useManagers(q = "") {
   return useQuery({

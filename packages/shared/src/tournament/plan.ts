@@ -13,13 +13,13 @@ export function toMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number) as [number, number];
   return h * 60 + m;
 }
-export function fromMinutes(min: number): string {
+function fromMinutes(min: number): string {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 /** ISO instant with the IST offset, e.g. "2026-10-18T18:00:00+05:30". */
-export function istInstant(date: string, min: number): string {
+function istInstant(date: string, min: number): string {
   return `${date}T${fromMinutes(min)}:00${APP_TZ_OFFSET}`;
 }
 /** "Sat, 18 Oct · 6:00 PM" */

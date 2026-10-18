@@ -474,13 +474,10 @@ describe("admin training center", () => {
     const badLabels = await admin.patch(`/api/admin/training/samples/${id}`).send({ labels: { rows: [{ rank: 1, players: [{ name: "x", kills: 1 }] }] } });
     expect(badLabels.status).toBe(400);
 
-    // extractor offline (tests point at a closed port)
+    // reader offline (tests point CLAUDE_BIN at a missing binary)
     const status = await admin.get("/api/admin/extractor/status");
     expect(status.status).toBe(200);
     expect(status.body).toMatchObject({ online: false, activeModel: null, queue: { queued: 0, processing: 0, failedLast24h: 0 } });
-    const models = await admin.get("/api/admin/training/models");
-    expect(models.status).toBe(503);
-    expect(models.body.error.code).toBe("EXTRACTOR_OFFLINE");
     const prev = await admin.post("/api/admin/training/preview").field("kind", "RESULTS").attach("file", fakePng("p"), { filename: "p.png", contentType: "image/png" });
     expect(prev.status).toBe(503);
 
@@ -488,7 +485,7 @@ describe("admin training center", () => {
     expect((await admin.get(`/api/admin/training/samples/${id}`)).status).toBe(404);
   });
 
-  it("starts a run with verified, non-excluded samples and prefills labels", async () => {
+  it("prefills sample labels from the reader", async () => {
     const admin = await adminAgent();
     const mk = (salt: string) =>
       admin
@@ -498,24 +495,6 @@ describe("admin training center", () => {
         .field("split", "TRAIN")
         .attach("file", fakePng(salt), { filename: `${salt}.png`, contentType: "image/png" });
     const a = (await mk("a")).body;
-    const b = (await mk("b")).body;
-    // uploads start unchecked; only verified, non-excluded samples are trained on
-    await admin.patch(`/api/admin/training/samples/${a.id}`).send({ verified: true });
-    await admin.patch(`/api/admin/training/samples/${b.id}`).send({ verified: true, excluded: true });
-
-    const run = {
-      id: "run1", status: "queued", progress: 0, base_version: "v1", result_version: null, sample_count: 1,
-      metrics_before: null, metrics_after: null, log_tail: [], error: null, created_at: "2026-10-17T00:00:00Z", started_at: null, finished_at: null,
-    };
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(run), { status: 202 }));
-    const res = await admin.post("/api/admin/training/runs").send({ notes: "first", autoActivate: true });
-    expect(res.status).toBe(202);
-    expect(res.body).toMatchObject({ id: "run1", status: "QUEUED", baseVersion: "v1", sampleCount: 1 });
-    const sent = JSON.parse(String(fetchSpy.mock.calls.find((c) => String(c[0]).endsWith("/v1/training/runs"))![1]!.body));
-    expect(sent).toMatchObject({ auto_activate: true, notes: "first" });
-    expect(sent.samples).toEqual([{ id: a.id, kind: "results", image_path: expect.stringMatching(/^samples\/\d{4}\/\d{2}\/\w+\.png$/), labels: expect.any(Object), split: "train" }]);
-    fetchSpy.mockRestore();
-
     vi.spyOn(extractor, "extract").mockResolvedValue(
       extraction("RESULTS", { rows: [{ rank: 2, rankConfidence: 0.9, inferredSlot: null, players: [pl("Bob", 4)] }] }),
     );

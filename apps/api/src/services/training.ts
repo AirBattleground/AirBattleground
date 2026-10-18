@@ -1,4 +1,4 @@
-/** Admin training center (phase 2): labelled samples, model versions and training runs (proxied to the extractor). */
+/** Admin training center (phase 2): labelled screenshots used to check the reader (Claude), plus reader status. */
 import { Prisma } from "@prisma/client";
 import {
   resultsLabelsSchema,
@@ -8,8 +8,6 @@ import {
   type ResultsLabels,
   type ScreenshotKind,
   type SlotListLabels,
-  type StartTrainingInput,
-  type TrainingRun,
   type TrainingSampleDetail,
   type TrainingSampleRow,
   type UpdateSampleInput,
@@ -48,7 +46,7 @@ function toDetail(s: SampleRecord): TrainingSampleDetail {
 }
 
 /** Validate labels against the schema for `kind` (400 with fields under "labels."). */
-export function parseLabels(kind: ScreenshotKind, labels: unknown): SlotListLabels | ResultsLabels {
+function parseLabels(kind: ScreenshotKind, labels: unknown): SlotListLabels | ResultsLabels {
   const schema = kind === "SLOT_LIST" ? slotListLabelsSchema : resultsLabelsSchema;
   const r = schema.safeParse(labels);
   if (!r.success) {
@@ -140,7 +138,7 @@ export async function deleteSample(id: string): Promise<void> {
 }
 
 /** Labels from a model reading (the admin then corrects them). */
-export function labelsFromExtraction(ex: ExtractionResult): SlotListLabels | ResultsLabels {
+function labelsFromExtraction(ex: ExtractionResult): SlotListLabels | ResultsLabels {
   const clean = (n: string) => n.trim().slice(0, 40);
   if (ex.kind === "SLOT_LIST") {
     return {
@@ -188,25 +186,7 @@ export async function prefillSample(id: string): Promise<TrainingSampleDetail> {
   );
 }
 
-// ---------------------------------------------------------------- models & runs (proxy)
-
-export const listModels = () => viaExtractor(() => extractor.listModels());
-export const activateModel = (version: string) => viaExtractor(() => extractor.activateModel(version));
-export const listRuns = () => viaExtractor(() => extractor.listRuns());
-export const getRun = (id: string) => viaExtractor(() => extractor.getRun(id));
-
-export async function startRun(input: StartTrainingInput): Promise<TrainingRun> {
-  const samples = await prisma.trainingSample.findMany({ where: { verified: true, excluded: false }, orderBy: { createdAt: "asc" } });
-  if (!samples.length) throw new AppError("VALIDATION_ERROR", "Verify at least one training sample before starting a run");
-  return viaExtractor(() =>
-    extractor.startRun({
-      baseVersion: input.baseVersion,
-      notes: input.notes,
-      autoActivate: input.autoActivate,
-      samples: samples.map((s) => ({ id: s.id, kind: s.kind, imagePath: s.storageKey, labels: s.labels, split: s.split })),
-    }),
-  );
-}
+// ---------------------------------------------------------------- reader status
 
 export async function extractorStatus(): Promise<ExtractorStatus> {
   const [health, queue] = await Promise.all([

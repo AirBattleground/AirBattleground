@@ -146,28 +146,54 @@ describe("mergeResults", () => {
 });
 
 describe("extractor mapping", () => {
-  it("converts snake_case to the shared camelCase shape", () => {
+  const roster = [
+    { slot: 5, teamName: "Alpha", players: ["Ace", "Bolt"] },
+    { slot: 7, teamName: "Bravo", players: ["Cy"] },
+  ];
+
+  it("maps Claude's results output, trusting only real roster names", () => {
     const r = toExtractionResult(
       {
-        image_id: "x",
-        kind: "results",
-        model_version: "v2",
-        rows: [{ rank: 4, rank_confidence: 0.8, inferred_slot: 5, players: [{ name: "a", confidence: 0.9, roster_match: "A", matched_slot: 5, kills: 2, kills_confidence: 0.7 }] }],
-        needs_review: true,
+        rows: [
+          { rank: 4, players: [{ name: " Ace ", kills: 2, unsure: false, roster_match: "Ace" }, { name: "B0lt", kills: -1, unsure: true, roster_match: "Bolt" }] },
+          { rank: 4, players: [{ name: "dup", kills: 0, unsure: false, roster_match: null }] },
+          { rank: 6, players: [{ name: "Zed", kills: 1, unsure: false, roster_match: "NotInRoster" }] },
+        ],
         warnings: ["w"],
-        timings_ms: { ocr: 12.5 },
       },
-      "SLOT_LIST",
+      "RESULTS",
+      "sonnet",
+      roster,
+      42,
     );
-    expect(r).toEqual({
-      imageId: "x",
-      kind: "RESULTS",
-      modelVersion: "v2",
-      teams: [],
-      rows: [{ rank: 4, rankConfidence: 0.8, inferredSlot: 5, players: [{ name: "a", confidence: 0.9, source: "paddle", rosterMatch: "A", matchedSlot: 5, kills: 2, killsConfidence: 0.7 }] }],
-      needsReview: true,
-      warnings: ["w"],
-      timingsMs: { ocr: 12.5 },
+    expect(r.kind).toBe("RESULTS");
+    expect(r.modelVersion).toBe("claude-sonnet");
+    expect(r.rows).toHaveLength(2); // duplicate rank 4 dropped
+    expect(r.rows[0]).toEqual({
+      rank: 4,
+      rankConfidence: 0.97,
+      inferredSlot: 5,
+      players: [
+        { name: "Ace", confidence: 0.97, source: "claude", rosterMatch: "Ace", matchedSlot: 5, kills: 2, killsConfidence: 0.97 },
+        { name: "B0lt", confidence: 0.6, source: "claude", rosterMatch: "Bolt", matchedSlot: 5, kills: 0, killsConfidence: 0.6 },
+      ],
     });
+    expect(r.rows[1]).toMatchObject({ rank: 6, inferredSlot: null, players: [{ rosterMatch: null, matchedSlot: null }] });
+    expect(r).toMatchObject({ teams: [], needsReview: true, warnings: ["w"], timingsMs: { total: 42 } });
+  });
+
+  it("maps a slot list and only flags review when something is off", () => {
+    const r = toExtractionResult(
+      { teams: [{ slot: 7, players: [{ name: "Cy", unsure: false, roster_match: "Cy" }] }, { slot: null, players: [] }], warnings: [] },
+      "SLOT_LIST",
+      "sonnet",
+      roster,
+    );
+    expect(r.teams).toEqual([
+      { slot: 7, slotConfidence: 0.97, players: [{ name: "Cy", confidence: 0.97, source: "claude", rosterMatch: "Cy", matchedSlot: 7, kills: null, killsConfidence: null }] },
+      { slot: null, slotConfidence: 0, players: [] },
+    ]);
+    expect(r.rows).toEqual([]);
+    expect(r.needsReview).toBe(false);
   });
 });

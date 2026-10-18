@@ -47,7 +47,7 @@
 import { z } from "zod";
 import { MAPS, MAX_ROOM_SLOTS, type GameMap } from "./enums";
 import type { PointsSystem } from "./points";
-import type { TeamSummary } from "./dto";
+import type { OrganizerRef, TeamSummary } from "./dto";
 import { DATE_RE, TIME_RE } from "./schedule";
 
 // ---------- enums ----------
@@ -186,7 +186,9 @@ export interface TournamentSummary {
   startsAt: string | null;
   stagesCount: number;
   currentStage: { order: number; name: string; status: StageStatus } | null;
-  manager: { id: string; displayName: string };
+  manager: OrganizerRef;
+  /** poster image URL; null = none uploaded */
+  posterUrl: string | null;
   champion: TeamSummary | null;
   createdAt: string;
 }

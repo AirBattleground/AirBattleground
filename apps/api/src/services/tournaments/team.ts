@@ -35,7 +35,7 @@ import {
   type TournamentFull,
 } from "./core.js";
 
-export type TeamScope = "open" | "live" | "mine" | "completed" | "all";
+type TeamScope = "open" | "live" | "mine" | "completed" | "all";
 
 async function loadVisible(id: string): Promise<TournamentFull> {
   const t = await loadTournament(id);
@@ -151,7 +151,7 @@ const NONE: Omit<MyTournamentStatus, "state" | "canRegister" | "registerBlockedR
   assignedSlot: null,
 };
 
-export async function myStatus(t: TournamentFull, teamId: string): Promise<MyTournamentStatus> {
+async function myStatus(t: TournamentFull, teamId: string): Promise<MyTournamentStatus> {
   const entry = await prisma.tournamentEntry.findUnique({ where: { tournamentId_teamId: { tournamentId: t.id, teamId } }, include: entryInclude });
   const closed = registrationClosedReason(t);
   const active = entry && (entry.status === "CONFIRMED" || entry.status === "WAITLISTED");

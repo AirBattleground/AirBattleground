@@ -9,7 +9,7 @@ import type { Device } from "./adb.js";
 import { log } from "./log.js";
 import type { Proc, Spawner } from "./proc.js";
 
-export interface EmulatorOptions {
+interface EmulatorOptions {
   emulator: string;
   avd: string;
   avdHome: string;

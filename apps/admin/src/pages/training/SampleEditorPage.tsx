@@ -63,12 +63,12 @@ import { errorMessage } from "@/lib/forms";
 import { relativeTime } from "@/lib/format";
 
 const TOUR: TourStep[] = [
-  { title: "Label editor", description: "Make the labels match the screenshot exactly. These become the 'right answers' the model learns from." },
+  { title: "Label editor", description: "Make the labels match the screenshot exactly. These become the 'right answers' the screenshot reader is checked against." },
   { element: '[data-tour="viewer"]', title: "The screenshot", description: "Scroll to zoom, drag to move, double-click to zoom in. Use the expand button for a bigger view.", side: "right" },
-  { element: '[data-tour="editor-tools"]', title: "Helpers", description: "Re-read with the current model, show look-alike letters (I vs l vs 1, O vs 0), or open special characters like 多 シ 《》.", side: "bottom" },
-  { element: '[data-tour="group-card"]', title: "One card per team", description: "Same order as the screenshot (left to right, top to bottom). Amber boxes are where the model wasn't sure.", side: "left" },
+  { element: '[data-tour="editor-tools"]', title: "Helpers", description: "Re-read with Claude, show look-alike letters (I vs l vs 1, O vs 0), or open special characters like 多 シ 《》.", side: "bottom" },
+  { element: '[data-tour="group-card"]', title: "One card per team", description: "Same order as the screenshot (left to right, top to bottom). Amber boxes are where the reader wasn't sure.", side: "left" },
   { element: '[data-tour="sample-settings"]', title: "Training or test", description: "Test samples are kept aside to measure accuracy honestly. Turn off 'Use this sample' for blurry or broken screenshots.", side: "top" },
-  { element: '[data-tour="save-bar"]', title: "Save and mark checked", description: "Only checked samples are used for training. Ctrl+S saves, Ctrl+Enter marks checked and opens the next one.", side: "top" },
+  { element: '[data-tour="save-bar"]', title: "Save and mark checked", description: "Only checked samples count as right answers. Ctrl+S saves, Ctrl+Enter marks checked and opens the next one.", side: "top" },
 ];
 
 const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
@@ -225,10 +225,10 @@ function Editor({ sample }: { sample: TrainingSampleDetail }) {
             toast.success(opts.verify ? "Checked ✓ — next sample" : "Saved — next sample");
             go(`/training/samples/${nextId}`);
           } else {
-            toast.success(opts.verify ? "Checked ✓ — that was the last one" : "Saved", { description: "Head to Training runs when you're ready to train." });
+            toast.success(opts.verify ? "Checked ✓ — that was the last one" : "Saved", { description: "Your test set is all checked." });
             go("/training/samples");
           }
-        } else toast.success(opts.verify ? "Marked as checked — it will be used for training" : opts.unverify ? "Marked as needs checking" : "Labels saved");
+        } else toast.success(opts.verify ? "Marked as checked" : opts.unverify ? "Marked as needs checking" : "Labels saved");
         return true;
       } catch (e) {
         toast.error(errorMessage(e));
@@ -270,7 +270,7 @@ function Editor({ sample }: { sample: TrainingSampleDetail }) {
     }
   };
 
-  // ---------- re-read with the current model ----------
+  // ---------- re-read with the screenshot reader ----------
   const reread = async () => {
     setRereading(true);
     try {
@@ -285,11 +285,11 @@ function Editor({ sample }: { sample: TrainingSampleDetail }) {
         // shows confidences + what changed; the admin saves when happy
         saveReading(sample.id, ex, true);
         setDraft(draftFromExtraction(ex));
-        toast.success("The current model read it again", { description: `${ex.modelVersion} · check the amber fields, then save.` });
+        toast.success("Claude read it again", { description: `${ex.modelVersion} · check the amber fields, then save.` });
       } else {
         const d = await prefill.mutateAsync(sample.id);
         setDraft(draftFromLabels(d.kind, d.labels));
-        toast.success("The current model read it again and the labels were replaced");
+        toast.success("Claude read it again and the labels were replaced");
       }
       setAttempted(false);
       setRereadOpen(false);
@@ -415,11 +415,11 @@ function Editor({ sample }: { sample: TrainingSampleDetail }) {
               <TooltipTrigger asChild>
                 <span tabIndex={readerOffline ? 0 : -1} className="rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
                   <Button variant="outline" size="sm" onClick={() => (stats.names ? setRereadOpen(true) : void reread())} disabled={rereading || readerOffline}>
-                    {rereading ? <Loader2 className="animate-spin" /> : <ScanText />} Re-read with current model
+                    {rereading ? <Loader2 className="animate-spin" /> : <ScanText />} Re-read with Claude
                   </Button>
                 </span>
               </TooltipTrigger>
-              <TooltipContent>{readerOffline ? "The screenshot reader is offline right now" : "Let the active model read this screenshot again"}</TooltipContent>
+              <TooltipContent>{readerOffline ? "The screenshot reader is offline right now" : "Let Claude read this screenshot again"}</TooltipContent>
             </Tooltip>
             <label className="inline-flex h-8 cursor-pointer items-center gap-2 rounded-md px-2 text-sm hover:bg-muted">
               <Switch checked={showGlyphs} onCheckedChange={setShowGlyphs} size="sm" aria-label="Show look-alike characters" />
@@ -451,7 +451,7 @@ function Editor({ sample }: { sample: TrainingSampleDetail }) {
           {!hasHints && draft.groups.length > 0 && (
             <div className="flex gap-2 rounded-xl border border-info/30 bg-info/10 p-3 text-sm">
               <Info className="mt-0.5 size-4 shrink-0 text-info" />
-              <span>These labels have no model reading attached. Click <strong>Re-read with current model</strong> to see what the model gets and how sure it is.</span>
+              <span>These labels have no reader output attached. Click <strong>Re-read with Claude</strong> to see what it reads and how sure it is.</span>
             </div>
           )}
           {!isSlots && (
@@ -467,7 +467,7 @@ function Editor({ sample }: { sample: TrainingSampleDetail }) {
             <EmptyState
               icon={isSlots ? <ScanText /> : <ScanText />}
               title={`No ${isSlots ? "teams" : "ranks"} yet`}
-              description={`Re-read with the current model to pre-fill, or add each ${isSlots ? "team card" : "rank block"} you see in the screenshot.`}
+              description={`Re-read with Claude to pre-fill, or add each ${isSlots ? "team card" : "rank block"} you see in the screenshot.`}
               action={
                 <Button onClick={addGroup} variant="outline">
                   {isSlots ? "Add team card" : "Add rank block"}
@@ -517,7 +517,7 @@ function Editor({ sample }: { sample: TrainingSampleDetail }) {
               <BadgeCheck className="size-4 text-success" /> All changes saved
             </span>
           )}
-          {sample.verified && !sample.excluded && <span className="hidden text-muted-foreground md:inline">· used for training</span>}
+          {sample.verified && !sample.excluded && <span className="hidden text-muted-foreground md:inline">· in the test set</span>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {sample.verified && (
@@ -552,7 +552,7 @@ function Editor({ sample }: { sample: TrainingSampleDetail }) {
           <AlertDialogHeader>
             <AlertDialogTitle className="font-display text-2xl">Replace labels with a new reading?</AlertDialogTitle>
             <AlertDialogDescription>
-              The current model reads the screenshot again and its answers replace what's in the editor now ({stats.names} names). You'll see how sure it was for each field. Your fixes are lost unless you skip saving.
+              Claude reads the screenshot again and its answers replace what's in the editor now ({stats.names} names). You'll see how sure it was for each field. Your fixes are lost unless you skip saving.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -568,7 +568,7 @@ function Editor({ sample }: { sample: TrainingSampleDetail }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="font-display text-2xl">Delete this sample?</AlertDialogTitle>
-            <AlertDialogDescription>The screenshot and its labels are removed for good. Models already trained keep what they learned. To just stop using it, turn off “Use this sample” instead.</AlertDialogDescription>
+            <AlertDialogDescription>The screenshot and its labels are removed for good. To just stop using it, turn off “Use this sample” instead.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={del.isPending}>Cancel</AlertDialogCancel>

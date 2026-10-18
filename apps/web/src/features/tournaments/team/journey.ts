@@ -57,7 +57,7 @@ export function youFromMe(me: MyTournamentStatus, team: Pick<TeamSummary, "name"
   }
 }
 
-export interface JourneyCopy {
+interface JourneyCopy {
   icon: LucideIcon;
   tone: Tone;
   eyebrow: string;

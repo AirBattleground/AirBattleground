@@ -3,14 +3,14 @@ import jwt from "jsonwebtoken";
 import type { Role } from "@7xen/shared";
 import { env, isProd } from "../env.js";
 
-export interface JwtPayload {
+interface JwtPayload {
   sub: string;
   role: Role;
 }
 
 const ttlSeconds = () => env.SESSION_TTL_DAYS * 24 * 60 * 60;
 
-export function signToken(payload: JwtPayload, expiresInSeconds = ttlSeconds()): string {
+function signToken(payload: JwtPayload, expiresInSeconds = ttlSeconds()): string {
   return jwt.sign({ role: payload.role }, env.JWT_SECRET, { subject: payload.sub, expiresIn: expiresInSeconds });
 }
 

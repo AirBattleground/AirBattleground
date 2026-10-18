@@ -42,7 +42,7 @@ const SCREENSHOT_NOT_FOUND = "Screenshot not found";
 export const LOW_CONFIDENCE = 0.85;
 
 /** What we store in Screenshot.extraction: the camelCase ExtractionResult + our merge warnings. */
-export type StoredExtraction = ExtractionResult & { mergeWarnings?: string[] };
+type StoredExtraction = ExtractionResult & { mergeWarnings?: string[] };
 
 const STATUS_ORDER: Record<DbMatchStatus, number> = { SCHEDULED: 0, LINEUP_REVIEW: 1, LIVE: 2, RESULTS_REVIEW: 3, PUBLISHED: 4 };
 export const lineupLocked = (s: DbMatchStatus) => STATUS_ORDER[s] >= STATUS_ORDER.LIVE;
@@ -95,11 +95,11 @@ async function loadOwnScreenshot(id: string, managerId: string, bypass = false) 
   return s;
 }
 
-export type SlotTeam = { slotNumber: number; team: { id: string; name: string; tag: string; players: { ign: string }[] } };
+type SlotTeam = { slotNumber: number; team: { id: string; name: string; tag: string; players: { ign: string }[] } };
 const slotTeamSelect = { id: true, name: true, tag: true, players: { orderBy: { position: "asc" as const }, select: { ign: true } } };
 
 /** Who sits on which slot: the session's APPROVED registrations, or the group's teams. */
-export async function matchSlots(owner: { sessionId: string | null; groupId: string | null }, db: Tx = prisma): Promise<SlotTeam[]> {
+async function matchSlots(owner: { sessionId: string | null; groupId: string | null }, db: Tx = prisma): Promise<SlotTeam[]> {
   if (owner.sessionId) {
     const regs = await db.registration.findMany({
       where: { sessionId: owner.sessionId, status: "APPROVED", slotNumber: { not: null } },
@@ -192,7 +192,7 @@ type DetailTeam = {
 };
 
 /** Plain-English review flags for one team row. */
-export function teamFlags(t: DetailTeam, all: DetailTeam[]): string[] {
+function teamFlags(t: DetailTeam, all: DetailTeam[]): string[] {
   const flags: string[] = [];
   if (!t.teamId) flags.push(`Slot ${t.slotNumber} has no registered team`);
   if (t.placement != null && all.some((o) => o !== t && o.placement === t.placement)) {
@@ -258,7 +258,7 @@ export async function getMatchDetail(matchId: string, managerId: string, bypass 
 }
 
 /** The scrim-shaped header of MatchDetail (+ tournament context for group matches). */
-export function matchHeader(m: MatchWithOwner): Pick<MatchDetail, "scrim" | "date" | "tournament"> {
+function matchHeader(m: MatchWithOwner): Pick<MatchDetail, "scrim" | "date" | "tournament"> {
   if (m.session) {
     const sc = m.session.scrim;
     return {

@@ -28,13 +28,13 @@ import type { MatchLiveInfo } from "@7xen/shared";
 
 type RoomFields = { roomId: string | null; roomPassword: string | null; roomRevealAt: Date | null; roomUpdatedAt: Date | null; updatedAt: Date };
 
-export function toRoomDetails(m: RoomFields): RoomDetails | null {
+function toRoomDetails(m: RoomFields): RoomDetails | null {
   if (!m.roomId || m.roomPassword == null) return null;
   return { roomId: m.roomId, password: m.roomPassword, revealAt: iso(m.roomRevealAt), updatedAt: (m.roomUpdatedAt ?? m.updatedAt).toISOString() };
 }
 
 /** Teams may see the room once revealAt has passed (null = immediately). */
-export const roomRevealed = (m: RoomFields, now = new Date()) => !!m.roomId && (!m.roomRevealAt || m.roomRevealAt <= now);
+const roomRevealed = (m: RoomFields, now = new Date()) => !!m.roomId && (!m.roomRevealAt || m.roomRevealAt <= now);
 
 export async function getRoom(matchId: string, managerId: string, bypass = false): Promise<RoomDetails | null> {
   return toRoomDetails(await loadOwnMatch(matchId, managerId, bypass));

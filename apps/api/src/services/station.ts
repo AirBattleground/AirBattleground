@@ -40,7 +40,7 @@ const ACTIVE_PHASES: StationStatus["phase"][] = ["STARTING_EMULATOR", "LAUNCHING
 /** after a stop, the final playlist stays watchable this long (the station deletes the files after ~10 min) */
 const REPLAY_WINDOW_MS = 15 * 60_000;
 
-export const hlsUrlFor = (matchId: string) => `/api/live/${matchId}/index.m3u8`;
+const hlsUrlFor = (matchId: string) => `/api/live/${matchId}/index.m3u8`;
 export const MATCH_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 const titleOf = (m: MatchWithOwner) => {
@@ -275,7 +275,7 @@ export async function screenshotsHook(matchId: string, kind: ScreenshotKind, ima
 export type Viewer = { id: string; role: "ADMIN" | "MANAGER" | "TEAM"; teamId: string | null };
 
 /** Is the team playing in this match (approved slot in the scrim session, or in the tournament group)? */
-export async function teamInMatch(teamId: string, m: { sessionId: string | null; groupId: string | null }): Promise<boolean> {
+async function teamInMatch(teamId: string, m: { sessionId: string | null; groupId: string | null }): Promise<boolean> {
   if (m.sessionId) {
     return !!(await prisma.registration.findFirst({ where: { sessionId: m.sessionId, teamId, status: "APPROVED", slotNumber: { not: null } }, select: { id: true } }));
   }

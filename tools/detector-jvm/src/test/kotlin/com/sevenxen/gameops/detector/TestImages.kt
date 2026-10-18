@@ -45,7 +45,7 @@ data class Labelled(val group: String, val file: File, val kind: String) {
 
 object TestImages {
     val repoRoot: File = File(System.getProperty("repoRoot") ?: "../..").canonicalFile
-    val datasetDir = File(repoRoot, "services/extractor/eval/dataset")
+    val datasetDir = File(repoRoot, "datasets/bgmi-screenshots")
     const val PHONE_W = 640
 
     private val entry = Regex("\"file\"\\s*:\\s*\"([^\"]+)\"\\s*,\\s*\"kind\"\\s*:\\s*\"([^\"]+)\"")

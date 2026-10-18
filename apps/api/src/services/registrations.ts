@@ -5,6 +5,7 @@ import { AppError, conflict, notFound } from "../lib/errors.js";
 import {
   dateToStr,
   registrationInclude,
+  organizerSelect,
   scrimInclude,
   strToDate,
   toRegistration,
@@ -18,7 +19,7 @@ const REG_NOT_FOUND = "Registration not found";
 export const teamRegistrationInclude = {
   session: { select: { date: true, scrim: { include: scrimInclude } } },
 } satisfies Prisma.RegistrationInclude;
-export type TeamRegistrationRow = Prisma.RegistrationGetPayload<{ include: typeof teamRegistrationInclude }>;
+type TeamRegistrationRow = Prisma.RegistrationGetPayload<{ include: typeof teamRegistrationInclude }>;
 
 export function toTeamRegistration(r: TeamRegistrationRow): TeamRegistration {
   const date = dateToStr(r.session.date);
@@ -40,6 +41,7 @@ export function toTeamRegistration(r: TeamRegistrationRow): TeamRegistration {
       slotCount: s.slotCount,
       firstSlot: s.firstSlot,
       manager: s.manager,
+      posterUrl: s.posterUrl,
     },
   };
 }
@@ -149,7 +151,7 @@ export async function ensureSession(scrimId: string, date: string) {
 const ALREADY = "You're already registered for this scrim";
 
 export async function registerTeam(teamId: string, scrimId: string, date: string, now = new Date()): Promise<TeamRegistration> {
-  const scrim = await prisma.scrim.findUnique({ where: { id: scrimId }, include: { ...scrimInclude, manager: { select: { id: true, displayName: true, isActive: true } } } });
+  const scrim = await prisma.scrim.findUnique({ where: { id: scrimId }, include: { ...scrimInclude, manager: { select: { ...organizerSelect, isActive: true } } } });
   if (!scrim || !scrim.manager.isActive || scrim.status === "ARCHIVED") throw notFound("Scrim not found");
   if (!scrimOccursOn(scrim, date)) throw notFound("This scrim doesn't run on that date");
   if (scrim.status !== "ACTIVE") throw new AppError("REGISTRATION_CLOSED", "This scrim isn't taking registrations right now");

@@ -32,6 +32,7 @@ import { MapsPicker } from "@/features/manager/components/MapsPicker";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { RecurrencePicker } from "@/features/manager/components/RecurrencePicker";
 import { SlotGridPreview } from "@/features/manager/components/SlotGridPreview";
+import { ScrimPosterCard } from "@/features/manager/components/BrandingCards";
 import { Stepper } from "@/features/manager/components/Stepper";
 import { TimeSelect } from "@/features/manager/components/TimeSelect";
 
@@ -41,6 +42,7 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="form-schedule"]', title: "When does it run?", description: "One-time, every day, or weekends only. Pick the start date and time (Indian time)." },
   { element: '[data-tour="form-maps"]', title: "Matches", description: "Add one map per match, in the order you'll play them. Use the arrows to reorder." },
   { element: '[data-tour="form-slots"]', title: "Slots", description: "How many teams can join, and which slot number they start from. The grid shows exactly which slots teams get." },
+  { element: '[data-tour="form-poster"]', title: "Poster", description: "Optional: upload square poster artwork. Teams see it when they browse scrims. It saves right away." },
   { element: '[data-tour="form-preview"]', title: "Check and save", description: "This preview shows the next dates it will run. Happy? Hit save." },
 ];
 
@@ -399,6 +401,7 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
               </Button>
             </div>
           </div>
+          {isEdit && <ScrimPosterCard scrimId={scrim.id} url={scrim.posterUrl} className="mt-4" tour="form-poster" />}
         </aside>
       </div>
     </form>

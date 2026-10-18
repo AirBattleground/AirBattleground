@@ -15,7 +15,7 @@ import {
 import { api } from "@/lib/api";
 import { slotLabel } from "./format";
 
-export const managerKeys = {
+const managerKeys = {
   all: ["manager"] as const,
   dashboard: ["manager", "dashboard"] as const,
   scrims: ["manager", "scrims"] as const,
@@ -176,7 +176,7 @@ function patchRequestsRemove(qc: QueryClient, id: string, approvedDelta: number)
   });
 }
 
-export interface DecisionVars {
+interface DecisionVars {
   id: string;
   teamName: string;
   /** suppress the per-item toast (bulk actions show their own summary) */
@@ -251,7 +251,7 @@ export function useApproveRegistration() {
   });
 }
 
-export interface RejectVars extends DecisionVars {
+interface RejectVars extends DecisionVars {
   reason?: string;
 }
 

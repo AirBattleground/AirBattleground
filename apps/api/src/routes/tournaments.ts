@@ -17,8 +17,10 @@ import {
   updateTournamentSchema,
   type ScheduleConfig,
 } from "@7xen/shared";
+import { parseMultipart, singleImage } from "../lib/upload.js";
 import { parse } from "../lib/validate.js";
 import { currentUser } from "../middleware/requireAuth.js";
+import { setTournamentPoster } from "../services/branding.js";
 import type { Actor } from "../services/tournaments/core.js";
 import * as manage from "../services/tournaments/manage.js";
 import * as stages from "../services/tournaments/stages.js";
@@ -40,6 +42,13 @@ export function tournamentManageRouter(admin: boolean) {
   });
   r.patch("/:id", async (req, res) => {
     res.json(await manage.updateTournament(p(req, "id"), actor(req), parse(updateTournamentSchema, req.body)));
+  });
+  r.put("/:id/poster", async (req, res) => {
+    await parseMultipart(req, res);
+    res.json(await setTournamentPoster(p(req, "id"), actor(req), singleImage(req)));
+  });
+  r.delete("/:id/poster", async (req, res) => {
+    res.json(await setTournamentPoster(p(req, "id"), actor(req), null));
   });
   r.post("/:id/publish", async (req, res) => {
     res.json(await manage.publishTournament(p(req, "id"), actor(req)));

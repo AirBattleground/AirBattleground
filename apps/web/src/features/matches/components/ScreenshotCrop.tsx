@@ -10,7 +10,7 @@ import { screenshotUrl } from "../api";
  */
 const GRID = { x0: 0.112, y0: 0.115, w: 0.236, h: 0.27, dx: 0.2425, dy: 0.286 };
 
-export interface CropSource {
+interface CropSource {
   shot: ScreenshotRow;
   /** card index on the screenshot (row-major, 0..8) */
   index: number;

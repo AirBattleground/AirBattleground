@@ -3,7 +3,7 @@ import { occursOn, sessionStartsAt, todayInAppTz, type ScrimOnDate } from "@7xen
 import { prisma } from "../db.js";
 import { dateToStr, strToDate, toScrim, type ScrimWithManager } from "../lib/serialize.js";
 
-export interface SessionCounts {
+interface SessionCounts {
   pending: number;
   approved: number;
 }

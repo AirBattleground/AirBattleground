@@ -102,7 +102,7 @@ export function AddScreenshotsDialog({ open, onOpenChange }: { open: boolean; on
         if (ex) saveReading(row.id, ex, true);
         created.push(row.id);
         const names = ex ? (kind === "SLOT_LIST" ? ex.teams : ex.rows).reduce((a, g) => a + g.players.length, 0) : 0;
-        patch(it.id, { status: "done", sampleId: row.id, note: ex ? `Model read ${names} names` : "Saved — the reader couldn't read it, label by hand" });
+        patch(it.id, { status: "done", sampleId: row.id, note: ex ? `Claude read ${names} names` : "Saved — the reader couldn't read it, label by hand" });
       } catch (e) {
         patch(it.id, { status: "failed", note: errorMessage(e) });
       }
@@ -111,7 +111,7 @@ export function AddScreenshotsDialog({ open, onOpenChange }: { open: boolean; on
     if (created.length) {
       setSampleNav(created);
       toast.success(`${created.length} ${created.length === 1 ? "screenshot" : "screenshots"} added`, {
-        description: offline ? "The reader was offline for some — you'll type those labels by hand." : "Check the names the model read, then mark them as checked.",
+        description: offline ? "The reader was offline for some — you'll type those labels by hand." : "Check the names Claude read, then mark them as checked.",
       });
     }
   };
@@ -133,7 +133,7 @@ export function AddScreenshotsDialog({ open, onOpenChange }: { open: boolean; on
           <DialogTitle className="flex items-center gap-2 font-display text-2xl">
             <ImagePlus className="size-5 text-primary" /> Add screenshots
           </DialogTitle>
-          <DialogDescription>The current model reads each screenshot first, so you only fix what it got wrong.</DialogDescription>
+          <DialogDescription>Claude reads each screenshot first, so you only fix what it got wrong.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-5">
@@ -206,7 +206,7 @@ export function AddScreenshotsDialog({ open, onOpenChange }: { open: boolean; on
                       <div className="truncate text-sm font-medium">{it.file.name}</div>
                       <div className={cn("truncate text-xs", it.status === "failed" ? "text-destructive" : "text-muted-foreground")}>
                         {it.status === "ready" && `${(it.file.size / 1024 / 1024).toFixed(1)} MB · ready`}
-                        {it.status === "reading" && "Model is reading names…"}
+                        {it.status === "reading" && "Claude is reading names…"}
                         {it.status === "saving" && "Saving…"}
                         {(it.status === "done" || it.status === "failed") && it.note}
                       </div>
@@ -236,7 +236,7 @@ export function AddScreenshotsDialog({ open, onOpenChange }: { open: boolean; on
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="AUTO">Let 7xen decide (recommended)</SelectItem>
-                  <SelectItem value="TRAIN">Training — the model learns from them</SelectItem>
+                  <SelectItem value="TRAIN">Training — general labelled examples</SelectItem>
                   <SelectItem value="TEST">Test — only to measure accuracy</SelectItem>
                 </SelectContent>
               </Select>

@@ -14,7 +14,7 @@ import { api } from "@/lib/api";
 import { errorMessage } from "@/features/manager/api";
 import { matchKeys } from "@/features/matches/api";
 
-export const resultKeys = {
+const resultKeys = {
   teamResults: ["team", "results"] as const,
   teamStandings: (scrimId: string, date: string) => ["team", "standings", scrimId, date] as const,
   teamScorecard: (matchId: string) => ["team", "scorecard", matchId] as const,

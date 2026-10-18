@@ -1,11 +1,9 @@
 import { format, formatDistanceToNowStrict, parseISO } from "date-fns";
 import {
   addDays,
-  MAP_LABELS,
   occursOn,
   todayInAppTz,
   weekdayOf,
-  type GameMap,
   type Recurrence,
   type ScheduleLike,
 } from "@7xen/shared";
@@ -24,7 +22,7 @@ export function formatDate(date: string): string {
 }
 
 /** "2026-10-18" → "18 Oct" */
-export function formatShortDate(date: string): string {
+function formatShortDate(date: string): string {
   return format(parseISO(date), "d MMM");
 }
 
@@ -111,10 +109,6 @@ export function defaultOccurrence(s: ScheduleLike): string {
     }
   }
   return s.startDate;
-}
-
-export function mapsLabel(maps: GameMap[]): string {
-  return maps.map((m) => MAP_LABELS[m]).join(", ");
 }
 
 /** "2h 15m" style countdown; null if the time has passed. */

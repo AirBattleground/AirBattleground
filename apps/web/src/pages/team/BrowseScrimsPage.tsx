@@ -108,7 +108,8 @@ export default function BrowseScrimsPage() {
       {q.isError ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load scrims" />
       ) : q.isLoading ? (
-        <div className="space-y-3">
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ScrimCardSkeleton />
           <ScrimCardSkeleton />
           <ScrimCardSkeleton />
           <ScrimCardSkeleton />
@@ -143,9 +144,9 @@ export default function BrowseScrimsPage() {
           }
         />
       ) : (
-        <StaggerList key={date} className="space-y-3">
+        <StaggerList key={date} className="grid gap-4 lg:grid-cols-2">
           {items.map((s, i) => (
-            <StaggerItem key={s.scrim.id}>
+            <StaggerItem key={s.scrim.id} className="h-full">
               <ScrimCard item={s} tourAnchor={i === 0} rejectionReason={s.myRegistration ? reasons.get(s.myRegistration.id) : null} />
             </StaggerItem>
           ))}

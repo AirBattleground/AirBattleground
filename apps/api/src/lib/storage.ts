@@ -37,11 +37,6 @@ export function storageRoot(): string {
   return cachedRoot;
 }
 
-/** Testing hook: forget the cached root (after changing STORAGE_DIR). */
-export function resetStorageRootCache() {
-  cachedRoot = null;
-}
-
 const KEY_RE = /^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_.-]+)*$/;
 
 /** Resolve a storage key to an absolute path inside the root, or throw. Blocks traversal. */
@@ -68,7 +63,7 @@ export function resolveUnder(root: string, key: string): string {
 // ---------------------------------------------------------------- image sniffing
 
 export type ImageMime = "image/png" | "image/jpeg" | "image/webp";
-export const EXT_BY_MIME: Record<ImageMime, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
+const EXT_BY_MIME: Record<ImageMime, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
 
 export interface ImageInfo {
   mime: ImageMime;
@@ -78,7 +73,7 @@ export interface ImageInfo {
 }
 
 /** Detect PNG/JPEG/WebP from magic bytes (never trust the client's mimetype). */
-export function sniffImageType(buf: Buffer): ImageMime | null {
+function sniffImageType(buf: Buffer): ImageMime | null {
   if (buf.length >= 8 && buf.readUInt32BE(0) === 0x89504e47 && buf.readUInt32BE(4) === 0x0d0a1a0a) return "image/png";
   if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return "image/jpeg";
   if (buf.length >= 12 && buf.toString("ascii", 0, 4) === "RIFF" && buf.toString("ascii", 8, 12) === "WEBP") return "image/webp";
@@ -181,14 +176,6 @@ export async function copyKey(fromKey: string, toKey: string): Promise<void> {
   await copyFile(resolveKey(fromKey), to);
 }
 
-export async function fileExists(key: string): Promise<boolean> {
-  try {
-    return (await stat(resolveKey(key))).isFile();
-  } catch {
-    return false;
-  }
-}
-
 /** Best-effort delete; missing files are fine. */
 export async function deleteKey(key: string): Promise<void> {
   try {
@@ -220,12 +207,4 @@ export async function sendStoredFile(res: Response, key: string, mime: string): 
     res.on("close", () => resolve());
     stream.pipe(res);
   });
-}
-
-/** Mime type for a stored key, from its extension. */
-export function mimeForKey(key: string): string {
-  const ext = path.extname(key).toLowerCase();
-  if (ext === ".png") return "image/png";
-  if (ext === ".webp") return "image/webp";
-  return "image/jpeg";
 }

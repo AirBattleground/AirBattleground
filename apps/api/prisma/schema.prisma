@@ -126,6 +126,8 @@ model User {
   phone        String?
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
+  /// MANAGER: organisation logo shown to teams on scrims/tournaments (storage key under branding/)
+  orgLogoKey   String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
@@ -228,6 +230,8 @@ model Scrim {
   status      ScrimStatus @default(ACTIVE)
   /// PointsSystem JSON { placement: number[], killPoints }; null = DEFAULT_POINTS_SYSTEM
   pointsSystem Json?
+  /// poster image (storage key under branding/)
+  posterKey   String?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
@@ -416,6 +420,8 @@ model Tournament {
   registrationClosesAt DateTime?
   championTeamId       String?
   champion             Team?            @relation("TournamentChampion", fields: [championTeamId], references: [id], onDelete: SetNull)
+  /// poster image (storage key under branding/)
+  posterKey            String?
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 

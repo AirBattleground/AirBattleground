@@ -1,5 +1,5 @@
 /** Small seedable RNG: mulberry32 over a 32-bit FNV-1a string hash. Same seed → same sequence. */
-export function hashString(s: string): number {
+function hashString(s: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);

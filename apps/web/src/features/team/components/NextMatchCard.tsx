@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { CalendarDays, Crosshair, Search, User } from "lucide-react";
+import { CalendarDays, Crosshair, Search } from "lucide-react";
 import type { TeamRegistration } from "@7xen/shared";
 import { SlotChip } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
 import { whenLabel } from "../format";
+import { OrganizerBadge } from "./Branding";
 import { CountdownBlocks } from "./Countdown";
 import { MapChips } from "./MapChips";
 
@@ -64,9 +65,7 @@ export function NextMatchCard({ match, today }: { match: TeamRegistration | null
             <span className="flex items-center gap-1.5 font-semibold">
               <CalendarDays className="size-4 text-primary" /> {whenLabel(match.date, match.scrim.startTime, today)}
             </span>
-            <span className="flex items-center gap-1.5 text-muted-foreground">
-              <User className="size-4" /> {match.scrim.manager.displayName}
-            </span>
+            <OrganizerBadge manager={match.scrim.manager} className="text-muted-foreground" iconClassName="size-4" logoClassName="size-6" />
           </div>
           <MapChips maps={match.scrim.maps} />
         </div>

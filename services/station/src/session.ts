@@ -30,7 +30,7 @@ export class StationError extends Error {
 }
 
 /** What the session needs from a capture pipeline (CapturePipeline, or a fake in tests). */
-export interface Pipeline {
+interface Pipeline {
   readonly parts: string[];
   readonly pids: number[];
   start(): Promise<void>;
@@ -39,7 +39,7 @@ export interface Pipeline {
   on(event: "restart", fn: (part: number, reason: string) => void): unknown;
 }
 
-export interface PipelineRequest {
+interface PipelineRequest {
   serial: string;
   workDir: string;
   liveDir: string;
@@ -47,7 +47,7 @@ export interface PipelineRequest {
   maxFps: number;
 }
 
-export interface StationDeps {
+interface StationDeps {
   device: Device;
   ensureEmulator: EnsureEmulator;
   makePipeline: (req: PipelineRequest) => Pipeline;
@@ -87,7 +87,7 @@ const ACTIVE: StationPhase[] = ["STARTING_EMULATOR", "LAUNCHING_BGMI", "LIVE", "
 const MATCH_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** STORAGE_DIR-relative live dir of a match. */
-export const liveRel = (matchId: string) => `live/${matchId}`;
+const liveRel = (matchId: string) => `live/${matchId}`;
 
 export class Station {
   phase: StationPhase = "IDLE";

@@ -91,7 +91,7 @@ services/extractor unchanged — screenshots go through the existing upload → 
 - API: new tests (bearer auth, room details + reveal timing, live sessions, chunked upload resume/finalize,
   range streaming) alongside the existing suites; `pnpm smoke` still passes.
 - Detector: run the on-device classifier logic (shared rules) against the 181 labelled screenshots in
-  `services/extractor/eval/dataset/` → must classify SLOT_LIST/RESULTS ≈100%.
+  `datasets/bgmi-screenshots/` → must classify SLOT_LIST/RESULTS ≈100%.
 - App: build signed APK; owner installs on their phone; scripted checklist: login → Go live → record 2 min of
   BGMI → manual capture → auto-capture of team list/results → video uploads and plays in the web match center →
   screenshots read and merged.

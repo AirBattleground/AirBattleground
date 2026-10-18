@@ -6,7 +6,7 @@ import { cn } from "@7xen/ui/lib/utils";
 import { ordinal } from "@/features/results/components/Rank";
 import { fmtDay, fmtTime } from "../../shared/format";
 
-export type SlotOptionWithTaken = TimeSlotOption & { taken: number };
+type SlotOptionWithTaken = TimeSlotOption & { taken: number };
 
 function RankedRow({
   opt,
@@ -85,7 +85,7 @@ function RankedRow({
   );
 }
 
-export interface SlotPickerProps {
+interface SlotPickerProps {
   options: SlotOptionWithTaken[];
   /** option ids in preference order; [] = any time works */
   value: string[];

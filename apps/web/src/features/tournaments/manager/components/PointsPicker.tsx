@@ -7,13 +7,13 @@ import { Stepper } from "@/features/manager/components/Stepper";
 import { ordinal } from "@/features/results/components/Rank";
 import { Advanced } from "./form";
 
-export const POINTS_PRESETS: { key: string; label: string; hint: string; ps: PointsSystem }[] = [
+const POINTS_PRESETS: { key: string; label: string; hint: string; ps: PointsSystem }[] = [
   { key: "bgmi", label: "BGMI standard", hint: "10/6/5/4/3/2/1/1 · +1 per finish", ps: DEFAULT_POINTS_SYSTEM },
   { key: "pro", label: "Pro league", hint: "15/12/10/8/6/4/2/1/1/1 · +1", ps: { placement: [15, 12, 10, 8, 6, 4, 2, 1, 1, 1], killPoints: 1 } },
   { key: "finish2", label: "Finishes count double", hint: "10/6/5/4/3/2/1/1 · +2", ps: { placement: [10, 6, 5, 4, 3, 2, 1, 1], killPoints: 2 } },
 ];
 
-export const samePoints = (a: PointsSystem, b: PointsSystem) => a.killPoints === b.killPoints && a.placement.join(",") === b.placement.join(",");
+const samePoints = (a: PointsSystem, b: PointsSystem) => a.killPoints === b.killPoints && a.placement.join(",") === b.placement.join(",");
 
 export function pointsLabel(ps: PointsSystem): string {
   return POINTS_PRESETS.find((p) => samePoints(p.ps, ps))?.label ?? `Custom · ${ps.placement.join("/")} · +${ps.killPoints}`;
