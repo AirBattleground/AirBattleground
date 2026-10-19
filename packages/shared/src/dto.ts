@@ -76,8 +76,11 @@ export interface AdminStats {
 
 export interface ManagerRow {
   id: string;
-  username: string;
+  /** null for managers who joined by invitation (they sign in with Google) */
+  username: string | null;
   displayName: string;
+  /** phase 5b (additive): organisation name from the invitation */
+  orgName?: string | null;
   email: string | null;
   phone: string | null;
   isActive: boolean;

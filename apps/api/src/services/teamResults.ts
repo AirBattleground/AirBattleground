@@ -16,7 +16,8 @@ import { standingsForSession } from "./standings.js";
 
 const NOT_PLAYED = "Your team didn't play in this scrim";
 
-async function assertPlayed(teamId: string, sessionId: string) {
+async function assertPlayed(teamId: string | null, sessionId: string) {
+  if (!teamId) throw forbidden(NOT_PLAYED);
   const reg = await prisma.registration.findUnique({ where: { sessionId_teamId: { sessionId, teamId } }, select: { status: true } });
   if (reg?.status !== "APPROVED") throw forbidden(NOT_PLAYED);
 }
@@ -67,14 +68,14 @@ export async function teamResultsSummary(teamId: string): Promise<TeamResultsSum
   };
 }
 
-export async function teamSessionStandings(teamId: string, scrimId: string, date: string): Promise<SessionStandings> {
+export async function teamSessionStandings(teamId: string | null, scrimId: string, date: string): Promise<SessionStandings> {
   const session = await prisma.scrimSession.findUnique({ where: { scrimId_date: { scrimId, date: strToDate(date) } }, select: { id: true } });
   if (!session) throw forbidden(NOT_PLAYED);
   await assertPlayed(teamId, session.id);
   return standingsForSession(session.id);
 }
 
-export async function teamMatchScorecard(teamId: string, matchId: string): Promise<MatchScorecard> {
+export async function teamMatchScorecard(teamId: string | null, matchId: string): Promise<MatchScorecard> {
   const m = await prisma.match.findUnique({
     where: { id: matchId },
     include: {

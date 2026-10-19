@@ -4,12 +4,14 @@ import {
   APP_COOKIE,
   createJoinRequestSchema,
   createPlayerTeamSchema,
+  inviteByBgmiSchema,
   createSuggestionSchema,
   suggestionQuerySchema,
   transferLeaderSchema,
   updatePlayerProfileSchema,
   updatePlayerTeamSchema,
 } from "@7xen/shared";
+import { parseMultipart, singleImage } from "../lib/upload.js";
 import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import * as players from "../services/players.js";
@@ -61,6 +63,33 @@ export function playerRouter() {
   });
   r.post("/team/join-requests/:id/reject", async (req, res) => {
     res.json(await players.rejectJoinRequest(me(req), p(req, "id")));
+  });
+
+  // ---- team logo ----
+  r.put("/team/logo", async (req, res) => {
+    await parseMultipart(req, res);
+    res.json(await players.updateTeamLogo(me(req), singleImage(req)));
+  });
+  r.delete("/team/logo", async (req, res) => {
+    res.json(await players.updateTeamLogo(me(req), null));
+  });
+
+  // ---- invite by BGMI ID (leader) + my invitations ----
+  r.post("/team/invites", async (req, res) => {
+    res.status(201).json(await players.inviteByBgmiId(me(req), parse(inviteByBgmiSchema, req.body)));
+  });
+  r.delete("/team/invites/:id", async (req, res) => {
+    res.json(await players.revokeInvite(me(req), p(req, "id")));
+  });
+  r.get("/team-invites", async (req, res) => {
+    res.json({ items: await players.myTeamInvites(me(req)) });
+  });
+  r.post("/team-invites/:id/accept", async (req, res) => {
+    res.json(await players.acceptInvite(me(req), p(req, "id")));
+  });
+  r.post("/team-invites/:id/decline", async (req, res) => {
+    await players.declineInvite(me(req), p(req, "id"));
+    res.status(204).end();
   });
 
   // ---- suggestions ("Ask my leader") ----

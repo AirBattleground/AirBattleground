@@ -19,6 +19,7 @@
     "hls.js": "^1.7.3",
     "jmuxer": "^2.1.4",
     "lucide-react": "^0.460.0",
+    "qrcode.react": "4.2.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-hook-form": "^7.90.0",

@@ -27,7 +27,7 @@ import { errorMessage } from "@/lib/forms";
 import { relativeTime } from "@/lib/format";
 
 const TOUR: TourStep[] = [
-  { title: "Match recordings", description: "Every match the managers record with the 7XEN Manager app lands here — live, uploading, then ready to watch." },
+  { title: "Match recordings", description: "Every match the managers record with the AirBattleground Manager app lands here — live, uploading, then ready to watch." },
   { element: '[data-tour="storage"]', title: "Storage", description: "How much disk the videos use. Old videos are deleted automatically after the retention days in Settings.", side: "bottom" },
   { element: '[data-tour="rec-filters"]', title: "Find a recording", description: "Filter by status or search by match or manager.", side: "bottom" },
   { element: '[data-tour="rec-list"]', title: "Watch or delete", description: "Click a ready video to play it. Delete removes the file from the server for good.", side: "top" },
@@ -121,7 +121,7 @@ export default function RecordingsPage() {
 
   return (
     <>
-      <ManagerAppHeader title="Recordings" description="Match videos recorded by managers with the 7XEN Manager app." />
+      <ManagerAppHeader title="Recordings" description="Match videos recorded by managers with the AirBattleground Manager app." />
 
       <div className="space-y-5">
         <section className="rounded-xl border bg-card p-4 shadow-sm sm:p-5">
@@ -160,7 +160,7 @@ export default function RecordingsPage() {
             <EmptyState
               icon={<Video />}
               title={status || q ? "No recordings match" : "No recordings yet"}
-              description={status || q ? "Try another status or clear the search." : "When a manager taps Go live in the 7XEN Manager app, the match video shows up here."}
+              description={status || q ? "Try another status or clear the search." : "When a manager taps Go live in the AirBattleground Manager app, the match video shows up here."}
             />
           ) : (
             <ul className={cn("grid gap-4 sm:grid-cols-2 xl:grid-cols-3 transition-opacity", list.isPlaceholderData && "opacity-60")}>

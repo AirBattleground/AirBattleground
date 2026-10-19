@@ -15,7 +15,7 @@ import { MapChips } from "../components/MapChips";
 import { formatDate, whenLabel } from "../format";
 
 /** Poster art behind the hero: right half on desktop, top on phones, feathered into the card. */
-function Backdrop({ url }: { url: string | null }) {
+export function Backdrop({ url }: { url: string | null }) {
   const [failed, setFailed] = useState(false);
   const has = !!url && !failed;
   return (
@@ -47,7 +47,7 @@ function Backdrop({ url }: { url: string | null }) {
   );
 }
 
-function Wordmark({ className }: { className?: string }) {
+export function Wordmark({ className }: { className?: string }) {
   return (
     <span className={cn("inline-flex h-7 items-center sm:h-8", className)}>
       <img src={wordmarkInkUrl} alt="AirBattleground" width={900} height={252} className="brand-ink h-full w-auto dark:hidden" />

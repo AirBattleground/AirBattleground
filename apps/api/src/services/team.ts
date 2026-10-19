@@ -13,8 +13,8 @@ import { teamResultsSummary } from "./teamResults.js";
 import { teamRegistrationInclude, toTeamRegistration } from "./registrations.js";
 import { buildScrimOnDate, countsByScrim, mayOccurOnWhere, scrimOccursOn } from "./schedule.js";
 
-/** ACTIVE scrims of all (active) managers running on `date`, with this team's registration. */
-export async function teamScrimsForDate(teamId: string, date: string, now = new Date()): Promise<TeamScrimOnDate[]> {
+/** ACTIVE scrims of all (active) managers running on `date`, with this team's registration (teamId null = no team: none). */
+export async function teamScrimsForDate(teamId: string | null, date: string, now = new Date()): Promise<TeamScrimOnDate[]> {
   const candidates = await prisma.scrim.findMany({
     where: { status: "ACTIVE", manager: { isActive: true }, ...mayOccurOnWhere(date) },
     include: scrimInclude,
@@ -23,11 +23,13 @@ export async function teamScrimsForDate(teamId: string, date: string, now = new 
   const ids = scrims.map((s) => s.id);
   const [counts, mine, suggested] = await Promise.all([
     countsByScrim(ids, date),
-    prisma.registration.findMany({
-      where: { teamId, session: { scrimId: { in: ids }, date: strToDate(date) } },
-      select: { id: true, status: true, slotNumber: true, rejectionReason: true, session: { select: { scrimId: true } } },
-    }),
-    openScrimSuggestions(teamId, ids, date),
+    teamId
+      ? prisma.registration.findMany({
+          where: { teamId, session: { scrimId: { in: ids }, date: strToDate(date) } },
+          select: { id: true, status: true, slotNumber: true, rejectionReason: true, session: { select: { scrimId: true } } },
+        })
+      : [],
+    teamId ? openScrimSuggestions(teamId, ids, date) : new Map<string, { id: string; fromIgn: string | null }>(),
   ]);
   const mineByScrim = new Map(mine.map((r) => [r.session.scrimId, r]));
   return scrims.map((s) => {

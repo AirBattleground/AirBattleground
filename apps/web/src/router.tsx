@@ -1,7 +1,10 @@
 import { lazy, Suspense, type ComponentType } from "react";
-import { createBrowserRouter, Navigate, useParams } from "react-router-dom";
+import { createBrowserRouter, Navigate, useParams, type RouteObject } from "react-router-dom";
 import { FullPageLoader } from "@7xen/ui/components/brand/page";
 import { RedirectHome, RequireRole } from "@/lib/guards";
+import { RouteError } from "@/lib/chunkReload";
+import { SplashReady } from "@/lib/splash";
+import LoginPageComponent from "@/pages/auth/LoginPage";
 
 // Route map is fixed (owned by the base). Each page file default-exports its component.
 const page = (load: () => Promise<{ default: ComponentType }>) => {
@@ -9,6 +12,7 @@ const page = (load: () => Promise<{ default: ComponentType }>) => {
   return (
     <Suspense fallback={<FullPageLoader />}>
       <C />
+      <SplashReady />
     </Suspense>
   );
 };
@@ -36,12 +40,14 @@ function TeamTournamentRedirect() {
   return <Navigate replace to={`/team/tournaments/${id}`} />;
 }
 
-const LoginPage = () => page(() => import("@/pages/auth/LoginPage"));
-const NotFoundPage = () => page(() => import("@/pages/NotFoundPage"));
+// the login page is what visitors land on: part of the main bundle (no extra round trip), lazy() is created once
+const LoginPage = LoginPageComponent;
+const notFound = page(() => import("@/pages/NotFoundPage"));
+const NotFoundPage = () => notFound;
 const ManagerLayout = lazy(() => import("@/layouts/ManagerLayout"));
 const TeamLayout = lazy(() => import("@/layouts/TeamLayout"));
 
-export const router = createBrowserRouter([
+const routes: RouteObject[] = [
   { path: "/", element: <RedirectHome /> },
   { path: "/login", element: <LoginPage /> },
   { path: "/welcome", element: page(() => import("@/pages/player/WelcomePage")) },
@@ -59,6 +65,11 @@ export const router = createBrowserRouter([
       { index: true, element: page(() => import("@/pages/manager/DashboardPage")) },
       { path: "requests", element: page(() => import("@/pages/manager/RequestsPage")) },
       { path: "app", element: page(() => import("@/pages/manager/AppPage")) },
+      { path: "devices", element: page(() => import("@/pages/manager/DevicesPage")) },
+      { path: "devices/:deviceId", element: page(() => import("@/pages/manager/DeviceLivePage")) },
+      { path: "broadcast-layout", element: page(() => import("@/pages/manager/BroadcastLayoutPage")) },
+      { path: "live", element: page(() => import("@/pages/live/LiveNowPage")) },
+      { path: "live/:matchId", element: page(() => import("@/pages/team/LiveViewerPage")) },
       { path: "scrims", element: page(() => import("@/pages/manager/ScrimsPage")) },
       { path: "scrims/new", element: page(() => import("@/pages/manager/ScrimFormPage")) },
       { path: "scrims/:scrimId", element: page(() => import("@/pages/manager/ScrimDetailPage")) },
@@ -103,10 +114,13 @@ export const router = createBrowserRouter([
       { path: "tournaments/:id/stages/:stageId", element: page(() => import("@/pages/team/tournaments/StagePage")) },
       { path: "tournaments/:id/matches", element: <TeamTournamentRedirect /> },
       { path: "tournaments/:id/matches/:matchId", element: page(() => import("@/pages/team/tournaments/TournamentMatchPage")) },
-      { path: "live", element: <Navigate replace to="/team" /> },
+      { path: "live", element: page(() => import("@/pages/live/LiveNowPage")) },
       { path: "live/:matchId", element: page(() => import("@/pages/team/LiveViewerPage")) },
     ],
   },
   { path: "*", element: <NotFoundPage /> },
-]);
+];
+
+// every route shows the friendly error screen (and recovers by itself after a new deploy)
+export const router = createBrowserRouter(routes.map((r) => ({ ...r, errorElement: <RouteError /> })));
 

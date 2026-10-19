@@ -1,5 +1,5 @@
 /**
- * Seeds the admin account from env (ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_NAME) and the real
+ * Seeds the admin account from env (ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_NAME / ADMIN_EMAIL) and the real
  * screenshots in datasets/bgmi-screenshots/real as training samples (source SEED, unverified).
  * With SEED_DEMO=1 also creates demo managers, players (phase 5: dev-login emails player1@7xen.dev…) in teams with
  * leaders, a pending join request, an "ask my leader" suggestion, scrims, registrations, published match results and
@@ -51,12 +51,21 @@ async function seedAdmin() {
   const displayName = process.env.ADMIN_NAME ?? "7xen Admin";
   if (!password) throw new Error("ADMIN_PASSWORD is not set");
   const passwordHash = await hash(password);
+  // phase 5b: "Continue with Google" with ADMIN_EMAIL signs in as this admin
+  const adminEmail = (process.env.ADMIN_EMAIL ?? "airbattleground@gmail.com").trim().toLowerCase();
+  const holder = await prisma.user.findFirst({
+    where: { email: { equals: adminEmail, mode: "insensitive" }, NOT: { username } },
+    select: { id: true, role: true },
+  });
+  // another account already holds that email: leave it alone here (Google sign-in sorts out a player holding it)
+  const email = holder ? undefined : adminEmail;
+  if (holder) console.warn(`  ! ${adminEmail} belongs to another ${holder.role} account; admin email not set.`);
   await prisma.user.upsert({
     where: { username },
-    create: { username, passwordHash, role: "ADMIN", displayName },
-    update: { passwordHash, role: "ADMIN", displayName, isActive: true },
+    create: { username, passwordHash, role: "ADMIN", displayName, email },
+    update: { passwordHash, role: "ADMIN", displayName, isActive: true, email },
   });
-  return { username, password };
+  return { username, password, email: adminEmail };
 }
 
 async function upsertUser(username: string, password: string, role: "MANAGER", displayName: string) {
@@ -177,6 +186,17 @@ async function seedDemo() {
 
   const m1 = await upsertUser("manager1", MANAGER_PASSWORD, "MANAGER", "Rahul (Scrim Host)");
   const m2 = await upsertUser("manager2", MANAGER_PASSWORD, "MANAGER", "Night Owl Org");
+
+  // phase 5b: a pending organiser invitation (dev login as organiser@7xen.dev accepts it → MANAGER)
+  const inviteEmail = "organiser@7xen.dev";
+  const hasInvite = await prisma.managerInvite.findFirst({ where: { email: inviteEmail } });
+  const hasUser = await prisma.user.findFirst({ where: { email: inviteEmail } });
+  if (!hasInvite && !hasUser) {
+    const adminUser = await prisma.user.findFirst({ where: { role: "ADMIN" }, orderBy: { createdAt: "asc" } });
+    await prisma.managerInvite.create({
+      data: { email: inviteEmail, name: "Priya (Organiser)", orgName: "Thunder Esports", invitedById: adminUser?.id ?? null },
+    });
+  }
 
   const teams = await seedPlayersAndTeams();
   const [soul, godl, blnd] = teams.map((t) => t.id) as [string, string, string];
@@ -383,11 +403,12 @@ async function main() {
   if (demo) await seedDemo();
 
   console.log("\nSeed complete.\n");
-  console.log(`  Admin console : ${admin.username} / ${admin.password}`);
+  console.log(`  Admin console : ${admin.username} / ${admin.password}  (or Continue with Google as ${admin.email})`);
   console.log(`  Recipes       : ${recipes} default manager-app recipe(s) created`);
   console.log(`  Training      : ${samples} new real screenshot sample(s) in ${storageRoot()}/samples/seed`);
   if (demo) {
     console.log(`  Managers      : manager1, manager2  /  ${MANAGER_PASSWORD}`);
+    console.log(`  Invitation    : organiser@7xen.dev (pending; dev login with it to become a manager)`);
     console.log(`  Players       : dev login (PLAYER_DEV_LOGIN=1) as ${playerEmail(1)} … ${playerEmail(PLAYERS.length)}`);
     console.log(`                  leaders: ${playerEmail(1)} (Team Soul), ${playerEmail(5)} (GodLike), ${playerEmail(8)} (Blind); ${playerEmail(10)} has no team`);
   } else {

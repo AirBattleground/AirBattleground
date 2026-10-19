@@ -190,7 +190,7 @@ function RoomDialog({ matchId, room, onClose }: { matchId: string; room: RoomDet
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="room-pass">Password</Label>
-              <Input id="room-pass" autoComplete="off" placeholder="e.g. 7xen" className="h-11 font-display text-lg font-bold tracking-wider" aria-invalid={!!formState.errors.password || undefined} {...register("password")} />
+              <Input id="room-pass" autoComplete="off" placeholder="e.g. AirBattleground" className="h-11 font-display text-lg font-bold tracking-wider" aria-invalid={!!formState.errors.password || undefined} {...register("password")} />
               {formState.errors.password && <p className="text-xs text-destructive">{formState.errors.password.message}</p>}
             </div>
           </div>

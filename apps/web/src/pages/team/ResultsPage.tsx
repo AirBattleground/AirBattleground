@@ -4,6 +4,8 @@ import { ArrowRight, CalendarDays, Crosshair, Drumstick, Medal, Search, Swords, 
 import { EmptyState, PageHeader, StatCard } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
+import { usePlayerSession } from "@/lib/auth";
+import { NoTeamHint } from "@/features/player/components/NoTeamHint";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useTeamDashboard } from "@/features/team/api";
 import { formatDate } from "@/features/team/format";
@@ -23,9 +25,11 @@ const Num = ({ v }: { v: ReactNode | undefined }) =>
 
 export default function ResultsPage() {
   usePageTour("team.results", STEPS);
-  const dash = useTeamDashboard();
+  const { hasTeam } = usePlayerSession();
+  const dash = useTeamDashboard({ enabled: hasTeam });
   const q = useTeamResults();
-  const sum = dash.data ? dash.data.results : undefined;
+  // phase 5c: no team → no numbers (zeros), the list explains why
+  const sum = !hasTeam ? null : dash.data ? dash.data.results : undefined;
 
   return (
     <div className="space-y-6">
@@ -55,6 +59,8 @@ export default function ResultsPage() {
               <Skeleton key={i} className="h-20 rounded-xl" />
             ))}
           </div>
+        ) : q.data.length === 0 && !hasTeam ? (
+          <NoTeamHint icon={<Trophy />}>Your team's results show up here after you play.</NoTeamHint>
         ) : q.data.length === 0 ? (
           <EmptyState
             icon={<Trophy />}

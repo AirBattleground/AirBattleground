@@ -33,7 +33,7 @@ export function StationPill({ s }: { s: StationStatus }) {
 
 /** One line of facts: "Emulator ready · BGMI installed · v1.2.0" or the current match. */
 export function stationFacts(s: StationStatus): string {
-  if (!s.online) return "The 7XEN Station PC isn't running — managers record with the phone app instead.";
+  if (!s.online) return "The AirBattleground Station PC isn't running — managers record with the phone app instead.";
   const parts: string[] = [];
   if (s.matchId && s.phase !== "IDLE") parts.push(`Match ${s.matchId.slice(-6)}${s.startedAt ? ` · started ${relativeTime(s.startedAt)}` : ""}`);
   else parts.push(s.emulator === "READY" ? "Emulator running" : s.emulator === "BOOTING" ? "Emulator booting" : "Emulator off (starts on demand)");
@@ -65,7 +65,7 @@ export function StationCard({ className }: { className?: string }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <h2 id="station-card-title" className="font-display text-xl font-bold">
-            7XEN Station
+            AirBattleground Station
           </h2>
           {s ? <StationPill s={s} /> : <Skeleton className="h-5 w-16 rounded-full" />}
         </div>

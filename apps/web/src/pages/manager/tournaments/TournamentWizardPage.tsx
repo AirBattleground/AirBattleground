@@ -1,9 +1,10 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { AnimatePresence, motion } from "framer-motion";
+import { useQueryClient } from "@tanstack/react-query";
+import { AnimatePresence, motion, Reorder, useDragControls } from "framer-motion";
 import {
   ArrowLeft,
   ArrowRight,
@@ -13,6 +14,7 @@ import {
   FileText,
   GitBranch,
   Hourglass,
+  Image as ImageIcon,
   Info,
   ListOrdered,
   Loader2,
@@ -32,10 +34,13 @@ import {
   DEFAULT_LOBBY_SIZE,
   DEFAULT_POINTS_SYSTEM,
   DEFAULT_SCHEDULE,
+  defaultStageMaps,
+  defaultStageName,
   MAX_ROOM_SLOTS,
   MAX_STAGES,
   MAX_TOURNAMENT_TEAMS,
   scheduleConfigSchema,
+  suggestRounds,
   todayInAppTz,
   type CreateTournamentInput,
   type FormatIssue,
@@ -52,10 +57,13 @@ import { Textarea } from "@7xen/ui/components/ui/textarea";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { formatDate, formatTime } from "@/features/manager/format";
+import { api } from "@/lib/api";
+import { uploadImage } from "@/features/manager/branding";
+import { BrandingImageCard } from "@/features/manager/components/BrandingImageCard";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { Stepper } from "@/features/manager/components/Stepper";
 import { errorMessage, useCreateTournament, usePublishTournament, useTournament, useUpdateTournament } from "@/features/tournaments/manager/api";
-import { fittingSchedule, groupSizes, normalizeStages, planSchedule, suggestFormat, validateFormat } from "@/features/tournaments/manager/engine";
+import { fittingSchedule, groupSizes, normalizeStages, planSchedule, teamsOut, validateFormat } from "@/features/tournaments/manager/engine";
 import { formatInstant } from "@/features/tournaments/manager/format";
 import { DateTimeInput } from "@/features/tournaments/manager/components/DateTimeInput";
 import { Field, Section } from "@/features/tournaments/manager/components/form";
@@ -70,9 +78,10 @@ const TOUR: TourStep[] = [
   { title: "Create a tournament", description: "Four short steps. Nothing goes live until you press Publish — you can save a draft any time." },
   { element: '[data-tour="wizard-steps"]', title: "Four steps", description: "Basics → Format → Schedule → Registration. Tap a step to jump back to it." },
   { element: '[data-tour="wizard-basics"]', title: "Name and prize", description: "What teams see first. Rules and description are optional." },
-  { element: '[data-tour="wizard-presets"]', title: "Pick a size", description: "Choose a ready-made format. 7xen works out the groups and who goes through." },
+  { element: '[data-tour="wizard-poster"]', title: "Poster", description: "Add the tournament poster here. It's saved together with the tournament." },
+  { element: '[data-tour="wizard-presets"]', title: "Pick a size", description: "Choose a ready-made format. AirBattleground works out the groups and who goes through." },
   { element: '[data-tour="wizard-flow"]', title: "Live preview", description: "See how teams flow from registration to the final. It updates as you change numbers." },
-  { element: '[data-tour="wizard-stages"]', title: "Fine-tune stages", description: "Open “Change …” on a stage to edit its maps, lobbies and how many go through." },
+  { element: '[data-tour="wizard-stages"]', title: "Rounds", description: "Rounds are named and given their usual maps automatically. Drag the handle to reorder them, or open “Change …” to edit maps, lobbies and how many go through." },
   { element: '[data-tour="wizard-schedule"]', title: "When it's played", description: "Pick the days and playing hours. Each group plays all its matches back-to-back in one lobby." },
   { element: '[data-tour="wizard-gantt"]', title: "Schedule preview", description: "Every group's time block per day and lobby. Tap a suggestion to apply it." },
   { element: '[data-tour="wizard-review"]', title: "Check everything", description: "A summary of the whole tournament before it goes live." },
@@ -102,8 +111,8 @@ const STEPS = [
 
 const PRESETS: { key: string; teams: number | null; title: string; flow: string }[] = [
   { key: "final16", teams: 16, title: "16 teams", flow: "Final only" },
-  { key: "q64", teams: 64, title: "64 teams", flow: "Qualifier → Final" },
-  { key: "q128", teams: 128, title: "128 teams", flow: "Qualifier → Semi → Final" },
+  { key: "q64", teams: 64, title: "64 teams", flow: "Round 1 → Final" },
+  { key: "q128", teams: 128, title: "128 teams", flow: "Round 1 → Round 2 → Final" },
   { key: "custom", teams: null, title: "Custom", flow: "Your own numbers" },
 ];
 
@@ -117,11 +126,33 @@ function defaultSchedule(stage: StageSpec | undefined, startDate = addDays(today
 /** Suggested stages for a size; the qualifier keeps `schedule` (or gets a fitting default when `schedule` is "auto"). */
 function buildFormat(total: number, lobby: number, schedule: ScheduleConfig | null | "auto"): StageSpec[] {
   const next = normalizeStages(
-    suggestFormat(total, lobby).map((s): StageSpec => ({ ...s, schedule: null })),
+    suggestRounds({ totalTeams: total, lobbySize: lobby }).map((s): StageSpec => ({ ...s, schedule: null })),
     total,
   );
   if (next[0]) next[0].schedule = schedule === "auto" ? defaultSchedule(next[0]) : schedule;
   return next;
+}
+
+/** Per-stage UI flags (kept beside the specs): auto-named / auto-mapped stages follow their position when rounds move. */
+interface StageMeta {
+  id: string;
+  autoName: boolean;
+  autoMaps: boolean;
+}
+const newMeta = (auto: boolean): StageMeta => ({ id: Math.random().toString(36).slice(2, 10), autoName: auto, autoMaps: auto });
+
+/** Re-apply position-based names and maps to every stage that hasn't been customised. */
+function relabel(specs: StageSpec[], metas: StageMeta[]): StageSpec[] {
+  return specs.map((s, i) => {
+    const last = i === specs.length - 1;
+    let out = s;
+    if (metas[i]?.autoName) out = { ...out, name: defaultStageName(i, last) };
+    if (metas[i]?.autoMaps) {
+      const maps = defaultStageMaps(i, last);
+      out = { ...out, maps, matchesPerGroup: maps.length };
+    }
+    return out;
+  });
 }
 
 function toSpec(s: ManagerTournamentDetail["stages"][number]): StageSpec {
@@ -182,9 +213,23 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
   const [lobby, setLobby] = useState(existing?.stages[0]?.lobbySize ?? DEFAULT_LOBBY_SIZE);
   const [preset, setPreset] = useState(existing ? "custom" : "q64");
   const [stages, setStages] = useState<StageSpec[]>(() => (existing ? existing.stages.map(toSpec) : buildFormat(64, DEFAULT_LOBBY_SIZE, "auto")));
+  // existing tournaments keep their own names/maps; new ones follow the defaults by position
+  const [meta, setMeta] = useState<StageMeta[]>(() => stages.map(() => newMeta(!existing)));
   const schedule = stages[0]?.schedule ?? null;
   // until the organiser edits the schedule themselves, keep it sized to fit the chosen format
   const [scheduleTouched, setScheduleTouched] = useState(isEdit);
+  // poster: picked here, uploaded right after the tournament is saved
+  const qc = useQueryClient();
+  const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [posterRemoved, setPosterRemoved] = useState(false);
+  const [posterPreview, setPosterPreview] = useState<string | null>(null);
+  useEffect(() => {
+    if (!posterFile) return setPosterPreview(null);
+    const url = URL.createObjectURL(posterFile);
+    setPosterPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [posterFile]);
+  const posterUrl = posterFile ? posterPreview : posterRemoved ? null : (existing?.posterUrl ?? null);
   const formatSchedule = (): ScheduleConfig | null | "auto" =>
     scheduleTouched || !schedule ? schedule : "auto";
 
@@ -244,31 +289,73 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
   else if (plan && plan.unscheduledGroups.length) publishBlockers.push("Some groups don't fit in the schedule (step 3).");
 
   // ----- format ops -----
+  /** Replace the whole format (presets / team count / lobby size): every stage goes back to automatic names + maps. */
+  const resetFormat = (next: StageSpec[]) => {
+    setStages(next);
+    setMeta(next.map(() => newMeta(true)));
+  };
   const applyPreset = (key: string) => {
     setPreset(key);
     const p = PRESETS.find((x) => x.key === key);
     if (!p?.teams) return;
     setMaxTeams(p.teams);
-    setStages(buildFormat(p.teams, lobby, formatSchedule()));
+    resetFormat(buildFormat(p.teams, lobby, formatSchedule()));
   };
   const changeTotal = (n: number) => {
     setMaxTeams(n);
     setPreset(PRESETS.find((p) => p.teams === n)?.key ?? "custom");
-    setStages(buildFormat(n, lobby, formatSchedule()));
+    resetFormat(buildFormat(n, lobby, formatSchedule()));
   };
   const changeLobby = (n: number) => {
     setLobby(n);
-    setStages(buildFormat(maxTeams, n, formatSchedule()));
+    resetFormat(buildFormat(maxTeams, n, formatSchedule()));
   };
-  const updateStage = (i: number, patch: Partial<StageSpec>) => setStages((list) => normalizeStages(list.map((s, j) => (j === i ? { ...s, ...patch } : s)), maxTeams));
-  const addStage = () =>
-    setStages((list) => {
-      const at = Math.max(0, list.length - 1);
-      const base = list[Math.max(0, at - 1)] ?? list[0]!;
-      const extra: StageSpec = { ...base, name: `Round ${at + 1}`, invitedSlots: 0, wildcardCount: 0, schedule: null };
-      return normalizeStages([...list.slice(0, at), extra, ...list.slice(at)], maxTeams);
+  /** Apply a new stage list: the qualifier schedule stays with whichever stage is first, names/maps follow position. */
+  const commitStages = (specs: StageSpec[], metas: StageMeta[]) => {
+    const carried = stages[0]?.schedule ?? null;
+    const withSchedule = specs.map((s, i) => (i === 0 ? { ...s, schedule: s.schedule ?? carried } : { ...s, schedule: null }));
+    setMeta(metas);
+    setStages(normalizeStages(relabel(withSchedule, metas), maxTeams));
+  };
+  const updateStage = (i: number, patch: Partial<StageSpec>) => {
+    const metas = meta.map((m, j) => (j === i ? { ...m, autoName: patch.name !== undefined ? false : m.autoName, autoMaps: patch.maps !== undefined ? false : m.autoMaps } : m));
+    setMeta(metas);
+    setStages(normalizeStages(stages.map((s, j) => (j === i ? { ...s, ...patch } : s)), maxTeams));
+  };
+  /** New rounds go in just before the Final and are named + mapped automatically — drag them where you want. */
+  const addStage = () => {
+    const at = Math.max(0, stages.length - 1);
+    const base = stages[Math.max(0, at - 1)] ?? stages[0]!;
+    // size the new round for the teams that reach it: enough lobbies, about half of each group goes through
+    const incoming = at === 0 ? maxTeams : teamsOut(stages[at - 1]!, false);
+    const groupCount = Math.max(1, Math.ceil(incoming / base.lobbySize));
+    const smallest = Math.max(1, Math.floor(incoming / groupCount));
+    const advancePerGroup = Math.max(1, Math.min(smallest - 1, Math.floor(smallest / 2)));
+    const extra: StageSpec = { ...base, groupCount, advancePerGroup, invitedSlots: 0, wildcardCount: 0, schedule: null };
+    commitStages([...stages.slice(0, at), extra, ...stages.slice(at)], [...meta.slice(0, at), newMeta(true), ...meta.slice(at)]);
+  };
+  const removeStage = (i: number) => commitStages(stages.filter((_, j) => j !== i), meta.filter((_, j) => j !== i));
+  /**
+   * `ids` = the new order of every stage except the Final (which always stays last). A round's name and maps travel with
+   * it; the team flow (lobbies, groups, who goes through, schedule) stays with the position, so every order stays valid.
+   */
+  const reorderStages = (ids: string[]) => {
+    const order = [...ids, meta[meta.length - 1]!.id];
+    const idx = order.map((id) => meta.findIndex((m) => m.id === id));
+    if (idx.some((n) => n < 0) || idx.every((n, k) => n === k)) return;
+    const specs = stages.map((slot, k) => {
+      const moved = stages[idx[k]!]!;
+      return { ...slot, name: moved.name, maps: moved.maps, matchesPerGroup: moved.matchesPerGroup };
     });
-  const removeStage = (i: number) => setStages((list) => normalizeStages(list.filter((_, j) => j !== i), maxTeams));
+    commitStages(specs, idx.map((n) => meta[n]!));
+  };
+  const moveStage = (i: number, dir: -1 | 1) => {
+    const ids = meta.slice(0, -1).map((m) => m.id);
+    const j = i + dir;
+    if (j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j]!, ids[i]!];
+    reorderStages(ids);
+  };
   const setSchedule = (cfg: ScheduleConfig) => {
     setScheduleTouched(true);
     setStages((list) => list.map((s, j) => (j === 0 ? { ...s, schedule: cfg } : s)));
@@ -311,6 +398,13 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
       } else {
         saved = await create.mutateAsync(parsed.data satisfies CreateTournamentInput);
       }
+      try {
+        if (posterFile) await uploadImage(`/api/manager/tournaments/${saved.id}/poster`, posterFile);
+        else if (posterRemoved && existing?.posterUrl) await api.del(`/api/manager/tournaments/${saved.id}/poster`);
+      } catch (err) {
+        toast.warning("Saved, but the poster didn't upload", { description: `${errorMessage(err)} You can add it again by editing the tournament.` });
+      }
+      void qc.invalidateQueries({ queryKey: ["manager", "tournaments"] });
       if (andPublish && saved.status === "DRAFT") {
         try {
           saved = await publish.mutateAsync(saved.id);
@@ -399,7 +493,7 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
               <Section icon={<Type />} title="Basics" description="What teams see when they find your tournament." tour="wizard-basics">
                 <div className="grid gap-5">
                   <Field label="Tournament name" htmlFor="t-title" error={errors.title?.message}>
-                    <Input id="t-title" placeholder="e.g. 7xen Winter Cup" className="h-11 text-base" aria-invalid={!!errors.title || undefined} {...register("title")} />
+                    <Input id="t-title" placeholder="e.g. AirBattleground Winter Cup" className="h-11 text-base" aria-invalid={!!errors.title || undefined} {...register("title")} />
                   </Field>
                   <Field label="Prize" optional htmlFor="t-prize" error={errors.prize?.message} hint="Shown big on the tournament page.">
                     <div className="relative">
@@ -420,6 +514,23 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
                   </Field>
                 </div>
               </Section>
+              <BrandingImageCard
+                title="Tournament poster"
+                icon={<ImageIcon />}
+                description="Optional. Teams see this on the tournament page. Square artwork looks best. It's saved with the tournament."
+                aspect="square"
+                compact
+                url={posterUrl}
+                onUpload={(f) => {
+                  setPosterFile(f);
+                  setPosterRemoved(false);
+                }}
+                onRemove={() => {
+                  setPosterFile(null);
+                  setPosterRemoved(true);
+                }}
+                tour="wizard-poster"
+              />
               <Section icon={<FileText />} title="Description & rules" description="Optional — but teams appreciate clear rules.">
                 <div className="grid gap-5">
                   <Field label="Description" optional htmlFor="t-desc" error={errors.description?.message}>
@@ -437,7 +548,7 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
             <>
               {formatLocked && <LockedNote text="Registration has opened, so the format can't change any more. You can still edit the basics." />}
               <fieldset disabled={formatLocked} className="min-w-0 space-y-6 disabled:opacity-70">
-                <Section icon={<Users />} title="How big?" description="Pick a size. 7xen splits teams into lobbies and works out who goes through." tour="wizard-presets">
+                <Section icon={<Users />} title="How big?" description="Pick a size. AirBattleground splits teams into lobbies and works out who goes through." tour="wizard-presets">
                   <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" role="radiogroup" aria-label="Format preset">
                     {PRESETS.map((p) => {
                       const on = preset === p.key;
@@ -489,25 +600,41 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
                   <div className="flex items-end justify-between gap-2">
                     <div>
                       <h2 className="font-display text-xl font-bold">Stages</h2>
-                      <p className="text-sm text-muted-foreground">Looks good? Move on. Want changes? Open a stage.</p>
+                      <p className="text-sm text-muted-foreground">Looks good? Move on. Want changes? Open a stage. Drag the handle to reorder rounds — names and maps move with them.</p>
                     </div>
                     <Button type="button" variant="outline" size="sm" onClick={addStage} disabled={stages.length >= MAX_STAGES}>
                       <Plus /> Add a round
                     </Button>
                   </div>
-                  <AnimatePresence initial={false}>
-                    {stages.map((s, i) => (
-                      <StageEditor
-                        key={`${stages.length}-${i}`}
-                        stage={s}
-                        index={i}
-                        isLast={i === stages.length - 1}
-                        issues={issues.filter((x) => x.stage === i)}
-                        onChange={(patch) => updateStage(i, patch)}
-                        onRemove={stages.length > 1 && i < stages.length - 1 ? () => removeStage(i) : undefined}
-                      />
-                    ))}
-                  </AnimatePresence>
+                  <Reorder.Group axis="y" values={meta.slice(0, -1).map((m) => m.id)} onReorder={reorderStages} as="div" className="space-y-3">
+                    <AnimatePresence initial={false}>
+                      {stages.slice(0, -1).map((s, i) => (
+                        <SortableStage
+                          key={meta[i]!.id}
+                          id={meta[i]!.id}
+                          stage={s}
+                          index={i}
+                          issues={issues.filter((x) => x.stage === i)}
+                          onChange={(patch) => updateStage(i, patch)}
+                          onRemove={stages.length > 1 ? () => removeStage(i) : undefined}
+                          onMove={(dir) => moveStage(i, dir)}
+                          canMoveUp={i > 0}
+                          canMoveDown={i < stages.length - 2}
+                          draggable={stages.length > 2}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </Reorder.Group>
+                  {stages.length > 0 && (
+                    <StageEditor
+                      key={meta[stages.length - 1]!.id}
+                      stage={stages[stages.length - 1]!}
+                      index={stages.length - 1}
+                      isLast
+                      issues={issues.filter((x) => x.stage === stages.length - 1)}
+                      onChange={(patch) => updateStage(stages.length - 1, patch)}
+                    />
+                  )}
                 </div>
               </fieldset>
             </>
@@ -662,6 +789,15 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function SortableStage({ id, draggable, ...props }: { id: string; draggable: boolean; stage: StageSpec; index: number; issues: FormatIssue[]; onChange: (patch: Partial<StageSpec>) => void; onRemove?: () => void; onMove: (dir: -1 | 1) => void; canMoveUp: boolean; canMoveDown: boolean }) {
+  const controls = useDragControls();
+  return (
+    <Reorder.Item as="div" value={id} dragListener={false} dragControls={controls} whileDrag={{ scale: 1.01, boxShadow: "0 12px 32px -12px var(--glow)", zIndex: 20 }} className="relative">
+      <StageEditor {...props} isLast={false} dragControls={draggable ? controls : undefined} />
+    </Reorder.Item>
   );
 }
 

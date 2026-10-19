@@ -150,7 +150,8 @@ export function normalizeStages(stages: StageSpec[], maxTeams: number): StageSpe
       matchesPerGroup: s.maps.length || s.matchesPerGroup,
       invitedSlots: i === 0 ? 0 : s.invitedSlots,
       advancePerGroup: last ? 0 : s.advancePerGroup,
-      wildcardCount: last ? 0 : s.wildcardCount,
+      // wildcards were removed: invited teams are added by hand instead
+      wildcardCount: 0,
     });
   });
   return out;

@@ -5,13 +5,15 @@ import { todayInAppTz, type OrganizerRef, type TeamRegistration } from "@7xen/sh
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { ME_KEY, usePlayerSession } from "@/lib/auth";
-import { NoTeamHome } from "@/features/player/components/NoTeamHome";
+import { useWatchForApproval } from "@/features/player/components/NoTeamHome";
+import { TeamUpBanner } from "@/features/player/components/TeamUpBanner";
 import { SuggestionsPanel } from "@/features/player/components/SuggestionsPanel";
 import { useTeamDashboard } from "@/features/team/api";
 import { QueryError } from "@/features/team/components/QueryError";
 import { RegistrationCard, RegistrationCardSkeleton } from "@/features/team/components/RegistrationCard";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
 import { HomeHero } from "@/features/team/home/HomeHero";
+import { PlayerHero } from "@/features/team/home/PlayerHero";
 import { OrganiserStrip, tallyOrganisers } from "@/features/team/home/OrganiserStrip";
 import { ScrimShowcase, useHomeScrims } from "@/features/team/home/ScrimShowcase";
 import { SeasonCard } from "@/features/team/home/SeasonCard";
@@ -38,10 +40,12 @@ const STEPS: TourStep[] = [
 ];
 
 const START_STEPS: TourStep[] = [
-  { title: "Welcome to AirBattleground!", description: "Scrims and tournaments are played as a team. Let's get you into one." },
-  { element: '[data-tour="create-team"]', title: "Create your team", description: "Start your own squad. You become the leader and get an invite link to share.", side: "bottom" },
-  { element: '[data-tour="join-code"]', title: "Join with a code", description: "Got an invite from a friend? Type their code or paste the link here.", side: "top" },
-  { element: '[data-tour="how-teams-work"]', title: "How teams work", description: "The leader registers; members tap “Ask my leader”. Everyone sees the slots and results.", side: "top" },
+  { title: "Welcome to AirBattleground!", description: "Browse scrims and tournaments right away. You only need a team when you register." },
+  { element: '[data-tour="find-scrim"]', title: "Find a scrim", description: "Browse scrims by day. Tap Register when you find one — we'll help you set up a team.", side: "bottom" },
+  { element: '[data-tour="team-up"]', title: "Team up", description: "Create your own team, or join your friends with their invite code.", side: "bottom" },
+  { element: '[data-tour="home-tournaments"]', title: "Tournaments", description: "Live cups and ones open for registration. Tap a poster for the full details.", side: "top" },
+  { element: '[data-tour="home-scrims"]', title: "Scrims you can join", description: "Today's and tomorrow's scrims that still take teams.", side: "top" },
+  { element: '[data-tour="organisers"]', title: "Organisers", description: "The organisers running scrims and tournaments you can play.", side: "top" },
 ];
 
 function greeting() {
@@ -57,9 +61,41 @@ export default function DashboardPage() {
   return hasTeam ? <TeamHome /> : <StartHome />;
 }
 
+/** Phase 5c: a player without a team gets the normal hub (browse first) plus one slim "team up" nudge. */
 function StartHome() {
   usePageTour("team.start", START_STEPS);
-  return <NoTeamHome greeting={greeting()} />;
+  const { user, player } = usePlayerSession();
+  const profile = useWatchForApproval();
+  const pending = profile.data?.pendingJoinRequest ?? null;
+  const today = todayInAppTz();
+  const scrims = useHomeScrims(today);
+  const featured = useFeaturedTournaments();
+  const backdropUrl = useMemo(
+    () => [...featured.items.map((t) => t.posterUrl), ...scrims.today.items.map((s) => s.scrim.posterUrl), ...scrims.tomorrow.items.map((s) => s.scrim.posterUrl)].find((u): u is string => !!u) ?? null,
+    [featured.items, scrims.today.items, scrims.tomorrow.items],
+  );
+  const organisers = useMemo(() => {
+    const seen = new Set<string>();
+    const fromScrims: OrganizerRef[] = [];
+    for (const s of [...scrims.today.items, ...scrims.tomorrow.items]) {
+      if (seen.has(s.scrim.id)) continue;
+      seen.add(s.scrim.id);
+      fromScrims.push(s.scrim.manager);
+    }
+    return tallyOrganisers(fromScrims, featured.items.map((t) => t.manager));
+  }, [featured.items, scrims.today.items, scrims.tomorrow.items]);
+
+  return (
+    <div className="flex flex-col gap-8 sm:gap-10">
+      <div className="flex flex-col gap-4">
+        <PlayerHero name={player?.ign ?? user?.displayName ?? "Player"} avatarUrl={player?.avatarUrl} greeting={greeting()} today={today} backdropUrl={backdropUrl} />
+        <TeamUpBanner pending={pending} />
+      </div>
+      <TournamentRail {...featured} />
+      <ScrimShowcase data={scrims} />
+      <OrganiserStrip items={organisers} />
+    </div>
+  );
 }
 
 function TeamHome() {

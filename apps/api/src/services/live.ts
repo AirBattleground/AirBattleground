@@ -132,7 +132,7 @@ export async function liveToday(managerId: string, days: number, now = new Date(
       room: toRoomDetails(m),
       recording: rec ? toRecordingRow(rec, capturesFor(rec, shots)) : null,
       screenshotCounts: { slotList: shots.filter((s) => s.kind === "SLOT_LIST").length, results: shots.filter((s) => s.kind === "RESULTS").length },
-      // phase 4b (additive): the 7XEN Station is streaming this match
+      // phase 4b (additive): the AirBattleground Station is streaming this match
       live: liveInfoFor(rec),
     };
     return card;

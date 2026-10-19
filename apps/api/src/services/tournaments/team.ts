@@ -44,12 +44,13 @@ async function loadVisible(id: string): Promise<TournamentFull> {
   return t;
 }
 
-export async function listForTeam(teamId: string, scope: TeamScope | undefined): Promise<TournamentSummary[]> {
+export async function listForTeam(teamId: string | null, scope: TeamScope | undefined): Promise<TournamentSummary[]> {
+  if (scope === "mine" && !teamId) return [];
   const where: Prisma.TournamentWhereInput = { status: { not: "DRAFT" } };
   if (scope === "open") where.status = "REGISTRATION_OPEN";
   else if (scope === "live") where.status = { in: ["REGISTRATION_CLOSED", "LIVE"] };
   else if (scope === "completed") where.status = "COMPLETED";
-  else if (scope === "mine") where.entries = { some: { teamId, status: { in: ["CONFIRMED", "WAITLISTED"] } } };
+  else if (scope === "mine") where.entries = { some: { teamId: teamId!, status: { in: ["CONFIRMED", "WAITLISTED"] } } };
   else if (scope !== "all") where.status = { in: ["REGISTRATION_OPEN", "REGISTRATION_CLOSED", "LIVE"] };
   // registration windows close lazily; refresh the ones that just passed
   await prisma.tournament.updateMany({
@@ -60,7 +61,7 @@ export async function listForTeam(teamId: string, scope: TeamScope | undefined):
   return toSummaries(list);
 }
 
-export async function teamTournamentDetail(teamId: string, id: string): Promise<TeamTournamentDetail> {
+export async function teamTournamentDetail(teamId: string | null, id: string): Promise<TeamTournamentDetail> {
   const t = await loadVisible(id);
   return { ...(await toDetail(t)), me: await myStatus(t, teamId) };
 }
@@ -153,7 +154,12 @@ const NONE: Omit<MyTournamentStatus, "state" | "canRegister" | "registerBlockedR
   assignedSlot: null,
 };
 
-async function myStatus(t: TournamentFull, teamId: string): Promise<MyTournamentStatus> {
+async function myStatus(t: TournamentFull, teamId: string | null): Promise<MyTournamentStatus> {
+  if (!teamId) {
+    // phase 5c: a player without a team browses; registering needs a team (the web asks them to create/join one)
+    const closed = registrationClosedReason(t);
+    return { ...NONE, entry: null, canRegister: !closed, registerBlockedReason: closed, rosterWarning: null, state: "NOT_REGISTERED", nextGoal: closed ? null : "Create or join a team to take part" };
+  }
   const entry = await prisma.tournamentEntry.findUnique({ where: { tournamentId_teamId: { tournamentId: t.id, teamId } }, include: entryInclude });
   const closed = registrationClosedReason(t);
   const active = entry && (entry.status === "CONFIRMED" || entry.status === "WAITLISTED");

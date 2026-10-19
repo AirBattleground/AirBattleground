@@ -36,7 +36,7 @@ export function ToggleActiveDialog({
       : kind === "player"
         ? "They won't be able to sign in with Google until you enable them again. They stay in their team."
         : "They won't be able to sign in or register for scrims until you enable them again.";
-  const enableText = kind === "player" ? "They'll be able to sign in with Google again." : "They'll be able to sign in again with their current password.";
+  const enableText = kind === "player" ? "They'll be able to sign in with Google again." : kind === "manager" ? "They'll be able to sign in again." : "They'll be able to sign in again with their current password.";
   return (
     <AlertDialog open={!!target} onOpenChange={(o) => !o && !busy && onClose()}>
       <AlertDialogContent>

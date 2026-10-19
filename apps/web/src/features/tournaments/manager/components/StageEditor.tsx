@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { Crown, Shield, Swords, Trash2 } from "lucide-react";
+import { motion, type DragControls } from "framer-motion";
+import { ArrowDown, ArrowUp, Crown, GripVertical, Shield, Swords, Trash2 } from "lucide-react";
 import type { FormatIssue, StageSpec } from "@7xen/shared";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Input } from "@7xen/ui/components/ui/input";
@@ -12,31 +12,59 @@ import { Advanced, Field } from "./form";
 import { FormatIssues } from "./FormatIssues";
 
 /** One stage of the format: a plain summary up top, every knob inside a collapsed "Advanced" panel. */
-export function StageEditor({ stage, index, isLast, issues, onChange, onRemove }: {
+export function StageEditor({ stage, index, isLast, issues, onChange, onRemove, dragControls, onMove, canMoveUp, canMoveDown }: {
   stage: StageSpec;
   index: number;
   isLast: boolean;
   issues: FormatIssue[];
   onChange: (patch: Partial<StageSpec>) => void;
   onRemove?: () => void;
+  /** when set, a drag handle is shown (the parent is a framer-motion Reorder.Item with dragListener off) */
+  dragControls?: DragControls;
+  onMove?: (dir: -1 | 1) => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
 }) {
   const Icon = isLast ? Crown : index === 0 ? Swords : Shield;
   const sizes = groupSizes(stage.teamsIn, stage.groupCount);
   const smallest = Math.min(...sizes);
   const out = teamsOut(stage, isLast);
-  const eliminated = stage.teamsIn - stage.groupCount * stage.advancePerGroup;
   const hasError = issues.some((i) => i.level === "error");
   const sizeText = sizes.length > 1 && Math.max(...sizes) !== smallest ? `${smallest}–${Math.max(...sizes)}` : String(smallest);
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
       className={cn("rounded-xl border bg-card p-4 shadow-sm sm:p-5", hasError && "border-destructive/50")}
     >
       <div className="flex items-start gap-3">
+        {dragControls && (
+          <span className="-ml-2 flex shrink-0 flex-col items-center">
+            <button
+              type="button"
+              onPointerDown={(e) => dragControls.start(e)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowUp" && canMoveUp) { e.preventDefault(); onMove?.(-1); }
+                if (e.key === "ArrowDown" && canMoveDown) { e.preventDefault(); onMove?.(1); }
+              }}
+              className="flex size-8 cursor-grab touch-none items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 active:cursor-grabbing"
+              aria-label={`Drag to reorder ${stage.name}. Or press the up and down arrow keys.`}
+              title="Drag to reorder"
+            >
+              <GripVertical className="size-4" />
+            </button>
+            <span className="flex sm:hidden">
+              <button type="button" disabled={!canMoveUp} onClick={() => onMove?.(-1)} aria-label={`Move ${stage.name} up`} className="flex size-6 items-center justify-center rounded text-muted-foreground disabled:opacity-30">
+                <ArrowUp className="size-3.5" />
+              </button>
+              <button type="button" disabled={!canMoveDown} onClick={() => onMove?.(1)} aria-label={`Move ${stage.name} down`} className="flex size-6 items-center justify-center rounded text-muted-foreground disabled:opacity-30">
+                <ArrowDown className="size-3.5" />
+              </button>
+            </span>
+          </span>
+        )}
         <span className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
           <Icon className="size-5" />
           <span className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-primary font-display text-[11px] font-bold text-primary-foreground">
@@ -87,14 +115,9 @@ export function StageEditor({ stage, index, isLast, issues, onChange, onRemove }
           </div>
 
           {!isLast && (
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Top teams per group go through" hint={`Out of ${smallest}+ in each group. ${stage.groupCount} × ${stage.advancePerGroup} = ${stage.groupCount * stage.advancePerGroup}.`}>
-                <Stepper value={stage.advancePerGroup} onChange={(n) => onChange({ advancePerGroup: n })} min={0} max={Math.max(0, smallest - 1)} suffix="per group" />
-              </Field>
-              <Field label="Wildcards" hint="Best of the rest across all groups (by points per match) also go through.">
-                <Stepper value={stage.wildcardCount} onChange={(n) => onChange({ wildcardCount: n })} min={0} max={Math.max(0, Math.min(128, eliminated))} suffix="teams" />
-              </Field>
-            </div>
+            <Field label="Top teams per group go through" hint={`Out of ${smallest}+ in each group. ${stage.groupCount} × ${stage.advancePerGroup} = ${stage.groupCount * stage.advancePerGroup}.`}>
+              <Stepper value={stage.advancePerGroup} onChange={(n) => onChange({ advancePerGroup: n })} min={0} max={Math.max(0, smallest - 1)} suffix="per group" />
+            </Field>
           )}
 
           <Field label={`Matches in every group · ${stage.maps.length}`} hint="One map per match, in play order.">

@@ -175,7 +175,8 @@ export interface UploadState {
   chunkSize: number;
   complete: boolean;
 }
-export type ScreenshotSource = "WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION";
+/** DEVICE (phase 6): captured from a streaming iPhone in Match Center */
+export type ScreenshotSource = "WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION" | "DEVICE";
 
 // ---------- recipes (assisted / automatic touch steps) ----------
 export const RECIPE_KEYS = ["CREATE_ROOM", "OPEN_TEAM_LIST", "SCROLL_RESULTS"] as const;

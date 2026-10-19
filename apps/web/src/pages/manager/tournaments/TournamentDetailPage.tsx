@@ -32,7 +32,6 @@ import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { formatDate, formatTime } from "@/features/manager/format";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { MapChips } from "@/features/manager/components/maps";
-import { TournamentPosterCard } from "@/features/manager/components/BrandingCards";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { useTournament, useTournamentAction } from "@/features/tournaments/manager/api";
 import { FormatIssues } from "@/features/tournaments/manager/components/FormatIssues";
@@ -50,7 +49,6 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="t-next-action"]', title: "Your next step", description: "Publish, close registration, draw groups, start, promote… Just follow this button." },
   { element: '[data-tour="t-flow"]', title: "Stage map", description: "How teams move through the stages. The current stage pulses — tap a stage to open it." },
   { element: '[data-tour="t-tabs"]', title: "More details", description: "Overview, the list of registered teams (with the waitlist), and every stage." },
-  { element: '[data-tour="t-poster"]', title: "Tournament poster", description: "Upload a poster for this tournament. Teams see it on the tournament page." },
 ];
 
 type Tab = "overview" | "registrations" | "stages";
@@ -291,8 +289,6 @@ function Overview({ t }: { t: ManagerTournamentDetail }) {
           </ul>
         </section>
       )}
-
-      <TournamentPosterCard tournamentId={t.id} url={t.posterUrl} compact tour="t-poster" />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <InfoCard icon={<Trophy />} title="Scoring & slots">

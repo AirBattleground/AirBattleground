@@ -4,7 +4,8 @@ import { cn } from "@7xen/ui/lib/utils";
 import type { MobileAction, NavItem } from "./types";
 
 /** App-style bottom navigation for phones/tablets (below lg). Respects the iOS home-indicator inset. */
-export function MobileTabBar({ nav }: { nav: NavItem[] }) {
+export function MobileTabBar({ nav: all }: { nav: NavItem[] }) {
+  const nav = all.filter((i) => !i.mobileOnlyWithBadge || (i.badge ?? 0) > 0);
   return (
     <nav
       aria-label="Main"

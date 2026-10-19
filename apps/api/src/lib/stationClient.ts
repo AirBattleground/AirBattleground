@@ -1,5 +1,5 @@
 /**
- * Phase 4b: HTTP client for the 7XEN Station (host-side service, see services/station).
+ * Phase 4b: HTTP client for the AirBattleground Station (host-side service, see services/station).
  * STATION_URL / STATION_TOKEN are read lazily so tests can point them at a fake station.
  */
 import { createHash, timingSafeEqual } from "node:crypto";
@@ -42,10 +42,10 @@ export async function stationCall<T>(method: "GET" | "POST", path: string, body?
   if (res.status === 400) throw new AppError("VALIDATION_ERROR", message);
   if (res.status === 401) {
     logger.error("the station refused our token: STATION_TOKEN differs between the API and the station");
-    throw new AppError("STATION_OFFLINE", "The 7XEN Station refused the connection (token mismatch). Ask the admin to check STATION_TOKEN.");
+    throw new AppError("STATION_OFFLINE", "The AirBattleground Station refused the connection (token mismatch). Ask the admin to check STATION_TOKEN.");
   }
   logger.error({ status: res.status, message, path }, "station error");
-  throw new AppError("INTERNAL", `The 7XEN Station had a problem: ${message}`, undefined, 502);
+  throw new AppError("INTERNAL", `The AirBattleground Station had a problem: ${message}`, undefined, 502);
 }
 
 function offlineStatus(error: string | null = null): StationStatus {

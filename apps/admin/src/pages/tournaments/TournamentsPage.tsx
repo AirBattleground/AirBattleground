@@ -16,7 +16,7 @@ import { errorMessage } from "@/lib/forms";
 import { relativeTime, shortDate } from "@/lib/format";
 
 const TOUR: TourStep[] = [
-  { title: "Tournaments", description: "Every tournament on 7xen, from every manager. Managers create them without approval — you can step in on any of them." },
+  { title: "Tournaments", description: "Every tournament on AirBattleground, from every manager. Managers create them without approval — you can step in on any of them." },
   { element: '[data-tour="t-filters"]', title: "Find one fast", description: "Search by name, or filter by status or by the manager who runs it.", side: "bottom" },
   { element: '[data-tour="t-list"]', title: "Open a tournament", description: "Click a tournament to see its format, registrations, groups and standings, and to take action.", side: "top" },
 ];

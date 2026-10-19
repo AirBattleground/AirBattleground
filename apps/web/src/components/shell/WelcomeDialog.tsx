@@ -44,7 +44,7 @@ export function WelcomeDialog({ user, steps }: { user: SessionUser; steps: Welco
               <Sparkles className="size-3.5" /> First drop
             </span>
             <DialogTitle className="font-display text-3xl font-bold leading-tight">
-              Welcome to <span className="text-gradient-brand">7XEN</span>, {name}!
+              Welcome to <span className="text-gradient-brand">AirBattleground</span>, {name}!
             </DialogTitle>
             <DialogDescription>Here's how it works — three simple steps.</DialogDescription>
           </DialogHeader>

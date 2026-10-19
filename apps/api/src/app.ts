@@ -16,6 +16,7 @@ import { teamRouter } from "./routes/team.js";
 import { playerRouter } from "./routes/player.js";
 import { appReleaseRouter } from "./routes/appRelease.js";
 import { internalStationRouter, liveRouter } from "./routes/station.js";
+import { deviceRouter, internalMediaRouter } from "./routes/devices.js";
 
 /** Friendly message for a unique-constraint violation, based on the columns involved. */
 /** Friendly message + the form field that clashed, so UIs can show the error in the right place. */
@@ -108,9 +109,12 @@ export function createApp() {
   app.use(`${API_PREFIX}/player`, playerRouter());
   app.use(`${API_PREFIX}/media`, mediaRouter());
   app.use(`${API_PREFIX}/app`, appReleaseRouter());
-  // phase 4b: 7XEN Station live streams (viewer auth inside) + station → API hooks (X-Station-Token)
+  // phase 4b: AirBattleground Station live streams (viewer auth inside) + station → API hooks (X-Station-Token)
   app.use(`${API_PREFIX}/live`, liveRouter());
   app.use(`${API_PREFIX}/internal/station`, internalStationRouter());
+  // phase 6: streaming phones (X-Device-Key)
+  app.use(`${API_PREFIX}/device`, deviceRouter());
+  app.use(`${API_PREFIX}/internal/media`, internalMediaRouter());
 
   app.use((_req, res) => {
     const body: ApiErrorBody = { error: { code: "NOT_FOUND", message: "Not found" } };

@@ -42,17 +42,26 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@12345}
       ADMIN_NAME: ${ADMIN_NAME:-7xen Admin}
-      # Screenshot reading runs the `claude` CLI, which isn't in this image: in the full stack screenshots
-      # show "reader offline" (enter results by hand). Run the API on the host (`pnpm dev`) to use it.
+      # Screenshot reading runs the `claude` CLI (in the image). It logs in with a long-lived token from
+      # `claude setup-token`, set as CLAUDE_CODE_OAUTH_TOKEN in the gitignored ./.env. Unset = "reader offline".
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
       STORAGE_DIR: /data/storage
       # phase 4b: 7XEN Station (host service, systemd --user; see docs/phase4/STATION.md).
       # STATION_TOKEN comes from the gitignored ./.env next to this file (same value as services/station/.env).
       STATION_URL: ${STATION_URL:-http://host.docker.internal:4500}
       STATION_TOKEN: ${STATION_TOKEN:-}
+      # phase 6: MediaMTX on the host network (service "media")
+      MEDIA_HLS_URL: ${MEDIA_HLS_URL:-http://host.docker.internal:8888}
+      MEDIA_API_URL: ${MEDIA_API_URL:-http://host.docker.internal:9997}
+      MEDIA_RTMP_INTERNAL: ${MEDIA_RTMP_INTERNAL:-rtmp://host.docker.internal:1935}
+      # phase 6: admin health gauges read the host's CPU / RAM / network, not the container's
+      HOST_PROC: /host/proc
+      MEDIA_RTMP_URL: ${MEDIA_RTMP_URL:-rtmp://localhost:1935/live}
     extra_hosts:
       - "host.docker.internal:host-gateway" # the station runs on the host, not in Docker
     volumes:
       - ./storage:/data/storage # same folder the dev setup uses, so existing samples/screenshots keep working
+      - /proc:/host/proc:ro
     ports:
       - "127.0.0.1:4000:4000" # only for the host-networked web container; not exposed to the LAN
 
@@ -72,6 +81,16 @@ services:
     network_mode: host
     environment:
       API_UPSTREAM: http://127.0.0.1:4000
+
+  # phase 6: iPhone streams (RTMP in on :1935, HLS out on :8888 for the API). Dev: `docker compose up -d media`.
+  # Host networking so its auth hook reaches the API on 127.0.0.1:4000 (host `pnpm dev` or the api container).
+  media:
+    image: bluenviron/mediamtx:1.9.3
+    container_name: 7xen-media
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./deploy/media/mediamtx.yml:/mediamtx.yml:ro
 
 volumes:
   7xen-pgdata:

@@ -11,13 +11,15 @@ import { teamRooms } from "../services/live.js";
 import { teamLive } from "../services/station.js";
 import { MSG } from "../services/players.js";
 
-/** The player's team (phase 5: from their membership); 403 NO_TEAM when they aren't in one. */
+/** The player's team (phase 5: from their membership); 403 NO_TEAM when they aren't in one (dashboard + mutations). */
 function membership(req: Request) {
   const m = currentUser(req).membership;
   if (!m) throw new AppError("NO_TEAM", MSG.NO_TEAM);
   return m;
 }
 const teamId = (req: Request): string => membership(req).team.id;
+/** phase 5c: browse reads work without a team — null means "not in a team" and the reads answer with empty team parts. */
+const optTeamId = (req: Request): string | null => currentUser(req).membership?.team.id ?? null;
 /** Team id for a mutation: only the leader acts for the team (members "Ask my leader"). */
 function leaderTeamId(req: Request): string {
   const m = membership(req);
@@ -35,7 +37,7 @@ export function teamRouter() {
 
   r.get("/scrims", async (req, res) => {
     const { date } = parse(dateQuerySchema, req.query);
-    res.json({ items: await team.teamScrimsForDate(teamId(req), date) });
+    res.json({ items: await team.teamScrimsForDate(optTeamId(req), date) });
   });
 
   r.post("/registrations", async (req, res) => {
@@ -44,7 +46,8 @@ export function teamRouter() {
   });
   r.get("/registrations", async (req, res) => {
     const { scope } = parse(registrationScopeSchema, req.query);
-    res.json({ items: await team.teamRegistrations(teamId(req), scope) });
+    const id = optTeamId(req);
+    res.json({ items: id ? await team.teamRegistrations(id, scope) : [] });
   });
   r.delete("/registrations/:id", async (req, res) => {
     await cancelRegistration(leaderTeamId(req), req.params.id);
@@ -53,17 +56,19 @@ export function teamRouter() {
 
   // ---- phase 2: results, points table, roster ----
   r.get("/results", async (req, res) => {
-    res.json({ items: await results.teamResults(teamId(req)) });
+    const id = optTeamId(req);
+    res.json({ items: id ? await results.teamResults(id) : [] });
   });
   r.get("/sessions/:scrimId/:date/standings", async (req, res) => {
     const date = parse(dateString, req.params.date);
-    res.json(await results.teamSessionStandings(teamId(req), req.params.scrimId, date));
+    res.json(await results.teamSessionStandings(optTeamId(req), req.params.scrimId, date));
   });
   r.get("/matches/:matchId", async (req, res) => {
-    res.json(await results.teamMatchScorecard(teamId(req), req.params.matchId));
+    res.json(await results.teamMatchScorecard(optTeamId(req), req.params.matchId));
   });
   r.get("/roster", async (req, res) => {
-    res.json(await results.getRoster(teamId(req)));
+    const id = optTeamId(req);
+    res.json(id ? await results.getRoster(id) : { players: [], suggestions: [] });
   });
   r.put("/roster", async (req, res) => {
     const id = leaderTeamId(req);
@@ -72,16 +77,18 @@ export function teamRouter() {
   });
 
   // ---- phase 3: tournaments ----
-  r.use("/tournaments", tournamentTeamRouter(teamId, leaderTeamId, (req) => currentUser(req).id));
+  r.use("/tournaments", tournamentTeamRouter(optTeamId, leaderTeamId, (req) => currentUser(req).id));
 
   // ---- phase 4: room details for upcoming matches (shown once revealed) ----
   r.get("/rooms", async (req, res) => {
-    res.json({ items: await teamRooms(teamId(req)) });
+    const id = optTeamId(req);
+    res.json({ items: id ? await teamRooms(id) : [] });
   });
-  // ---- phase 4b: matches of this team being streamed by the 7XEN Station right now ----
+  // ---- phase 4b: matches of this team being streamed by the AirBattleground Station right now ----
   r.get("/live", async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    res.json({ items: await teamLive(teamId(req)) });
+    const id = optTeamId(req);
+    res.json({ items: id ? await teamLive(id) : [] });
   });
 
   return r;

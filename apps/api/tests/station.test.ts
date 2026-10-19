@@ -185,11 +185,11 @@ describe("station: manager endpoints", () => {
     expect(s.body).toMatchObject({ online: false, phase: "IDLE" });
     const r = await prepare(w.mgr, w.matchId, {});
     expect(r.status).toBe(503);
-    expect(r.body.error).toEqual({ code: "STATION_OFFLINE", message: expect.stringContaining("The 7XEN Station PC isn't running") });
+    expect(r.body.error).toEqual({ code: "STATION_OFFLINE", message: expect.stringContaining("The AirBattleground Station PC isn't running") });
     expect(await prisma.matchRecording.count()).toBe(0);
   });
 
-  it("prepare (empty body) creates a 7XEN Station recording and starts the station", async () => {
+  it("prepare (empty body) creates an AirBattleground Station recording and starts the station", async () => {
     const w = await world();
     const r = await w.mgr.post(`/api/manager/matches/${w.matchId}/station/prepare`);
     expect(r.status, JSON.stringify(r.body)).toBe(200);

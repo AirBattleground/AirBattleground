@@ -1,32 +1,24 @@
-import { useId } from "react";
 import { cn } from "@7xen/ui/lib/utils";
+import markUrl from "../../assets/brand/airbattleground-mark.webp";
+import wordmarkUrl from "../../assets/brand/airbattleground-wordmark.webp";
+import wordmarkInkUrl from "../../assets/brand/airbattleground-wordmark-ink.webp";
 
+/** The AirBattleground logo images (AB mark; wordmark for dark / light backgrounds). */
+export const BRAND_ASSETS = { name: "AirBattleground", mark: markUrl, wordmark: wordmarkUrl, wordmarkInk: wordmarkInkUrl } as const;
+
+/** The AB mark. Painted in the brand colour by the `.brand-ink` SVG filter (#sx-brand-ink, defined in each app's index.html). */
 export function LogoMark({ className }: { className?: string }) {
-  const id = useId();
-  return (
-    <svg viewBox="0 0 40 40" className={cn("size-9 drop-shadow-[0_4px_14px_var(--glow)]", className)} aria-hidden="true">
-      <defs>
-        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="var(--color-brand-300)" />
-          <stop offset="0.5" stopColor="var(--color-brand-500)" />
-          <stop offset="1" stopColor="var(--color-brand-700)" />
-        </linearGradient>
-      </defs>
-      <path d="M20 2 36 11v18L20 38 4 29V11z" fill={`url(#${id})`} />
-      <path d="M20 2 36 11v18L20 38 4 29V11z" fill="none" stroke="#fff" strokeOpacity=".3" />
-      <path d="M12 13h16l-9 15h-4.5l7.2-11.6H12z" fill="#fff" />
-    </svg>
-  );
+  return <img src={markUrl} alt="" aria-hidden="true" draggable={false} className={cn("brand-ink h-9 w-auto object-contain drop-shadow-[0_4px_14px_var(--glow)]", className)} />;
 }
 
-/** 7XEN wordmark. `subtitle` renders a small caps line under it (e.g. "Admin Console"). */
+/** AirBattleground logo: AB mark + wordmark. `subtitle` renders a small caps line under it (e.g. "Admin Console"). */
 export function Logo({ className, subtitle }: { className?: string; subtitle?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <LogoMark />
       <span className="leading-none">
-        <span className="block font-display text-2xl font-bold tracking-wider">
-          7<span className="text-primary">XEN</span>
+        <span className="block font-display text-xl font-bold tracking-wide">
+          Air<span className="text-primary">Battleground</span>
         </span>
         {subtitle && <span className="mt-0.5 block text-[10px] font-semibold uppercase tracking-[0.25em] text-muted-foreground">{subtitle}</span>}
       </span>

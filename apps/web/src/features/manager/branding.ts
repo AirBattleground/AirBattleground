@@ -9,7 +9,7 @@ import { errorMessage } from "./api";
 
 const brandingKey = ["manager", "branding"] as const;
 
-async function uploadImage(path: string, file: File): Promise<ImageUrlResponse> {
+export async function uploadImage(path: string, file: File): Promise<ImageUrlResponse> {
   const form = new FormData();
   form.append("file", file, file.name);
   let res: Response;

@@ -5,15 +5,19 @@ import type { TournamentSummary } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@7xen/ui/components/ui/tabs";
+import { usePlayerSession } from "@/lib/auth";
+import { NoTeamHint } from "@/features/player/components/NoTeamHint";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { QueryError } from "@/features/team/components/QueryError";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
 import { useTeamTournament, useTeamTournaments, type TournamentScope } from "@/features/tournaments/team/api";
+import { FeaturedTournamentBanner, FeaturedTournamentSkeleton, useFeaturedTournament } from "@/features/tournaments/team/components/FeaturedTournamentBanner";
 import { TournamentCard, TournamentCardSkeleton } from "@/features/tournaments/team/components/TournamentCard";
 import { meChip } from "@/features/tournaments/team/journey";
 
 const STEPS: TourStep[] = [
   { title: "Tournaments", description: "Multi-stage events: qualifiers, semi-finals and a grand final. Register, play your group, and climb to the trophy." },
+  { element: '[data-tour="t-featured"]', title: "Featured tournament", description: "The big one. Tap to see the prize, stages and register your team.", side: "bottom" },
   { element: '[data-tour="t-tabs"]', title: "Find the right one", description: "Open = taking teams now. Live = being played. My tournaments = the ones you're in. Completed = past champions.", side: "bottom" },
   { element: '[data-tour="t-card"]', title: "Tap a tournament", description: "See the prize, how many teams registered, and which stage it's at. Tap for the full flow chart and to register.", side: "bottom" },
 ];
@@ -44,6 +48,7 @@ function MineCard({ t, tour }: { t: TournamentSummary; tour?: boolean }) {
 }
 
 function TournamentGrid({ scope, mineIds }: { scope: TournamentScope; mineIds: Set<string> }) {
+  const { hasTeam } = usePlayerSession();
   const q = useTeamTournaments(scope);
   if (q.isError) return <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load tournaments" />;
   if (q.isLoading || !q.data)
@@ -54,6 +59,7 @@ function TournamentGrid({ scope, mineIds }: { scope: TournamentScope; mineIds: S
         ))}
       </div>
     );
+  if (q.data.length === 0 && scope === "mine" && !hasTeam) return <NoTeamHint icon={<Trophy />}>Tournaments your team joins show up here.</NoTeamHint>;
   if (q.data.length === 0)
     return (
       <EmptyState
@@ -94,6 +100,7 @@ export default function TournamentsPage() {
   const tab = (TABS.find((t) => t.key === params.get("tab"))?.key ?? "open") as TournamentScope;
   const mine = useTeamTournaments("mine");
   const mineIds = useMemo(() => new Set((mine.data ?? []).map((t) => t.id)), [mine.data]);
+  const featured = useFeaturedTournament();
   const liveMine = (mine.data ?? []).filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELLED").length;
 
   return (
@@ -103,6 +110,7 @@ export default function TournamentsPage() {
         title="Tournaments"
         description="Fight through the stages for the trophy. Spots are first come, first served."
       />
+      {featured.loading ? <FeaturedTournamentSkeleton className="mb-6" /> : featured.t && <FeaturedTournamentBanner t={featured.t} className="mb-6" />}
       <Tabs value={tab} onValueChange={(v) => setParams(v === "open" ? {} : { tab: v }, { replace: true })} className="gap-4">
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <TabsList className="h-10" data-tour="t-tabs">

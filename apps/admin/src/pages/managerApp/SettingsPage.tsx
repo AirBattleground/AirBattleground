@@ -18,7 +18,7 @@ const TOUR: TourStep[] = [
   { title: "Manager app settings", description: "How long match videos are kept, and how much space they use." },
   { element: '[data-tour="retention"]', title: "Keep videos for…", description: "Videos older than this are deleted automatically to free up disk space. Results and screenshots are never deleted.", side: "bottom" },
   { element: '[data-tour="storage"]', title: "Storage", description: "Space used by match videos on the server's disk.", side: "top" },
-  { element: '[data-tour="station-settings"]', title: "7XEN Station", description: "Status of the game phone on the server PC, and how it runs.", side: "top" },
+  { element: '[data-tour="station-settings"]', title: "AirBattleground Station", description: "Status of the game phone on the server PC, and how it runs.", side: "top" },
   { element: '[data-tour="tab-recipes"]', title: "Recipes", description: "The touch steps the app follows to create a room. Edit them when BGMI changes its screens.", side: "bottom" },
 ];
 
@@ -98,7 +98,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <ManagerAppHeader title="Settings" description="Video retention and storage for the 7XEN Manager app." />
+      <ManagerAppHeader title="Settings" description="Video retention and storage for the AirBattleground Manager app." />
       <div className="grid gap-5 lg:grid-cols-2">
         <section className="rounded-xl border bg-card p-5 shadow-sm" data-tour="retention">
           <div className="mb-4 flex items-center gap-2">

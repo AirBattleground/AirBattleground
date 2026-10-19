@@ -24,6 +24,14 @@
  *   POST   /api/player/team/transfer  TransferLeaderInput     → PlayerTeam      leader
  *   POST   /api/player/team/join-requests/:id/approve         → PlayerTeam      leader (409 TEAM_FULL · 409 ALREADY_IN_TEAM)
  *   POST   /api/player/team/join-requests/:id/reject          → PlayerTeam      leader
+ *   PUT    /api/player/team/logo   multipart file             → ImageUrlResponse leader (png/jpg/webp ≤ MAX_BRANDING_IMAGE_BYTES)
+ *   DELETE /api/player/team/logo                              → ImageUrlResponse leader ({ url: null })
+ *   POST   /api/player/team/invites  InviteByBgmiInput        → PlayerTeam (201) leader: invite a player by BGMI ID
+ *                                   (404 NOT_FOUND no such BGMI ID · 409 ALREADY_IN_TEAM · 409 TEAM_FULL · 409 CONFLICT already invited / already asked to join)
+ *   DELETE /api/player/team/invites/:id                       → PlayerTeam      leader: take back a pending invite
+ *   GET    /api/player/team-invites                           → ListResponse<MyTeamInvite>  my pending invitations
+ *   POST   /api/player/team-invites/:id/accept                → PlayerTeam      (409 ALREADY_IN_TEAM · 409 TEAM_FULL · 409 CONFLICT taken back)
+ *   POST   /api/player/team-invites/:id/decline               → 204
  *   GET    /api/player/invites/:code                          → TeamInvitePreview (404 INVITE_INVALID)
  *   POST   /api/player/join-requests  CreateJoinRequestInput  → MyJoinRequest (201) (400 BGMI_ID_REQUIRED · 409 ALREADY_IN_TEAM · 409 JOIN_REQUEST_PENDING · 409 TEAM_FULL · 404 INVITE_INVALID)
  *   GET    /api/player/join-requests                          → ListResponse<MyJoinRequest> (newest first)
@@ -107,6 +115,9 @@ export type CreatePlayerTeamInput = z.infer<typeof createPlayerTeamSchema>;
 export const updatePlayerTeamSchema = z.object({ name: teamName.optional(), tag: teamTag.optional() });
 export type UpdatePlayerTeamInput = z.infer<typeof updatePlayerTeamSchema>;
 
+export const inviteByBgmiSchema = z.object({ bgmiId: bgmiIdSchema });
+export type InviteByBgmiInput = z.infer<typeof inviteByBgmiSchema>;
+
 export const transferLeaderSchema = z.object({ userId: z.string().min(1) });
 export type TransferLeaderInput = z.infer<typeof transferLeaderSchema>;
 
@@ -184,10 +195,29 @@ export interface TeamJoinRequestRow {
   createdAt: string;
 }
 
+/** A pending invitation the leader sent (by BGMI ID). */
+export interface TeamInviteRow {
+  id: string;
+  player: PlayerSummary & { bgmiId: string | null };
+  createdAt: string;
+}
+
+/** An invitation to join a team, as the invited player sees it. */
+export interface MyTeamInvite {
+  id: string;
+  team: { id: string; name: string; tag: string; logoUrl: string | null };
+  invitedBy: PlayerSummary;
+  memberCount: number;
+  maxMembers: number;
+  createdAt: string;
+}
+
 export interface PlayerTeam {
   id: string;
   name: string;
   tag: string;
+  /** team logo URL; null = none uploaded */
+  logoUrl: string | null;
   leaderId: string;
   myRole: TeamRole;
   members: TeamMemberRow[];
@@ -196,6 +226,8 @@ export interface PlayerTeam {
   inviteCode: string | null;
   /** leader only (empty for members) */
   joinRequests: TeamJoinRequestRow[];
+  /** leader only (empty for members): invitations sent by BGMI ID, still waiting */
+  invites: TeamInviteRow[];
   openSuggestions: number;
   createdAt: string;
 }

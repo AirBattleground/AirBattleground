@@ -1,22 +1,22 @@
 import { useMemo } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { CalendarSearch, Home, Medal, Megaphone, Plus, Search, Ticket, Trophy, Users } from "lucide-react";
+import { Link, Outlet } from "react-router-dom";
+import { CalendarSearch, Home, Medal, Megaphone, Plus, Radio, Search, Ticket, Trophy, Users } from "lucide-react";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
 import { usePlayerTeam } from "@/features/player/api";
-import { NoTeamGate } from "@/features/player/components/NoTeamGate";
 import { AppShell, type NavItem, type ShellBrand, type SidebarSlot, type WelcomeStep } from "@/components/shell";
 import markUrl from "@/assets/brand/airbattleground-mark.webp";
 import wordmarkUrl from "@/assets/brand/airbattleground-wordmark.webp";
 import wordmarkInkUrl from "@/assets/brand/airbattleground-wordmark-ink.webp";
 import { useTeamTournamentCrumbLabels } from "@/features/tournaments/team/crumbs";
+import { useLiveBroadcasts } from "@/features/broadcast/live";
 
 const MY_TEAM_NAV: NavItem = { key: "my-team", to: "/team/my-team", label: "My team", short: "Team", icon: Users };
 
 /**
- * Phones: the bottom tab bar (6 items); the player profile lives in the avatar menu (top right).
+ * Phones: the bottom tab bar (6 items, +Live while a match is broadcast); the player profile lives in the avatar menu.
  * Desktop: the sidebar shows the same items (the team card at the top links to My team).
  */
 const NAV: NavItem[] = [
@@ -25,16 +25,9 @@ const NAV: NavItem[] = [
   { key: "tournaments", to: "/team/tournaments", label: "Tournaments", short: "Cups", icon: Trophy },
   { key: "registrations", to: "/team/registrations", label: "My registrations", short: "Slots", icon: Ticket },
   { key: "results", to: "/team/results", label: "Results", icon: Medal },
+  // phones: in the tab bar only while something is live (the count is the badge)
+  { key: "live", to: "/team/live", label: "Live", icon: Radio, mobileOnlyWithBadge: true },
   MY_TEAM_NAV,
-];
-
-/** Team-only pages: shown as "get into a team first" while the player has no team. */
-const NO_TEAM_WHAT: [string, string][] = [
-  ["/team/scrims", "scrims you can register for"],
-  ["/team/registrations", "your team's slots"],
-  ["/team/results", "your team's results"],
-  ["/team/tournaments", "tournaments"],
-  ["/team/live", "live matches"],
 ];
 
 const WELCOME_STEPS: WelcomeStep[] = [
@@ -49,7 +42,7 @@ function TeamCard({ collapsed }: { collapsed: boolean }) {
   if (!team) {
     return (
       <Link
-        to="/team"
+        to="/team/my-team"
         data-tour="team-card"
         aria-label="Create or join a team"
         className={cn(
@@ -112,19 +105,28 @@ const BRAND: ShellBrand = { name: "AirBattleground", wordmark: wordmarkUrl, word
 export default function TeamLayout() {
   const tournamentLabels = useTeamTournamentCrumbLabels(SEGMENT_LABELS);
   const { hasTeam, isLeader } = usePlayerSession();
-  const { pathname } = useLocation();
   // leader badges: open "Ask my leader" suggestions on Home, pending join requests on My team
   const myTeam = usePlayerTeam({ enabled: hasTeam && isLeader });
   const suggestions = myTeam.data?.openSuggestions ?? 0;
   const joinRequests = myTeam.data?.joinRequests.length ?? 0;
+  const liveCount = useLiveBroadcasts().data?.length ?? 0;
   const nav = useMemo(
-    () => NAV.map((n) => (n.key === "home" ? { ...n, badge: isLeader ? suggestions : 0 } : n.key === "my-team" ? { ...n, badge: isLeader ? joinRequests : 0 } : n)),
-    [isLeader, suggestions, joinRequests],
+    () =>
+      NAV.map((n) =>
+        n.key === "home"
+          ? { ...n, badge: isLeader ? suggestions : 0 }
+          : n.key === "my-team"
+            ? { ...n, badge: isLeader ? joinRequests : 0 }
+            : n.key === "live"
+              ? { ...n, badge: liveCount }
+              : n,
+      ),
+    [isLeader, suggestions, joinRequests, liveCount],
   );
-  const gated = !hasTeam ? NO_TEAM_WHAT.find(([p]) => pathname === p || pathname.startsWith(p + "/")) : undefined;
   return (
     <AppShell nav={nav} homeHref="/team" sidebarHeader={teamHeader} segmentLabels={tournamentLabels ?? SEGMENT_LABELS} welcomeSteps={WELCOME_STEPS} brand={BRAND}>
-      {gated ? <NoTeamGate what={gated[1]} /> : <Outlet />}
+      {/* phase 5c: every page is open without a team; only registering asks for one */}
+      <Outlet />
     </AppShell>
   );
 }

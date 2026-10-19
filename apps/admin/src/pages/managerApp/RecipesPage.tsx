@@ -445,7 +445,7 @@ export default function RecipesPage() {
 
   return (
     <>
-      <ManagerAppHeader title="Recipes" description="The touch steps the 7XEN Manager app follows in BGMI. Update them when the game changes its screens." />
+      <ManagerAppHeader title="Recipes" description="The touch steps the AirBattleground Manager app follows in BGMI. Update them when the game changes its screens." />
       {list.isPending ? (
         <div className="grid gap-4 lg:grid-cols-3">
           {RECIPE_KEYS.map((k) => (

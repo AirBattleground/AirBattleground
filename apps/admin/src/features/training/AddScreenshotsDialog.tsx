@@ -235,7 +235,7 @@ export function AddScreenshotsDialog({ open, onOpenChange }: { open: boolean; on
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="AUTO">Let 7xen decide (recommended)</SelectItem>
+                  <SelectItem value="AUTO">Let AirBattleground decide (recommended)</SelectItem>
                   <SelectItem value="TRAIN">Training — general labelled examples</SelectItem>
                   <SelectItem value="TEST">Test — only to measure accuracy</SelectItem>
                 </SelectContent>

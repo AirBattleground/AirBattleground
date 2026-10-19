@@ -32,7 +32,7 @@ export function SessionMatches({ scrimId, date }: { scrimId: string; date: strin
         <div>
           <h2 className="font-display text-2xl font-bold">Matches & results</h2>
           <p className="text-sm text-muted-foreground">
-            One match per map. Upload in-game screenshots and 7xen fills in the results for you.
+            One match per map. Upload in-game screenshots and AirBattleground fills in the results for you.
           </p>
         </div>
         <Button asChild variant="outline" data-tour="detail-standings">

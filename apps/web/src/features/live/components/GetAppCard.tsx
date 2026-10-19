@@ -6,7 +6,7 @@ import { fmtBytes } from "../format";
 
 export const releaseDownloadUrl = (r: AppRelease) => r.url || APP_DOWNLOAD_URL;
 
-/** Manager dashboard: "Get the 7XEN Manager app". Renders nothing until a release exists. */
+/** Manager dashboard: "Get the AirBattleground Manager app". Renders nothing until a release exists. */
 export function GetAppCard() {
   const q = useAppRelease();
   const r = q.data;
@@ -22,7 +22,7 @@ export function GetAppCard() {
         <Smartphone />
       </div>
       <div className="relative min-w-0 flex-1">
-        <div className="font-display text-xl leading-tight font-bold">Get the 7XEN Manager app</div>
+        <div className="font-display text-xl leading-tight font-bold">Get the AirBattleground Manager app</div>
         <div className="text-sm text-muted-foreground">Record matches, create rooms and capture screenshots automatically. Android · v{r.version} · {fmtBytes(r.sizeBytes)}</div>
       </div>
       <ArrowRight className="relative size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1 group-hover:text-primary" />

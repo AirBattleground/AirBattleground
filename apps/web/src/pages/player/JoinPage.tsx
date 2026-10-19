@@ -225,7 +225,7 @@ export default function JoinPage() {
             </>
           }
         >
-          {t.leader.ign ?? t.leader.displayName} will see your request. Once they approve, the team shows up on your home screen.
+          {t.leader.ign ?? t.leader.displayName} will see your request. Once they approve, the team shows up on your home screen — then tap “Ask my leader” on any scrim or tournament and your leader registers the team.
         </StateCard>
       );
     } else if (pending) {

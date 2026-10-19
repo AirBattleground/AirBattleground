@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowRight, Crown, Hourglass, KeyRound, Loader2, Megaphone, Shield, Sparkles, Ticket, UserPlus, Users, X } from "lucide-react";
+import { ArrowRight, Crown, Hourglass, KeyRound, Loader2, Megaphone, Shield, Ticket, UserPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { INVITE_CODE_LENGTH, normalizeInviteCode, type MyJoinRequest } from "@7xen/shared";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
@@ -13,7 +13,7 @@ import { usePlayerSession } from "@/lib/auth";
 import markUrl from "@/assets/brand/airbattleground-mark.webp";
 import { refreshMembership, useCancelJoinRequest, usePlayerProfile } from "../api";
 import { CreateTeamDialog } from "./CreateTeamDialog";
-import { PlayerAvatar } from "./PlayerAvatar";
+import { MyInvitesPanel } from "./MyInvitesPanel";
 
 /** Type a code (or paste a whole invite link) → /join/:code. */
 export function JoinCodeForm({ className, autoFocus }: { className?: string; autoFocus?: boolean }) {
@@ -114,47 +114,31 @@ const HOW = [
   { icon: Ticket, title: "Everyone sees the slot", text: "Slot numbers, room IDs and results show up for the whole squad." },
 ];
 
-/** Premium start state for a player with no team: create one or join with a code. */
-export function NoTeamHome({ greeting }: { greeting: string }) {
-  const { user, player } = usePlayerSession();
+/**
+ * The full create / join UI for a player with no team. Lives on My team only (phase 5c) — everywhere else the
+ * player browses freely and is asked for a team when they register.
+ */
+export function CreateOrJoinTeam() {
   const profile = useWatchForApproval();
   const [createOpen, setCreateOpen] = useState(false);
   const pending = profile.data?.pendingJoinRequest ?? null;
-  const name = player?.ign ?? user?.displayName ?? "Player";
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
+      <MyInvitesPanel />
       <section className="relative isolate overflow-hidden rounded-3xl border border-primary/20 bg-card shadow-sm animate-rise" data-tour="start-hero">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_0%_0%,color-mix(in_oklch,var(--primary)_22%,transparent),transparent_60%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(80%_70%_at_100%_100%,color-mix(in_oklch,var(--brand-400)_18%,transparent),transparent_65%)]" />
           <img src={markUrl} alt="" className="brand-ink absolute -right-16 -bottom-24 w-[26rem] max-w-none rotate-[-12deg] opacity-[0.1] sm:w-[34rem]" />
           <div className="absolute inset-0 bg-grid opacity-50 [mask-image:linear-gradient(to_bottom,#000,transparent_85%)]" />
-          <div className="absolute -top-32 -left-24 size-96 rounded-full bg-primary/25 blur-3xl animate-aurora" />
           <div className="absolute inset-x-10 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
         </div>
 
-        <div className="p-5 sm:p-8 lg:p-10">
-          <div className="flex items-center gap-4">
-            <div className="relative shrink-0">
-              <div className="absolute -inset-1.5 rounded-2xl bg-gradient-to-br from-primary to-brand-300 opacity-60 blur-md" aria-hidden />
-              <PlayerAvatar name={name} url={player?.avatarUrl} size="xl" className="relative ring-2 ring-primary/60" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">{greeting}</p>
-              <h1 className="mt-1 truncate font-display text-3xl leading-[1.05] font-extrabold tracking-tight uppercase sm:text-5xl">{name}</h1>
-              <p className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold tracking-[0.2em] text-primary uppercase">
-                <Sparkles className="size-3" /> Free agent
-              </p>
-            </div>
-          </div>
-          <p className="mt-5 max-w-xl text-sm text-muted-foreground sm:text-base">
-            Scrims and tournaments are played as a team. Start your own squad, or join your friends with their invite code.
-          </p>
+        <div className="p-5 sm:p-8">
+          {pending && <PendingJoinCard request={pending} className="mb-5" />}
 
-          {pending && <PendingJoinCard request={pending} className="mt-5" />}
-
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2">
             <div className="group relative overflow-hidden rounded-2xl border border-primary/40 bg-background/60 p-5 shadow-glow backdrop-blur" data-tour="create-team">
               <div aria-hidden className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-primary/25 blur-3xl transition-opacity group-hover:opacity-80" />
               <span className="relative flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow">

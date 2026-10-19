@@ -16,7 +16,7 @@ const OFFLINE_STATION: StationStatus = {
   version: "",
 };
 
-/** 7XEN Station health. An unreachable station (or an API without the endpoint yet) reads as offline. */
+/** AirBattleground Station health. An unreachable station (or an API without the endpoint yet) reads as offline. */
 export function useStationStatus(opts: { refetchInterval?: number } = {}) {
   return useQuery({
     queryKey: ["admin", "station"],

@@ -1,12 +1,13 @@
 import { Link, Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarPlus, CheckCircle2, Inbox, LayoutDashboard, Plus, Swords, Trophy, Users } from "lucide-react";
+import { CalendarPlus, CheckCircle2, Inbox, LayoutDashboard, Plus, Radio, Smartphone, Swords, Trophy, Users } from "lucide-react";
 import type { ListResponse, PendingRequest } from "@7xen/shared";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { cn } from "@7xen/ui/lib/utils";
 import { api } from "@/lib/api";
 import { AppShell, type MobileAction, type NavItem, type SidebarSlot, type WelcomeStep } from "@/components/shell";
 import { useTournamentCrumbLabels } from "@/features/tournaments/manager/crumbs";
+import { useLiveBroadcasts } from "@/features/broadcast/live";
 
 const WELCOME_STEPS: WelcomeStep[] = [
   { icon: CalendarPlus, title: "Create a scrim", text: "Pick the maps, start time and how many slots — once or every day." },
@@ -52,6 +53,7 @@ export default function ManagerLayout() {
     refetchInterval: 30_000,
   });
   const pending = requests.data?.length ?? 0;
+  const liveCount = useLiveBroadcasts().data?.length ?? 0;
   const { pathname } = useLocation();
   const tournamentLabels = useTournamentCrumbLabels();
   const inTournaments = pathname.startsWith("/manager/tournaments");
@@ -62,7 +64,10 @@ export default function ManagerLayout() {
     { key: "dashboard", to: "/manager", label: "Dashboard", short: "Home", icon: LayoutDashboard, end: true },
     { key: "requests", to: "/manager/requests", label: "Approvals", icon: Inbox, badge: pending },
     { key: "scrims", to: "/manager/scrims", label: "Scrims", icon: Swords },
-    { key: "tournaments", to: "/manager/tournaments", label: "Tournaments", short: "Cups", icon: Trophy },  ];
+    { key: "tournaments", to: "/manager/tournaments", label: "Tournaments", short: "Cups", icon: Trophy },
+    { key: "devices", to: "/manager/devices", label: "Devices", icon: Smartphone },
+    { key: "live", to: "/manager/live", label: "Live", icon: Radio, badge: liveCount, mobileOnlyWithBadge: true },
+  ];
 
   return (
     <AppShell nav={nav} homeHref="/manager" sidebarAction={NewScrimButton} mobileAction={fab} segmentLabels={tournamentLabels ?? SEGMENT_LABELS} welcomeSteps={WELCOME_STEPS}>

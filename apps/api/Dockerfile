@@ -30,12 +30,17 @@ RUN pnpm --filter @7xen/api deploy --prod --legacy /out \
 # ---------- runtime ----------
 FROM node:${NODE_VERSION} AS runtime
 # ffmpeg: phase 4 match videos (duration, size, poster frame)
-RUN apk add --no-cache openssl libc6-compat tini ffmpeg
+# ripgrep + libstdc++: the Claude Code CLI on Alpine (musl) needs the system ripgrep (USE_BUILTIN_RIPGREP=0)
+RUN apk add --no-cache openssl libc6-compat tini ffmpeg ripgrep libgcc libstdc++
 WORKDIR /app
 ENV NODE_ENV=production PORT=4000
 COPY --from=build /prisma-version /tmp/prisma-version
 # prisma CLI (same version as the lockfile) for `migrate deploy` + client generation
 RUN npm install -g "prisma@$(cat /tmp/prisma-version)" && npm cache clean --force
+# screenshot reader: the `claude` CLI, logged in with CLAUDE_CODE_OAUTH_TOKEN (from `claude setup-token`, server .env)
+ARG CLAUDE_CODE_VERSION=2.1.220
+RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" && npm cache clean --force
+ENV USE_BUILTIN_RIPGREP=0 DISABLE_AUTOUPDATER=1
 COPY --from=build /out ./
 RUN prisma generate --schema prisma/schema.prisma
 COPY deploy/api/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

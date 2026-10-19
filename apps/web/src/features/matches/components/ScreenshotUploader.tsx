@@ -47,7 +47,7 @@ function StatusChip({ s }: { s: ScreenshotRow }) {
   }
 }
 
-/** Phase 4: screenshots captured by the 7XEN Manager app are tagged with their source. */
+/** Phase 4: screenshots captured by the AirBattleground Manager app are tagged with their source. */
 function SourceBadge({ s }: { s: ScreenshotRow }) {
   const source = s.source as string;
   if (source === "STATION")
@@ -55,6 +55,13 @@ function SourceBadge({ s }: { s: ScreenshotRow }) {
       <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background/85 px-1.5 py-0.5 text-[11px] font-semibold text-primary backdrop-blur-sm">
         <MonitorPlay className="size-3" />
         From station
+      </span>
+    );
+  if (source === "DEVICE")
+    return (
+      <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background/85 px-1.5 py-0.5 text-[11px] font-semibold text-primary backdrop-blur-sm">
+        <Smartphone className="size-3" />
+        From iPhone
       </span>
     );
   if (source !== "APP_AUTO" && source !== "APP_MANUAL") return null;

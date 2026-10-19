@@ -583,7 +583,7 @@ describe("manager app release", () => {
       const dl = await http().get("/api/app/manager/download");
       expect(dl.status).toBe(200);
       expect(dl.headers["content-type"]).toBe("application/vnd.android.package-archive");
-      expect(dl.headers["content-disposition"]).toBe('attachment; filename="7xen-manager-0.1.0.apk"');
+      expect(dl.headers["content-disposition"]).toBe('attachment; filename="airbattleground-manager-0.1.0.apk"');
       expect(dl.headers["content-length"]).toBe("2048");
 
       // a manifest pointing outside the folder is ignored

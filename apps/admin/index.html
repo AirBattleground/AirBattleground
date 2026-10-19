@@ -6,19 +6,31 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="7XEN Admin" />
+    <meta name="apple-mobile-web-app-title" content="AirBattleground Admin" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="apple-touch-icon" href="/icon-180.png" />
     <meta name="theme-color" content="#16181f" />
-    <title>7XEN · Admin Console</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>AirBattleground · Admin Console</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" /></noscript>
     <script>try{var t="dark";/* theme switcher hidden for now (THEME_CONTROLS_ENABLED in @7xen/ui/theme); going live: t=localStorage.getItem("7xen.admin.theme")||"dark" */if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t==="dark")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}</script>
     <script>/* brand before paint (see @7xen/ui/theme): teal or the saved custom colour CSS */try{var d=document.documentElement,b=new URLSearchParams(location.search).get("brand")||localStorage.getItem("7xen.brand")||"teal";b="teal";/* brand picker hidden for now; going live: if(!/^(teal|gold|custom)$/.test(b))b="teal"; */var c=b==="custom"&&localStorage.getItem("7xen.brand.css");if(b==="custom"&&!c)b="teal";if(c){var s=document.createElement("style");s.id="sx-brand-custom";s.textContent=c;document.head.appendChild(s)}d.dataset.brand=b;}catch(e){document.documentElement.dataset.brand="teal"}</script>
   </head>
   <body>
+    <!-- .brand-ink (@7xen/ui globals.css): repaints the orange parts of the AirBattleground logo in the brand colour -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <filter id="sx-brand-ink" color-interpolation-filters="sRGB">
+        <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.6 0 -1.6 0 0" result="hot" />
+        <feComposite in="hot" in2="SourceGraphic" operator="in" result="mask" />
+        <feFlood style="flood-color: var(--brand-500)" result="ink" />
+        <feComposite in="ink" in2="mask" operator="in" result="brand" />
+        <feComposite in="SourceGraphic" in2="mask" operator="out" result="rest" />
+        <feMerge><feMergeNode in="rest" /><feMergeNode in="brand" /></feMerge>
+      </filter>
+    </svg>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,7 +1,7 @@
-import type { ApiErrorCode as SharedErrorCode, StationErrorCode } from "@7xen/shared";
+import type { ApiErrorCode as SharedErrorCode, DeviceErrorCode, StationErrorCode } from "@7xen/shared";
 
-/** API error codes, plus the station's (phase 4b, additive). */
-export type ApiErrorCode = SharedErrorCode | StationErrorCode;
+/** API error codes, plus the station's (phase 4b) and the streaming devices' (phase 6), both additive. */
+export type ApiErrorCode = SharedErrorCode | StationErrorCode | DeviceErrorCode;
 
 const STATUS: Record<ApiErrorCode, number> = {
   VALIDATION_ERROR: 400,
@@ -16,6 +16,7 @@ const STATUS: Record<ApiErrorCode, number> = {
   OFFSET_MISMATCH: 409,
   STORAGE_FULL: 507,
   STATION_OFFLINE: 503,
+  DEVICE_KEY_INVALID: 401,
   // phase 5: players & teams
   NO_TEAM: 403,
   LEADER_ONLY: 403,

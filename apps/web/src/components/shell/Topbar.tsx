@@ -63,7 +63,7 @@ export function Topbar({ nav, segmentLabels, homeHref, compact, brand }: { nav: 
       style={{ paddingTop: "env(safe-area-inset-top, 0px)", boxSizing: "content-box" }}
     >
       {compact && (
-        <Link to={homeHref} aria-label={`${brand?.name ?? "7XEN"} home`} className="-ml-1 shrink-0 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+        <Link to={homeHref} aria-label={`${brand?.name ?? "AirBattleground"} home`} className="-ml-1 shrink-0 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
           {brand ? <img src={brand.mark} alt="" className="brand-ink h-8 w-auto" /> : <LogoMark className="size-8" />}
         </Link>
       )}

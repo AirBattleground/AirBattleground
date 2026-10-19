@@ -5,12 +5,16 @@ import {
   type AdminTeamDetail,
   type AdminUpdatePlayerInput,
   type CreateManagerInput,
+  type CreateManagerInviteInput,
+  type ManagerInviteRow,
+  type ManagerInviteStatus,
   type ManagerRow,
   type TeamRow,
   type UpdateManagerInput,
 } from "@7xen/shared";
 import { prisma } from "../db.js";
-import { notFound } from "../lib/errors.js";
+import { AppError, notFound } from "../lib/errors.js";
+import { isAdminEmail } from "./playerAuth.js";
 import { hashPassword } from "../lib/password.js";
 import { iso, managerRowInclude, playerSummarySelect, teamRowInclude, toManagerRow, toPlayerSummary, toTeamRow } from "../lib/serialize.js";
 import { countUpcomingTeamRegistrations, deleteTeam } from "./players.js";
@@ -46,7 +50,7 @@ export async function adminStats(now = new Date()): Promise<AdminStats> {
 // ---------- managers ----------
 export async function listManagers(q?: string): Promise<ManagerRow[]> {
   const where: Prisma.UserWhereInput = { role: "MANAGER" };
-  if (q) where.OR = [{ username: contains(q) }, { displayName: contains(q) }, { email: contains(q) }];
+  if (q) where.OR = [{ username: contains(q) }, { displayName: contains(q) }, { email: contains(q) }, { orgName: contains(q) }];
   const rows = await prisma.user.findMany({ where, include: managerRowInclude, orderBy: { createdAt: "desc" } });
   return rows.map(toManagerRow);
 }
@@ -89,6 +93,71 @@ export async function updateManager(id: string, input: UpdateManagerInput): Prom
 export async function resetManagerPassword(id: string, password: string): Promise<void> {
   await assertManager(id);
   await prisma.user.update({ where: { id }, data: { passwordHash: await hashPassword(password) } });
+}
+
+// ---------- manager invitations (phase 5b) ----------
+const inviteInclude = {
+  invitedBy: { select: { id: true, displayName: true } },
+  acceptedUser: { select: { id: true, displayName: true } },
+} satisfies Prisma.ManagerInviteInclude;
+type InviteWithUsers = Prisma.ManagerInviteGetPayload<{ include: typeof inviteInclude }>;
+
+const toManagerInviteRow = (i: InviteWithUsers): ManagerInviteRow => ({
+  id: i.id,
+  name: i.name,
+  orgName: i.orgName,
+  email: i.email,
+  status: i.status,
+  invitedBy: i.invitedBy,
+  manager: i.acceptedUser,
+  createdAt: i.createdAt.toISOString(),
+  acceptedAt: iso(i.acceptedAt),
+});
+
+export async function listManagerInvites(status: ManagerInviteStatus = "PENDING"): Promise<ManagerInviteRow[]> {
+  const rows = await prisma.managerInvite.findMany({ where: { status }, include: inviteInclude, orderBy: { createdAt: "desc" } });
+  return rows.map(toManagerInviteRow);
+}
+
+const ALREADY_INVITED = "They're already invited. Share the invitation again or revoke it first.";
+
+export async function createManagerInvite(input: CreateManagerInviteInput, adminId: string): Promise<ManagerInviteRow> {
+  const email = input.email.trim().toLowerCase();
+  const conflict = (message: string) => new AppError("CONFLICT", message, { email: message });
+  if (isAdminEmail(email)) throw conflict("That's the admin's email.");
+  const user = await prisma.user.findFirst({
+    where: { email: { equals: email, mode: "insensitive" } },
+    select: { role: true, membership: { select: { id: true } } },
+  });
+  if (user?.role === "ADMIN") throw conflict("That's the admin's email.");
+  if (user?.role === "MANAGER") throw conflict("They're already a manager.");
+  if (user?.role === "PLAYER" && user.membership) throw conflict("They're a player in a team — they must leave it first.");
+  if (await prisma.managerInvite.findFirst({ where: { email, status: "PENDING" }, select: { id: true } })) {
+    throw conflict(ALREADY_INVITED);
+  }
+  try {
+    const row = await prisma.managerInvite.create({
+      data: { email, name: input.name.trim(), orgName: input.orgName.trim(), invitedById: adminId },
+      include: inviteInclude,
+    });
+    return toManagerInviteRow(row);
+  } catch (e) {
+    // two invites racing: the partial unique index "ManagerInvite_one_pending" caught the second
+    if ((e as { code?: string }).code === "P2002") throw conflict(ALREADY_INVITED);
+    throw e;
+  }
+}
+
+export async function revokeManagerInvite(id: string): Promise<void> {
+  const invite = await prisma.managerInvite.findUnique({ where: { id }, select: { status: true } });
+  if (!invite) throw notFound("Invitation not found");
+  const done = await prisma.managerInvite.updateMany({ where: { id, status: "PENDING" }, data: { status: "REVOKED" } });
+  if (done.count !== 1) {
+    throw new AppError(
+      "CONFLICT",
+      invite.status === "ACCEPTED" ? "This invitation was already accepted." : "This invitation was already revoked.",
+    );
+  }
 }
 
 // ---------- teams (phase 5: groups of players; no team logins) ----------

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { stageSpecSchema, MAX_STAGES, type StageSpec } from "../phase3";
-import { groupName, groupSizes, suggestFormat, teamsOut, validateFormat } from "./engine";
+import { defaultStageMaps, defaultStageName, groupName, groupSizes, suggestFormat, suggestRounds, teamsOut, validateFormat } from "./engine";
 
 const errors = (stages: StageSpec[], max: number) => validateFormat(stages, max).filter((i) => i.level === "error");
 
@@ -200,6 +200,55 @@ describe("suggestFormat", () => {
         const f = suggestFormat({ totalTeams: total, lobbySize: lobby });
         expect(f.length).toBeLessThanOrEqual(MAX_STAGES);
         for (const st of f) expect(stageSpecSchema.safeParse(st).success).toBe(true);
+      }
+    }
+  });
+});
+
+describe("suggestRounds (wizard defaults)", () => {
+  it("names rounds by position and gives each the usual maps", () => {
+    expect([0, 1, 2, 3, 4].map((i) => defaultStageName(i, false))).toEqual(["Round 1", "Round 2", "Round 3", "Round 4", "Round 5"]);
+    expect(defaultStageName(4, true)).toBe("Final");
+    expect(defaultStageMaps(0, false)).toEqual(["ERANGEL"]);
+    expect(defaultStageMaps(1, false)).toEqual(["ERANGEL", "MIRAMAR"]);
+    expect(defaultStageMaps(2, false)).toEqual(["ERANGEL", "MIRAMAR", "RONDO"]);
+    expect(defaultStageMaps(3, false)).toEqual(["ERANGEL", "MIRAMAR", "RONDO", "ERANGEL"]);
+    expect(defaultStageMaps(7, false)).toEqual(["ERANGEL", "MIRAMAR", "RONDO", "ERANGEL"]);
+    expect(defaultStageMaps(2, true)).toEqual(["ERANGEL", "MIRAMAR", "RONDO", "ERANGEL", "MIRAMAR"]);
+  });
+
+  it("presets: Round 1 → Final with 1 and 5 matches, no wildcards", () => {
+    const f16 = suggestRounds({ totalTeams: 16 });
+    expect(f16.map((s) => [s.name, s.matchesPerGroup])).toEqual([["Final", 5]]);
+    const f64 = suggestRounds({ totalTeams: 64 });
+    expect(f64.map((s) => [s.name, s.teamsIn, s.matchesPerGroup, s.wildcardCount])).toEqual([
+      ["Round 1", 64, 1, 0],
+      ["Final", 16, 5, 0],
+    ]);
+    const f128 = suggestRounds({ totalTeams: 128 });
+    expect(f128.map((s) => [s.name, s.matchesPerGroup])).toEqual([["Round 1", 1], ["Round 2", 2], ["Final", 5]]);
+  });
+
+  it("passes validation with no wildcards for every team count 2..1024 and lobby size 2..25", () => {
+    for (let lobby = 2; lobby <= 25; lobby++) {
+      for (let total = 2; total <= 1024; total++) {
+        const f = suggestRounds({ totalTeams: total, lobbySize: lobby });
+        const e = errors(f, total);
+        if (e.length) throw new Error(`total=${total} lobby=${lobby}: ${e.map((x) => x.message).join(" | ")}`);
+        expect(f.every((s) => s.wildcardCount === 0)).toBe(true);
+        expect(f[f.length - 1]!.groupCount).toBe(1);
+        expect(f[f.length - 1]!.teamsIn).toBeLessThanOrEqual(lobby);
+      }
+    }
+  });
+
+  it("standard lobby sizes fit the input schema and never warn about elimination", () => {
+    for (const lobby of [12, 16, 20, 25]) {
+      for (let total = 2; total <= 1024; total += 3) {
+        const f = suggestRounds({ totalTeams: total, lobbySize: lobby });
+        expect(f.length).toBeLessThanOrEqual(MAX_STAGES);
+        for (const st of f) expect(stageSpecSchema.safeParse(st).success).toBe(true);
+        expect(validateFormat(f, total).filter((i) => /nobody is eliminated/.test(i.message))).toEqual([]);
       }
     }
   });

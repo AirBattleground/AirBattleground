@@ -1,5 +1,5 @@
 /**
- * Phase 4b: 7XEN Station integration — the manager (or admin) runs a match on the station PC's emulator,
+ * Phase 4b: AirBattleground Station integration — the manager (or admin) runs a match on the station PC's emulator,
  * which records it (MatchRecording, deviceName "7XEN Station") and streams it live over HLS to the
  * manager, the admin and the teams playing in that match.
  *
@@ -35,6 +35,7 @@ import { resolveVideoKey, videoKeyFor } from "../lib/video.js";
 import { matchContext } from "./matchContext.js";
 import { loadOwnMatch, ownerInclude, ownerManagerId, toScreenshotRow, uploadScreenshots, type MatchWithOwner } from "./matches.js";
 import { eventsOf, MAX_EVENTS, processVideo, startRecording } from "./recordings.js";
+import { teamDeviceLive } from "./broadcast/viewer.js";
 
 const ACTIVE_PHASES: StationStatus["phase"][] = ["STARTING_EMULATOR", "LAUNCHING_BGMI", "LIVE", "STOPPING"];
 /** after a stop, the final playlist stays watchable this long (the station deletes the files after ~10 min) */
@@ -332,6 +333,8 @@ export async function teamLive(teamId: string): Promise<TeamLiveCard[]> {
       tournamentId: r.match.group?.stage.tournament.id ?? null,
     });
   }
+  // phase 6c: iPhone broadcasts the manager started for this team's matches (the station wins if both run)
+  for (const c of await teamDeviceLive(teamId, teamInMatch)) if (!seen.has(c.matchId)) cards.push(c);
   return cards;
 }
 

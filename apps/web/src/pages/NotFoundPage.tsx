@@ -43,7 +43,7 @@ export default function NotFoundPage() {
       <div className="relative isolate flex min-h-dvh flex-col overflow-hidden bg-background">
         <AnimatedBackground intensity="hero" />
         <header className="flex items-center justify-between px-4 py-4 sm:px-8 sm:py-6">
-          <Link to={home} aria-label="7XEN home" className="rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+          <Link to={home} aria-label="AirBattleground home" className="rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
             <Logo />
           </Link>
           <ThemeToggle className="bg-card/70 backdrop-blur" />

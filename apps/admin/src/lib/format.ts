@@ -68,7 +68,7 @@ export const PORTAL_URL: string =
 /** Message the admin can paste into WhatsApp. */
 export function loginDetailsMessage(opts: { who: string; role: "Manager" | "Team"; username: string; password: string }): string {
   return [
-    `*7XEN ${opts.role} login* — ${opts.who}`,
+    `*AirBattleground ${opts.role} login* — ${opts.who}`,
     "",
     `Portal: ${PORTAL_URL}`,
     `Username: ${opts.username}`,

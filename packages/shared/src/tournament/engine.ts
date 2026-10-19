@@ -4,13 +4,13 @@
  * Times are IST; dates "YYYY-MM-DD"; instants are ISO strings with +05:30 offset.
  *
  * Implementations live in sibling files; this module is the public surface.
- *   format.ts    suggestFormat, validateFormat, teamsOut, groupSizes, groupName
+ *   format.ts    suggestFormat, suggestRounds, defaultStageName/Maps, validateFormat, teamsOut, groupSizes, groupName
  *   plan.ts      planSchedule
  *   rng.ts       createRng
  *   draw.ts      drawGroups, snakeSeed
  *   promotion.ts rankStage, promote, nextStageSeeds
  */
-export { suggestFormat, validateFormat, teamsOut, groupSizes, groupName } from "./format";
+export { suggestFormat, suggestRounds, defaultStageName, defaultStageMaps, validateFormat, teamsOut, groupSizes, groupName } from "./format";
 export { planSchedule } from "./plan";
 export { createRng } from "./rng";
 export { drawGroups, snakeSeed } from "./draw";

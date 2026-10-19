@@ -21,12 +21,12 @@ import { ScorecardList } from "@/features/results/components/Scorecard";
 import { MATCH_OPS_TOUR, MatchOps } from "@/features/live/components/MatchOps";
 
 const TOUR: TourStep[] = [
-  { title: "Match center", description: "Three simple steps: team list → results → publish. 7xen reads your screenshots; you just check them." },
+  { title: "Match center", description: "Three simple steps: team list → results → publish. AirBattleground reads your screenshots; you just check them." },
   ...MATCH_OPS_TOUR,
   { element: '[data-tour="match-stepper"]', title: "Where you are", description: "The highlighted step is what to do next. Finished steps get a tick — click them to go back." },
   { element: '[data-tour="uploader"]', title: "Upload screenshots", description: "Drag them in, click to choose, or copy a screenshot and press Ctrl+V. You can add several at once." },
   { element: '[data-tour="lineup-grid"]', title: "Check what was read", description: "One card per slot. Names in amber need a second look — the hint shows what was read. Fix anything by typing." },
-  { element: '[data-tour="lineup-confirm"]', title: "Confirm", description: "When names look right, confirm the lineup. Confirmed names help 7xen read the results." },
+  { element: '[data-tour="lineup-confirm"]', title: "Confirm", description: "When names look right, confirm the lineup. Confirmed names help AirBattleground read the results." },
   { element: '[data-tour="results-table"]', title: "Ranks & finishes", description: "Pick each team's rank and finishes. Points are worked out for you as you type." },
   { element: '[data-tour="results-publish"]', title: "Publish", description: "Publishing shows the scorecard to every team and updates the points table." },
 ];

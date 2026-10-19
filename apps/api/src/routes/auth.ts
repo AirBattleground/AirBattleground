@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import rateLimit from "express-rate-limit";
 import {
   ADMIN_COOKIE,
@@ -19,7 +19,8 @@ import { AppError } from "../lib/errors.js";
 import { verifyPassword } from "../lib/password.js";
 import { toSessionUser, userWithTeamInclude } from "../lib/serialize.js";
 import { parse } from "../lib/validate.js";
-import { devLoginEnabled, signInPlayer, verifyGoogleCredential } from "../services/playerAuth.js";
+import { devLoginEnabled, signIn, signInAdmin, verifyGoogleCredential } from "../services/playerAuth.js";
+import type { UserWithTeam } from "../lib/serialize.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 
 const WRONG_CREDS = "Wrong username or password";
@@ -52,6 +53,22 @@ async function checkLogin(username: string, password: string, roles: Role[]) {
   return user;
 }
 
+/**
+ * Phase 5b: after a Google / dev sign-in on the app routes. The ADMIN gets the admin session cookie (sx_admin) and
+ * any app cookie (sx_app) is cleared — the admin never has an app session, so /api/auth/me stays 401 for them and the
+ * web opens /admin-ui/. Managers and players get the app cookie as before.
+ */
+function startSession(res: Response, user: UserWithTeam) {
+  if (user.role === "ADMIN") {
+    clearSessionCookie(res, APP_COOKIE);
+    setSessionCookie(res, ADMIN_COOKIE, { sub: user.id, role: user.role });
+  } else {
+    setSessionCookie(res, APP_COOKIE, { sub: user.id, role: user.role });
+  }
+  const body: AuthResponse = { user: toSessionUser(user) };
+  res.json(body);
+}
+
 /** Builds login/logout/me for one session cookie and the roles allowed on it. */
 function authRouter(cookieName: string, roles: Role[]) {
   const r = Router();
@@ -66,12 +83,12 @@ function authRouter(cookieName: string, roles: Role[]) {
     res.json(body);
   });
 
-  // phase 4: bearer token for the 7XEN Manager app (managers only)
+  // phase 4: bearer token for the AirBattleground Manager app (managers only)
   if (roles.includes("MANAGER")) {
     r.post("/token", loginLimiter(), async (req, res) => {
       const { username, password } = parse(mobileLoginSchema, req.body);
       const user = await checkLogin(username, password, passwordRoles);
-      if (user.role !== "MANAGER") throw new AppError("FORBIDDEN", "The 7XEN Manager app is for manager accounts only");
+      if (user.role !== "MANAGER") throw new AppError("FORBIDDEN", "The AirBattleground Manager app is for manager accounts only");
       const { token, expiresAt } = signMobileToken({ sub: user.id, role: user.role });
       const body: MobileTokenResponse = { token, expiresAt: expiresAt.toISOString(), user: toSessionUser(user) };
       res.setHeader("Cache-Control", "no-store");
@@ -87,15 +104,20 @@ function authRouter(cookieName: string, roles: Role[]) {
     });
     r.post("/google", loginLimiter(), async (req, res) => {
       const { credential } = parse(googleLoginSchema, req.body);
-      const user = await signInPlayer(await verifyGoogleCredential(credential));
-      setSessionCookie(res, cookieName, { sub: user.id, role: user.role });
-      const body: AuthResponse = { user: toSessionUser(user) };
-      res.json(body);
+      startSession(res, await signIn(await verifyGoogleCredential(credential)));
     });
     r.post("/dev-login", loginLimiter(), async (req, res) => {
       if (!devLoginEnabled()) throw new AppError("NOT_FOUND", "Not found");
       const { email, name } = parse(devLoginSchema, req.body);
-      const user = await signInPlayer({ email, name: name || null, googleSub: null, avatarUrl: null });
+      startSession(res, await signIn({ email, name: name || null, googleSub: null, avatarUrl: null }));
+    });
+  }
+
+  // ---- phase 5b: the admin console's own "Continue with Google" (ADMIN_EMAIL only) ----
+  if (roles.includes("ADMIN")) {
+    r.post("/google", loginLimiter(), async (req, res) => {
+      const { credential } = parse(googleLoginSchema, req.body);
+      const user = await signInAdmin(await verifyGoogleCredential(credential));
       setSessionCookie(res, cookieName, { sub: user.id, role: user.role });
       const body: AuthResponse = { user: toSessionUser(user) };
       res.json(body);

@@ -1,5 +1,5 @@
 /**
- * PHASE 4b CONTRACT — 7XEN Station: an Android emulator on the host PC that plays BGMI for a match,
+ * PHASE 4b CONTRACT — AirBattleground Station: an Android emulator on the host PC that plays BGMI for a match,
  * records it, and streams it live (HLS) to the manager, the teams in that match, and the admin.
  *
  * Pieces:
@@ -178,6 +178,8 @@ export interface TeamLiveCard {
   hlsUrl: string;
   /** (additive) tournament id for tournament matches, null for scrims */
   tournamentId?: string | null;
+  /** (additive, phase 6c) the organiser's layout as a transparent PNG to draw over the video (iPhone broadcasts) */
+  overlayUrl?: string | null;
 }
 
 // ---------------------------------------------------------------- additions (phase 4b, additive)
@@ -199,7 +201,7 @@ export const STATION_DEVICE_NAME = "7XEN Station";
 /** Error code (HTTP 503) when the station PC can't be reached. */
 export const STATION_OFFLINE_CODE = "STATION_OFFLINE" as const;
 export type StationErrorCode = typeof STATION_OFFLINE_CODE;
-export const STATION_OFFLINE_MESSAGE = "The 7XEN Station PC isn't running. Start it on the station PC, then try again.";
+export const STATION_OFFLINE_MESSAGE = "The AirBattleground Station PC isn't running. Start it on the station PC, then try again.";
 /** Header carrying the shared secret on every API ↔ station call. */
 export const STATION_TOKEN_HEADER = "X-Station-Token";
 

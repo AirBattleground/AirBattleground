@@ -20,7 +20,8 @@ export function RowActions({
   name: string;
   isActive: boolean;
   onEdit: () => void;
-  onReset: () => void;
+  /** omitted for Google sign-in accounts (no password) */
+  onReset?: () => void;
   onToggle: () => void;
   tour?: string;
 }) {
@@ -37,9 +38,11 @@ export function RowActions({
         <DropdownMenuItem onSelect={onEdit}>
           <Pencil /> Edit details
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={onReset}>
-          <KeyRound /> Reset password
-        </DropdownMenuItem>
+        {onReset && (
+          <DropdownMenuItem onSelect={onReset}>
+            <KeyRound /> Reset password
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         {isActive ? (
           <DropdownMenuItem variant="destructive" onSelect={onToggle}>

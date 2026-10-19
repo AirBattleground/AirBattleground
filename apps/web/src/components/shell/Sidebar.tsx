@@ -124,7 +124,7 @@ export function SidebarContent({ nav, homeHref, collapsed, layoutId, header, act
         <Link
           to={homeHref}
           className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50"
-          aria-label={`${brand?.name ?? "7XEN"} home`}
+          aria-label={`${brand?.name ?? "AirBattleground"} home`}
         >
           {brand ? (
             // expanded: full wordmark; collapsed rail (76px): cross-fades to the compact mark
@@ -144,8 +144,8 @@ export function SidebarContent({ nav, homeHref, collapsed, layoutId, header, act
             <>
               <LogoMark />
               <Fade collapsed={collapsed} className="leading-none">
-                <span className="block font-display text-2xl font-bold tracking-wider">
-                  7<span className="text-primary">XEN</span>
+                <span className="block font-display text-xl font-bold tracking-wide">
+                  Air<span className="text-primary">Battleground</span>
                 </span>
                 <span className="mt-0.5 block text-[10px] font-semibold tracking-[0.25em] text-muted-foreground uppercase">Scrim Portal</span>
               </Fade>

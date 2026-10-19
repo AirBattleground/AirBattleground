@@ -50,8 +50,7 @@ export function FormatFlow({ stages, maxTeams, issues, className }: { stages: St
 }
 
 function arrowLabel(s: StageSpec) {
-  const wc = s.wildcardCount > 0 ? ` + ${s.wildcardCount} WC` : "";
-  return s.groupCount > 1 ? `top ${s.advancePerGroup}/group${wc}` : `top ${s.advancePerGroup}${wc}`;
+  return s.groupCount > 1 ? `top ${s.advancePerGroup}/group` : `top ${s.advancePerGroup}`;
 }
 
 function describe(stages: StageSpec[], maxTeams: number) {

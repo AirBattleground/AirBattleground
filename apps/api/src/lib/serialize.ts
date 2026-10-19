@@ -135,8 +135,9 @@ type ManagerWithCount = Prisma.UserGetPayload<{ include: typeof managerRowInclud
 export function toManagerRow(u: ManagerWithCount): ManagerRow {
   return {
     id: u.id,
-    username: u.username ?? "",
+    username: u.username,
     displayName: u.displayName,
+    orgName: u.orgName,
     email: u.email,
     phone: u.phone,
     isActive: u.isActive,

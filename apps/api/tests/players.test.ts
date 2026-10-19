@@ -217,12 +217,152 @@ describe("teams", () => {
   });
 });
 
+describe("team logo and invite by BGMI ID", () => {
+  const pngBytes = () => {
+    const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+    return Buffer.concat([sig, Buffer.alloc(64, 1)]);
+  };
+
+  it("only the leader uploads or removes the team logo; everyone in the team sees the url", async () => {
+    const t = await createTeam(null, "Logo FC", "logolead");
+    const m = await playerAgent("logomember");
+    await joinTeam(t, m);
+
+    const up = await t.agent.put("/api/player/team/logo").attach("file", pngBytes(), { filename: "l.png", contentType: "image/png" });
+    expect(up.status).toBe(200);
+    expect(up.body.url).toMatch(/^\/api\/media\/branding\/[a-f0-9]{32}\.png$/);
+    expect((await m.agent.get("/api/player/team")).body.logoUrl).toBe(up.body.url);
+    expect((await m.agent.get(up.body.url)).status).toBe(200);
+
+    const denied = await m.agent.put("/api/player/team/logo").attach("file", pngBytes(), { filename: "l.png", contentType: "image/png" });
+    expect(denied.status).toBe(403);
+    expect((await m.agent.delete("/api/player/team/logo")).status).toBe(403);
+
+    const rm = await t.agent.delete("/api/player/team/logo");
+    expect(rm.body).toEqual({ url: null });
+    expect((await t.agent.get("/api/player/team")).body.logoUrl).toBeNull();
+  });
+
+  it("leader invites by BGMI ID → player accepts; edge cases are refused", async () => {
+    const t = await createTeam(null, "Invite FC", "invlead");
+    const p = await playerAgent("invitee");
+    const bgmi = (await p.agent.get("/api/player/me")).body.bgmiId as string;
+
+    // unknown id, own id, malformed id
+    expect((await t.agent.post("/api/player/team/invites").send({ bgmiId: "99999999" })).status).toBe(404);
+    expect((await t.agent.post("/api/player/team/invites").send({ bgmiId: "12" })).status).toBe(400);
+    const own = (await t.agent.get("/api/player/me")).body.bgmiId as string;
+    expect((await t.agent.post("/api/player/team/invites").send({ bgmiId: own })).status).toBe(409);
+    // members can't invite
+    const member = await playerAgent("invmember");
+    await joinTeam(t, member);
+    expect((await member.agent.post("/api/player/team/invites").send({ bgmiId: bgmi })).status).toBe(403);
+
+    const sent = await t.agent.post("/api/player/team/invites").send({ bgmiId: bgmi });
+    expect(sent.status).toBe(201);
+    expect(sent.body.invites).toHaveLength(1);
+    expect(sent.body.invites[0].player.bgmiId).toBe(bgmi);
+    expect((await t.agent.post("/api/player/team/invites").send({ bgmiId: bgmi })).status).toBe(409); // already invited
+    expect((await member.agent.get("/api/player/team")).body.invites).toEqual([]); // leader only
+
+    const mine = await p.agent.get("/api/player/team-invites");
+    expect(mine.body.items).toHaveLength(1);
+    expect(mine.body.items[0]).toMatchObject({ team: { name: "Invite FC" }, memberCount: 2, maxMembers: MAX_TEAM_MEMBERS });
+
+    const acc = await p.agent.post(`/api/player/team-invites/${mine.body.items[0].id}/accept`);
+    expect(acc.status).toBe(200);
+    expect(acc.body.members.map((x: { ign: string }) => x.ign)).toContain("invitee");
+    expect((await p.agent.get("/api/player/team-invites")).body.items).toEqual([]);
+    expect((await t.agent.get("/api/player/team")).body.invites).toEqual([]);
+    // already in a team now
+    expect((await t.agent.post("/api/player/team/invites").send({ bgmiId: bgmi })).status).toBe(409);
+  });
+
+  it("decline, take back, and joining elsewhere clears invites; full teams refuse", async () => {
+    const t = await createTeam(null, "Decline FC", "declead");
+    const u = await createTeam(null, "Other FC", "otherlead");
+    const p = await playerAgent("wanted");
+    const bgmi = (await p.agent.get("/api/player/me")).body.bgmiId as string;
+
+    await t.agent.post("/api/player/team/invites").send({ bgmiId: bgmi });
+    await u.agent.post("/api/player/team/invites").send({ bgmiId: bgmi });
+    let mine = (await p.agent.get("/api/player/team-invites")).body.items;
+    expect(mine).toHaveLength(2);
+
+    // decline one, the other can be taken back by its leader
+    const fromT = mine.find((i: { team: { name: string } }) => i.team.name === "Decline FC");
+    expect((await p.agent.post(`/api/player/team-invites/${fromT.id}/decline`)).status).toBe(204);
+    expect((await p.agent.post(`/api/player/team-invites/${fromT.id}/accept`)).status).toBe(409);
+    const re = await t.agent.post("/api/player/team/invites").send({ bgmiId: bgmi }); // can invite again after a decline
+    expect(re.status).toBe(201);
+    const take = await t.agent.delete(`/api/player/team/invites/${re.body.invites[0].id}`);
+    expect(take.status).toBe(200);
+    expect(take.body.invites).toEqual([]);
+
+    // joining one team revokes the rest
+    mine = (await p.agent.get("/api/player/team-invites")).body.items;
+    expect(mine).toHaveLength(1);
+    const join = await p.agent.post(`/api/player/team-invites/${mine[0].id}/accept`);
+    expect(join.status).toBe(200);
+    expect(await prisma.teamInvite.count({ where: { status: "PENDING" } })).toBe(0);
+
+    // full team
+    const f = await createTeam(null, "Full FC", "fulllead");
+    for (let i = 1; i < MAX_TEAM_MEMBERS; i++) await joinTeam(f, await playerAgent(`fm${i}`));
+    const extra = await playerAgent("extra");
+    const eb = (await extra.agent.get("/api/player/me")).body.bgmiId as string;
+    const full = await f.agent.post("/api/player/team/invites").send({ bgmiId: eb });
+    expect(full.status).toBe(409);
+    expect(full.body.error.code).toBe("TEAM_FULL");
+  });
+});
+
 describe("team area: leader-only actions and Ask my leader", () => {
-  it("NO_TEAM without a team", async () => {
+  it("NO_TEAM without a team on the dashboard and every mutation", async () => {
     const p = await playerAgent("solo");
     const res = await p.agent.get("/api/team/dashboard");
     expect(res.status).toBe(403);
     expect(res.body.error).toEqual({ code: "NO_TEAM", message: "Create or join a team first." });
+    const { agent: mgr } = await createManager(await adminAgent());
+    const scrim = await createScrim(mgr);
+    const muts = [
+      p.agent.post("/api/team/registrations").send({ scrimId: scrim.id, date: tomorrow() }),
+      p.agent.delete("/api/team/registrations/nope"),
+      p.agent.put("/api/team/roster").send({ players: [] }),
+      p.agent.post("/api/team/tournaments/nope/entry").send({ timePreferences: [] }),
+      p.agent.put("/api/team/tournaments/nope/entry").send({ timePreferences: [] }),
+      p.agent.delete("/api/team/tournaments/nope/entry"),
+    ];
+    for (const r of await Promise.all(muts)) expect([r.status, r.body.error?.code]).toEqual([403, "NO_TEAM"]);
+  });
+
+  it("phase 5c: a player without a team can browse — reads answer with empty team parts", async () => {
+    const { agent: mgr } = await createManager(await adminAgent());
+    const scrim = await createScrim(mgr);
+    const t = await createTeam(null, "Squad", "leader");
+    expect((await t.agent.post("/api/team/registrations").send({ scrimId: scrim.id, date: tomorrow() })).status).toBe(201);
+    const p = await playerAgent("solo");
+
+    const scrims = await p.agent.get(`/api/team/scrims?date=${tomorrow()}`);
+    expect(scrims.status).toBe(200);
+    expect(scrims.body.items).toHaveLength(1);
+    expect(scrims.body.items[0]).toMatchObject({ scrim: { id: scrim.id }, myRegistration: null, mySuggestion: null });
+    expect(scrims.body.items[0].counts.pending).toBe(1);
+
+    for (const scope of ["upcoming", "past"]) {
+      const regs = await p.agent.get(`/api/team/registrations?scope=${scope}`);
+      expect([regs.status, regs.body]).toEqual([200, { items: [] }]);
+    }
+    expect((await p.agent.get("/api/team/results")).body).toEqual({ items: [] });
+    expect((await p.agent.get("/api/team/roster")).body).toEqual({ players: [], suggestions: [] });
+    expect((await p.agent.get("/api/team/rooms")).body).toEqual({ items: [] });
+    expect((await p.agent.get("/api/team/live")).body).toEqual({ items: [] });
+    expect((await p.agent.get("/api/team/tournaments?scope=mine")).body).toEqual({ items: [] });
+    expect((await p.agent.get("/api/team/tournaments")).status).toBe(200);
+    // a session the player's (non-existent) team didn't play
+    const st = await p.agent.get(`/api/team/sessions/${scrim.id}/${tomorrow()}/standings`);
+    expect(st.status).toBe(403);
+    expect(st.body.error.code).not.toBe("NO_TEAM");
   });
 
   it("members ask, the leader registers (suggestion DONE) or dismisses", async () => {

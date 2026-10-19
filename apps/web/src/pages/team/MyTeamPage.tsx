@@ -3,16 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { format, parseISO } from "date-fns";
 import {
-  Check,
-  Copy,
   Crown,
   Hash,
-  Link2,
   LogOut,
   MoreVertical,
   Pencil,
-  RefreshCw,
-  Share2,
   ShieldX,
   UserCheck,
   UserMinus,
@@ -20,10 +15,8 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
-import { inviteLinkPath, type PlayerTeam, type TeamJoinRequestRow, type TeamMemberRow } from "@7xen/shared";
+import { type PlayerTeam, type TeamJoinRequestRow, type TeamMemberRow } from "@7xen/shared";
 import { PageHeader } from "@7xen/ui/components/brand/page";
-import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,13 +43,17 @@ import {
   useTransferLeader,
 } from "@/features/player/api";
 import { EditTeamDialog } from "@/features/player/components/CreateTeamDialog";
-import { NoTeamGate } from "@/features/player/components/NoTeamGate";
+import { CreateOrJoinTeam } from "@/features/player/components/NoTeamHome";
+import { InvitePlayersCard } from "@/features/player/components/InviteByBgmiCard";
 import { PlayerAvatar } from "@/features/player/components/PlayerAvatar";
+import { TeamLogo } from "@/features/player/components/TeamLogo";
+import { TeamLogoEditor } from "@/features/player/components/TeamLogoEditor";
 import { QueryError } from "@/features/team/components/QueryError";
 
 const STEPS: TourStep[] = [
   { title: "My team", description: "Everything about your squad: who's in, how to invite players and who leads." },
-  { element: '[data-tour="team-invite"]', title: "Invite your squad", description: "Share this link or code on WhatsApp. Players who open it can ask to join.", side: "bottom" },
+  { element: '[data-tour="team-logo"]', title: "Team logo", description: "Leaders can tap the logo to upload one. It shows next to your team name.", side: "bottom" },
+  { element: '[data-tour="team-invite"]', title: "Invite players", description: "Type a player's BGMI ID to invite them, or share the link on WhatsApp so they can ask to join.", side: "bottom" },
   { element: '[data-tour="join-requests"]', title: "Join requests", description: "Approve the players you know. Reject anyone you don't.", side: "top" },
   { element: '[data-tour="team-members"]', title: "Members", description: "Your squad with their in-game names and BGMI IDs. The crown marks the leader.", side: "top" },
   { element: '[data-tour="team-danger"]', title: "Leave or disband", description: "Members can leave any time. The leader can hand over leadership or disband the team.", side: "top" },
@@ -107,99 +104,6 @@ function Section({ title, icon, count, children, className, tour, action }: { ti
       </div>
       {children}
     </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Invite
-// ---------------------------------------------------------------------------
-function InviteCard({ team, onRotate }: { team: PlayerTeam; onRotate: () => void }) {
-  const [copied, setCopied] = useState<"link" | "code" | null>(null);
-  const code = team.inviteCode ?? "";
-  const link = `${window.location.origin}${inviteLinkPath(code)}`;
-  const text = `Join ${team.name} [${team.tag}] on AirBattleground: ${link}`;
-  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
-
-  const copy = async (what: "link" | "code") => {
-    try {
-      await navigator.clipboard.writeText(what === "link" ? link : code);
-      setCopied(what);
-      toast.success(what === "link" ? "Invite link copied" : "Invite code copied");
-      window.setTimeout(() => setCopied(null), 1800);
-    } catch {
-      toast.error("Couldn't copy", { description: "Select the text and copy it by hand." });
-    }
-  };
-  const share = async () => {
-    try {
-      await navigator.share({ title: `Join ${team.name}`, text, url: link });
-    } catch {
-      /* cancelled */
-    }
-  };
-  const full = team.members.length >= team.maxMembers;
-
-  return (
-    <section className="relative overflow-hidden rounded-2xl border border-primary/30 bg-card p-4 shadow-glow sm:p-5" data-tour="team-invite">
-      <div aria-hidden className="pointer-events-none absolute -top-20 -right-16 size-56 rounded-full bg-primary/20 blur-3xl" />
-      <div aria-hidden className="pointer-events-none absolute inset-0 bg-grid opacity-40 [mask-image:linear-gradient(to_bottom,#000,transparent)]" />
-      <div className="relative flex items-start justify-between gap-3">
-        <div>
-          <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.25em] text-primary uppercase">
-            <UserPlus className="size-3.5" /> Invite players
-          </p>
-          <h2 className="mt-0.5 font-display text-2xl leading-tight font-bold">Share your invite</h2>
-          <p className="text-sm text-muted-foreground">{full ? "Your team is full — remove someone to make room." : "Anyone with the link can ask to join. You approve each one."}</p>
-        </div>
-      </div>
-
-      <div className="relative mt-4 flex flex-col gap-3 sm:flex-row sm:items-stretch">
-        <button
-          type="button"
-          onClick={() => void copy("code")}
-          className="group flex flex-col items-center justify-center rounded-xl border border-dashed border-primary/50 bg-background/70 px-5 py-3 outline-none transition-colors hover:bg-primary/10 focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          aria-label={`Invite code ${code}. Tap to copy.`}
-        >
-          <span className="text-[10px] font-semibold tracking-[0.25em] text-muted-foreground uppercase">Code</span>
-          <span className="font-mono text-2xl font-bold tracking-[0.25em] text-primary sm:text-3xl">{code}</span>
-          <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
-            {copied === "code" ? <Check className="size-3 text-success" /> : <Copy className="size-3" />} {copied === "code" ? "Copied" : "Tap to copy"}
-          </span>
-        </button>
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <div className="flex min-w-0 items-center gap-2 rounded-xl border bg-background/70 px-3 py-2.5 text-sm">
-            <Link2 className="size-4 shrink-0 text-primary" />
-            <span className="truncate font-mono text-xs text-muted-foreground sm:text-sm">{link}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Button onClick={() => void copy("link")} className="shadow-glow">
-              {copied === "link" ? <Check /> : <Copy />} Copy link
-            </Button>
-            <Button asChild variant="outline" className="border-success/40 text-success hover:bg-success/10 hover:text-success">
-              <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">
-                <WhatsAppIcon /> WhatsApp
-              </a>
-            </Button>
-            {canShare && (
-              <Button variant="outline" onClick={() => void share()} className="col-span-2 sm:col-span-1">
-                <Share2 /> Share…
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-      <button type="button" onClick={onRotate} className="relative mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-        <RefreshCw className="size-3.5" /> Make a new code (old links stop working)
-      </button>
-    </section>
-  );
-}
-
-function WhatsAppIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden className="size-4 fill-current">
-      <path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-.9 1.2-.3.2-.6.1a8.2 8.2 0 0 1-4-3.5c-.3-.5.3-.5.9-1.6.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.8.4 3.5 3.5 0 0 0-1.1 2.6 6 6 0 0 0 1.3 3.2 13.9 13.9 0 0 0 5.3 4.7c2 .8 2.7.9 3.7.7.6-.1 1.8-.7 2-1.4s.3-1.3.2-1.4-.3-.2-.6-.3zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.8zm0-21.6A11.8 11.8 0 0 0 1.9 17.9L.2 24l6.3-1.6A11.8 11.8 0 1 0 12 .2z" />
-    </svg>
   );
 }
 
@@ -320,7 +224,32 @@ function MyTeamSkeleton() {
   );
 }
 
+const START_STEPS: TourStep[] = [
+  { title: "Get your squad together", description: "Scrims and tournaments are played as a team. This is where you make one or join one." },
+  { element: '[data-tour="create-team"]', title: "Create your team", description: "Start your own squad. You become the leader and get an invite link to share.", side: "bottom" },
+  { element: '[data-tour="join-code"]', title: "Join with a code", description: "Got an invite from a friend? Type their code or paste the link here.", side: "top" },
+  { element: '[data-tour="how-teams-work"]', title: "How teams work", description: "The leader registers; members tap “Ask my leader”. Everyone sees the slots and results.", side: "top" },
+];
+
+/** Phase 5c: the one place with the full create / join UI for a player without a team. */
+function NoTeamView() {
+  usePageTour("team.my-team-start", START_STEPS);
+  return (
+    <div className="space-y-5 sm:space-y-6">
+      <PageHeader eyebrow="My team" title="You're not in a team yet" description="Create your own squad, or join your friends with their invite code. You can browse scrims and tournaments either way." className="mb-2" />
+      <CreateOrJoinTeam />
+    </div>
+  );
+}
+
 export default function MyTeamPage() {
+  const { hasTeam } = usePlayerSession();
+  const q = usePlayerTeam({ enabled: hasTeam });
+  if (!hasTeam || q.data === null) return <NoTeamView />;
+  return <MyTeamView />;
+}
+
+function MyTeamView() {
   usePageTour("team.my-team", STEPS);
   const { user, hasTeam } = usePlayerSession();
   const q = usePlayerTeam({ enabled: hasTeam });
@@ -331,7 +260,6 @@ export default function MyTeamPage() {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [editOpen, setEditOpen] = useState(false);
 
-  if (!hasTeam || q.data === null) return <NoTeamGate what="your team" />;
   if (q.isLoading) return <MyTeamSkeleton />;
   if (q.isError || !q.data) return <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your team" />;
 
@@ -354,7 +282,7 @@ export default function MyTeamPage() {
         eyebrow="My team"
         title={
           <span className="flex items-center gap-3">
-            <TeamAvatar name={t.name} tag={t.tag} size="lg" className="shadow-glow" />
+            {leaderView ? <TeamLogoEditor name={t.name} tag={t.tag} logoUrl={t.logoUrl} /> : <TeamLogo name={t.name} tag={t.tag} logoUrl={t.logoUrl} size="lg" className="shadow-glow" />}
             <span className="min-w-0">
               <span className="block truncate uppercase">{t.name}</span>
               <span className="block font-mono text-xs font-semibold tracking-[0.3em] text-primary">[{t.tag}]</span>
@@ -377,7 +305,7 @@ export default function MyTeamPage() {
         className="mb-2"
       />
 
-      {leaderView && t.inviteCode && <InviteCard team={t} onRotate={askRotate} />}
+      {leaderView && t.inviteCode && <InvitePlayersCard team={t} onRotate={askRotate} />}
 
       {leaderView && (
         <Section title="Join requests" icon={<UserPlus />} count={t.joinRequests.length} tour="join-requests">

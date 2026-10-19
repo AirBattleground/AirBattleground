@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, Home, MonitorOff, Trophy } from "lucide-react";
 import type { TeamLiveCard } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
@@ -10,35 +10,46 @@ import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 import { liveHlsUrl, useTeamLive } from "@/features/station/api";
 import { HlsPlayer, type PlayerState } from "@/features/station/components/HlsPlayer";
+import { LiveOverlay } from "@/features/broadcast/LiveOverlay";
+import { useLiveBroadcasts } from "@/features/broadcast/live";
 
 const STEPS: TourStep[] = [
-  { title: "Watching live", description: "This is your match, streamed live from the organiser's 7XEN Station." },
-  { element: '[data-tour="live-player"]', title: "The live picture", description: "It runs about 5–10 seconds behind the game. Tap the speaker for sound, or the corner button for full screen.", side: "bottom" },
+  { title: "Watching live", description: "This is your match, streamed live by the organiser." },
+  { element: '[data-tour="live-player"]', title: "The live picture", description: "It runs about 5–10 seconds behind the game. Pause or drag the bar to watch anything again since you opened it, then tap Go live. Tap the speaker for sound, or the corner button for full screen.", side: "bottom" },
   { element: '[data-tour="live-note"]', title: "After the match", description: "When the stream ends, the results show up in Results once the organiser publishes them.", side: "top" },
 ];
 
 const ENDED = "The match stream has ended — results will appear once the organiser publishes them.";
 
+/** Players watch under /team, managers under /manager (same page). */
+function useArea() {
+  return useLocation().pathname.startsWith("/manager") ? ("manager" as const) : ("team" as const);
+}
+
 function Back() {
+  const area = useArea();
   return (
     <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground">
-      <Link to="/team">
-        <ArrowLeft /> Home
+      <Link to={`/${area}/live`}>
+        <ArrowLeft /> Live now
       </Link>
     </Button>
   );
 }
 
 function EndedActions() {
+  const area = useArea();
   return (
     <div className="flex flex-wrap justify-center gap-2">
-      <Button asChild>
-        <Link to="/team/results">
-          <Trophy /> Go to results
-        </Link>
-      </Button>
+      {area === "team" && (
+        <Button asChild>
+          <Link to="/team/results">
+            <Trophy /> Go to results
+          </Link>
+        </Button>
+      )}
       <Button asChild variant="outline">
-        <Link to="/team">
+        <Link to={`/${area}`}>
           <Home /> Home
         </Link>
       </Button>
@@ -49,8 +60,23 @@ function EndedActions() {
 export default function LiveViewerPage() {
   usePageTour("team.live", STEPS);
   const { matchId = "" } = useParams();
-  const q = useTeamLive();
-  const card = q.data?.find((c) => c.matchId === matchId);
+  const area = useArea();
+  // the player's own matches (station or iPhone) + every iPhone broadcast (open to anyone signed in)
+  const teamQ = useTeamLive({ enabled: area === "team" });
+  const pub = useLiveBroadcasts();
+  const card: TeamLiveCard | undefined = teamQ.data?.find((c) => c.matchId === matchId) ?? pub.data?.find((c) => c.matchId === matchId);
+  const team = area === "team";
+  // one status for both lists: loaded = every list we asked for answered
+  const q = {
+    isPending: !card && (pub.isPending || (team && teamQ.isPending)),
+    isError: pub.isError && (!team || teamQ.isError),
+    isSuccess: pub.isSuccess && (!team || !teamQ.isPending),
+    error: pub.error ?? teamQ.error,
+    refetch: () => {
+      void pub.refetch();
+      if (team) void teamQ.refetch();
+    },
+  };
   // keep the title/map on screen after the match drops out of the live list
   const [seen, setSeen] = useState<TeamLiveCard | null>(null);
   if (card && card !== seen && (seen?.matchId !== card.matchId || seen.startedAt !== card.startedAt || seen.hlsUrl !== card.hlsUrl)) setSeen(card);
@@ -111,6 +137,8 @@ export default function LiveViewerPage() {
             startedAt={shown.startedAt}
             ended={ended}
             onStateChange={setPlayerState}
+            showLiveBadge={!shown.overlayUrl}
+            dvr={!!shown.overlayUrl}
             frameClassName="rounded-none border-x-0 sm:rounded-xl sm:border-x"
             endedSlot={
               <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
@@ -119,7 +147,9 @@ export default function LiveViewerPage() {
                 <EndedActions />
               </div>
             }
-          />
+          >
+            {shown.overlayUrl && !ended && <LiveOverlay url={shown.overlayUrl} />}
+          </HlsPlayer>
         </div>
         <p data-tour="live-note" className="text-xs text-muted-foreground">
           {ended ? "Results show up in Results once the organiser publishes them." : "The stream runs about 5–10 seconds behind the game. Results appear in Results once the organiser publishes them."}

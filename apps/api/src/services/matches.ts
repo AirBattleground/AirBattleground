@@ -37,7 +37,7 @@ import { standingsForSession, storeMatchPoints } from "./standings.js";
 const MATCH_NOT_FOUND = "Match not found";
 /** Sources a client may claim on upload. "STATION" is only set by the station hooks. */
 export const SCREENSHOT_SOURCES = ["WEB", "APP_AUTO", "APP_MANUAL"] as const satisfies readonly ScreenshotSource[];
-const ALL_SCREENSHOT_SOURCES: readonly string[] = [...SCREENSHOT_SOURCES, "STATION"];
+const ALL_SCREENSHOT_SOURCES: readonly string[] = [...SCREENSHOT_SOURCES, "STATION", "DEVICE"];
 const SCREENSHOT_NOT_FOUND = "Screenshot not found";
 export const LOW_CONFIDENCE = 0.85;
 

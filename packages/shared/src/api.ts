@@ -6,6 +6,10 @@
  * sessions never mix:  sx_app (MANAGER | PLAYER)  and  sx_admin (ADMIN).
  * PHASE 5: players (Google sign-in), player teams, join requests, suggestions and the admin player endpoints are
  * catalogued in players.ts. TEAM logins and team requests are removed (lines below marked "removed in phase 5").
+ * PHASE 5b: everyone signs in with Google; role by email; admin invites managers — see access.ts.
+ * PHASE 6: streaming devices (manager adds an iPhone, the phone sends heartbeats with X-Device-Key) — see device.ts.
+ * PHASE 6: admin server-health gauges (GET /api/admin/system/health) — see system.ts.
+ * PHASE 6b: broadcast output (layout overlay + restream to YouTube/RTMP) — see stream.ts.
  *
  * APP AUTH (cookie sx_app)
  *   POST   /api/auth/login                 LoginInput            → AuthResponse   (MANAGER only; players use /api/auth/google — players.ts)

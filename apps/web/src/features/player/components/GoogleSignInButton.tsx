@@ -70,7 +70,7 @@ export function GoogleSignInButton({ clientId, onCredential, busy, className }: 
 
   return (
     <div className={cn("relative", className)} data-tour="google-signin">
-      <div ref={host} className={cn("flex min-h-11 w-full justify-center [&_iframe]:!mx-auto", (state !== "ready" || busy) && "pointer-events-none", busy && "opacity-60")} />
+      <div ref={host} className={cn("flex min-h-11 w-full justify-center [&_iframe]:!mx-auto [color-scheme:light] [&_iframe]:[color-scheme:light]", (state !== "ready" || busy) && "pointer-events-none", busy && "opacity-60")} />
       {state === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-full border bg-card/80 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" /> Loading Google sign-in…

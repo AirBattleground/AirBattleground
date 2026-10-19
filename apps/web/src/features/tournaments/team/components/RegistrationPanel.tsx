@@ -18,6 +18,7 @@ import { RegistrationMeter } from "../../shared/RegistrationMeter";
 import { fmtWhen } from "../../shared/format";
 import { usePlayerSession } from "@/lib/auth";
 import { AskLeaderButton, LeaderOnlyNote } from "@/features/player/components/AskLeader";
+import { NeedTeamDialog } from "@/features/player/components/NeedTeamDialog";
 import { useRegisterTournament, useUpdateTournamentPreferences, useWithdrawTournament } from "../api";
 import { isDrawn } from "../journey";
 import { SlotPicker } from "./SlotPicker";
@@ -49,9 +50,13 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
   const saved = useMemo(() => me.entry?.timePreferences ?? [], [me.entry?.timePreferences]);
   const [prefs, setPrefs] = useState<string[]>(saved);
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  const [needTeamOpen, setNeedTeamOpen] = useState(false);
+  const [confirmRegister, setConfirmRegister] = useState(false);
   useEffect(() => setPrefs(saved), [saved]);
 
-  const { isLeader } = usePlayerSession();
+  const { isLeader, hasTeam, team } = usePlayerSession();
+  // phase 5c: a player without a team picks preferences too — they'll lead the team they create
+  const actsAsLeader = isLeader || !hasTeam;
   const register = useRegisterTournament(t.id);
   const update = useUpdateTournamentPreferences(t.id);
   const withdraw = useWithdrawTournament(t.id);
@@ -117,20 +122,24 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
         </p>
       </div>
 
-      {hasSlots && (isLeader || canEdit) && (
+      {hasSlots && (actsAsLeader || canEdit) && (
         <div className="mt-5">
           <h3 className="font-display text-lg font-bold">When can you play?</h3>
           <p className="mb-3 text-xs text-muted-foreground">
             The {t.stages[0]?.name ?? "first stage"} is already scheduled. The draw honours preferences in registration order, so registering early helps.
           </p>
           <div className="-mx-1 max-h-72 overflow-y-auto overscroll-contain px-1 py-0.5 [scrollbar-width:thin] [mask-image:linear-gradient(to_bottom,#000_calc(100%-1.5rem),transparent)] pb-6">
-            <SlotPicker options={t.slotOptions} value={prefs} onChange={setPrefs} disabled={busy || !isLeader} />
+            <SlotPicker options={t.slotOptions} value={prefs} onChange={setPrefs} disabled={busy || !actsAsLeader} />
           </div>
         </div>
       )}
 
       <div className="mt-5 flex flex-col gap-2">
-        {!isLeader ? (
+        {!hasTeam ? (
+          <Button size="lg" className="h-12 w-full text-base shadow-glow" onClick={() => setNeedTeamOpen(true)} data-tour="register-btn">
+            <UserPlus /> {full ? "Join the waiting list" : "Register for this tournament"}
+          </Button>
+        ) : !isLeader ? (
           canRegister ? (
             <AskLeaderButton input={{ kind: "TOURNAMENT", tournamentId: t.id }} />
           ) : (
@@ -160,6 +169,26 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
           </p>
         )}
       </div>
+
+      <NeedTeamDialog open={needTeamOpen} onOpenChange={setNeedTeamOpen} what="this tournament" onTeamCreated={() => setConfirmRegister(true)} />
+      {/* after creating a team from here: confirm the registration that started it all */}
+      <AlertDialog open={confirmRegister} onOpenChange={setConfirmRegister}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display text-2xl">Register {team?.name ?? "your team"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {full
+                ? `All ${t.maxTeams} spots in ${t.title} are taken — you'll join the waiting list and get a spot automatically if a team drops out before the draw.`
+                : `${t.title} · ${left} ${left === 1 ? "spot" : "spots"} left, first come first served.`}
+              {hasSlots && (prefs.length > 0 ? ` Your ${prefs.length} time ${prefs.length === 1 ? "preference" : "preferences"} will be sent too.` : " You can pick time preferences after registering.")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Not now</AlertDialogCancel>
+            <AlertDialogAction onClick={() => register.mutate({ timePreferences: prefs })}>{full ? "Join the waiting list" : "Yes, register"}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={confirmWithdraw} onOpenChange={setConfirmWithdraw}>
         <AlertDialogContent>

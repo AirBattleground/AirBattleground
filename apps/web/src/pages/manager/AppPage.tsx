@@ -12,7 +12,7 @@ import { fmtBytes } from "@/features/live/format";
 import { fmtDay } from "@/features/tournaments/shared/format";
 
 const TOUR: TourStep[] = [
-  { title: "The 7XEN Manager app", description: "Your match-day companion on Android: it records the game, helps create the room and captures the team list and results for you." },
+  { title: "The AirBattleground Manager app", description: "Your match-day companion on Android: it records the game, helps create the room and captures the team list and results for you." },
   { element: '[data-tour="app-download"]', title: "Download", description: "Open this page on your Android phone and tap Download. It's a direct install file (APK), not from the Play Store.", side: "bottom" },
   { element: '[data-tour="app-install"]', title: "Install in a minute", description: "Follow these steps the first time. Android asks once to allow installs from your browser.", side: "top" },
   { element: '[data-tour="app-permissions"]', title: "Permissions", description: "What the app asks for and why. Accessibility is only needed if you turn on Auto mode.", side: "top" },
@@ -20,14 +20,14 @@ const TOUR: TourStep[] = [
 ];
 
 const INSTALL = [
-  { icon: FileDown, title: "Download the app on your phone", text: "Open this page in Chrome on your Android phone and tap Download. If Chrome says the file might be harmful, tap Download anyway — it's from 7xen." },
+  { icon: FileDown, title: "Download the app on your phone", text: "Open this page in Chrome on your Android phone and tap Download. If Chrome says the file might be harmful, tap Download anyway — it's from AirBattleground." },
   { icon: ShieldCheck, title: "Allow installs from this source", text: "When you open the file, Android asks for permission. Tap Settings, turn on “Allow from this source” for Chrome, then go back." },
   { icon: Smartphone, title: "Open the file and tap Install", text: "Find it in Downloads (or the notification) and tap Install. If Play Protect warns you, tap More details → Install anyway — the app isn't on the Play Store." },
   { icon: LogIn, title: "Sign in", text: "Use the same username and password as this portal. Your scrim and tournament matches for today show up right away." },
 ];
 
 const PERMISSIONS = [
-  { icon: Layers, title: "Display over other apps", text: "Shows the small 7XEN bubble and the room checklist on top of BGMI." },
+  { icon: Layers, title: "Display over other apps", text: "Shows the small AirBattleground bubble and the room checklist on top of BGMI." },
   { icon: Bell, title: "Notifications", text: "Keeps recording running with Stop / Pause controls, and shows upload progress." },
   { icon: MonitorPlay, title: "Screen capture", text: "Records the match and spots the team list and results screens. Android asks every time you go live." },
   { icon: Accessibility, title: "Accessibility — Auto mode only", text: "Lets the app tap the room-creation steps for you. Not needed for the default Assisted mode, where you tap and the app guides you." },
@@ -67,7 +67,7 @@ export default function AppPage() {
     return (
       <>
         {back}
-        <PageHeader eyebrow="Android app" title="7XEN Manager" />
+        <PageHeader eyebrow="Android app" title="AirBattleground Manager" />
         <EmptyState icon={<Smartphone />} title="The app isn't available yet" description="The admin hasn't published the Manager app yet. Check back soon — you can keep running matches from this portal meanwhile." />
       </>
     );
@@ -75,7 +75,7 @@ export default function AppPage() {
   return (
     <>
       {back}
-      <PageHeader eyebrow="Android app" title={<>7XEN <span className="text-gradient-brand">Manager</span></>} description="Run match day from your phone: record every game, create the room, and capture the team list and results automatically." />
+      <PageHeader eyebrow="Android app" title={<>AirBattleground <span className="text-gradient-brand">Manager</span></>} description="Run match day from your phone: record every game, create the room, and capture the team list and results automatically." />
 
       <div className="space-y-6">
         <section className="relative overflow-hidden rounded-2xl border border-primary/30 bg-card p-5 shadow-glow sm:p-7">
@@ -155,7 +155,7 @@ export default function AppPage() {
           <div className="flex gap-3 rounded-xl border bg-card p-4">
             <BatteryCharging className="mt-0.5 size-5 shrink-0 text-primary" />
             <p className="text-sm">
-              <span className="font-semibold">Turn off battery optimisation</span> for 7XEN Manager (Settings → Apps → 7XEN Manager → Battery → Unrestricted) so recording isn't
+              <span className="font-semibold">Turn off battery optimisation</span> for AirBattleground Manager (Settings → Apps → AirBattleground Manager → Battery → Unrestricted) so recording isn't
               stopped mid-match.
             </p>
           </div>

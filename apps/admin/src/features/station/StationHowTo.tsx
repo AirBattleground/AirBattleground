@@ -18,7 +18,7 @@ export function StationHowTo({ className }: { className?: string }) {
     <section data-tour="station-settings" className={cn("rounded-xl border bg-card p-5 shadow-sm", className)}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <MonitorPlay className="size-5 text-primary" />
-        <h2 className="font-display text-xl font-bold">7XEN Station</h2>
+        <h2 className="font-display text-xl font-bold">AirBattleground Station</h2>
         {s ? <StationPill s={s} /> : <Skeleton className="h-5 w-16 rounded-full" />}
       </div>
       <p className="text-sm text-muted-foreground">{q.isPending ? <Skeleton className="h-4 w-64" /> : q.isError ? "Couldn't check the station." : s && stationFacts(s)}</p>

@@ -7,6 +7,7 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
 import { AskLeaderButton } from "@/features/player/components/AskLeader";
+import { NeedTeamDialog } from "@/features/player/components/NeedTeamDialog";
 import { useCancelRegistration, useRegister } from "../api";
 import { formatTime } from "../format";
 import { useNow } from "../useNow";
@@ -94,12 +95,13 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
   const full = counts.slotsLeft <= 0;
   const status = my?.status === "CANCELLED" ? null : (my?.status ?? null);
 
-  const { isLeader } = usePlayerSession();
+  const { isLeader, hasTeam } = usePlayerSession();
   const register = useRegister();
   const cancel = useCancelRegistration();
   const ask = <AskLeaderButton input={{ kind: "SCRIM", scrimId: scrim.id, date }} asked={!!item.mySuggestion} askedBy={item.mySuggestion?.fromIgn} />;
   const [regOpen, setRegOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [needTeamOpen, setNeedTeamOpen] = useState(false);
 
   const summary: ScrimSummary = { title: scrim.title, date, startTime: scrim.startTime, organiser: scrim.manager.displayName, maps: scrim.maps };
   const tilt = useCardTilt<HTMLElement>(0.3);
@@ -228,7 +230,12 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
 
               {status === null && open && (
                 <>
-                  {isLeader ? (
+                  {!hasTeam ? (
+                    // phase 5c: no team yet → "You need a team to register" (create → straight back to this registration)
+                    <Button size="lg" className="h-11 w-full text-base font-semibold shadow-glow" onClick={() => setNeedTeamOpen(true)}>
+                      Register for this scrim
+                    </Button>
+                  ) : isLeader ? (
                     <Button size="lg" className="h-11 w-full text-base font-semibold shadow-glow" onClick={() => setRegOpen(true)} disabled={register.isPending}>
                       {register.isPending ? <Loader2 className="animate-spin" /> : null}
                       Register my team
@@ -250,6 +257,7 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
         </div>
       </div>
 
+      <NeedTeamDialog open={needTeamOpen} onOpenChange={setNeedTeamOpen} what="this scrim" onTeamCreated={() => setRegOpen(true)} />
       <RegisterDialog open={regOpen} onOpenChange={setRegOpen} summary={summary} full={full} again={status === "REJECTED"} onConfirm={doRegister} />
       <CancelDialog
         open={cancelOpen}

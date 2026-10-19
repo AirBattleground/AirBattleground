@@ -3,6 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import type { Role, SessionUser } from "@7xen/shared";
 import { FullPageLoader } from "@7xen/ui/components/brand/page";
 import { homeFor, useAuth } from "./auth";
+import { wasExplicitLogout } from "./session";
 
 /** `?next=` targets we honour: only in-app paths the user's role can open (no open redirects). */
 export function safeNext(user: SessionUser, next: unknown): string | null {
@@ -29,7 +30,8 @@ export function RequireRole({ role, children }: { role: Role; children: ReactNod
   const loc = useLocation();
   const here = loc.pathname + loc.search;
   if (isLoading) return <FullPageLoader />;
-  if (!user) return <Navigate to={loginWithNext(here)} replace state={{ from: loc.pathname }} />;
+  // signed out on purpose → plain /login (no ?next=, so the next person isn't sent back to this area)
+  if (!user) return <Navigate to={wasExplicitLogout() ? "/login" : loginWithNext(here)} replace state={{ from: loc.pathname }} />;
   if (user.role !== role) return <Navigate to={homeFor(user)} replace />;
   if (user.role === "PLAYER" && user.player?.needsOnboarding) return <Navigate to={`/welcome?next=${encodeURIComponent(here)}`} replace />;
   return <>{children}</>;

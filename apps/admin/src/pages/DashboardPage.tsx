@@ -17,19 +17,21 @@ import { useAdminTournaments } from "@/features/tournaments/api";
 import { useExtractorStatus, useSamples } from "@/features/training/api";
 import { ManagerAppCard } from "@/features/managerApp/ManagerAppCard";
 import { StationCard } from "@/features/station/StationCard";
+import { SystemHealthCard } from "@/features/system/SystemHealthCard";
 import { useAuth } from "@/lib/auth";
 import { errorMessage } from "@/lib/forms";
 import { relativeTime } from "@/lib/format";
 
 const TOUR: TourStep[] = [
-  { element: '[data-tour="stats"]', title: "Welcome to your control room", description: "These numbers show managers, players and teams on 7xen, scrims running, and registrations waiting for approval.", side: "bottom" },
+  { element: '[data-tour="stats"]', title: "Welcome to your control room", description: "These numbers show managers, players and teams on AirBattleground, scrims running, and registrations waiting for approval.", side: "bottom" },
+  { element: '[data-tour="system-card"]', title: "Server health", description: "Speedometers for the server's CPU, memory, disk and network, plus how many phones are streaming. Green is fine, amber is busy, red needs attention.", side: "bottom" },
   { element: '[data-tour="quick-actions"]', title: "Quick actions", description: "Make a manager login in a few clicks, or see the players who signed up with Google.", side: "bottom" },
   { element: '[data-tour="reader-card"]', title: "Screenshot reader", description: "Claude reads match screenshots for managers. Checked samples here are a test set for spotting what it gets wrong.", side: "bottom" },
   { element: '[data-tour="tournaments-card"]', title: "Tournaments", description: "How many tournaments are live or open for registration right now. Click to see them all.", side: "bottom" },
   { element: '[data-tour="manager-app-card"]', title: "Manager app", description: "Match videos recorded by managers' phones, the room-creation recipes, and how long videos are kept.", side: "bottom" },
-  { element: '[data-tour="station-card"]', title: "7XEN Station", description: "The game phone that runs on the server PC. It records and streams matches for managers. Shows whether it's online and what it's doing.", side: "bottom" },
-  { element: '[data-tour="how-it-works"]', title: "How 7xen works", description: "You create manager logins, players make teams, managers run scrims and team leaders register for slots. That's it!", side: "top" },
-  { element: '[data-tour="nav-managers"]', title: "Your menu", description: "Managers, Teams and Players live here. Search, reset a manager's password, see a team's members or turn an account off.", side: "right" },
+  { element: '[data-tour="station-card"]', title: "AirBattleground Station", description: "The game phone that runs on the server PC. It records and streams matches for managers. Shows whether it's online and what it's doing.", side: "bottom" },
+  { element: '[data-tour="how-it-works"]', title: "How AirBattleground works", description: "You invite managers, players make teams, managers run scrims and team leaders register for slots. That's it!", side: "top" },
+  { element: '[data-tour="nav-managers"]', title: "Your menu", description: "Managers, Teams and Players live here. Invite managers, see a team's members or turn an account off.", side: "right" },
   { element: '[data-tour="tour-btn"]', title: "Need a refresher?", description: "Click here any time to replay the tour for the page you're on.", side: "bottom" },
 ];
 
@@ -141,7 +143,7 @@ function QuickAction({ to, icon, title, text }: { to: string; icon: ReactNode; t
 }
 
 const STEPS = [
-  { icon: <KeyRound />, title: "You create manager logins", text: "Players sign up themselves with Google and build their own teams." },
+  { icon: <KeyRound />, title: "You invite managers", text: "Players sign up themselves with Google and build their own teams." },
   { icon: <CalendarClock />, title: "Managers run scrims", text: "They schedule scrims and approve the teams that sign up." },
   { icon: <Trophy />, title: "Leaders get slots", text: "A team's leader registers for a scrim and gets a slot number once approved." },
 ];
@@ -150,7 +152,7 @@ function HowItWorks() {
   return (
     <section data-tour="how-it-works" className="relative overflow-hidden rounded-xl border bg-card p-5 shadow-sm sm:p-6">
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-50 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
-      <h2 className="relative mb-5 font-display text-2xl font-bold">How 7xen works</h2>
+      <h2 className="relative mb-5 font-display text-2xl font-bold">How AirBattleground works</h2>
       <ol className="relative grid gap-4 md:grid-cols-3 md:gap-6">
         {STEPS.map((s, i) => (
           <motion.li key={s.title} {...fade(i + 3)} className="relative flex gap-4 md:flex-col md:gap-3">
@@ -285,11 +287,12 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Overview" title={<>Welcome back{user ? <>, <span className="text-gradient-brand">{user.displayName}</span></> : null}</>} description="Here's what's happening on 7xen right now." />
+      <PageHeader eyebrow="Overview" title={<>Welcome back{user ? <>, <span className="text-gradient-brand">{user.displayName}</span></> : null}</>} description="Here's what's happening on AirBattleground right now." />
       <div className="space-y-6">
         <Stats />
+        <SystemHealthCard />
         <div className="grid gap-4 md:grid-cols-2" data-tour="quick-actions">
-          <QuickAction to="/managers?create=1" icon={<UserPlus />} title="Create manager login" text="For someone who will run scrims" />
+          <QuickAction to="/managers?create=1" icon={<UserPlus />} title="Invite manager" text="For someone who will run scrims" />
           <QuickAction to="/players" icon={<UserRound />} title="See players" text="Everyone who signed up with Google" />
         </div>
         <TournamentsCard />
@@ -302,8 +305,8 @@ export default function DashboardPage() {
             title="Newest managers"
             to="/managers"
             loading={managers.isPending}
-            empty={<>No managers yet. <Link to="/managers?create=1" className="font-medium text-primary hover:underline">Create the first one</Link>.</>}
-            rows={newest(managers.data?.items).map((m) => ({ id: m.id, name: m.displayName, sub: `@${m.username} · ${m.scrimCount} scrims`, active: m.isActive, when: `Added ${relativeTime(m.createdAt)}` }))}
+            empty={<>No managers yet. <Link to="/managers?create=1" className="font-medium text-primary hover:underline">Invite the first one</Link>.</>}
+            rows={newest(managers.data?.items).map((m) => ({ id: m.id, name: m.displayName, sub: `${m.orgName ?? (m.username ? `@${m.username}` : "Google sign-in")} · ${m.scrimCount} scrims`, active: m.isActive, when: `Added ${relativeTime(m.createdAt)}` }))}
           />
           <RecentList
             title="Newest teams"

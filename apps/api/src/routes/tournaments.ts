@@ -114,9 +114,9 @@ export function tournamentManageRouter(admin: boolean) {
   return r;
 }
 
-/** Team routes, mounted at /api/team/tournaments. `teamIdOf` resolves the signed-in team. */
+/** Team routes, mounted at /api/team/tournaments. `teamIdOf` resolves the signed-in team (null = player without a team; reads still work). */
 export function tournamentTeamRouter(
-  teamIdOf: (req: Request) => string,
+  teamIdOf: (req: Request) => string | null,
   /** phase 5: team id for mutations (leader only) */
   leaderTeamIdOf: (req: Request) => string,
   userIdOf: (req: Request) => string,

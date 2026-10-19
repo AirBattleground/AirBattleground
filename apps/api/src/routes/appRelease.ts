@@ -1,5 +1,5 @@
 /**
- * Phase 4: public download of the 7XEN Manager APK.
+ * Phase 4: public download of the AirBattleground Manager APK.
  * The build drops the APK + `latest.json` ({ version, versionCode, file, notes, publishedAt }) into
  * <STORAGE_DIR>/apps/manager/.
  */
@@ -70,8 +70,8 @@ export function appReleaseRouter() {
   });
   r.get("/manager/download", async (_req, res) => {
     const latest = await latestManagerRelease();
-    if (!latest) throw notFound("The 7XEN Manager app isn't available yet");
-    const name = `7xen-manager-${latest.release.version.replace(/[^A-Za-z0-9._-]/g, "")}.apk`;
+    if (!latest) throw notFound("The AirBattleground Manager app isn't available yet");
+    const name = `airbattleground-manager-${latest.release.version.replace(/[^A-Za-z0-9._-]/g, "")}.apk`;
     res.setHeader("Content-Type", "application/vnd.android.package-archive");
     res.setHeader("Content-Length", String(latest.release.sizeBytes));
     res.setHeader("Content-Disposition", `attachment; filename="${name}"`);

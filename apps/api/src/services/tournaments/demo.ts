@@ -19,7 +19,7 @@ interface DemoTournamentOptions {
 }
 
 export async function createDemoTournament(db: PrismaClient, opts: DemoTournamentOptions): Promise<{ id: string; created: boolean }> {
-  const title = opts.title ?? "7xen Demo Cup";
+  const title = opts.title ?? "AirBattleground Demo Cup";
   const existing = await db.tournament.findFirst({ where: { managerId: opts.managerId, title }, select: { id: true } });
   if (existing) return { id: existing.id, created: false };
 

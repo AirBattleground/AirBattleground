@@ -25,7 +25,7 @@ const TOUR: TourStep[] = [
   { title: "Tournament match", description: "Same three steps as a scrim match: team list → results → publish. Publishing updates the group standings." },
   ...MATCH_OPS_TOUR,
   { element: '[data-tour="match-stepper"]', title: "Where you are", description: "The highlighted step is what to do next. Finished steps get a tick — click them to go back." },
-  { element: '[data-tour="uploader"]', title: "Upload screenshots", description: "Drag them in, click to choose, or paste with Ctrl+V. 7xen reads them for you." },
+  { element: '[data-tour="uploader"]', title: "Upload screenshots", description: "Drag them in, click to choose, or paste with Ctrl+V. AirBattleground reads them for you." },
   { element: '[data-tour="lineup-grid"]', title: "Check what was read", description: "One card per slot. Fix any name by typing, then confirm the lineup." },
   { element: '[data-tour="results-table"]', title: "Ranks & finishes", description: "Pick each team's rank and finishes. Points are worked out for you." },
   { element: '[data-tour="results-publish"]', title: "Publish", description: "Publishing shows the scorecard to every team and updates the group standings and promotion." },

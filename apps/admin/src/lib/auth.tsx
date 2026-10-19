@@ -1,13 +1,14 @@
 import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError, type AuthResponse, type LoginInput, type SessionUser } from "@7xen/shared";
+import { ApiError, type AuthConfig, type AuthResponse, type SessionUser } from "@7xen/shared";
 import { useTour } from "@7xen/ui/tour";
 import { api } from "./api";
 
 interface AuthCtx {
   user: SessionUser | null;
   isLoading: boolean;
-  login: (input: LoginInput) => Promise<SessionUser>;
+  /** Google Identity Services ID token → admin session (403 when it isn't the admin account) */
+  loginWithGoogle: (credential: string) => Promise<SessionUser>;
   logout: () => Promise<void>;
 }
 
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     staleTime: 5 * 60_000,
   });
   const loginM = useMutation({
-    mutationFn: (input: LoginInput) => api.post<AuthResponse>("/api/admin/auth/login", input),
+    mutationFn: (credential: string) => api.post<AuthResponse>("/api/admin/auth/google", { credential }),
   });
 
   const user = me.data ?? null;
@@ -39,8 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthCtx = {
     user,
     isLoading: me.isLoading,
-    login: async (input) => {
-      const { user } = await loginM.mutateAsync(input);
+    loginWithGoogle: async (credential) => {
+      const { user } = await loginM.mutateAsync(credential);
       qc.clear();
       qc.setQueryData(ME_KEY, user);
       return user;
@@ -60,3 +61,13 @@ export function useAuth() {
   return ctx;
 }
 
+
+/** Google client id + dev flag (same endpoint as the main app; same origin via the proxy). */
+export function useAuthConfig() {
+  return useQuery({
+    queryKey: ["auth", "config"],
+    queryFn: () => api.get<AuthConfig>("/api/auth/config"),
+    staleTime: 10 * 60_000,
+    retry: 1,
+  });
+}

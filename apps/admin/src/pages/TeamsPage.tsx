@@ -21,7 +21,7 @@ import { relativeTime, shortDate } from "@/lib/format";
 const TOUR: TourStep[] = [
   { title: "Teams", description: "Players create their own teams now. Here you can see every team, who leads it and who plays in it." },
   { element: '[data-tour="search"]', title: "Search", description: "Find a team by its name or tag.", side: "bottom" },
-  { element: '[data-tour="teams-list"]', title: "Every team on 7xen", description: "Leader, how many players and how many scrims they've registered for. Click a team to see its members.", side: "top" },
+  { element: '[data-tour="teams-list"]', title: "Every team on AirBattleground", description: "Leader, how many players and how many scrims they've registered for. Click a team to see its members.", side: "top" },
 ];
 
 function Leader({ t }: { t: TeamRow }) {

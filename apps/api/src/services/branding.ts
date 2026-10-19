@@ -21,7 +21,8 @@ export function brandingFile(file: string): { key: string; mime: string } {
   return { key: `branding/${file}`, mime: MIME_BY_EXT[file.split(".")[1]!]! };
 }
 
-async function store(img: UploadedImage): Promise<string> {
+/** Save a branding image (size-checked) → its storage key. Also used for broadcast sponsor logos (phase 6b). */
+export async function store(img: UploadedImage): Promise<string> {
   if (img.buffer.length > MAX_BRANDING_IMAGE_BYTES) {
     throw new AppError("VALIDATION_ERROR", `The image must be ${MB} MB or smaller`, { file: `Max ${MB} MB` }, 413);
   }
@@ -72,4 +73,12 @@ export async function setTournamentPoster(tournamentId: string, actor: Actor, im
   });
   if (!t) throw notFound("Tournament not found");
   return swap(t.posterKey, img, (posterKey) => prisma.tournament.update({ where: { id: tournamentId }, data: { posterKey } }));
+}
+
+// ---------------------------------------------------------------- team logo (player teams)
+
+export async function setTeamLogo(teamId: string, img: UploadedImage | null): Promise<ImageUrlResponse> {
+  const t = await prisma.team.findUnique({ where: { id: teamId }, select: { logoKey: true } });
+  if (!t) throw notFound("Team not found");
+  return swap(t.logoKey, img, (logoKey) => prisma.team.update({ where: { id: teamId }, data: { logoKey } }));
 }

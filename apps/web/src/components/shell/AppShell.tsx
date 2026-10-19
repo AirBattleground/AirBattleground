@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { motion, MotionConfig } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { AnimatedBackground } from "@7xen/ui/components/brand/animated-background";
+import { BRAND_ASSETS } from "@7xen/ui/components/brand/logo";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { cn } from "@7xen/ui/lib/utils";
 import { useAuth } from "@/lib/auth";
@@ -32,12 +33,14 @@ export interface AppShellProps {
   segmentLabels?: Record<string, string>;
   /** First-login welcome steps (dialog shows once per user per browser). */
   welcomeSteps?: WelcomeStep[];
-  /** Image logo; defaults to the 7XEN mark. */
+  /** Image logo; defaults to the AirBattleground mark. */
   brand?: ShellBrand;
   children: ReactNode;
 }
 
-export function AppShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAction, segmentLabels = NO_LABELS, welcomeSteps, brand, children }: AppShellProps) {
+export function AppShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAction, segmentLabels = NO_LABELS, welcomeSteps, brand: brandProp, children }: AppShellProps) {
+  // every area (manager, player) shows the AirBattleground logo images unless a layout passes its own
+  const brand = brandProp ?? BRAND_ASSETS;
   const { user } = useAuth();
   const { pathname } = useLocation();
   const isDesktop = useIsDesktop();

@@ -11,7 +11,7 @@ export default function NotFoundPage() {
     <div className="relative isolate flex min-h-dvh flex-col items-center justify-center overflow-hidden px-4 py-12 text-center">
       <AnimatedBackground intensity="hero" />
       <div className="absolute top-4 left-4">
-        <Link to="/" aria-label="7xen home">
+        <Link to="/" aria-label="AirBattleground home">
           <Logo subtitle="Admin Console" />
         </Link>
       </div>

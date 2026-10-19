@@ -90,7 +90,7 @@ function RecordingItem({ r, onPlay }: { r: RecordingRow; onPlay: () => void }) {
 /** Live banner: shown above the match center while the phone app is recording this match. */
 export function LiveBanner({ matchId }: { matchId: string }) {
   const q = useRecordings(matchId);
-  // the 7XEN Station has its own panel above, so only phone recordings get this banner
+  // the AirBattleground Station has its own panel above, so only phone recordings get this banner
   const live = q.data?.find((r) => r.status === "LIVE" && r.deviceName !== "7XEN Station");
   if (!live) return null;
   return (
@@ -108,7 +108,7 @@ export function LiveBanner({ matchId }: { matchId: string }) {
   );
 }
 
-/** Every recording of a match (7XEN Station or phone), with upload progress and a player. */
+/** Every recording of a match (AirBattleground Station or phone), with upload progress and a player. */
 export function RecordingsCard({ matchId, title }: { matchId: string; title: string }) {
   const q = useRecordings(matchId);
   const [playing, setPlaying] = useState<RecordingRow | null>(null);

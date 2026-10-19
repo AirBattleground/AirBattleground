@@ -6,6 +6,8 @@ import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@7xen/ui/components/ui/tabs";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
+import { usePlayerSession } from "@/lib/auth";
+import { NoTeamHint } from "@/features/player/components/NoTeamHint";
 import { useMyRegistrations, type RegistrationScope } from "@/features/team/api";
 import { QueryError } from "@/features/team/components/QueryError";
 import { RegistrationCard, RegistrationCardSkeleton } from "@/features/team/components/RegistrationCard";
@@ -32,6 +34,7 @@ function groupByDate(items: TeamRegistration[], desc: boolean) {
 }
 
 function RegistrationList({ scope, today }: { scope: RegistrationScope; today: string }) {
+  const { hasTeam } = usePlayerSession();
   const q = useMyRegistrations(scope);
   const groups = useMemo(() => groupByDate(q.data ?? [], scope === "past"), [q.data, scope]);
 
@@ -44,6 +47,8 @@ function RegistrationList({ scope, today }: { scope: RegistrationScope; today: s
         <RegistrationCardSkeleton />
       </div>
     );
+  if (groups.length === 0 && !hasTeam)
+    return <NoTeamHint icon={scope === "upcoming" ? <CalendarClock /> : <History />}>Your team's registrations show up here.</NoTeamHint>;
   if (groups.length === 0)
     return scope === "upcoming" ? (
       <EmptyState

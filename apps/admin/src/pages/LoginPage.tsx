@@ -1,56 +1,60 @@
 import { useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
-import type { z } from "zod";
-import { AlertCircle, ArrowRight, Lock, ShieldCheck, User } from "lucide-react";
-import { ApiError, loginSchema, type LoginInput } from "@7xen/shared";
+import { AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
+import { ApiError } from "@7xen/shared";
 import { LoginScene } from "@7xen/ui/components/brand/login-scene";
 import { Logo } from "@7xen/ui/components/brand/logo";
 import { FullPageLoader } from "@7xen/ui/components/brand/page";
 import { ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
-import { Button } from "@7xen/ui/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@7xen/ui/components/ui/form";
-import { Input } from "@7xen/ui/components/ui/input";
-import { PasswordInput } from "@/components/PasswordInput";
-import { useAuth } from "@/lib/auth";
+import { usePageTour, type TourStep } from "@7xen/ui/tour";
+import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { useAuth, useAuthConfig } from "@/lib/auth";
 
-function friendlyError(e: unknown): string {
-  if (!(e instanceof ApiError)) return "Something went wrong. Please try again.";
-  if (e.status === 401 || e.code === "UNAUTHENTICATED") return e.message || "Wrong username or password.";
-  if (e.code === "FORBIDDEN") return "This account can't open the Admin Console. Managers and teams sign in on the main portal.";
-  return e.message;
+const TOUR: TourStep[] = [
+  { title: "Admin sign-in", description: "The Admin Console opens only for the owner's Google account." },
+  { element: '[data-tour="admin-signin"]', title: "Continue with Google", description: "Pick the admin Google account. Anyone else is sent back to the main app.", side: "bottom" },
+];
+
+/** The main app's sign-in page (players and organisers). */
+const MAIN_LOGIN = "/login";
+
+type LoginError = { message: string; notAdmin?: boolean };
+
+function friendlyError(e: unknown): LoginError {
+  if (!(e instanceof ApiError)) return { message: "Something went wrong. Please try again." };
+  if (e.status === 403 || e.code === "FORBIDDEN") return { message: "This Google account isn't the admin account.", notAdmin: true };
+  return { message: e.message };
 }
 
 export default function LoginPage() {
-  const { user, isLoading, login } = useAuth();
+  usePageTour("admin.login", TOUR);
+  const { user, isLoading, loginWithGoogle } = useAuth();
+  const config = useAuthConfig();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from;
   const dest = from && from !== "/login" ? from : "/";
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<LoginError | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const form = useForm<z.input<typeof loginSchema>, unknown, LoginInput>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { username: "", password: "" },
-  });
-
+  // already signed in (e.g. via Google on the main app, which also sets the admin cookie) → straight in
   if (isLoading) return <FullPageLoader />;
   if (user?.role === "ADMIN") return <Navigate to={dest} replace />;
 
-  const submit = form.handleSubmit(async (values) => {
+  const google = async (credential: string) => {
     setError(null);
+    setBusy(true);
     try {
-      await login(values);
+      await loginWithGoogle(credential);
       navigate(dest, { replace: true });
     } catch (e) {
       setError(friendlyError(e));
-      form.setValue("password", "");
-      form.setFocus("password");
+    } finally {
+      setBusy(false);
     }
-  });
-  const busy = form.formState.isSubmitting;
+  };
+  const c = config.data;
 
   return (
     <div className="bg-background">
@@ -63,7 +67,7 @@ export default function LoginPage() {
         }
         footer={
           <>
-            <span>© {new Date().getFullYear()} 7XEN</span>
+            <span>© {new Date().getFullYear()} AirBattleground</span>
             <span>Owners only</span>
             <span className="inline-flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-primary shadow-glow" /> Admin Console
@@ -75,7 +79,7 @@ export default function LoginPage() {
           <span className="h-px w-6 bg-primary" /> Admin access
         </p>
         <h1 className="font-display text-4xl leading-none font-bold tracking-tight sm:text-5xl">Command center.</h1>
-        <p className="mt-3 text-sm text-muted-foreground">Logins, teams, tournaments and the screenshot reader — all in one place.</p>
+        <p className="mt-3 text-sm text-muted-foreground">Managers, players, tournaments and the screenshot reader — all in one place.</p>
 
         <AnimatePresence initial={false}>
           {error && (
@@ -90,62 +94,50 @@ export default function LoginPage() {
             >
               <div className="mt-6 flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                 <AlertCircle className="mt-0.5 size-4 shrink-0" />
-                <span>{error}</span>
+                <span>
+                  {error.message}
+                  {error.notAdmin && (
+                    <>
+                      {" "}
+                      <a href={MAIN_LOGIN} className="inline-flex items-center gap-1 font-semibold underline underline-offset-4">
+                        Go to the main app <ArrowRight className="size-3.5" />
+                      </a>
+                    </>
+                  )}
+                </span>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <Form {...form}>
-          <form onSubmit={submit} className="mt-8 grid gap-5" noValidate>
-            <FormField
-              control={form.control}
-              name="username"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Username</FormLabel>
-                  <div className="relative">
-                    <User className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <FormControl>
-                      <Input {...field} autoFocus autoComplete="username" autoCapitalize="none" spellCheck={false} placeholder="admin" className="h-12 rounded-xl bg-background/60 pl-10" />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <div className="relative">
-                    <Lock className="pointer-events-none absolute top-1/2 left-3.5 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <FormControl>
-                      <PasswordInput value={field.value} onValueChange={field.onChange} onBlur={field.onBlur} name={field.name} ref={field.ref} placeholder="Enter your password" className="h-12 rounded-xl bg-background/60 pl-10" />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" size="lg" disabled={busy} className="group mt-1 h-12 justify-between rounded-xl px-5 text-base font-semibold shadow-glow">
-              {busy ? (
-                <span className="inline-flex items-center gap-2">
-                  <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" /> Signing in…
+        <div className="mt-8 space-y-4" data-tour="admin-signin">
+          {config.isLoading ? (
+            <div className="h-11 animate-pulse rounded-full bg-muted" />
+          ) : c?.googleClientId ? (
+            <GoogleSignInButton clientId={c.googleClientId} onCredential={google} busy={busy} />
+          ) : (
+            <div className="flex items-start gap-3 rounded-2xl border bg-card/70 p-4 text-sm">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <ShieldCheck className="size-5" />
+              </span>
+              <p>
+                <span className="block font-semibold">Sign-in isn't set up yet</span>
+                <span className="text-muted-foreground">
+                  {config.isError ? "We couldn't reach the server. Refresh the page in a moment." : "Google sign-in needs to be configured on the server first."}
                 </span>
-              ) : (
-                <>
-                  Open the console <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-                </>
-              )}
-            </Button>
-          </form>
-        </Form>
+              </p>
+            </div>
+          )}
+        </div>
 
         <p className="mt-8 flex items-center gap-2 border-t pt-5 text-xs text-muted-foreground">
-          <ShieldCheck className="size-4 text-primary" /> Manager or team? Sign in on the player portal instead.
+          <ShieldCheck className="size-4 shrink-0 text-primary" />
+          <span>
+            Player or organiser?{" "}
+            <a href={MAIN_LOGIN} className="font-medium text-primary underline-offset-4 hover:underline">
+              Sign in on the main app
+            </a>
+          </span>
         </p>
       </LoginScene>
     </div>

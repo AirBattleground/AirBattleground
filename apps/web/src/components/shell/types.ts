@@ -13,9 +13,11 @@ export interface NavItem {
   end?: boolean;
   /** Short label for the mobile bottom tab bar (defaults to `label`). */
   short?: string;
+  /** Phones: show in the bottom tab bar only while `badge` > 0 (e.g. "Live"); always in the sidebar. */
+  mobileOnlyWithBadge?: boolean;
 }
 
-/** Image logo that replaces the default 7XEN mark + wordmark in the sidebar and phone topbar. */
+/** Image logo that replaces the default AirBattleground mark + wordmark in the sidebar and phone topbar. */
 export interface ShellBrand {
   name: string;
   /** Full wordmark, light text (dark theme). */

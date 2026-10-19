@@ -243,3 +243,60 @@ start immediately; they finish integration once W2 lands. Shared/ui changes outs
 - [ ] End-to-end check with dev login: sign up → IGN → BGMI ID → create team → second player joins by link →
       leader approves → member asks leader about a scrim → leader registers → manager approves → slot shown to both
 - [ ] Google OAuth client ID from the owner (`GOOGLE_CLIENT_ID`) — until then dev login is used locally
+
+## Phase 5b — Google-only sign-in, role by email, manager invitations (2026-10-19)
+
+Contract: `packages/shared/src/access.ts`.
+
+- The only sign-in button anywhere is **"Continue with Google"** (web `/login` and the admin console login).
+- Role comes from the verified Google email:
+  - `ADMIN_EMAIL` (API env, default `airbattleground@gmail.com`) → **ADMIN** → admin console `/admin-ui/`
+    (`/api/auth/google` also sets the admin cookie for this user).
+  - an email with a **pending manager invitation** (or an existing manager) → **MANAGER** → `/manager`.
+  - anyone else → **PLAYER** → `/welcome` (first time) or `/team`.
+- **Manager invitations**: admin → Managers → *Invite manager* (Name, Organisation name, Email) → *Send the invite*
+  (Send email = `mailto:` with a prepared message, WhatsApp, Copy). The invitee signs in with Google using that
+  email and lands on the manager dashboard. A player with no team is converted; a player in a team must leave first.
+  Pending invites can be revoked. (Automatic email sending needs an SMTP service — not set up yet.)
+- Username/password endpoints remain in the API only (Android manager app, emergency admin access); no UI uses them.
+- Dev email login stays dev-only (`PLAYER_DEV_LOGIN=1`) and follows the same email → role rules; off in the owner's env.
+- Google OAuth client: `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` in `apps/api/.env`; the client must list
+  `http://localhost:5173` (and the production origin) under *Authorised JavaScript origins*.
+
+- [x] 5b API: role resolution, admin Google login, manager invites, migration, tests
+- [x] 5b UI: Google-only web + admin login, role landing, Invite manager + pending invites
+- [ ] Owner: add `http://localhost:5173` to the OAuth client's authorised JavaScript origins
+
+## Phase 5c — browse without a team (2026-10-19)
+
+Owner: "Only registering for a tournament/scrim should require creating or joining a team."
+
+- **API** (`/api/team/*`, no contract changes): reads work for a player with no team and answer with the team parts
+  empty — `GET scrims?date=` (every scrim, `myRegistration: null`, `mySuggestion: null`), `GET registrations` →
+  `{ items: [] }`, `GET results` → `{ items: [] }`, `GET roster` → `{ players: [], suggestions: [] }`, `GET rooms` /
+  `GET live` → `{ items: [] }`, `GET tournaments?scope=` (normal lists; `mine` → `[]`), `GET tournaments/:id` (hub
+  with `me` = `NOT_REGISTERED`, `entry: null`, `canRegister` = registration open, `rosterWarning: null`),
+  `GET tournaments/:id/stages/:stageId` and published tournament scorecards (public anyway). Scrim session standings /
+  scrim scorecards answer `403 FORBIDDEN` "Your team didn't play in this scrim" (not `NO_TEAM`).
+  `GET dashboard` keeps `403 NO_TEAM`; every mutation keeps `NO_TEAM` / `LEADER_ONLY`.
+- **Web**: no page is gated any more. Teamless players see the real Find scrims, Tournaments (hub/stages/matches),
+  My registrations, Results and Live pages; team-only sections show a quiet line with a small “Create or join a team”
+  link. Home shows the normal hub (player hero greeting by IGN, featured tournaments, scrims you can join, organisers)
+  plus one slim “Play in scrims with your squad” banner (or the pending join request).
+- **Register without a team** (scrim card, tournament registration panel): opens “You need a team to register” →
+  *Create a team* (BGMI ID asked if missing) continues straight into the normal register confirmation (the creator is
+  the leader), or *Join with a code* (code → team preview → request inside the dialog; then “the leader approves, then
+  tap Ask my leader”).
+- **My team** (nav) is the one place with the full create / join UI for a teamless player.
+
+## Phase 5d — team logo + invite by BGMI ID (2026-10-19)
+
+- **Team logo**: the leader taps the logo on My team to upload (png/jpg/webp, ≤ 5 MB) or remove it. Stored under
+  `branding/` like org logos (`Team.logoKey`), served by `/api/media/branding/:file`; `PlayerTeam.logoUrl`.
+  Endpoints: `PUT|DELETE /api/player/team/logo`. Deleted with the team on disband.
+- **Invite by BGMI ID**: leader enters a player's BGMI ID → `TeamInvite` (PENDING). The player sees "You're invited"
+  on My team (no-team view) and taps Accept / Decline; the leader can take an invite back. Joining or creating any team
+  revokes the player's other pending invites. Endpoints: `POST /api/player/team/invites`, `DELETE .../invites/:id`,
+  `GET /api/player/team-invites`, `POST /api/player/team-invites/:id/accept|decline`.
+- Contract additions are backward compatible (`PlayerTeam.logoUrl`, `PlayerTeam.invites`, new DTOs in players.ts).
+- Not yet: logo shown outside My team (scrim cards, leaderboards, admin).

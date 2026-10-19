@@ -1,5 +1,5 @@
 /**
- * Phase 4b routes: 7XEN Station.
+ * Phase 4b routes: AirBattleground Station.
  *   mountStation(r, bypass)   manager (own matches) + admin mirror (any match): status, prepare, stop, capture, input, live
  *   liveRouter()              GET /api/live/:matchId/index.m3u8 | <segment>.ts  (manager owner, admin, teams in the match)
  *   internalStationRouter()   station → API hooks (X-Station-Token)
@@ -29,6 +29,10 @@ import { parseMultipart, uploadedImages } from "../lib/upload.js";
 import { parse } from "../lib/validate.js";
 import { currentUser } from "../middleware/requireAuth.js";
 import * as station from "../services/station.js";
+import { broadcastingDevice } from "../services/devices.js";
+import { fetchHls } from "../services/media.js";
+import { liveBroadcasts, matchOverlayPng } from "../services/broadcast/viewer.js";
+import { pipeUpstream } from "./broadcast.js";
 
 const p = (v: unknown) => v as string;
 
@@ -83,6 +87,24 @@ function candidateTokens(req: Request): string[] {
     if (c) out.push(c);
   }
   return out;
+}
+
+const signedIn = new Map<string, { at: number; ok: boolean }>();
+/** Phase 6d: any signed-in, active user (player, manager, admin) — iPhone broadcasts are open to everyone signed in. */
+async function requireSignedIn(req: Request, _res: Response, next: NextFunction) {
+  for (const pl of candidateTokens(req).map(verifyToken)) {
+    if (!pl) continue;
+    const key = `${pl.sub}:${pl.role}`;
+    let d = signedIn.get(key);
+    if (!d || Date.now() - d.at > DECISION_TTL_MS) {
+      const u = await prisma.user.findUnique({ where: { id: pl.sub }, select: { isActive: true, role: true } });
+      d = { at: Date.now(), ok: !!u && u.isActive && u.role === pl.role };
+      signedIn.set(key, d);
+      if (signedIn.size > 5000) signedIn.clear();
+    }
+    if (d.ok) return next();
+  }
+  throw new AppError("UNAUTHENTICATED", "Please log in to watch live matches");
 }
 
 /** 401 without a valid session, 403 when none of the sessions may watch, 404 when there's no stream. */
@@ -164,6 +186,28 @@ async function sendLive(req: Request, res: Response, name: string) {
 
 export function liveRouter() {
   const r = Router();
+  // phase 6c/6d: iPhone broadcasts (the manager pressed "Start broadcast"): open to every signed-in user
+  r.get("/", requireSignedIn, async (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ items: await liveBroadcasts() });
+  });
+  r.get("/:matchId/overlay.png", requireSignedIn, async (req, res) => {
+    const png = await matchOverlayPng(p(req.params.matchId));
+    if (!png) throw notFound("This match isn't being broadcast");
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Cache-Control", "no-store");
+    res.end(png);
+  });
+  r.get("/:matchId/d/:file", requireSignedIn, async (req, res) => {
+    const file = p(req.params.file);
+    if (!/^[A-Za-z0-9_.-]{1,80}\.(m3u8|mp4|m4s|ts)$/.test(file)) throw notFound("Not found");
+    const d = await broadcastingDevice(p(req.params.matchId));
+    if (!d) throw notFound("This match isn't being broadcast");
+    const search = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+    const upstream = await fetchHls(d.id, file, search);
+    if (!upstream || !upstream.ok || !upstream.body) throw notFound("The stream is starting. Try again in a few seconds.");
+    await pipeUpstream(res, upstream, file);
+  });
   r.get("/:matchId/index.m3u8", requireViewer, async (req, res) => {
     await sendLive(req, res, "index.m3u8");
   });
@@ -178,6 +222,7 @@ export function liveRouter() {
 /** Testing hook: forget cached access decisions. */
 export function resetLiveCaches() {
   decisions.clear();
+  signedIn.clear();
   streamCache.clear();
 }
 

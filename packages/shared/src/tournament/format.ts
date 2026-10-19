@@ -100,6 +100,70 @@ export function suggestFormat(input: { totalTeams: number; lobbySize?: number; m
   });
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// Rounds (organiser wizard defaults): "Round 1 … Final", the usual maps, no wildcards.
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** Maps played in a round before the final, in order: round k plays the first k (at most 4). */
+const ROUND_MAP_CYCLE: GameMap[] = ["ERANGEL", "MIRAMAR", "RONDO", "ERANGEL"];
+/** Maps played in the final. */
+const FINAL_MAPS: GameMap[] = ["ERANGEL", "MIRAMAR", "RONDO", "ERANGEL", "MIRAMAR"];
+
+/** "Round 1", "Round 2", … and "Final" for the last stage. `index` is the 0-based position. */
+export function defaultStageName(index: number, isLast: boolean): string {
+  return isLast ? "Final" : `Round ${index + 1}`;
+}
+
+/**
+ * Default maps (= matches) for a stage by position: Round 1 → ERANGEL; Round 2 → ERANGEL, MIRAMAR;
+ * Round 3 → + RONDO; Round 4+ → + ERANGEL; Final → ERANGEL, MIRAMAR, RONDO, ERANGEL, MIRAMAR.
+ */
+export function defaultStageMaps(index: number, isLast: boolean): GameMap[] {
+  if (isLast) return [...FINAL_MAPS];
+  return ROUND_MAP_CYCLE.slice(0, Math.min(ROUND_MAP_CYCLE.length, Math.max(1, index + 1)));
+}
+
+/**
+ * Wizard preset: rounds that take `totalTeams` down to one final lobby. Same flow rule as suggestFormat but with NO
+ * wildcards (the next round takes exactly groups × top-N; invited teams are added by hand), named "Round N" / "Final"
+ * and with the default maps per position. Passes validateFormat with no errors for every size.
+ */
+export function suggestRounds(input: { totalTeams: number; lobbySize?: number }): StageSpec[] {
+  const L = Math.max(2, Math.floor(input.lobbySize ?? DEFAULT_LOBBY_SIZE));
+  const total = Math.max(2, Math.floor(input.totalTeams));
+
+  const chain: { teamsIn: number; groupCount: number; advance: number }[] = [];
+  let n = total;
+  while (n > L) {
+    const g = Math.ceil(n / L);
+    const target = nextGroupCount(g, L) * L;
+    const minSize = Math.floor(n / g);
+    let a = Math.max(1, Math.floor(target / g));
+    // keep at least one team eliminated per group when possible
+    if (a >= minSize && minSize > 1) a = minSize - 1;
+    chain.push({ teamsIn: n, groupCount: g, advance: a });
+    n = g * a;
+  }
+  chain.push({ teamsIn: n, groupCount: 1, advance: 0 });
+
+  return chain.map((c, i) => {
+    const last = i === chain.length - 1;
+    const maps = defaultStageMaps(i, last);
+    return {
+      name: defaultStageName(i, last),
+      teamsIn: c.teamsIn,
+      lobbySize: L,
+      groupCount: c.groupCount,
+      matchesPerGroup: maps.length,
+      maps,
+      advancePerGroup: c.advance,
+      wildcardCount: 0,
+      invitedSlots: 0,
+      schedule: null,
+    };
+  });
+}
+
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 /** Checks the flow rule and sanity rules; errors block publishing, warnings don't. */

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import type Hls from "hls.js";
-import { Loader2, Maximize, Minimize, Volume2, VolumeX } from "lucide-react";
+import { Loader2, Maximize, Minimize, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@7xen/ui/lib/utils";
 import { fmtDuration } from "@/features/live/format";
 
@@ -32,6 +32,9 @@ export function useElapsed(startedAt?: string | null): number | null {
   return Number.isFinite(start) ? Math.max(0, (now - start) / 1000) : null;
 }
 
+/** Rewind keeps this much of the stream in the browser (the browser may drop older parts sooner if memory runs low). */
+const DVR_KEEP_SEC = 30 * 60;
+
 const canPlayNative = (v: HTMLVideoElement) => !!v.canPlayType("application/vnd.apple.mpegurl");
 const backoff = (attempt: number) => Math.min(5_000, 750 * 2 ** Math.min(attempt, 3));
 
@@ -53,6 +56,8 @@ export function HlsPlayer({
   className,
   frameClassName,
   label = "Live match stream",
+  showLiveBadge = true,
+  dvr = false,
 }: {
   src: string | null;
   startedAt?: string | null;
@@ -66,6 +71,13 @@ export function HlsPlayer({
   className?: string;
   frameClassName?: string;
   label?: string;
+  /** false when something drawn over the video (a broadcast layout) has its own LIVE badge */
+  showLiveBadge?: boolean;
+  /**
+   * Rewind: keep everything received since the viewer joined (up to DVR_KEEP_SEC) and show a seek bar with
+   * "Go live". The browser holds the video in memory; nothing is stored on the server.
+   */
+  dvr?: boolean;
 }) {
   const ownRef = useRef<HTMLVideoElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -144,9 +156,10 @@ export function HlsPlayer({
         const h = new HlsCtor({
           lowLatencyMode: true,
           liveSyncDurationCount: 2,
-          liveMaxLatencyDurationCount: 6,
-          maxLiveSyncPlaybackRate: 1.15,
-          backBufferLength: 30,
+          // rewind: never yank the viewer back to live or speed playback up while they watch an earlier moment
+          liveMaxLatencyDurationCount: dvr ? Infinity : 6,
+          maxLiveSyncPlaybackRate: dvr ? 1 : 1.15,
+          backBufferLength: dvr ? DVR_KEEP_SEC : 30,
           maxBufferLength: 10,
           enableWorker: true,
           manifestLoadPolicy: {
@@ -193,9 +206,9 @@ export function HlsPlayer({
       startNative();
     } else void startHls();
 
-    // back at the live edge after the tab was hidden
+    // back at the live edge after the tab was hidden (not in rewind mode: the viewer may be watching the past on purpose)
     const onVisible = () => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || dvr) return;
       const edge = hls?.liveSyncPosition;
       if (edge != null && video.currentTime < edge - 8) video.currentTime = edge;
       tryPlay();
@@ -215,7 +228,7 @@ export function HlsPlayer({
       video.removeAttribute("src");
       video.load();
     };
-  }, [src, ended]);
+  }, [src, ended, dvr]);
 
   // ---- fullscreen ----
   useEffect(() => {
@@ -267,9 +280,11 @@ export function HlsPlayer({
 
         {!showEnded && children}
 
+        {dvr && !showEnded && state !== "connecting" && <DvrBar video={ownRef} />}
+
         {!showEnded && (
           <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2 sm:p-3">
-            <LiveBadge startedAt={startedAt} />
+            {showLiveBadge ? <LiveBadge startedAt={startedAt} /> : <span />}
             <div className="pointer-events-auto flex items-center gap-1.5">
               {hud}
               <button
@@ -294,6 +309,94 @@ export function HlsPlayer({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+const fmtClock = (sec: number) => {
+  const s = Math.max(0, Math.round(sec));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const ss = String(s % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${ss}` : `${m}:${ss}`;
+};
+
+/** Seek bar over what the browser has received: pause, back 10 s, scrub, "Go live". */
+function DvrBar({ video: ref }: { video: RefObject<HTMLVideoElement | null> }) {
+  const [, tick] = useState(0);
+  const [drag, setDrag] = useState<number | null>(null);
+
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    const rerender = () => tick((n) => n + 1);
+    const t = setInterval(rerender, 500);
+    v.addEventListener("pause", rerender);
+    v.addEventListener("play", rerender);
+    v.addEventListener("seeked", rerender);
+    return () => {
+      clearInterval(t);
+      v.removeEventListener("pause", rerender);
+      v.removeEventListener("play", rerender);
+      v.removeEventListener("seeked", rerender);
+    };
+  }, [ref]);
+
+  const v = ref.current;
+  if (!v || !v.seekable.length) return null;
+  const start = v.seekable.start(0);
+  const edge = v.seekable.end(v.seekable.length - 1);
+  const span = Math.max(1, edge - start);
+  const pos = drag ?? v.currentTime;
+  const behind = Math.max(0, edge - pos);
+  const atLive = behind < 6 && !v.paused;
+
+  const seek = (t: number) => {
+    v.currentTime = Math.min(edge - 0.5, Math.max(start, t));
+    void v.play().catch(() => undefined);
+  };
+  const btn =
+    "flex size-8 shrink-0 items-center justify-center rounded-md bg-background/75 text-foreground shadow-sm backdrop-blur-sm transition-colors outline-none hover:bg-background focus-visible:ring-[3px] focus-visible:ring-ring/50";
+
+  return (
+    <div className="absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6 sm:p-3 sm:pt-8">
+      <button type="button" className={btn} onClick={() => (v.paused ? void v.play().catch(() => undefined) : v.pause())} aria-label={v.paused ? "Play" : "Pause"}>
+        {v.paused ? <Play className="size-4" /> : <Pause className="size-4" />}
+      </button>
+      <button type="button" className={btn} onClick={() => seek(v.currentTime - 10)} aria-label="Back 10 seconds" title="Back 10 seconds">
+        <RotateCcw className="size-4" />
+      </button>
+      <input
+        type="range"
+        min={0}
+        max={span}
+        step={0.1}
+        value={Math.min(span, Math.max(0, pos - start))}
+        onChange={(e) => setDrag(start + Number(e.target.value))}
+        onPointerUp={() => {
+          if (drag != null) seek(drag);
+          setDrag(null);
+        }}
+        onKeyUp={() => {
+          if (drag != null) seek(drag);
+          setDrag(null);
+        }}
+        aria-label="Seek"
+        className="h-1.5 min-w-0 flex-1 cursor-pointer accent-primary"
+      />
+      <span className="w-14 shrink-0 text-right font-mono text-xs text-white tabular-nums">{behind < 2 ? "LIVE" : `−${fmtClock(behind)}`}</span>
+      <button
+        type="button"
+        onClick={() => seek(edge - 1.5)}
+        className={cn(
+          "flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 font-display text-xs font-bold tracking-wider uppercase shadow-sm transition-colors",
+          atLive ? "bg-destructive text-destructive-foreground" : "bg-background/85 text-foreground hover:bg-background",
+        )}
+        aria-label="Go live"
+      >
+        <span className={cn("size-2 rounded-full", atLive ? "bg-destructive-foreground" : "bg-destructive")} />
+        {atLive ? "Live" : "Go live"}
+      </button>
     </div>
   );
 }

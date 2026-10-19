@@ -156,25 +156,60 @@ model User {
   lastLoginAt  DateTime?
   /// MANAGER: organisation logo shown to teams on scrims/tournaments (storage key under branding/)
   orgLogoKey   String?
+  /// phase 5b MANAGER: organisation name (from the manager invitation)
+  orgName      String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   membership              TeamMember?
-  ledTeam                 Team?             @relation("TeamLeader")
+  ledTeam                 Team?               @relation("TeamLeader")
   joinRequests            TeamJoinRequest[]
+  teamInvites             TeamInvite[]        @relation("TeamInviteInvitee")
+  teamInvitesSent         TeamInvite[]        @relation("TeamInviteSender")
   suggestions             TeamSuggestion[]
-  registeredRegistrations Registration[]    @relation("RegistrationRegisteredBy")
-  registeredEntries       TournamentEntry[] @relation("EntryRegisteredBy")
+  registeredRegistrations Registration[]      @relation("RegistrationRegisteredBy")
+  registeredEntries       TournamentEntry[]   @relation("EntryRegisteredBy")
   matchPlayers            MatchPlayer[]
-  scrims                  Scrim[]           @relation("ScrimManager")
-  decidedRegistrations    Registration[]    @relation("RegistrationDecider")
+  scrims                  Scrim[]             @relation("ScrimManager")
+  decidedRegistrations    Registration[]      @relation("RegistrationDecider")
   screenshots             Screenshot[]
   trainingSamples         TrainingSample[]
-  tournaments             Tournament[]      @relation("TournamentManager")
+  tournaments             Tournament[]        @relation("TournamentManager")
   recordings              MatchRecording[]
   recipes                 Recipe[]
+  managerInvitesSent      ManagerInvite[]     @relation("ManagerInviteInvitedBy")
+  managerInviteAccepted   ManagerInvite[]     @relation("ManagerInviteAccepted")
+  devices                 Device[]
+  streamLayout            StreamLayout?
+  streamDestinations      StreamDestination[]
 
   @@index([role])
+}
+
+/// phase 5b: the admin invites an organiser by email; they become a MANAGER on their first Google sign-in.
+enum ManagerInviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
+/// At most one PENDING invite per email (partial unique index "ManagerInvite_one_pending" in SQL).
+model ManagerInvite {
+  id             String              @id @default(cuid())
+  /// lowercase
+  email          String
+  name           String
+  orgName        String
+  status         ManagerInviteStatus @default(PENDING)
+  invitedById    String?
+  invitedBy      User?               @relation("ManagerInviteInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  acceptedUserId String?
+  acceptedUser   User?               @relation("ManagerInviteAccepted", fields: [acceptedUserId], references: [id], onDelete: SetNull)
+  createdAt      DateTime            @default(now())
+  acceptedAt     DateTime?
+
+  @@index([email])
+  @@index([status, createdAt])
 }
 
 /// phase 5: a group of players with one leader (no login of its own).
@@ -198,6 +233,7 @@ model Team {
   members           TeamMember[]
   joinRequests      TeamJoinRequest[]
   suggestions       TeamSuggestion[]
+  invites           TeamInvite[]
   /// legacy free-text roster (phase 2); no longer written — rosters come from members
   players           TeamPlayer[]
   matchTeams        MatchTeam[]
@@ -232,6 +268,31 @@ model TeamJoinRequest {
   message   String?
   decidedAt DateTime?
   createdAt DateTime          @default(now())
+
+  @@index([teamId, status])
+  @@index([userId, status])
+}
+
+enum TeamInviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  REVOKED
+}
+
+/// phase 5d: the leader invites a player by BGMI ID; the player accepts or declines.
+/// At most one PENDING per (team, player): partial unique index "TeamInvite_one_pending" (see migration).
+model TeamInvite {
+  id          String           @id @default(cuid())
+  teamId      String
+  team        Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User             @relation("TeamInviteInvitee", fields: [userId], references: [id], onDelete: Cascade)
+  invitedById String
+  invitedBy   User             @relation("TeamInviteSender", fields: [invitedById], references: [id], onDelete: Cascade)
+  status      TeamInviteStatus @default(PENDING)
+  decidedAt   DateTime?
+  createdAt   DateTime         @default(now())
 
   @@index([teamId, status])
   @@index([userId, status])
@@ -368,6 +429,7 @@ model Match {
   screenshots Screenshot[]
   teams       MatchTeam[]
   recordings  MatchRecording[]
+  devices     Device[]
 
   @@unique([sessionId, number])
   @@unique([groupId, number])
@@ -643,4 +705,73 @@ model AppSetting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+enum DevicePlatform {
+  IOS
+}
+
+/// Phase 6: a manager's streaming phone (view-only). The phone authenticates with its key (X-Device-Key).
+model Device {
+  id              String         @id @default(cuid())
+  managerId       String
+  manager         User           @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  name            String
+  platform        DevicePlatform @default(IOS)
+  /// sha256(key) hex — lookup
+  keyHash         String         @unique
+  /// AES-256-GCM(key) so the manager can show it again
+  keyEnc          String
+  keyPrefix       String
+  model           String?
+  osVersion       String?
+  appVersion      String?
+  lastSeenAt      DateTime?
+  /// IDLE | LIVE as last reported by the phone
+  state           String         @default("IDLE")
+  streamingSince  DateTime?
+  /// DeviceHealth JSON from the last heartbeat
+  health          Json?
+  /// phase 6b: the match the broadcast layout shows
+  matchId         String?
+  match           Match?         @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  /// phase 6c: the manager pressed "Start broadcast": teams in `match` may watch this phone's stream
+  broadcastLive      Boolean   @default(false)
+  broadcastStartedAt DateTime?
+  /// phase 6b: composed output wanted on (survives API restarts) + where it pushes
+  outputOn        Boolean        @default(false)
+  outputDestIds   String[]       @default([])
+  outputStartedAt DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([managerId])
+}
+
+/// Phase 6b: a manager's broadcast layout (one per manager for now).
+model StreamLayout {
+  id        String   @id @default(cuid())
+  managerId String   @unique
+  manager   User     @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  /// StreamLayoutConfig JSON
+  config    Json
+  /// SponsorLogo storage keys: [{ id, key }]
+  sponsors  Json     @default("[]")
+  updatedAt DateTime @updatedAt
+}
+
+/// Phase 6b: where a manager's broadcast output is pushed (YouTube, Facebook, any RTMP).
+model StreamDestination {
+  id        String   @id @default(cuid())
+  managerId String
+  manager   User     @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  kind      String
+  name      String
+  url       String
+  /// AES-256-GCM(stream key)
+  keyEnc    String
+  keyHint   String
+  createdAt DateTime @default(now())
+
+  @@index([managerId])
 }

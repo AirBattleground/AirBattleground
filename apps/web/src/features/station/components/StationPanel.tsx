@@ -19,11 +19,11 @@ import { RemoteControlLayer, RemoteToolbar } from "./RemoteControl";
 
 /** Tour steps for the Station panel — prepended to the match ops tour on both match centers. */
 export const STATION_TOUR: TourStep[] = [
-  { element: '[data-tour="station-panel"]', title: "7XEN Station", description: "A game phone that runs on the 7XEN PC. Start it, play BGMI on it from here, then start the match to record it and show it live to the teams.", side: "bottom" },
+  { element: '[data-tour="station-panel"]', title: "AirBattleground Station", description: "A game phone that runs on the AirBattleground PC. Start it, play BGMI on it from here, then start the match to record it and show it live to the teams.", side: "bottom" },
   { element: '[data-tour="station-status"]', title: "Is it ready?", description: "Ready means you can use it now. Busy means another match is using it; Offline means the Station PC isn't running.", side: "bottom" },
   { element: '[data-tour="station-action"]', title: "Start the emulator, then the match", description: "Start emulator opens BlueStacks and BGMI. Once you see the screen, set up your room, then press Start match — that records the game and shows it live to the teams.", side: "bottom" },
   { element: '[data-tour="station-remote"]', title: "Play it right here", description: "Click and drag on the picture to tap and swipe — the first finger moves, the second aims. Back, Home and a text box sit under the video. Turn on Lock controls so a stray click can't tap during the match.", side: "bottom" },
-  { element: '[data-tour="station-capture"]', title: "Screenshots in one click", description: "Open the team list or the results in the game, then capture — the screenshot lands in the steps below and 7xen reads it.", side: "top" },
+  { element: '[data-tour="station-capture"]', title: "Screenshots in one click", description: "Open the team list or the results in the game, then capture — the screenshot lands in the steps below and AirBattleground reads it.", side: "top" },
   { element: '[data-tour="station-stop"]', title: "End the match", description: "Stops recording and the live stream for teams. The full video is saved to Recordings and the emulator keeps running.", side: "bottom" },
 ];
 
@@ -218,7 +218,7 @@ function RecordingPill({ startedAt }: { startedAt: string | null }) {
 }
 
 /**
- * 7XEN Station for one match: status, then either the classic flow (Prepare → progress → HLS picture with opt-in
+ * AirBattleground Station for one match: status, then either the classic flow (Prepare → progress → HLS picture with opt-in
  * remote control) or, with a BlueStacks device, Start emulator → live control → Start match → End match.
  */
 export function StationPanel({ matchId }: { matchId: string }) {
@@ -249,7 +249,7 @@ export function StationPanel({ matchId }: { matchId: string }) {
       case "loading":
         return "Checking the station…";
       case "offline":
-        return "The 7XEN Station PC isn't running. Ask your admin to start it — you can still upload screenshots by hand.";
+        return "The AirBattleground Station PC isn't running. Ask your admin to start it — you can still upload screenshots by hand.";
       case "busy":
         return view.otherMatchId ? <OtherMatchLink matchId={view.otherMatchId} /> : "Another match is using it right now.";
       case "ready":
@@ -323,7 +323,7 @@ export function StationPanel({ matchId }: { matchId: string }) {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 id="station-title" className="font-display text-xl font-bold">
-              7XEN Station
+              AirBattleground Station
             </h2>
             <StatusChip view={view} />
             {bs && isLive && <RecordingPill startedAt={live.data?.startedAt ?? (view.kind === "live" ? view.s.startedAt : null)} />}
@@ -405,7 +405,7 @@ export function StationPanel({ matchId }: { matchId: string }) {
 
       {view.kind === "offline" && (
         <p className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Gamepad2 className="size-3.5" /> No station? Record with the 7XEN Manager app on your phone instead.
+          <Gamepad2 className="size-3.5" /> No station? Record with the AirBattleground Manager app on your phone instead.
         </p>
       )}
 

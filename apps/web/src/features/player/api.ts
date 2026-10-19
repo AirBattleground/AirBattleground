@@ -6,8 +6,11 @@ import {
   type CreateJoinRequestInput,
   type CreatePlayerTeamInput,
   type CreateSuggestionInput,
+  type ImageUrlResponse,
+  type InviteByBgmiInput,
   type ListResponse,
   type MyJoinRequest,
+  type MyTeamInvite,
   type PlayerProfile,
   type PlayerTeam,
   type SuggestionStatus,
@@ -18,6 +21,7 @@ import {
 } from "@7xen/shared";
 import { api } from "@/lib/api";
 import { ME_KEY } from "@/lib/auth";
+import { uploadImage } from "@/features/manager/branding";
 
 export const playerKeys = {
   all: ["player"] as const,
@@ -26,6 +30,7 @@ export const playerKeys = {
   team: ["player", "team"] as const,
   invite: (code: string) => ["player", "invite", code] as const,
   joinRequests: ["player", "join-requests"] as const,
+  teamInvites: ["player", "team-invites"] as const,
   suggestionsAll: ["player", "suggestions"] as const,
   suggestions: (status: SuggestionStatus) => ["player", "suggestions", status] as const,
 };
@@ -257,4 +262,83 @@ export function useDismissSuggestion() {
 export function invalidateSuggestions(qc: QueryClient) {
   void qc.invalidateQueries({ queryKey: playerKeys.suggestionsAll });
   void qc.invalidateQueries({ queryKey: playerKeys.team });
+}
+
+// ---------------------------------------------------------------------------
+// Team logo (leader)
+// ---------------------------------------------------------------------------
+export function useTeamLogo() {
+  const qc = useQueryClient();
+  const settle = (res: ImageUrlResponse, ok: string) => {
+    qc.setQueryData<PlayerTeam | null | undefined>(playerKeys.team, (t) => (t ? { ...t, logoUrl: res.url } : t));
+    void qc.invalidateQueries({ queryKey: playerKeys.team });
+    toast.success(ok);
+  };
+  const upload = useMutation({
+    mutationFn: (file: File) => uploadImage("/api/player/team/logo", file),
+    onSuccess: (res) => settle(res, "Team logo updated"),
+    onError: failToast("Couldn't upload the logo"),
+  });
+  const remove = useMutation({
+    mutationFn: () => api.del<ImageUrlResponse>("/api/player/team/logo"),
+    onSuccess: (res) => settle(res ?? { url: null }, "Team logo removed"),
+    onError: failToast("Couldn't remove the logo"),
+  });
+  return { upload, remove, pending: upload.isPending || remove.isPending };
+}
+
+// ---------------------------------------------------------------------------
+// Invite by BGMI ID
+// ---------------------------------------------------------------------------
+/** Leader: errors left to the form (unknown BGMI ID, already in a team, …). */
+export function useInviteByBgmi() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: InviteByBgmiInput) => api.post<PlayerTeam>("/api/player/team/invites", input),
+    onSuccess: (team) => {
+      qc.setQueryData(playerKeys.team, team);
+      toast.success("Invite sent", { description: "They'll see it on their My team page and can accept it." });
+    },
+  });
+}
+
+export const useRevokeInvite = () =>
+  useTeamMutation((v: { id: string; name: string }) => api.del<PlayerTeam>(`/api/player/team/invites/${v.id}`), (v) => `Invite to ${v.name} taken back`, "Couldn't take the invite back");
+
+/** The invitations waiting for me (a player without a team). */
+export function useMyTeamInvites(opts: { enabled?: boolean } = {}) {
+  return useQuery({
+    queryKey: playerKeys.teamInvites,
+    queryFn: async () => (await api.get<ListResponse<MyTeamInvite>>("/api/player/team-invites")).items,
+    enabled: opts.enabled ?? true,
+    refetchInterval: POLL_MS,
+  });
+}
+
+export function useAcceptTeamInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; team: string }) => api.post<PlayerTeam>(`/api/player/team-invites/${v.id}/accept`),
+    onSuccess: async (team, v) => {
+      qc.setQueryData(playerKeys.team, team);
+      toast.success(`You're in ${v.team}!`, { description: "Welcome to the squad." });
+      await refreshMembership(qc);
+    },
+    onError: async (err) => {
+      failToast("Couldn't accept the invite")(err);
+      void qc.invalidateQueries({ queryKey: playerKeys.teamInvites });
+    },
+  });
+}
+
+export function useDeclineTeamInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: { id: string; team: string }) => api.post<void>(`/api/player/team-invites/${v.id}/decline`),
+    onSuccess: (_r, v) => {
+      toast.success(`Invite from ${v.team} declined`);
+      void qc.invalidateQueries({ queryKey: playerKeys.teamInvites });
+    },
+    onError: failToast("Couldn't decline the invite"),
+  });
 }

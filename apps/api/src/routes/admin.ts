@@ -14,6 +14,8 @@ import {
   adminRecordingsQuerySchema,
   saveRecipeSchema,
   updateSettingsSchema,
+  createManagerInviteSchema,
+  managerInviteQuerySchema,
 } from "@7xen/shared";
 import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
@@ -26,6 +28,7 @@ import { mountMatchCenter } from "./matchCenter.js";
 import { tournamentManageRouter } from "./tournaments.js";
 import { mountLive } from "./live.js";
 import { mountStation } from "./station.js";
+import { systemHealth } from "../services/system.js";
 import * as recordings from "../services/recordings.js";
 import * as recipes from "../services/recipes.js";
 
@@ -58,6 +61,10 @@ export function adminRouter() {
   r.get("/stats", async (_req, res) => {
     res.json(await admin.adminStats());
   });
+  r.get("/system/health", async (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json(await systemHealth());
+  });
 
   r.get("/managers", async (req, res) => {
     const { q } = parse(searchQuerySchema, req.query);
@@ -68,6 +75,19 @@ export function adminRouter() {
   });
   r.patch("/managers/:id", async (req, res) => {
     res.json(await admin.updateManager(req.params.id, parse(updateManagerSchema, req.body)));
+  });
+  // ---- phase 5b: manager invitations (the invited email becomes a MANAGER on its first Google sign-in) ----
+  r.get("/manager-invites", async (req, res) => {
+    const { status } = parse(managerInviteQuerySchema, req.query);
+    res.json({ items: await admin.listManagerInvites(status) });
+  });
+  r.post("/manager-invites", async (req, res) => {
+    const input = parse(createManagerInviteSchema, req.body);
+    res.status(201).json(await admin.createManagerInvite(input, currentUser(req).id));
+  });
+  r.delete("/manager-invites/:id", async (req, res) => {
+    await admin.revokeManagerInvite(req.params.id);
+    res.status(204).end();
   });
   r.post("/managers/:id/reset-password", async (req, res) => {
     const { password } = parse(resetPasswordSchema, req.body);
@@ -170,7 +190,7 @@ export function adminRouter() {
   });
   // room + recordings of any match (video/poster streaming, uploads on a manager's behalf)
   mountLive(r, true);
-  // phase 4b: 7XEN Station for any match
+  // phase 4b: AirBattleground Station for any match
   mountStation(r, true);
 
   return r;

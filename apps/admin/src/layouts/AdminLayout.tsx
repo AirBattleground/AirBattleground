@@ -233,7 +233,7 @@ function UserMenu({ compact }: { compact: boolean }) {
           <div className="truncate font-medium">{user.displayName}</div>
           <div className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
             <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-primary uppercase">{user.role}</span>
-            <span className="truncate font-mono">@{user.username}</span>
+            {user.username && <span className="truncate font-mono">@{user.username}</span>}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
@@ -241,8 +241,8 @@ function UserMenu({ compact }: { compact: boolean }) {
           variant="destructive"
           onSelect={async () => {
             await logout();
-            toast.success("Signed out. See you next match!");
-            navigate("/login", { replace: true });
+            // everyone signs in on the main app's /login (Google) — not the admin console's own page
+            window.location.replace("/login");
           }}
         >
           <LogOut /> Sign out
@@ -267,8 +267,8 @@ function TopBar({ title, compact }: { title: ReactNode; compact: boolean }) {
       style={{ paddingTop: "env(safe-area-inset-top, 0px)", boxSizing: "content-box" }}
     >
       {compact && (
-        <NavLink to="/" aria-label="7xen admin home" className="-ml-1 shrink-0 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
-          <LogoMark className="size-8" />
+        <NavLink to="/" aria-label="AirBattleground admin home" className="-ml-1 shrink-0 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+          <LogoMark className="h-8" />
         </NavLink>
       )}
       <div className="min-w-0 flex-1">
@@ -332,7 +332,7 @@ export default function AdminLayout() {
 
   const title = titleFor(location.pathname);
   useEffect(() => {
-    document.title = `${title} · 7XEN Admin`;
+    document.title = `${title} · AirBattleground Admin`;
   }, [title]);
 
   return (
@@ -346,11 +346,11 @@ export default function AdminLayout() {
         >
           <div className="h-full overflow-hidden">
             <div className="flex h-full flex-col gap-6 px-3 py-4" style={{ width: FULL }}>
-              <NavLink to="/" aria-label="7xen admin home" className="flex h-10 items-center gap-2.5 rounded-lg pl-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+              <NavLink to="/" aria-label="AirBattleground admin home" className="flex h-10 items-center gap-2.5 rounded-lg pl-2 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
                 <LogoMark />
                 <Fade collapsed={collapsed} className="leading-none">
-                  <span className="block font-display text-2xl font-bold tracking-wider">
-                    7<span className="text-primary">XEN</span>
+                  <span className="block font-display text-xl font-bold tracking-wide">
+                    Air<span className="text-primary">Battleground</span>
                   </span>
                   <span className="mt-0.5 block text-[10px] font-semibold tracking-[0.25em] text-muted-foreground uppercase">Admin Console</span>
                 </Fade>
@@ -359,7 +359,7 @@ export default function AdminLayout() {
               <Fade collapsed={collapsed} className="mt-auto block">
                 <span className="block rounded-xl border bg-card/60 p-3 text-xs text-muted-foreground">
                   <span className="mb-1 block font-display text-sm font-bold text-foreground">You're in control</span>
-                  You create manager logins. Players sign up with Google and make their own teams.
+                  You invite managers. Players sign up with Google and make their own teams.
                   <span className="mt-2 block text-[11px]">
                     <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">Ctrl</kbd> + <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">B</kbd> collapses the menu
                   </span>

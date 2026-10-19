@@ -3,7 +3,7 @@ import { addDays, todayInAppTz, type ExtractionResult } from "@7xen/shared";
 import { extractor } from "../src/lib/extractor.js";
 import { runWorkerOnce } from "../src/services/screenshotWorker.js";
 import { createDemoTournament } from "../src/services/tournaments/demo.js";
-import { adminAgent, createAdminUser, createManager, createTeam, prisma, resetDb, server, type TestAgent } from "./helpers.js";
+import { adminAgent, createAdminUser, createManager, createTeam, playerAgent, prisma, resetDb, server, type TestAgent } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -287,6 +287,31 @@ describe("registration", () => {
     expect(live.body.items[0]).toMatchObject({ id: t2.id, status: "REGISTRATION_CLOSED" });
     const mine = await teams[1]!.agent.get("/api/team/tournaments?scope=mine");
     expect(mine.body.items.map((x: { id: string }) => x.id)).toEqual([t2.id]);
+  });
+});
+
+describe("phase 5c: browsing without a team", () => {
+  it("lists tournaments and shows the hub + stages with an empty 'me'; registering needs a team", async () => {
+    const { mgr, teams } = await world(1);
+    const t = await createPublished(mgr);
+    expect((await register(teams[0]!, t.id)).status).toBe(201);
+    const solo = await playerAgent("solo");
+
+    const list = await solo.agent.get("/api/team/tournaments?scope=open");
+    expect(list.status).toBe(200);
+    expect(list.body.items.map((x: { id: string }) => x.id)).toEqual([t.id]);
+    expect((await solo.agent.get("/api/team/tournaments?scope=mine")).body).toEqual({ items: [] });
+
+    const hub = await solo.agent.get(`/api/team/tournaments/${t.id}`);
+    expect(hub.status).toBe(200);
+    expect(hub.body.me).toMatchObject({ state: "NOT_REGISTERED", entry: null, canRegister: true, rosterWarning: null, groupName: null });
+    expect(hub.body.id).toBe(t.id);
+
+    const st = await solo.agent.get(`/api/team/tournaments/${t.id}/stages/${t.stages[0]!.id}`);
+    expect(st.status).toBe(200);
+
+    const reg = await solo.agent.post(`/api/team/tournaments/${t.id}/entry`).send({ timePreferences: [] });
+    expect([reg.status, reg.body.error.code]).toEqual([403, "NO_TEAM"]);
   });
 });
 

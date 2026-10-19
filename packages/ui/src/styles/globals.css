@@ -405,3 +405,6 @@ html.theme-transition *::after {
   --glow: oklch(0.78 0.14 92 / 0.45);
   --aurora-1: oklch(0.62 0.13 92 / 0.35);
 }
+
+/* AirBattleground logo images follow the brand colour (SVG filter #sx-brand-ink in each app's index.html) */
+.brand-ink { filter: url(#sx-brand-ink); }

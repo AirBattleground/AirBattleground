@@ -16,6 +16,9 @@ import {
   todayInAppTz,
   type AvailabilityResult,
   type CreatePlayerTeamInput,
+  type ImageUrlResponse,
+  type InviteByBgmiInput,
+  type MyTeamInvite,
   type MyJoinRequest,
   type PlayerProfile,
   type PlayerTeam,
@@ -29,7 +32,10 @@ import {
 } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { AppError, conflict, notFound } from "../lib/errors.js";
-import { dateToStr, playerSummarySelect, strToDate, toPlayerSummary } from "../lib/serialize.js";
+import { brandingUrl, dateToStr, playerSummarySelect, strToDate, toPlayerSummary } from "../lib/serialize.js";
+import type { UploadedImage } from "../lib/upload.js";
+import { deleteKey } from "../lib/storage.js";
+import { setTeamLogo } from "./branding.js";
 import { startsAtOf } from "./schedule.js";
 
 type Db = Prisma.TransactionClient | typeof prisma;
@@ -186,6 +192,7 @@ export async function getPlayerTeam(teamId: string, viewerId: string): Promise<P
     include: {
       members: { include: { user: { select: memberUserSelect } }, orderBy: { joinedAt: "asc" } },
       joinRequests: { where: { status: "PENDING" }, include: { user: { select: memberUserSelect } }, orderBy: { createdAt: "asc" } },
+      invites: { where: { status: "PENDING" }, include: { user: { select: memberUserSelect } }, orderBy: { createdAt: "asc" } },
       _count: { select: { suggestions: { where: { status: "OPEN" } } } },
     },
   });
@@ -200,6 +207,7 @@ export async function getPlayerTeam(teamId: string, viewerId: string): Promise<P
     id: t.id,
     name: t.name,
     tag: t.tag,
+    logoUrl: brandingUrl(t.logoKey),
     leaderId: t.leaderId,
     myRole: me.role,
     members,
@@ -212,6 +220,9 @@ export async function getPlayerTeam(teamId: string, viewerId: string): Promise<P
           message: r.message,
           createdAt: r.createdAt.toISOString(),
         }))
+      : [],
+    invites: leader
+      ? t.invites.map((i) => ({ id: i.id, player: { ...toPlayerSummary(i.user), bgmiId: i.user.bgmiId }, createdAt: i.createdAt.toISOString() }))
       : [],
     openSuggestions: t._count.suggestions,
     createdAt: t.createdAt.toISOString(),
@@ -239,6 +250,7 @@ export async function createTeam(userId: string, input: CreatePlayerTeamInput): 
         await tx.teamMember.create({ data: { teamId: team.id, userId, role: "LEADER" } });
         // a player who starts a team no longer wants to join another one
         await tx.teamJoinRequest.updateMany({ where: { userId, status: "PENDING" }, data: { status: "CANCELLED", decidedAt: new Date() } });
+        await tx.teamInvite.updateMany({ where: { userId, status: "PENDING" }, data: { status: "REVOKED", decidedAt: new Date() } });
         return team.id;
       }, TX_OPTS),
     );
@@ -296,7 +308,8 @@ export async function deleteTeam(teamId: string, opts: { checkEntries: boolean }
         : "This team is still in a tournament. Withdraw from it first.",
     );
   }
-  await prisma.team.delete({ where: { id: teamId } });
+  const team = await prisma.team.delete({ where: { id: teamId }, select: { logoKey: true } });
+  if (team.logoKey) await deleteKey(team.logoKey);
 }
 
 export async function disbandMyTeam(userId: string) {
@@ -427,6 +440,7 @@ export async function approveJoinRequest(userId: string, id: string): Promise<Pl
     await tx.teamMember.create({ data: { teamId: m.teamId, userId: r.userId, role: "MEMBER" } });
     await tx.teamJoinRequest.update({ where: { id }, data: { status: "APPROVED", decidedAt: new Date() } });
     await tx.teamJoinRequest.updateMany({ where: { userId: r.userId, status: "PENDING", id: { not: id } }, data: { status: "CANCELLED", decidedAt: new Date() } });
+    await tx.teamInvite.updateMany({ where: { userId: r.userId, status: "PENDING" }, data: { status: "REVOKED", decidedAt: new Date() } });
   }, TX_OPTS);
   return getPlayerTeam(m.teamId, userId);
 }
@@ -437,4 +451,92 @@ export async function rejectJoinRequest(userId: string, id: string): Promise<Pla
   const res = await prisma.teamJoinRequest.updateMany({ where: { id, status: "PENDING" }, data: { status: "REJECTED", decidedAt: new Date() } });
   if (res.count === 0) throw conflict("This request was already answered");
   return getPlayerTeam(m.teamId, userId);
+}
+
+// ---------------------------------------------------------------- team logo
+
+export async function updateTeamLogo(userId: string, img: UploadedImage | null): Promise<ImageUrlResponse> {
+  const m = await requireLeader(userId);
+  return setTeamLogo(m.teamId, img);
+}
+
+// ---------------------------------------------------------------- invite by BGMI ID
+
+const INVITE_NOT_FOUND = "No player has this BGMI ID yet. Ask them to sign in and add it to their profile, then try again.";
+
+export async function inviteByBgmiId(userId: string, input: InviteByBgmiInput): Promise<PlayerTeam> {
+  const m = await requireLeader(userId);
+  const target = await prisma.user.findUnique({ where: { bgmiId: input.bgmiId }, select: { id: true, role: true, isActive: true } });
+  if (!target || target.role !== "PLAYER" || !target.isActive) throw new AppError("NOT_FOUND", INVITE_NOT_FOUND, { bgmiId: INVITE_NOT_FOUND }, 404);
+  if (target.id === userId) throw new AppError("CONFLICT", "That's your own BGMI ID.", { bgmiId: "That's you" });
+  await prisma.$transaction(async (tx) => {
+    await lockTeam(tx, m.teamId);
+    const theirTeam = await tx.teamMember.findUnique({ where: { userId: target.id }, select: { teamId: true } });
+    if (theirTeam) {
+      throw new AppError("ALREADY_IN_TEAM", theirTeam.teamId === m.teamId ? "This player is already in your team." : MSG.OTHER_ALREADY_IN_TEAM, { bgmiId: "Already in a team" });
+    }
+    if ((await tx.teamMember.count({ where: { teamId: m.teamId } })) >= MAX_TEAM_MEMBERS) throw new AppError("TEAM_FULL", MSG.TEAM_FULL);
+    if (await tx.teamInvite.findFirst({ where: { teamId: m.teamId, userId: target.id, status: "PENDING" }, select: { id: true } })) {
+      throw new AppError("CONFLICT", "You've already invited this player. They need to accept.", { bgmiId: "Already invited" });
+    }
+    if (await tx.teamJoinRequest.findFirst({ where: { teamId: m.teamId, userId: target.id, status: "PENDING" }, select: { id: true } })) {
+      throw new AppError("CONFLICT", "This player has already asked to join. Approve them under Join requests.", { bgmiId: "Already asked to join" });
+    }
+    await tx.teamInvite.create({ data: { teamId: m.teamId, userId: target.id, invitedById: userId } });
+  }, TX_OPTS).catch((e) => {
+    if (isUnique(e)) throw new AppError("CONFLICT", "You've already invited this player. They need to accept.", { bgmiId: "Already invited" });
+    throw e;
+  });
+  return getPlayerTeam(m.teamId, userId);
+}
+
+export async function revokeInvite(userId: string, id: string): Promise<PlayerTeam> {
+  const m = await requireLeader(userId);
+  const res = await prisma.teamInvite.updateMany({ where: { id, teamId: m.teamId, status: "PENDING" }, data: { status: "REVOKED", decidedAt: new Date() } });
+  if (res.count === 0) throw notFound("Invite not found");
+  return getPlayerTeam(m.teamId, userId);
+}
+
+export async function myTeamInvites(userId: string): Promise<MyTeamInvite[]> {
+  const rows = await prisma.teamInvite.findMany({
+    where: { userId, status: "PENDING" },
+    include: {
+      team: { select: { id: true, name: true, tag: true, logoKey: true, _count: { select: { members: true } } } },
+      invitedBy: { select: playerSummarySelect },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  return rows.map((i) => ({
+    id: i.id,
+    team: { id: i.team.id, name: i.team.name, tag: i.team.tag, logoUrl: brandingUrl(i.team.logoKey) },
+    invitedBy: toPlayerSummary(i.invitedBy),
+    memberCount: i.team._count.members,
+    maxMembers: MAX_TEAM_MEMBERS,
+    createdAt: i.createdAt.toISOString(),
+  }));
+}
+
+export async function acceptInvite(userId: string, id: string): Promise<PlayerTeam> {
+  await requireBgmiId(userId);
+  if (await membershipOf(userId)) throw new AppError("ALREADY_IN_TEAM", MSG.ALREADY_IN_TEAM);
+  const inv = await prisma.teamInvite.findUnique({ where: { id }, select: { userId: true, teamId: true } });
+  if (!inv || inv.userId !== userId) throw notFound("Invite not found");
+  await prisma.$transaction(async (tx) => {
+    await lockTeam(tx, inv.teamId);
+    const cur = await tx.teamInvite.findUniqueOrThrow({ where: { id } });
+    if (cur.status !== "PENDING") throw conflict("This invite was taken back or already answered.");
+    if (await tx.teamMember.findUnique({ where: { userId }, select: { id: true } })) throw new AppError("ALREADY_IN_TEAM", MSG.ALREADY_IN_TEAM);
+    if ((await tx.teamMember.count({ where: { teamId: inv.teamId } })) >= MAX_TEAM_MEMBERS) throw new AppError("TEAM_FULL", MSG.TEAM_FULL);
+    await tx.teamMember.create({ data: { teamId: inv.teamId, userId, role: "MEMBER" } });
+    const now = new Date();
+    await tx.teamInvite.update({ where: { id }, data: { status: "ACCEPTED", decidedAt: now } });
+    await tx.teamInvite.updateMany({ where: { userId, status: "PENDING" }, data: { status: "REVOKED", decidedAt: now } });
+    await tx.teamJoinRequest.updateMany({ where: { userId, status: "PENDING" }, data: { status: "CANCELLED", decidedAt: now } });
+  }, TX_OPTS);
+  return getPlayerTeam(inv.teamId, userId);
+}
+
+export async function declineInvite(userId: string, id: string) {
+  const res = await prisma.teamInvite.updateMany({ where: { id, userId, status: "PENDING" }, data: { status: "DECLINED", decidedAt: new Date() } });
+  if (res.count === 0) throw notFound("Invite not found");
 }

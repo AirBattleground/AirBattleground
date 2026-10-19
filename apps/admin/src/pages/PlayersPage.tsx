@@ -104,7 +104,7 @@ export default function PlayersPage() {
       <EmptyState
         icon={<UserRound />}
         title="No players yet"
-        description="Players sign up themselves with “Continue with Google” on the 7xen login page. Share the site link with your community — they'll appear here as soon as they join."
+        description="Players sign up themselves with “Continue with Google” on the AirBattleground login page. Share the site link with your community — they'll appear here as soon as they join."
       />
     );
   else if (isDesktop)

@@ -61,7 +61,7 @@ export function RosterEditor() {
         <div className="flex-1">
           <h3 className="font-display text-xl font-bold">Roster & player IDs</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            Add your players exactly as their names appear in the game. When organisers upload result screenshots, 7xen matches these names to
+            Add your players exactly as their names appear in the game. When organisers upload result screenshots, AirBattleground matches these names to
             fill in your team's finishes automatically. Up to {MAX_ROSTER_PLAYERS} players (including substitutes).
           </p>
         </div>

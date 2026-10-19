@@ -73,7 +73,7 @@ export default function TournamentsPage() {
         <EmptyState
           icon={<Trophy />}
           title="Run your first tournament"
-          description="Pick a size (16, 64, 128 teams…), choose the dates and publish. Teams register first-come-first-served and 7xen handles groups, schedule and who goes through."
+          description="Pick a size (16, 64, 128 teams…), choose the dates and publish. Teams register first-come-first-served and AirBattleground handles groups, schedule and who goes through."
           action={
             <Button asChild size="lg">
               <Link to="/manager/tournaments/new">

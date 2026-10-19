@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { AlertTriangle, Mail, Phone, RefreshCw, SearchX, UserPlus, Users } from "lucide-react";
+import { AlertTriangle, Mail, MailPlus, Phone, RefreshCw, SearchX, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { ManagerRow } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
@@ -16,7 +16,8 @@ import { SearchInput } from "@/components/SearchInput";
 import { ActivePill } from "@/components/StatusPill";
 import { ToggleActiveDialog, type ToggleTarget } from "@/components/ToggleActiveDialog";
 import { useManagers, useResetManagerPassword, useUpdateManager } from "@/features/managers/api";
-import { CreateManagerDialog, EditManagerDialog } from "@/features/managers/dialogs";
+import { EditManagerDialog } from "@/features/managers/dialogs";
+import { InviteManagerDialog, PendingInvites } from "@/features/managers/invites";
 import { useCreateParam } from "@/hooks/use-create-param";
 import { useDebounced } from "@/hooks/use-debounce";
 import { useIsDesktop } from "@/hooks/use-media-query";
@@ -24,12 +25,18 @@ import { errorMessage } from "@/lib/forms";
 import { relativeTime, shortDate } from "@/lib/format";
 
 const TOUR: TourStep[] = [
-  { title: "Managers", description: "Managers run scrims on 7xen. Every manager login is created by you, right here." },
-  { element: '[data-tour="create-manager"]', title: "Add a manager", description: "Click here to make a new manager login. You'll get a ready-to-send message with their username and password.", side: "bottom" },
-  { element: '[data-tour="search"]', title: "Find someone fast", description: "Type a name or username to filter the list.", side: "bottom" },
+  { title: "Managers", description: "Managers run scrims on AirBattleground. You invite them by email — they sign in with Google, no passwords." },
+  { element: '[data-tour="create-manager"]', title: "Invite a manager", description: "Enter their name, organisation and Google email. Then send the invite by email or WhatsApp.", side: "bottom" },
+  { element: '[data-tour="pending-invites"]', title: "Pending invitations", description: "Invites wait here until the person signs in. Send them again or revoke them.", side: "bottom" },
+  { element: '[data-tour="search"]', title: "Find someone fast", description: "Type a name or email to filter the list.", side: "bottom" },
   { element: '[data-tour="managers-list"]', title: "All your managers", description: "See who is active, how many scrims they run and when they last signed in.", side: "top" },
-  { element: '[data-tour="row-actions"]', title: "Manage a login", description: "Edit details, reset a forgotten password, or disable a login from this menu.", side: "left" },
+  { element: '[data-tour="row-actions"]', title: "Manage a login", description: "Edit details or disable a login from this menu.", side: "left" },
 ];
+
+/** How a manager signs in: Google (invited) or their legacy username. */
+function SignIn({ m }: { m: ManagerRow }) {
+  return m.username ? <span className="font-mono">@{m.username}</span> : <span>Google sign-in</span>;
+}
 
 export default function ManagersPage() {
   usePageTour("admin.managers", TOUR);
@@ -47,20 +54,23 @@ export default function ManagersPage() {
   const [toggling, setToggling] = useState<ToggleTarget | null>(null);
 
   const items = list.data?.items ?? [];
-  const actionsFor = (m: ManagerRow, i: number) => (
+  const actionsFor = (m: ManagerRow, i: number) => {
+    const username = m.username;
+    return (
     <RowActions
       name={m.displayName}
       isActive={m.isActive}
       tour={i === 0 ? "row-actions" : undefined}
       onEdit={() => setEditing(m)}
-      onReset={() => setResetting({ id: m.id, name: m.displayName, username: m.username })}
+      onReset={username ? () => setResetting({ id: m.id, name: m.displayName, username }) : undefined}
       onToggle={() => setToggling({ id: m.id, name: m.displayName, isActive: m.isActive })}
     />
-  );
+    );
+  };
 
   const createBtn = (
     <Button size="lg" onClick={() => setCreateOpen(true)} data-tour="create-manager" className="shadow-glow">
-      <UserPlus /> Create manager login
+      <MailPlus /> Invite manager
     </Button>
   );
 
@@ -83,7 +93,7 @@ export default function ManagersPage() {
     body = q ? (
       <EmptyState icon={<SearchX />} title="No managers match" description={`Nothing found for "${q}". Check the spelling or clear the search.`} action={<Button variant="outline" onClick={() => setSearch("")}>Clear search</Button>} />
     ) : (
-      <EmptyState icon={<Users />} title="No managers yet" description="Create the first manager login so they can start scheduling scrims." action={createBtn} />
+      <EmptyState icon={<Users />} title="No managers yet" description="Invite the first manager so they can start scheduling scrims." action={createBtn} />
     );
   else if (isDesktop)
     body = (
@@ -114,7 +124,10 @@ export default function ManagersPage() {
                     <TeamAvatar name={m.displayName} size="sm" className={m.isActive ? "" : "opacity-50 grayscale"} />
                     <div className="min-w-0">
                       <div className="truncate font-medium">{m.displayName}</div>
-                      <div className="truncate font-mono text-xs text-muted-foreground">@{m.username}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {m.orgName && <span className="text-foreground/80">{m.orgName} · </span>}
+                        <SignIn m={m} />
+                      </div>
                     </div>
                   </div>
                 </TableCell>
@@ -151,7 +164,8 @@ export default function ManagersPage() {
               <TeamAvatar name={m.displayName} className={m.isActive ? "" : "opacity-50 grayscale"} />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-medium">{m.displayName}</div>
-                <div className="truncate font-mono text-xs text-muted-foreground">@{m.username}</div>
+                {m.orgName && <div className="truncate text-xs text-foreground/80">{m.orgName}</div>}
+                <div className="truncate text-xs text-muted-foreground"><SignIn m={m} /></div>
               </div>
               {actionsFor(m, i)}
             </div>
@@ -173,14 +187,16 @@ export default function ManagersPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Logins" title="Managers" description="Create and look after the logins of people who run scrims." actions={createBtn} />
+      <PageHeader eyebrow="Accounts" title="Managers" description="Invite the people who run scrims and look after their accounts." actions={createBtn} />
+      <PendingInvites className="mb-8" />
+      <h2 className="mb-3 font-display text-lg font-semibold">All managers</h2>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SearchInput value={search} onChange={setSearch} placeholder="Search managers…" loading={list.isFetching && !list.isPending} data-tour="search" />
         {list.data && <p className="text-sm text-muted-foreground">{items.length} {items.length === 1 ? "manager" : "managers"}{q && " found"}</p>}
       </div>
       <div data-tour="managers-list">{body}</div>
 
-      <CreateManagerDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={setCreds} />
+      <InviteManagerDialog open={createOpen} onOpenChange={setCreateOpen} />
       <EditManagerDialog manager={editing} onClose={() => setEditing(null)} />
       <ResetPasswordDialog
         target={resetting}

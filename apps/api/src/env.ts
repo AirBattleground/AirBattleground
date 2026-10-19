@@ -30,12 +30,37 @@ const envSchema = z.object({
   VIDEO_DIR: z.string().optional(),
   /** phase 4: ffmpeg binary used for video duration/size + poster */
   FFMPEG_PATH: z.string().default("ffmpeg"),
-  /** phase 4b: the 7XEN Station service on the host PC (read lazily by lib/stationClient.ts so tests can override) */
+  /** phase 4b: the AirBattleground Station service on the host PC (read lazily by lib/stationClient.ts so tests can override) */
   STATION_URL: z.string().url().default("http://127.0.0.1:4500"),
   /** shared secret for API ↔ station calls (X-Station-Token); empty = station features disabled */
   STATION_TOKEN: z.string().default(""),
+  /** phase 6: MediaMTX HLS output, read by the API only (it proxies HLS to managers) */
+  MEDIA_HLS_URL: z.string().url().default("http://127.0.0.1:8888"),
+  /** phase 6: the host's /proc for the admin health gauges (Docker mounts it at /host/proc) */
+  HOST_PROC: z.string().default("/proc"),
+  /** phase 6: MediaMTX control API (kick a phone's stream) */
+  MEDIA_API_URL: z.string().url().default("http://127.0.0.1:9997"),
+  /** phase 6b: MediaMTX RTMP as the API reaches it (compositor reads the phone, publishes the output) */
+  MEDIA_RTMP_INTERNAL: z.string().default("rtmp://127.0.0.1:1935"),
+  /** phase 6: RTMP base URL phones publish to (what /api/device/stream/start hands out) */
+  MEDIA_RTMP_URL: z.string().default("rtmp://localhost:1935/live"),
   /** phase 5: Google OAuth client id for "Continue with Google" (players). Empty/unset = Google sign-in off */
   GOOGLE_CLIENT_ID: z
+    .string()
+    .optional()
+    .transform((s) => (s && s.trim() ? s.trim() : null)),
+  /** phase 5b: Google sign-in with this (verified) email = the ADMIN account (lowercase compare) */
+  ADMIN_EMAIL: z
+    .string()
+    .default("airbattleground@gmail.com")
+    .transform((s) => s.trim().toLowerCase()),
+  /** the seeded admin's username (prisma/seed.ts); Google sign-in as ADMIN_EMAIL attaches to this account */
+  ADMIN_USERNAME: z
+    .string()
+    .default("admin")
+    .transform((s) => s.trim().toLowerCase()),
+  /** phase 5b: Google OAuth client secret — optional, unused for now (ID-token sign-in needs only the client id) */
+  GOOGLE_CLIENT_SECRET: z
     .string()
     .optional()
     .transform((s) => (s && s.trim() ? s.trim() : null)),

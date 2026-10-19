@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Hash, Loader2, Shield, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { bgmiIdSchema, createPlayerTeamSchema, updatePlayerTeamSchema } from "@7xen/shared";
+import { bgmiIdSchema, createPlayerTeamSchema, updatePlayerTeamSchema, type PlayerTeam } from "@7xen/shared";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@7xen/ui/components/ui/dialog";
@@ -16,8 +16,21 @@ import { applyApiError, BGMI_HINT, Field } from "../forms";
 const createSchema = createPlayerTeamSchema.extend({ bgmiId: z.union([bgmiIdSchema, z.literal("")]) });
 type CreateValues = z.input<typeof createSchema>;
 
-/** Name + tag (+ BGMI ID when the player hasn't added one yet). The creator becomes the leader. */
-export function CreateTeamDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+/**
+ * Name + tag (+ BGMI ID when the player hasn't added one yet). The creator becomes the leader.
+ * `onCreated` runs once the session knows the new team (e.g. to continue into a registration).
+ */
+export function CreateTeamDialog({
+  open,
+  onOpenChange,
+  onCreated,
+  description,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  onCreated?: (team: PlayerTeam) => void;
+  description?: string;
+}) {
   const { player } = usePlayerSession();
   const needsBgmi = !player?.bgmiId;
   const create = useCreateTeam();
@@ -38,8 +51,9 @@ export function CreateTeamDialog({ open, onOpenChange }: { open: boolean; onOpen
         await updateProfile.mutateAsync({ bgmiId: v.bgmiId });
       }
       const team = await create.mutateAsync({ name: v.name, tag: v.tag });
-      toast.success(`${team.name} is ready!`, { description: "Share your invite link so your squad can join." });
+      toast.success(`${team.name} is ready!`, { description: onCreated ? "You're the leader — let's finish your registration." : "Share your invite link so your squad can join." });
       onOpenChange(false);
+      onCreated?.(team);
     } catch (e) {
       const left = applyApiError(e, setError, ["name", "tag", "bgmiId"]);
       if (left) toast.error("Couldn't create the team", { description: left });
@@ -53,7 +67,7 @@ export function CreateTeamDialog({ open, onOpenChange }: { open: boolean; onOpen
           <DialogTitle className="flex items-center gap-2 font-display text-2xl">
             <Sparkles className="size-5 text-primary" /> Create your team
           </DialogTitle>
-          <DialogDescription>You'll be the team leader — you register for scrims and approve new players.</DialogDescription>
+          <DialogDescription>{description ?? "You'll be the team leader — you register for scrims and approve new players."}</DialogDescription>
         </DialogHeader>
         <div className="flex items-center gap-3 rounded-xl border bg-muted/40 p-3">
           <TeamAvatar name={name || "Team"} tag={(tag || "").toUpperCase() || undefined} size="lg" />
