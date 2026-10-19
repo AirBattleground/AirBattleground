@@ -44,6 +44,8 @@ const TeamLayout = lazy(() => import("@/layouts/TeamLayout"));
 export const router = createBrowserRouter([
   { path: "/", element: <RedirectHome /> },
   { path: "/login", element: <LoginPage /> },
+  { path: "/welcome", element: page(() => import("@/pages/player/WelcomePage")) },
+  { path: "/join/:code", element: page(() => import("@/pages/player/JoinPage")) },
   {
     path: "/manager",
     element: (
@@ -65,7 +67,6 @@ export const router = createBrowserRouter([
       { path: "scrims/:scrimId/:date/matches", element: <SessionRedirect area="manager" /> },
       { path: "scrims/:scrimId/:date/matches/:matchId", element: page(() => import("@/pages/manager/MatchCenterPage")) },
       { path: "scrims/:scrimId/:date/standings", element: page(() => import("@/pages/manager/StandingsPage")) },
-      { path: "teams", element: page(() => import("@/pages/manager/TeamsPage")) },
       { path: "tournaments", element: page(() => import("@/pages/manager/tournaments/TournamentsPage")) },
       { path: "tournaments/new", element: page(() => import("@/pages/manager/tournaments/TournamentWizardPage")) },
       { path: "tournaments/:tournamentId", element: page(() => import("@/pages/manager/tournaments/TournamentDetailPage")) },
@@ -79,7 +80,7 @@ export const router = createBrowserRouter([
   {
     path: "/team",
     element: (
-      <RequireRole role="TEAM">
+      <RequireRole role="PLAYER">
         <Suspense fallback={<FullPageLoader />}>
           <TeamLayout />
         </Suspense>
@@ -90,6 +91,7 @@ export const router = createBrowserRouter([
       { path: "scrims", element: page(() => import("@/pages/team/BrowseScrimsPage")) },
       { path: "registrations", element: page(() => import("@/pages/team/MyRegistrationsPage")) },
       { path: "profile", element: page(() => import("@/pages/team/ProfilePage")) },
+      { path: "my-team", element: page(() => import("@/pages/team/MyTeamPage")) },
       { path: "results", element: page(() => import("@/pages/team/ResultsPage")) },
       { path: "results/:scrimId", element: <Navigate replace to="/team/results" /> },
       { path: "results/:scrimId/:date", element: page(() => import("@/pages/team/SessionResultsPage")) },

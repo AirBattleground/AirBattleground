@@ -1,12 +1,14 @@
 import {
   todayInAppTz,
+  type TeamRole,
   type TeamDashboard,
   type TeamRegistration,
   type TeamScrimOnDate,
 } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { notFound } from "../lib/errors.js";
-import { scrimInclude, strToDate } from "../lib/serialize.js";
+import { captainNameOf, scrimInclude, strToDate } from "../lib/serialize.js";
+import { openScrimSuggestions } from "./suggestions.js";
 import { teamResultsSummary } from "./teamResults.js";
 import { teamRegistrationInclude, toTeamRegistration } from "./registrations.js";
 import { buildScrimOnDate, countsByScrim, mayOccurOnWhere, scrimOccursOn } from "./schedule.js";
@@ -19,12 +21,13 @@ export async function teamScrimsForDate(teamId: string, date: string, now = new 
   });
   const scrims = candidates.filter((s) => scrimOccursOn(s, date)).sort((a, b) => a.startTime.localeCompare(b.startTime));
   const ids = scrims.map((s) => s.id);
-  const [counts, mine] = await Promise.all([
+  const [counts, mine, suggested] = await Promise.all([
     countsByScrim(ids, date),
     prisma.registration.findMany({
       where: { teamId, session: { scrimId: { in: ids }, date: strToDate(date) } },
       select: { id: true, status: true, slotNumber: true, rejectionReason: true, session: { select: { scrimId: true } } },
     }),
+    openScrimSuggestions(teamId, ids, date),
   ]);
   const mineByScrim = new Map(mine.map((r) => [r.session.scrimId, r]));
   return scrims.map((s) => {
@@ -32,6 +35,7 @@ export async function teamScrimsForDate(teamId: string, date: string, now = new 
     return {
       ...buildScrimOnDate(s, date, counts.get(s.id), now),
       myRegistration: r ? { id: r.id, status: r.status, slotNumber: r.slotNumber, rejectionReason: r.rejectionReason } : null,
+      mySuggestion: suggested.get(s.id) ?? null,
     };
   });
 }
@@ -67,11 +71,11 @@ export function teamRegistrations(teamId: string, scope: "upcoming" | "past", no
   return scope === "upcoming" ? upcomingRegistrations(teamId, now) : pastRegistrations(teamId, now);
 }
 
-export async function teamDashboard(teamId: string, now = new Date()): Promise<TeamDashboard> {
-  const team = await prisma.team.findUnique({ where: { id: teamId } });
+export async function teamDashboard(teamId: string, myTeamRole: TeamRole = "MEMBER", now = new Date()): Promise<TeamDashboard> {
+  const team = await prisma.team.findUnique({ where: { id: teamId }, include: { leader: { select: { ign: true, displayName: true } } } });
   if (!team) throw notFound("Team not found");
   const today = todayInAppTz(now);
-  const [upcoming, playedBeforeToday, todayApproved, results] = await Promise.all([
+  const [upcoming, playedBeforeToday, todayApproved, results, openSuggestions] = await Promise.all([
     upcomingRegistrations(teamId, now),
     prisma.registration.count({ where: { teamId, status: "APPROVED", session: { date: { lt: strToDate(today) } } } }),
     prisma.registration.findMany({
@@ -79,10 +83,11 @@ export async function teamDashboard(teamId: string, now = new Date()): Promise<T
       include: teamRegistrationInclude,
     }),
     teamResultsSummary(teamId),
+    prisma.teamSuggestion.count({ where: { teamId, status: "OPEN" } }),
   ]);
   const playedToday = todayApproved.map(toTeamRegistration).filter((r) => new Date(r.startsAt) < now).length;
   return {
-    team: { id: team.id, name: team.name, tag: team.tag, captainName: team.captainName },
+    team: { id: team.id, name: team.name, tag: team.tag, captainName: captainNameOf(team) },
     today,
     nextMatch: upcoming.find((r) => r.status === "APPROVED") ?? null,
     upcoming: upcoming.slice(0, 5),
@@ -92,5 +97,7 @@ export async function teamDashboard(teamId: string, now = new Date()): Promise<T
       totalPlayed: playedBeforeToday + playedToday,
     },
     results,
+    myTeamRole,
+    openSuggestions,
   };
 }

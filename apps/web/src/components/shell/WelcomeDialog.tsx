@@ -31,7 +31,7 @@ export function WelcomeDialog({ user, steps }: { user: SessionUser; steps: Welco
     if (takeTour) window.setTimeout(() => tour.start(), 300);
   };
 
-  const name = user.role === "TEAM" && user.team ? user.team.name : user.displayName;
+  const name = user.role === "PLAYER" ? (user.player?.ign ?? user.displayName) : user.displayName;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && dismiss(false)}>

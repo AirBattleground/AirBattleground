@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  ApiError,
   type CreateTournamentInput,
   type DisqualifyInput,
   type DrawInput,
@@ -14,7 +13,6 @@ import {
   type RescheduleMatchInput,
   type ScheduleConfig,
   type StageDetail,
-  type TeamRequestRow,
   type TeamSummary,
   type TournamentEntryRow,
   type TournamentSummary,
@@ -94,28 +92,15 @@ export function usePromotion(id: string | undefined, stageId: string | undefined
   });
 }
 
-/**
- * Team search for invites. The contract has no manager team search yet, so this tries `GET /api/manager/teams?q=`
- * and falls back to teams the manager already knows (their approved team requests).
- */
+/** Team search for invites: `GET /api/manager/teams?q=` (active teams, max 20). */
 export function useTeamSearch(q: string, enabled: boolean) {
   return useQuery({
     queryKey: tKeys.teamSearch(q),
     enabled,
     staleTime: 30_000,
     queryFn: async (): Promise<TeamSummary[]> => {
-      try {
-        const res = await api.get<ListResponse<TeamSummary>>("/api/manager/teams", { q: q || undefined });
-        return res.items.map((t) => ({ id: t.id, name: t.name, tag: t.tag }));
-      } catch (err) {
-        if (!(err instanceof ApiError) || (err.status !== 404 && err.code !== "NOT_FOUND")) throw err;
-        const reqs = await api.get<ListResponse<TeamRequestRow>>("/api/manager/team-requests");
-        const needle = q.trim().toLowerCase();
-        return reqs.items
-          .filter((r) => r.status === "APPROVED" && r.teamId)
-          .map((r) => ({ id: r.teamId!, name: r.teamName, tag: r.tag }))
-          .filter((t) => !needle || t.name.toLowerCase().includes(needle) || t.tag.toLowerCase().includes(needle));
-      }
+      const res = await api.get<ListResponse<TeamSummary>>("/api/manager/teams", { q: q || undefined });
+      return res.items.map((t) => ({ id: t.id, name: t.name, tag: t.tag }));
     },
   });
 }

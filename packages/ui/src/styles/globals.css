@@ -23,23 +23,24 @@
 :root {
   --radius: 0.75rem;
 
-  --background: oklch(0.985 0.003 260);
-  --foreground: oklch(0.18 0.02 265);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 265);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 265);
+  /* light mode is deliberately soft (no pure white anywhere): cream page, cards a lighter cream, warm ink instead of black */
+  --background: oklch(0.94 0.02 85);
+  --foreground: oklch(0.27 0.018 65);
+  --card: oklch(0.965 0.015 88);
+  --card-foreground: oklch(0.27 0.018 65);
+  --popover: oklch(0.97 0.014 88);
+  --popover-foreground: oklch(0.27 0.018 65);
   --primary: oklch(0.66 0.21 40);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.955 0.006 260);
-  --secondary-foreground: oklch(0.25 0.02 265);
-  --muted: oklch(0.955 0.006 260);
-  --muted-foreground: oklch(0.5 0.02 262);
+  --secondary: oklch(0.91 0.022 82);
+  --secondary-foreground: oklch(0.3 0.02 65);
+  --muted: oklch(0.91 0.022 82);
+  --muted-foreground: oklch(0.48 0.022 65);
   --accent: oklch(0.95 0.025 45);
   --accent-foreground: oklch(0.38 0.12 38);
   --destructive: oklch(0.58 0.22 27);
-  --border: oklch(0.91 0.008 260);
-  --input: oklch(0.89 0.01 260);
+  --border: oklch(0.87 0.022 80);
+  --input: oklch(0.85 0.025 80);
   --ring: oklch(0.66 0.21 40);
 
   --success: oklch(0.62 0.17 150);
@@ -55,21 +56,34 @@
   --chart-4: oklch(0.72 0.16 75);
   --chart-5: oklch(0.58 0.2 320);
 
-  --sidebar: oklch(0.975 0.004 260);
-  --sidebar-foreground: oklch(0.25 0.02 265);
+  --sidebar: oklch(0.925 0.022 84);
+  --sidebar-foreground: oklch(0.29 0.018 65);
   --sidebar-primary: oklch(0.66 0.21 40);
   --sidebar-primary-foreground: oklch(0.99 0 0);
   --sidebar-accent: oklch(0.94 0.02 45);
   --sidebar-accent-foreground: oklch(0.35 0.1 38);
-  --sidebar-border: oklch(0.91 0.008 260);
+  --sidebar-border: oklch(0.86 0.022 80);
   --sidebar-ring: oklch(0.66 0.21 40);
 
   /* decorative */
   --glow: oklch(0.66 0.21 40 / 0.35);
-  --grid-line: oklch(0.2 0.02 265 / 0.05);
+  --grid-line: oklch(0.3 0.03 70 / 0.05);
   --aurora-1: oklch(0.8 0.15 45 / 0.45);
   --aurora-2: oklch(0.75 0.12 240 / 0.3);
   --aurora-3: oklch(0.78 0.14 320 / 0.22);
+
+  /* brand scale (ember) — the logo and text-gradient-brand use it */
+  --brand-50: oklch(0.98 0.02 55);
+  --brand-100: oklch(0.95 0.045 55);
+  --brand-200: oklch(0.9 0.09 52);
+  --brand-300: oklch(0.83 0.14 48);
+  --brand-400: oklch(0.75 0.18 44);
+  --brand-500: oklch(0.68 0.21 40);
+  --brand-600: oklch(0.6 0.21 36);
+  --brand-700: oklch(0.51 0.18 34);
+  --brand-800: oklch(0.43 0.14 33);
+  --brand-900: oklch(0.37 0.11 33);
+  --brand-950: oklch(0.24 0.08 33);
 }
 
 .dark {
@@ -164,18 +178,18 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* fixed brand scale (same in both themes) */
-  --color-brand-50: oklch(0.98 0.02 55);
-  --color-brand-100: oklch(0.95 0.045 55);
-  --color-brand-200: oklch(0.9 0.09 52);
-  --color-brand-300: oklch(0.83 0.14 48);
-  --color-brand-400: oklch(0.75 0.18 44);
-  --color-brand-500: oklch(0.68 0.21 40);
-  --color-brand-600: oklch(0.6 0.21 36);
-  --color-brand-700: oklch(0.51 0.18 34);
-  --color-brand-800: oklch(0.43 0.14 33);
-  --color-brand-900: oklch(0.37 0.11 33);
-  --color-brand-950: oklch(0.24 0.08 33);
+  /* brand scale (same in both themes; set per brand preset in :root / [data-brand]) */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
 
   --shadow-glow: 0 0 0 1px var(--glow), 0 10px 40px -12px var(--glow);
 
@@ -284,3 +298,110 @@ html.theme-transition *::after {
 .driver-popover.sx-tour .driver-popover-arrow-side-right.driver-popover-arrow { border-right-color: var(--popover); }
 .driver-popover.sx-tour .driver-popover-arrow-side-top.driver-popover-arrow { border-top-color: var(--popover); }
 .driver-popover.sx-tour .driver-popover-arrow-side-bottom.driver-popover-arrow { border-bottom-color: var(--popover); }
+
+/* ---------------------------------------------------------------- brand presets
+ * <html data-brand="…"> (set by ThemeProvider + the inline script in index.html). No attribute = the orange defaults
+ * above. A preset re-colours every brand token (primary, ring, accent, sidebar, glow, chart-1, aurora-1,
+ * brand-50…950 → logo), light and dark. data-brand="custom" is generated at runtime from a picked colour
+ * (theme.tsx brandCss → <style id="sx-brand-custom">). */
+
+/* teal: deep teal (#084949) */
+:root[data-brand="teal"] {
+  --primary: oklch(0.42 0.108 195);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.42 0.12 195);
+  --accent: oklch(0.95 0.03 195);
+  --accent-foreground: oklch(0.36 0.072 195);
+  --chart-1: oklch(0.42 0.12 195);
+  --sidebar-primary: oklch(0.42 0.12 195);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.94 0.03 195);
+  --sidebar-accent-foreground: oklch(0.34 0.072 195);
+  --sidebar-ring: oklch(0.42 0.12 195);
+  --glow: oklch(0.42 0.12 195 / 0.35);
+  --aurora-1: oklch(0.8 0.09 195 / 0.45);
+  --brand-50: oklch(0.98 0.012 195);
+  --brand-100: oklch(0.95 0.026 195);
+  --brand-200: oklch(0.9 0.052 195);
+  --brand-300: oklch(0.83 0.08 195);
+  --brand-400: oklch(0.75 0.103 195);
+  --brand-500: oklch(0.68 0.12 195);
+  --brand-600: oklch(0.6 0.12 195);
+  --brand-700: oklch(0.51 0.103 195);
+  --brand-800: oklch(0.43 0.08 195);
+  --brand-900: oklch(0.37 0.062 195);
+  --brand-950: oklch(0.24 0.046 195);
+}
+:root.dark[data-brand="teal"] {
+  --primary: oklch(0.74 0.12 195);
+  --primary-foreground: oklch(0.17 0.04 195);
+  --ring: oklch(0.74 0.12 195);
+  --accent: oklch(0.28 0.045 195);
+  --accent-foreground: oklch(0.9 0.048 195);
+  --chart-1: oklch(0.74 0.12 195);
+  --sidebar-primary: oklch(0.74 0.12 195);
+  --sidebar-primary-foreground: oklch(0.17 0.04 195);
+  --sidebar-accent: oklch(0.26 0.04 195);
+  --sidebar-accent-foreground: oklch(0.95 0.036 195);
+  --sidebar-ring: oklch(0.74 0.12 195);
+  --glow: oklch(0.74 0.12 195 / 0.45);
+  --aurora-1: oklch(0.6 0.12 195 / 0.35);
+}
+
+
+
+
+
+/* teal: dark surfaces lean into the #084949 shade */
+:root.dark[data-brand="teal"] {
+  --background: oklch(0.15 0.022 205);
+  --card: oklch(0.195 0.03 200);
+  --popover: oklch(0.205 0.032 200);
+  --secondary: oklch(0.25 0.035 198);
+  --muted: oklch(0.24 0.032 198);
+  --sidebar: oklch(0.17 0.028 202);
+  --border: oklch(0.85 0.06 195 / 0.1);
+}
+
+/* gold: #ac8d1b (dark text on the button — white on gold is hard to read) */
+:root[data-brand="gold"] {
+  --primary: oklch(0.654 0.126 92);
+  --primary-foreground: oklch(0.2 0.04 92);
+  --ring: oklch(0.654 0.126 92);
+  --accent: oklch(0.95 0.035 92);
+  --accent-foreground: oklch(0.4 0.09 92);
+  --chart-1: oklch(0.654 0.126 92);
+  --sidebar-primary: oklch(0.654 0.126 92);
+  --sidebar-primary-foreground: oklch(0.2 0.04 92);
+  --sidebar-accent: oklch(0.935 0.035 92);
+  --sidebar-accent-foreground: oklch(0.38 0.09 92);
+  --sidebar-ring: oklch(0.654 0.126 92);
+  --glow: oklch(0.654 0.126 92 / 0.35);
+  --aurora-1: oklch(0.82 0.1 92 / 0.45);
+  --brand-50: oklch(0.98 0.013 92);
+  --brand-100: oklch(0.95 0.029 92);
+  --brand-200: oklch(0.9 0.056 92);
+  --brand-300: oklch(0.83 0.087 92);
+  --brand-400: oklch(0.75 0.112 92);
+  --brand-500: oklch(0.68 0.13 92);
+  --brand-600: oklch(0.6 0.13 92);
+  --brand-700: oklch(0.51 0.112 92);
+  --brand-800: oklch(0.43 0.087 92);
+  --brand-900: oklch(0.37 0.068 92);
+  --brand-950: oklch(0.24 0.049 92);
+}
+:root.dark[data-brand="gold"] {
+  --primary: oklch(0.78 0.14 92);
+  --primary-foreground: oklch(0.2 0.04 92);
+  --ring: oklch(0.78 0.14 92);
+  --accent: oklch(0.28 0.045 92);
+  --accent-foreground: oklch(0.9 0.06 92);
+  --chart-1: oklch(0.78 0.14 92);
+  --sidebar-primary: oklch(0.78 0.14 92);
+  --sidebar-primary-foreground: oklch(0.2 0.04 92);
+  --sidebar-accent: oklch(0.26 0.04 92);
+  --sidebar-accent-foreground: oklch(0.95 0.04 92);
+  --sidebar-ring: oklch(0.78 0.14 92);
+  --glow: oklch(0.78 0.14 92 / 0.45);
+  --aurora-1: oklch(0.62 0.13 92 / 0.35);
+}

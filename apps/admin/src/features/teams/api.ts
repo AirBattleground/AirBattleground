@@ -1,7 +1,8 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CreateTeamInput, ListResponse, ResetPasswordInput, TeamRow, UpdateTeamInput } from "@7xen/shared";
+import type { AdminTeamDetail, ListResponse, TeamRow } from "@7xen/shared";
 import { api } from "@/lib/api";
 import { statsKey } from "@/features/stats/api";
+import { playersKey } from "@/features/players/api";
 
 export const teamsKey = ["admin", "teams"] as const;
 
@@ -13,30 +14,26 @@ export function useTeams(q = "") {
   });
 }
 
-function useInvalidate() {
+export function useTeamDetail(id: string | null) {
+  return useQuery({
+    queryKey: [...teamsKey, "detail", id],
+    queryFn: () => api.get<AdminTeamDetail>(`/api/admin/teams/${id}`),
+    enabled: !!id,
+  });
+}
+
+/** Disband = delete the team; members become free agents. 409 CONFLICT while it has upcoming registrations. */
+export function useDisbandTeam() {
   const qc = useQueryClient();
-  return () => Promise.all([qc.invalidateQueries({ queryKey: teamsKey }), qc.invalidateQueries({ queryKey: statsKey })]);
-}
-
-export function useCreateTeam() {
-  const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: (input: CreateTeamInput) => api.post<TeamRow>("/api/admin/teams", input),
-    onSuccess: () => invalidate(),
-  });
-}
-
-/** :id is the team id (not the login user id). */
-export function useUpdateTeam() {
-  const invalidate = useInvalidate();
-  return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: UpdateTeamInput }) => api.patch<TeamRow>(`/api/admin/teams/${id}`, input),
-    onSuccess: () => invalidate(),
-  });
-}
-
-export function useResetTeamPassword() {
-  return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: ResetPasswordInput }) => api.post<void>(`/api/admin/teams/${id}/reset-password`, input),
+    mutationFn: (id: string) => api.del(`/api/admin/teams/${id}`),
+    onSuccess: (_d, id) => {
+      qc.removeQueries({ queryKey: [...teamsKey, "detail", id] });
+      return Promise.all([
+        qc.invalidateQueries({ queryKey: teamsKey }),
+        qc.invalidateQueries({ queryKey: playersKey }),
+        qc.invalidateQueries({ queryKey: statsKey }),
+      ]);
+    },
   });
 }

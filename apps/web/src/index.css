@@ -1,6 +1,9 @@
 @import "@7xen/ui/globals.css";
 @source "./";
 
+/* AirBattleground logo images follow the brand colour (SVG filter #sx-brand-ink in index.html) */
+.brand-ink { filter: url(#sx-brand-ink); }
+
 /* phase 2: indeterminate "reading" bar on screenshots */
 @keyframes sx-scan {
   0% { transform: translateX(-100%); }
@@ -128,4 +131,32 @@
 @media (prefers-reduced-motion: reduce) {
   .tc-card, .tc-card *, .tc-card::before { animation: none !important; transition: none !important; }
   .tc-card { transform: none !important; }
+}
+
+/* ---------------------------------------------------------------- team home ("home-") */
+/* hero poster art: fades into the card towards the text (left on desktop, bottom on phones) */
+.home-hero-art {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 70%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 70%);
+}
+@media (min-width: 768px) {
+  .home-hero-art {
+    -webkit-mask-image: linear-gradient(to left, #000 25%, transparent 100%);
+    mask-image: linear-gradient(to left, #000 25%, transparent 100%);
+  }
+}
+.home-drift { animation: tc-drift 22s ease-in-out infinite alternate; transform-origin: 60% 40%; }
+/* horizontal rails: swipeable without a chunky scrollbar */
+.home-rail { scrollbar-width: none; }
+.home-rail::-webkit-scrollbar { display: none; }
+/* organiser logo wall */
+.home-marquee { animation: home-marquee 40s linear infinite; }
+.home-marquee:hover { animation-play-state: paused; }
+.home-marquee-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+@keyframes home-marquee { to { transform: translateX(calc(-50% - 0.375rem)); } }
+@media (prefers-reduced-motion: reduce) {
+  .home-drift, .home-marquee { animation: none !important; }
 }

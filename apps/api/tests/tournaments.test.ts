@@ -266,7 +266,8 @@ describe("registration", () => {
     const upd = await teams[0]!.agent.put(`/api/team/tournaments/${t2.id}/entry`).send({ timePreferences: [t2.slotOptions[0]!.id, t2.slotOptions[1]!.id] });
     expect(upd.status).toBe(200);
     expect(upd.body.entry.timePreferences).toEqual([t2.slotOptions[0]!.id, t2.slotOptions[1]!.id]);
-    expect(upd.body.rosterWarning).toMatch(/0 players/);
+    // phase 5: roster = team members (just the leader here)
+    expect(upd.body.rosterWarning).toMatch(/1 player;/);
 
     const detail = await teams[1]!.agent.get(`/api/team/tournaments/${t2.id}`);
     expect(detail.body.slotOptions.find((o: { id: string }) => o.id === t2.slotOptions[0]!.id).taken).toBe(1);
@@ -397,10 +398,8 @@ describe("full tournament", () => {
       };
       return ex;
     });
-    for (const tm of bySlot(A)) {
-      const rr = await teamAgent(tm.id).agent.put("/api/team/roster").send({ players: playerNames(tm).map((ign) => ({ ign })) });
-      expect(rr.status).toBe(200);
-    }
+    // phase 5: rosters are the teams' members (no roster PUT any more)
+    expect(teamAgent(bySlot(A)[0]!.id)).toBeTruthy();
     const png = fakePng("t1");
     const up = await mgr.post(`/api/manager/matches/${A.matches[0]!.id}/screenshots`).field("kind", "SLOT_LIST").attach("files", png, { filename: "a.png", contentType: "image/png" });
     expect(up.status, JSON.stringify(up.body)).toBe(201);

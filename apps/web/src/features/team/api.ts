@@ -10,6 +10,7 @@ import {
   type TeamScrimOnDate,
 } from "@7xen/shared";
 import { api } from "@/lib/api";
+import { invalidateSuggestions } from "@/features/player/api";
 
 export type RegistrationScope = "upcoming" | "past";
 
@@ -59,9 +60,10 @@ function trackRegistrations(items: TeamRegistration[]) {
 // ---------------------------------------------------------------------------
 // Queries
 // ---------------------------------------------------------------------------
-export function useTeamDashboard() {
+export function useTeamDashboard(opts: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: teamKeys.dashboard,
+    enabled: opts.enabled ?? true,
     queryFn: async () => {
       const d = await api.get<TeamDashboard>("/api/team/dashboard");
       trackRegistrations(d.nextMatch ? [d.nextMatch, ...d.upcoming] : d.upcoming);
@@ -107,7 +109,22 @@ function invalidateTeam(qc: QueryClient) {
   void qc.invalidateQueries({ queryKey: teamKeys.scrimsAll });
 }
 
+/** Phase 5: the player isn't in a team / isn't its leader (the session refreshes itself; see lib/query). */
+export function teamAccessToast(err: unknown): boolean {
+  if (!(err instanceof ApiError)) return false;
+  if (err.code === "LEADER_ONLY") {
+    toast.error("Only your team leader can do this", { description: "Tap “Ask my leader” instead — they'll get it on their home screen." });
+    return true;
+  }
+  if (err.code === "NO_TEAM") {
+    toast.error("You're not in a team", { description: "Create a team or join one with an invite code first." });
+    return true;
+  }
+  return false;
+}
+
 function registerErrorToast(err: unknown) {
+  if (teamAccessToast(err)) return;
   if (err instanceof ApiError) {
     switch (err.code) {
       case "REGISTRATION_CLOSED":
@@ -162,6 +179,7 @@ export function useRegister() {
       toast.success("Registered! Waiting for the manager to approve.", {
         description: "We'll let you know here as soon as you get a slot.",
       });
+      invalidateSuggestions(qc);
     },
     onSettled: () => invalidateTeam(qc),
   });
@@ -199,6 +217,7 @@ export function useCancelRegistration() {
     },
     onError: (err, _vars, ctx) => {
       for (const [key, list] of ctx?.snapshots ?? []) qc.setQueryData(key, list);
+      if (teamAccessToast(err)) return;
       const msg = err instanceof ApiError ? err.message : "Something went wrong. Please try again.";
       toast.error("Couldn't cancel", { description: msg });
     },

@@ -39,26 +39,26 @@ describe("health & errors", () => {
 
   it("validation errors carry a fields map", async () => {
     const admin = await adminAgent();
-    const res = await admin.post("/api/admin/teams").send({ teamName: "x", tag: "a", username: "A B", password: "1" });
+    const res = await admin.post("/api/admin/managers").send({ displayName: "x", username: "A B", password: "1" });
     expect(res.status).toBe(400);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
-    expect(Object.keys(res.body.error.fields)).toEqual(expect.arrayContaining(["teamName", "tag", "username", "password"]));
+    expect(Object.keys(res.body.error.fields)).toEqual(expect.arrayContaining(["username", "password"]));
   });
 });
 
 describe("auth", () => {
   it("logs in, returns session user, and logs out", async () => {
     const admin = await adminAgent();
-    const { row } = await createTeam(admin, "Team Soul", "soul");
+    await createManager(admin, "boss");
     const agent = newAgent();
-    const res = await agent.post("/api/auth/login").send({ username: "  SOUL ", password: "Team@1234" });
+    const res = await agent.post("/api/auth/login").send({ username: "  BOSS ", password: "Manager@123" });
     expect(res.status).toBe(200);
     expect(res.headers["set-cookie"]?.[0]).toMatch(/^sx_app=.*HttpOnly/i);
-    expect(res.body.user).toMatchObject({ username: "soul", role: "TEAM", team: { id: row.id, name: "Team Soul" } });
+    expect(res.body.user).toMatchObject({ username: "boss", role: "MANAGER", team: null, player: null });
 
     const me = await agent.get("/api/auth/me");
     expect(me.status).toBe(200);
-    expect(me.body.user.team.tag).toBe(row.tag);
+    expect(me.body.user.username).toBe("boss");
 
     expect((await agent.post("/api/auth/logout")).status).toBe(204);
     expect((await agent.get("/api/auth/me")).status).toBe(401);
@@ -102,47 +102,43 @@ describe("auth", () => {
 });
 
 describe("admin", () => {
-  it("creates teams with case/space-insensitive unique names and unique usernames", async () => {
+  it("lists teams with leader + member count, shows detail, disbands; team-login endpoints are gone", async () => {
     const admin = await adminAgent();
-    const res = await admin
-      .post("/api/admin/teams")
-      .send({ teamName: "Team  Soul", tag: "soul", username: "soul", password: "Team@1234", captainName: "Mortal" });
-    expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ name: "Team  Soul", tag: "SOUL", captainName: "Mortal", username: "soul", isActive: true, registrationCount: 0 });
-
-    const dupName = await admin.post("/api/admin/teams").send({ teamName: " team soul ", tag: "TS", username: "soul2", password: "Team@1234" });
-    expect(dupName.status).toBe(409);
-    expect(dupName.body.error).toEqual({
-      code: "CONFLICT",
-      message: "That team name is already taken",
-      fields: { teamName: "That team name is already taken" },
-    });
-    // the transaction rolled back: user soul2 must not exist
-    expect(await prisma.user.findUnique({ where: { username: "soul2" } })).toBeNull();
-
-    const dupUser = await admin.post("/api/admin/teams").send({ teamName: "Other", tag: "OT", username: "soul", password: "Team@1234" });
-    expect(dupUser.status).toBe(409);
-    expect(dupUser.body.error.message).toBe("That username is already taken");
-    expect(dupUser.body.error.fields).toEqual({ username: "That username is already taken" });
-
-    // PATCH: omitted keeps a value, "" clears it
-    const withEmail = await admin.patch(`/api/admin/teams/${res.body.id}`).send({ email: "soul@example.com", phone: "999" });
-    expect(withEmail.body).toMatchObject({ email: "soul@example.com", phone: "999" });
-    const kept = await admin.patch(`/api/admin/teams/${res.body.id}`).send({ captainName: "Mortal" });
-    expect(kept.body.email).toBe("soul@example.com");
-    const cleared = await admin.patch(`/api/admin/teams/${res.body.id}`).send({ email: "", phone: null });
-    expect(cleared.body).toMatchObject({ email: null, phone: null });
-
+    const { row, leaderId } = await createTeam(admin, "Team  Soul", "mortal");
     const list = await admin.get("/api/admin/teams").query({ q: "SOU" });
-    expect(list.body.items).toHaveLength(1);
+    expect(list.body.items).toEqual([
+      { id: row.id, name: "Team  Soul", tag: expect.any(String), leader: { id: leaderId, ign: "mortal", displayName: "mortal", avatarUrl: null }, memberCount: 1, registrationCount: 0, createdAt: expect.any(String) },
+    ]);
+    // search by a member's IGN
+    expect((await admin.get("/api/admin/teams").query({ q: "morT" })).body.items).toHaveLength(1);
+    const detail = await admin.get(`/api/admin/teams/${row.id}`);
+    expect(detail.body).toMatchObject({ id: row.id, leader: { id: leaderId }, members: [{ id: leaderId, role: "LEADER" }], upcomingRegistrations: 0 });
 
-    const upd = await admin.patch(`/api/admin/teams/${res.body.id}`).send({ teamName: "Soul Esports" });
-    expect(upd.body.name).toBe("Soul Esports");
-    const user = await prisma.user.findUnique({ where: { username: "soul" } });
-    expect(user?.displayName).toBe("Soul Esports");
+    expect((await admin.post("/api/admin/teams").send({ teamName: "X", tag: "XX", username: "xx", password: "Team@1234" })).status).toBe(404);
+    expect((await admin.patch(`/api/admin/teams/${row.id}`).send({ teamName: "Y" })).status).toBe(404);
+    expect((await admin.get("/api/admin/team-requests")).status).toBe(404);
 
     const stats = await admin.get("/api/admin/stats");
-    expect(stats.body.teams).toEqual({ total: 1, active: 1 });
+    expect(stats.body).toMatchObject({ teams: { total: 1, active: 1 }, players: { total: 1, active: 1 }, teamRequests: { pending: 0 } });
+
+    expect((await admin.delete(`/api/admin/teams/${row.id}`)).status).toBe(204);
+    expect((await admin.get(`/api/admin/teams/${row.id}`)).status).toBe(404);
+    expect(await prisma.teamMember.count()).toBe(0);
+  });
+
+  it("lists players and can disable one (their session ends)", async () => {
+    const admin = await adminAgent();
+    const { agent, leaderId } = await createTeam(admin, "Team Soul", "mortal");
+    const list = await admin.get("/api/admin/players").query({ q: "soul" });
+    expect(list.body.items).toEqual([
+      expect.objectContaining({ id: leaderId, ign: "mortal", email: "mortal@test.dev", isActive: true, team: expect.objectContaining({ name: "Team Soul", role: "LEADER" }) }),
+    ]);
+    const off = await admin.patch(`/api/admin/players/${leaderId}`).send({ isActive: false });
+    expect(off.body.isActive).toBe(false);
+    expect((await agent.get("/api/player/me")).status).toBe(401);
+    const again = await newAgent().post("/api/auth/dev-login").send({ email: "mortal@test.dev" });
+    expect(again.status).toBe(403);
+    expect(again.body.error.message).toBe("This account is disabled. Contact the admin.");
   });
 
   it("creates managers (409 on taken username) and resets passwords", async () => {

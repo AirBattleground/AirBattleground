@@ -10,7 +10,31 @@ datasource db {
 enum Role {
   ADMIN
   MANAGER
-  TEAM
+  PLAYER
+}
+
+/// phase 5: players & teams (docs/phase5/PLAYERS.md)
+enum TeamRole {
+  LEADER
+  MEMBER
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum SuggestionKind {
+  SCRIM
+  TOURNAMENT
+}
+
+enum SuggestionStatus {
+  OPEN
+  DONE
+  DISMISSED
 }
 
 enum Recurrence {
@@ -23,12 +47,6 @@ enum ScrimStatus {
   ACTIVE
   PAUSED
   ARCHIVED
-}
-
-enum TeamRequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
 }
 
 enum MatchStatus {
@@ -114,16 +132,26 @@ enum RegistrationStatus {
   CANCELLED
 }
 
-/// Every login (admin, manager, team) is a User. Credentials are issued by the admin.
+/// Every account is a User. Admin/managers: username + password issued by the admin. Players (phase 5): Google sign-in.
 model User {
   id           String    @id @default(cuid())
-  /// stored lowercase
-  username     String    @unique
-  passwordHash String
+  /// stored lowercase; null for players
+  username     String?   @unique
+  /// null for players (they sign in with Google)
+  passwordHash String?
   role         Role
   displayName  String
-  email        String?
+  /// players: verified Google email (lowercase, unique). Managers: optional contact email.
+  email        String?   @unique
   phone        String?
+  /// phase 5 players: Google "sub" claim
+  googleSub    String?   @unique
+  /// Google profile picture
+  avatarUrl    String?
+  /// in-game name (required after onboarding)
+  ign          String?
+  /// BGMI character id, digits only (required before creating/joining a team)
+  bgmiId       String?   @unique
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
   /// MANAGER: organisation logo shown to teams on scrims/tournaments (storage key under branding/)
@@ -131,43 +159,104 @@ model User {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  team               Team?
-  scrims             Scrim[]        @relation("ScrimManager")
-  decidedRegistrations Registration[] @relation("RegistrationDecider")
-  teamRequests       TeamRequest[]  @relation("TeamRequestManager")
-  screenshots        Screenshot[]
-  trainingSamples    TrainingSample[]
-  tournaments        Tournament[]   @relation("TournamentManager")
-  recordings         MatchRecording[]
-  recipes            Recipe[]
-  reviewedTeamRequests TeamRequest[] @relation("TeamRequestReviewer")
+  membership              TeamMember?
+  ledTeam                 Team?             @relation("TeamLeader")
+  joinRequests            TeamJoinRequest[]
+  suggestions             TeamSuggestion[]
+  registeredRegistrations Registration[]    @relation("RegistrationRegisteredBy")
+  registeredEntries       TournamentEntry[] @relation("EntryRegisteredBy")
+  matchPlayers            MatchPlayer[]
+  scrims                  Scrim[]           @relation("ScrimManager")
+  decidedRegistrations    Registration[]    @relation("RegistrationDecider")
+  screenshots             Screenshot[]
+  trainingSamples         TrainingSample[]
+  tournaments             Tournament[]      @relation("TournamentManager")
+  recordings              MatchRecording[]
+  recipes                 Recipe[]
 
   @@index([role])
 }
 
+/// phase 5: a group of players with one leader (no login of its own).
 model Team {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
+  id         String   @id @default(cuid())
+  /// one team led per player (= the TeamMember row with role LEADER)
+  leaderId   String   @unique
+  leader     User     @relation("TeamLeader", fields: [leaderId], references: [id])
+  /// 8 chars from INVITE_CODE_ALPHABET; rotatable
+  inviteCode String   @unique
+  /// optional team logo (storage key under branding/)
+  logoKey    String?
+  name       String
   /// teamNameKey(name): trimmed, single-spaced, lowercase — enforces unique team names
-  nameKey     String   @unique
-  tag         String
-  captainName String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  nameKey    String   @unique
+  tag        String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  registrations Registration[]
-  /// set when the team came from a manager's request
-  request       TeamRequest?
-  players       TeamPlayer[]
-  matchTeams    MatchTeam[]
+  registrations     Registration[]
+  members           TeamMember[]
+  joinRequests      TeamJoinRequest[]
+  suggestions       TeamSuggestion[]
+  /// legacy free-text roster (phase 2); no longer written — rosters come from members
+  players           TeamPlayer[]
+  matchTeams        MatchTeam[]
   tournamentEntries TournamentEntry[]
-  groupSlots    GroupTeam[]
-  championOf    Tournament[]   @relation("TournamentChampion")
+  groupSlots        GroupTeam[]
+  championOf        Tournament[]      @relation("TournamentChampion")
 }
 
-/// Team roster (phase 2). Used to match OCR'd names to teams.
+/// phase 5: one row per player in a team. userId is unique: a player is in at most ONE team.
+model TeamMember {
+  id       String   @id @default(cuid())
+  teamId   String
+  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId   String   @unique
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// exactly one LEADER per team (= Team.leaderId)
+  role     TeamRole @default(MEMBER)
+  joinedAt DateTime @default(now())
+
+  @@index([teamId])
+}
+
+/// phase 5: a player asks to join a team via its invite code; the leader approves/rejects.
+/// At most one PENDING per user (partial unique index "TeamJoinRequest_one_pending", see migration).
+model TeamJoinRequest {
+  id        String            @id @default(cuid())
+  teamId    String
+  team      Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    JoinRequestStatus @default(PENDING)
+  message   String?
+  decidedAt DateTime?
+  createdAt DateTime          @default(now())
+
+  @@index([teamId, status])
+  @@index([userId, status])
+}
+
+/// phase 5: a member asks the leader to register for a scrim (scrimId + date) or a tournament.
+model TeamSuggestion {
+  id           String           @id @default(cuid())
+  teamId       String
+  team         Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  fromUserId   String
+  fromUser     User             @relation(fields: [fromUserId], references: [id], onDelete: Cascade)
+  kind         SuggestionKind
+  scrimId      String?
+  /// "YYYY-MM-DD" (IST) for SCRIM
+  date         String?
+  tournamentId String?
+  note         String?
+  status       SuggestionStatus @default(OPEN)
+  createdAt    DateTime         @default(now())
+
+  @@index([teamId, status])
+}
+
+/// Team roster (phase 2). Legacy: kept for old data, no longer written (phase 5 rosters = team members).
 model TeamPlayer {
   id        String   @id @default(cuid())
   teamId    String
@@ -181,59 +270,29 @@ model TeamPlayer {
   @@index([teamId])
 }
 
-/// A manager asks for a team login. It becomes a real User + Team only when the admin approves.
-/// Name/username uniqueness among PENDING requests is enforced by partial unique indexes (see migration).
-model TeamRequest {
-  id              String            @id @default(cuid())
-  managerId       String
-  manager         User              @relation("TeamRequestManager", fields: [managerId], references: [id])
-  teamName        String
-  /// teamNameKey(teamName)
-  nameKey         String
-  tag             String
-  captainName     String?
-  /// stored lowercase
-  username        String
-  passwordHash    String
-  email           String?
-  phone           String?
-  status          TeamRequestStatus @default(PENDING)
-  rejectionReason String?
-  reviewedAt      DateTime?
-  reviewedById    String?
-  reviewedBy      User?             @relation("TeamRequestReviewer", fields: [reviewedById], references: [id])
-  teamId          String?           @unique
-  team            Team?             @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-
-  @@index([status, createdAt])
-  @@index([managerId, status])
-}
-
 /// A scrim definition. It "occurs" on dates according to recurrence; see shared/schedule.ts occursOn().
 model Scrim {
-  id          String      @id @default(cuid())
-  managerId   String
-  manager     User        @relation("ScrimManager", fields: [managerId], references: [id])
-  title       String
-  description String?
+  id           String      @id @default(cuid())
+  managerId    String
+  manager      User        @relation("ScrimManager", fields: [managerId], references: [id])
+  title        String
+  description  String?
   /// GameMap values, one per match, in play order
-  maps        String[]
+  maps         String[]
   /// "HH:mm" in app timezone (IST)
-  startTime   String
-  recurrence  Recurrence
-  startDate   DateTime    @db.Date
-  endDate     DateTime?   @db.Date
-  slotCount   Int
-  firstSlot   Int         @default(1)
-  status      ScrimStatus @default(ACTIVE)
+  startTime    String
+  recurrence   Recurrence
+  startDate    DateTime    @db.Date
+  endDate      DateTime?   @db.Date
+  slotCount    Int
+  firstSlot    Int         @default(1)
+  status       ScrimStatus @default(ACTIVE)
   /// PointsSystem JSON { placement: number[], killPoints }; null = DEFAULT_POINTS_SYSTEM
   pointsSystem Json?
   /// poster image (storage key under branding/)
-  posterKey   String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  posterKey    String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
 
   sessions ScrimSession[]
 
@@ -270,6 +329,9 @@ model Registration {
   decidedAt       DateTime?
   decidedById     String?
   decidedBy       User?              @relation("RegistrationDecider", fields: [decidedById], references: [id])
+  /// phase 5: the leader who registered
+  registeredById  String?
+  registeredBy    User?              @relation("RegistrationRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt
 
@@ -283,25 +345,25 @@ model Registration {
 
 /// One match (map) of a scrim session. Created from scrim.maps when the manager opens the session.
 model Match {
-  id          String       @id @default(cuid())
+  id            String           @id @default(cuid())
   /// a match belongs to a scrim session OR a tournament group (exactly one is set)
-  sessionId   String?
-  session     ScrimSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  groupId     String?
-  group       TournamentGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  scheduledAt DateTime?
-  lobbyIndex  Int?
+  sessionId     String?
+  session       ScrimSession?    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  groupId       String?
+  group         TournamentGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  scheduledAt   DateTime?
+  lobbyIndex    Int?
   /// phase 4: custom room details shared with teams (revealed at roomRevealAt; null = immediately)
   roomId        String?
   roomPassword  String?
   roomRevealAt  DateTime?
   roomUpdatedAt DateTime?
-  number      Int
-  map         String
-  status      MatchStatus  @default(SCHEDULED)
-  publishedAt DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  number        Int
+  map           String
+  status        MatchStatus      @default(SCHEDULED)
+  publishedAt   DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
   screenshots Screenshot[]
   teams       MatchTeam[]
@@ -343,20 +405,20 @@ model Screenshot {
 
 /// A team (slot) in a match: lineup + result. Points are stored when published.
 model MatchTeam {
-  id              String        @id @default(cuid())
+  id              String   @id @default(cuid())
   matchId         String
-  match           Match         @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  match           Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
   slotNumber      Int
   /// resolved from the session's APPROVED registration on this slot (null if none)
   teamId          String?
-  team            Team?         @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  team            Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
   placement       Int?
   kills           Int?
   placementPoints Int?
   killPoints      Int?
   totalPoints     Int?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   players MatchPlayer[]
 
@@ -373,8 +435,12 @@ model MatchPlayer {
   ocrName       String?
   ocrConfidence Float?
   kills         Int?
+  /// phase 5: the player account, when the name matches a team member's IGN
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([matchTeamId, position])
+  @@index([userId])
 }
 
 /// Labelled screenshot used to evaluate/train the extractor. Image lives under STORAGE_DIR.
@@ -475,6 +541,9 @@ model TournamentEntry {
   entryStage      Int         @default(1)
   /// TimeSlotOption ids (ISO start instants), most preferred first; empty = any time
   timePreferences String[]
+  /// phase 5: the leader who registered
+  registeredById  String?
+  registeredBy    User?       @relation("EntryRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
   registeredAt    DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

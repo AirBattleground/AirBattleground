@@ -1,16 +1,37 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import type { Role } from "@7xen/shared";
+import type { Role, SessionUser } from "@7xen/shared";
 import { FullPageLoader } from "@7xen/ui/components/brand/page";
 import { homeFor, useAuth } from "./auth";
 
-/** Only render children for a signed-in user with `role`; otherwise redirect. */
+/** `?next=` targets we honour: only in-app paths the user's role can open (no open redirects). */
+export function safeNext(user: SessionUser, next: unknown): string | null {
+  if (typeof next !== "string" || !next.startsWith("/") || next.startsWith("//")) return null;
+  if (user.role === "MANAGER") return next === "/manager" || next.startsWith("/manager/") ? next : null;
+  if (user.role === "PLAYER") {
+    if (next === "/team" || next.startsWith("/team/") || next.startsWith("/join/")) return next;
+  }
+  return null;
+}
+
+/** Where a freshly signed-in user goes: onboarding first (keeping `next`), else `next`, else home. */
+export function destinationFor(user: SessionUser, next: unknown) {
+  const target = safeNext(user, next);
+  if (user.role === "PLAYER" && user.player?.needsOnboarding) return target ? `/welcome?next=${encodeURIComponent(target)}` : "/welcome";
+  return target ?? homeFor(user);
+}
+
+export const loginWithNext = (path: string) => `/login?next=${encodeURIComponent(path)}`;
+
+/** Only render children for a signed-in user with `role`; otherwise redirect. Players finish onboarding first. */
 export function RequireRole({ role, children }: { role: Role; children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const loc = useLocation();
+  const here = loc.pathname + loc.search;
   if (isLoading) return <FullPageLoader />;
-  if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
+  if (!user) return <Navigate to={loginWithNext(here)} replace state={{ from: loc.pathname }} />;
   if (user.role !== role) return <Navigate to={homeFor(user)} replace />;
+  if (user.role === "PLAYER" && user.player?.needsOnboarding) return <Navigate to={`/welcome?next=${encodeURIComponent(here)}`} replace />;
   return <>{children}</>;
 }
 

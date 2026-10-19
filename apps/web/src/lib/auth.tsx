@@ -1,13 +1,20 @@
 import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ApiError, type AuthResponse, type LoginInput, type SessionUser } from "@7xen/shared";
+import { ApiError, type AuthResponse, type DevLoginInput, type LoginInput, type SessionUser } from "@7xen/shared";
 import { useTour } from "@7xen/ui/tour";
 import { api } from "./api";
 
 interface AuthCtx {
   user: SessionUser | null;
   isLoading: boolean;
+  /** managers: username + password */
   login: (input: LoginInput) => Promise<SessionUser>;
+  /** players: Google Identity Services ID token */
+  loginWithGoogle: (credential: string) => Promise<SessionUser>;
+  /** players, dev only (PLAYER_DEV_LOGIN=1) */
+  devLogin: (input: DevLoginInput) => Promise<SessionUser>;
+  /** re-read the session (after onboarding / team changes) */
+  refresh: () => Promise<SessionUser | null>;
   logout: () => Promise<void>;
 }
 
@@ -33,6 +40,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     mutationFn: (input: LoginInput) => api.post<AuthResponse>("/api/auth/login", input),
   });
 
+  // players: Google / dev sign-in. Going through a mutation re-renders this provider, so the `me` observer
+  // re-attaches to the fresh cache entry after qc.clear() (same as the manager login above).
+  const playerM = useMutation({
+    mutationFn: (v: { path: string; body: unknown }) => api.post<AuthResponse>(v.path, v.body),
+  });
+  const start = async (path: string, body: unknown) => {
+    const { user } = await playerM.mutateAsync({ path, body });
+    qc.clear();
+    qc.setQueryData(ME_KEY, user);
+    return user;
+  };
+
   const user = me.data ?? null;
   useEffect(() => setUserKey(user?.id ?? null), [user?.id, setUserKey]);
 
@@ -44,6 +63,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       qc.clear();
       qc.setQueryData(ME_KEY, user);
       return user;
+    },
+    loginWithGoogle: (credential) => start("/api/auth/google", { credential }),
+    devLogin: (input) => start("/api/auth/dev-login", input),
+    refresh: async () => {
+      await qc.invalidateQueries({ queryKey: ME_KEY });
+      return qc.getQueryData<SessionUser | null>(ME_KEY) ?? null;
     },
     logout: async () => {
       await api.post("/api/auth/logout").catch(() => undefined);
@@ -60,8 +85,17 @@ export function useAuth() {
   return ctx;
 }
 
-/** Home route for a role. */
+/** Home route for a role. Players who haven't picked an IGN yet go to onboarding first. */
 export function homeFor(user: SessionUser | null) {
   if (!user) return "/login";
-  return user.role === "MANAGER" ? "/manager" : "/team";
+  if (user.role === "MANAGER") return "/manager";
+  return user.player?.needsOnboarding ? "/welcome" : "/team";
+}
+
+/** Player helpers: team summary + whether the caller leads it. */
+export function usePlayerSession() {
+  const { user } = useAuth();
+  const player = user?.role === "PLAYER" ? user.player : null;
+  const team = player?.team ?? null;
+  return { user, player, team, isLeader: team?.role === "LEADER", hasTeam: !!team };
 }

@@ -6,14 +6,11 @@ import {
   updateSampleSchema,
   ADMIN_COOKIE,
   createManagerSchema,
-  createTeamSchema,
-  rejectTeamRequestSchema,
   resetPasswordSchema,
-  teamAvailabilityQuerySchema,
-  teamRequestListQuerySchema,
   searchQuerySchema,
+  adminPlayersQuerySchema,
+  adminUpdatePlayerSchema,
   updateManagerSchema,
-  updateTeamSchema,
   adminRecordingsQuerySchema,
   saveRecipeSchema,
   updateSettingsSchema,
@@ -21,7 +18,6 @@ import {
 import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import * as admin from "../services/admin.js";
-import * as teamRequests from "../services/teamRequests.js";
 import * as training from "../services/training.js";
 import { AppError } from "../lib/errors.js";
 import { sendStoredFile } from "../lib/storage.js";
@@ -79,35 +75,26 @@ export function adminRouter() {
     res.status(204).end();
   });
 
-  r.get("/teams/availability", async (req, res) => {
-    res.json(await teamRequests.checkAvailability(parse(teamAvailabilityQuerySchema, req.query)));
-  });
+  // ---- teams (phase 5: groups of players; created by players, not the admin) ----
   r.get("/teams", async (req, res) => {
     const { q } = parse(searchQuerySchema, req.query);
     res.json({ items: await admin.listTeams(q || undefined) });
   });
-  r.post("/teams", async (req, res) => {
-    res.status(201).json(await admin.createTeam(parse(createTeamSchema, req.body)));
+  r.get("/teams/:id", async (req, res) => {
+    res.json(await admin.teamDetail(req.params.id));
   });
-  r.patch("/teams/:id", async (req, res) => {
-    res.json(await admin.updateTeam(req.params.id, parse(updateTeamSchema, req.body)));
-  });
-  r.post("/teams/:id/reset-password", async (req, res) => {
-    const { password } = parse(resetPasswordSchema, req.body);
-    await admin.resetTeamPassword(req.params.id, password);
+  r.delete("/teams/:id", async (req, res) => {
+    await admin.disbandTeam(req.params.id);
     res.status(204).end();
   });
 
-  r.get("/team-requests", async (req, res) => {
-    const { status } = parse(teamRequestListQuerySchema, req.query);
-    res.json({ items: await teamRequests.listTeamRequests(status) });
+  // ---- players (phase 5) ----
+  r.get("/players", async (req, res) => {
+    const { q } = parse(adminPlayersQuerySchema, req.query);
+    res.json({ items: await admin.listPlayers(q || undefined) });
   });
-  r.post("/team-requests/:id/approve", async (req, res) => {
-    res.json(await teamRequests.approveTeamRequest(currentUser(req).id, req.params.id));
-  });
-  r.post("/team-requests/:id/reject", async (req, res) => {
-    const { reason } = parse(rejectTeamRequestSchema, req.body);
-    res.json(await teamRequests.rejectTeamRequest(currentUser(req).id, req.params.id, reason));
+  r.patch("/players/:id", async (req, res) => {
+    res.json(await admin.updatePlayer(req.params.id, parse(adminUpdatePlayerSchema, req.body)));
   });
 
   // ---- phase 2: training center ----

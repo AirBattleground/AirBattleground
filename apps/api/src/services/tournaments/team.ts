@@ -18,6 +18,7 @@ import { computeStandings, type GameMap, type TeamMatchResult } from "@7xen/shar
 import { prisma } from "../../db.js";
 import { AppError, conflict, notFound } from "../../lib/errors.js";
 import { iso } from "../../lib/serialize.js";
+import { markSuggestionsDone } from "../suggestions.js";
 import {
   TOURNAMENT_NOT_FOUND,
   TX_OPTS,
@@ -90,7 +91,7 @@ function checkPreferences(t: TournamentFull, prefs: string[]) {
   });
 }
 
-export async function registerForTournament(teamId: string, id: string, input: RegisterTournamentInput): Promise<MyTournamentStatus> {
+export async function registerForTournament(teamId: string, id: string, input: RegisterTournamentInput, registeredById: string | null = null): Promise<MyTournamentStatus> {
   const t = await loadVisible(id);
   const closed = registrationClosedReason(t);
   if (closed) throw new AppError("REGISTRATION_CLOSED", closed);
@@ -107,10 +108,11 @@ export async function registerForTournament(teamId: string, id: string, input: R
     const waiting = await tx.tournamentEntry.count({ where: { tournamentId: id, status: "WAITLISTED" } });
     // FCFS: a spot only goes straight to a newcomer when nobody is queued ahead of them
     const status = confirmed < fresh.maxTeams && waiting === 0 ? "CONFIRMED" : "WAITLISTED";
-    const data = { type: "REGISTERED" as const, status: status as "CONFIRMED" | "WAITLISTED", entryStage: 1, timePreferences: input.timePreferences, registeredAt: new Date() };
+    const data = { type: "REGISTERED" as const, status: status as "CONFIRMED" | "WAITLISTED", entryStage: 1, timePreferences: input.timePreferences, registeredAt: new Date(), registeredById };
     if (existing) await tx.tournamentEntry.update({ where: { id: existing.id }, data });
     else await tx.tournamentEntry.create({ data: { tournamentId: id, teamId, ...data } });
   }, TX_OPTS);
+  await markSuggestionsDone(teamId, { tournamentId: id });
   return myStatus((await loadTournament(id))!, teamId);
 }
 
@@ -160,10 +162,10 @@ async function myStatus(t: TournamentFull, teamId: string): Promise<MyTournament
   const registerBlockedReason = active ? null : removed ? "The organiser removed your team from this tournament" : closed;
   const entryRow = entry ? toEntryRow(entry, await waitlistPosition(entry)) : null;
 
-  // soft warning: roster smaller than the tournament's team size
-  const rosterSize = await prisma.teamPlayer.count({ where: { teamId } });
+  // soft warning: fewer team members than the tournament's team size (phase 5: roster = team members)
+  const rosterSize = await prisma.teamMember.count({ where: { teamId } });
   const rosterWarning =
-    rosterSize < t.teamSize ? `Your roster has ${rosterSize} player${rosterSize === 1 ? "" : "s"}; this tournament plays ${t.teamSize}-player teams. Add your players on the Roster page.` : null;
+    rosterSize < t.teamSize ? `Your team has ${rosterSize} player${rosterSize === 1 ? "" : "s"}; this tournament plays ${t.teamSize}-player teams. Invite your players from the My team page.` : null;
 
   const base = { ...NONE, entry: entryRow, canRegister, registerBlockedReason, rosterWarning };
   const s1 = t.stages[0];

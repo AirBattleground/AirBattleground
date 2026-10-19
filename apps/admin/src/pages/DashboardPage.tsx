@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, CalendarClock, CircleDashed, Cpu, PlugZap, CheckCircle2, ChevronRight, Hourglass, KeyRound, Shield, ShieldCheck, ShieldPlus, Swords, Trophy, UserPlus, Users } from "lucide-react";
+import { ArrowRight, CalendarClock, CircleDashed, Cpu, PlugZap, CheckCircle2, ChevronRight, Hourglass, KeyRound, Shield, Swords, Trophy, UserPlus, UserRound, Users } from "lucide-react";
 import { PageHeader, StatCard } from "@7xen/ui/components/brand/page";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -10,6 +10,7 @@ import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { ActivePill } from "@/components/StatusPill";
 import { useManagers } from "@/features/managers/api";
+import { usePlayers } from "@/features/players/api";
 import { useAdminStats } from "@/features/stats/api";
 import { useTeams } from "@/features/teams/api";
 import { useAdminTournaments } from "@/features/tournaments/api";
@@ -21,14 +22,14 @@ import { errorMessage } from "@/lib/forms";
 import { relativeTime } from "@/lib/format";
 
 const TOUR: TourStep[] = [
-  { element: '[data-tour="stats"]', title: "Welcome to your control room", description: "These numbers show how many managers and teams are active, scrims running, and registrations waiting for approval.", side: "bottom" },
-  { element: '[data-tour="quick-actions"]', title: "Create logins", description: "Teams and managers can't sign up on their own yet. Make their logins here in a few clicks.", side: "bottom" },
+  { element: '[data-tour="stats"]', title: "Welcome to your control room", description: "These numbers show managers, players and teams on 7xen, scrims running, and registrations waiting for approval.", side: "bottom" },
+  { element: '[data-tour="quick-actions"]', title: "Quick actions", description: "Make a manager login in a few clicks, or see the players who signed up with Google.", side: "bottom" },
   { element: '[data-tour="reader-card"]', title: "Screenshot reader", description: "Claude reads match screenshots for managers. Checked samples here are a test set for spotting what it gets wrong.", side: "bottom" },
   { element: '[data-tour="tournaments-card"]', title: "Tournaments", description: "How many tournaments are live or open for registration right now. Click to see them all.", side: "bottom" },
   { element: '[data-tour="manager-app-card"]', title: "Manager app", description: "Match videos recorded by managers' phones, the room-creation recipes, and how long videos are kept.", side: "bottom" },
   { element: '[data-tour="station-card"]', title: "7XEN Station", description: "The game phone that runs on the server PC. It records and streams matches for managers. Shows whether it's online and what it's doing.", side: "bottom" },
-  { element: '[data-tour="how-it-works"]', title: "How 7xen works", description: "You create logins, managers run scrims, teams register and get slots. That's it!", side: "top" },
-  { element: '[data-tour="nav-managers"]', title: "Your menu", description: "Managers and Teams live here. Open them to search, edit, reset passwords or disable a login.", side: "right" },
+  { element: '[data-tour="how-it-works"]', title: "How 7xen works", description: "You create manager logins, players make teams, managers run scrims and team leaders register for slots. That's it!", side: "top" },
+  { element: '[data-tour="nav-managers"]', title: "Your menu", description: "Managers, Teams and Players live here. Search, reset a manager's password, see a team's members or turn an account off.", side: "right" },
   { element: '[data-tour="tour-btn"]', title: "Need a refresher?", description: "Click here any time to replay the tour for the page you're on.", side: "bottom" },
 ];
 
@@ -36,11 +37,13 @@ const fade = (i: number) => ({ initial: { opacity: 0, y: 12 }, animate: { opacit
 
 function Stats() {
   const { data, isPending, isError, error } = useAdminStats();
+  // AdminStats has no player numbers, so count them from the players list
+  const players = usePlayers();
   if (isPending)
     return (
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5" data-tour="stats">
-        {Array.from({ length: 5 }, (_, i) => (
-          <Skeleton key={i} className={cn("h-[124px] rounded-xl", i === 0 && "col-span-2 sm:col-span-1")} />
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" data-tour="stats">
+        {Array.from({ length: 6 }, (_, i) => (
+          <Skeleton key={i} className="h-[124px] rounded-xl" />
         ))}
       </div>
     );
@@ -58,40 +61,26 @@ function Stats() {
   );
   const cards: { label: string; value: ReactNode; hint: string; icon: ReactNode; tone: "brand" | "success" | "warning" | "info" }[] = [
     { label: "Managers", value: of(data.managers.active, data.managers.total), hint: "Active / total", icon: <Users />, tone: "brand" },
-    { label: "Teams", value: of(data.teams.active, data.teams.total), hint: "Active / total", icon: <Shield />, tone: "info" },
+    {
+      label: "Players",
+      value: players.data ? of(players.data.items.filter((p) => p.isActive).length, players.data.items.length) : "—",
+      hint: players.data ? "Active / total" : players.isError ? "Couldn't load players" : "Loading…",
+      icon: <UserRound />,
+      tone: "info",
+    },
+    { label: "Teams", value: data.teams.total, hint: "Made by players", icon: <Shield />, tone: "info" },
     { label: "Active scrims", value: data.scrims.active, hint: `${data.scrims.total} created in total`, icon: <Swords />, tone: "brand" },
     { label: "Pending", value: data.registrations.pending, hint: "Waiting for manager approval", icon: <Hourglass />, tone: "warning" },
     { label: "Upcoming slots", value: data.registrations.approvedUpcoming, hint: "Approved, not yet played", icon: <CheckCircle2 />, tone: "success" },
   ];
-  const teamsWaiting = data.teamRequests.pending;
   return (
-    <>
-    {teamsWaiting > 0 && (
-      <Link
-        to="/team-requests"
-        className="mb-4 flex items-center gap-3 rounded-xl border border-primary/40 bg-primary/10 p-4 transition-colors hover:bg-primary/15"
-        data-tour="team-approvals-banner"
-      >
-        <span className="rounded-lg bg-primary p-2 text-primary-foreground animate-pulse-ring">
-          <ShieldCheck className="size-5" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="block font-display text-lg font-bold">
-            {teamsWaiting} {teamsWaiting === 1 ? "team is" : "teams are"} waiting for your approval
-          </span>
-          <span className="block text-sm text-muted-foreground">Managers registered them. They can't log in until you approve.</span>
-        </span>
-        <span className="text-sm font-semibold text-primary">Review →</span>
-      </Link>
-    )}
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-5" data-tour="stats">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3" data-tour="stats">
       {cards.map((c, i) => (
-        <motion.div key={c.label} {...fade(i)} className={cn(i === 0 && "col-span-2 sm:col-span-1")}>
+        <motion.div key={c.label} {...fade(i)}>
           <StatCard className="h-full" {...c} />
         </motion.div>
       ))}
     </div>
-    </>
   );
 }
 
@@ -152,9 +141,9 @@ function QuickAction({ to, icon, title, text }: { to: string; icon: ReactNode; t
 }
 
 const STEPS = [
-  { icon: <KeyRound />, title: "You create logins", text: "Make accounts for managers and teams, then send them their details." },
+  { icon: <KeyRound />, title: "You create manager logins", text: "Players sign up themselves with Google and build their own teams." },
   { icon: <CalendarClock />, title: "Managers run scrims", text: "They schedule scrims and approve the teams that sign up." },
-  { icon: <Trophy />, title: "Teams get slots", text: "Teams register for a scrim and get a slot number once approved." },
+  { icon: <Trophy />, title: "Leaders get slots", text: "A team's leader registers for a scrim and gets a slot number once approved." },
 ];
 
 function HowItWorks() {
@@ -183,7 +172,21 @@ function HowItWorks() {
   );
 }
 
-function RecentList({ title, to, empty, loading, rows }: { title: string; to: string; empty: ReactNode; loading: boolean; rows: { id: string; name: string; tag?: string; sub: string; active: boolean; when: string }[] }) {
+function RecentRow({ r }: { r: { name: string; tag?: string; sub: string; active?: boolean; when: string } }) {
+  return (
+    <>
+      <TeamAvatar name={r.name} tag={r.tag} size="sm" />
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium">{r.name}</div>
+        <div className="truncate text-xs text-muted-foreground">{r.sub}</div>
+      </div>
+      <div className="hidden text-right text-xs text-muted-foreground sm:block">{r.when}</div>
+      {r.active !== undefined && <ActivePill active={r.active} />}
+    </>
+  );
+}
+
+function RecentList({ title, to, empty, loading, rows }: { title: string; to: string; empty: ReactNode; loading: boolean; rows: { id: string; name: string; tag?: string; sub: string; active?: boolean; when: string; to?: string }[] }) {
   return (
     <section className="rounded-xl border bg-card shadow-sm">
       <div className="flex items-center justify-between border-b px-5 py-3">
@@ -206,14 +209,16 @@ function RecentList({ title, to, empty, loading, rows }: { title: string; to: st
       ) : rows.length ? (
         <ul className="divide-y">
           {rows.map((r) => (
-            <li key={r.id} className="flex items-center gap-3 px-5 py-3">
-              <TeamAvatar name={r.name} tag={r.tag} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{r.name}</div>
-                <div className="truncate text-xs text-muted-foreground">{r.sub}</div>
-              </div>
-              <div className="hidden text-right text-xs text-muted-foreground sm:block">{r.when}</div>
-              <ActivePill active={r.active} />
+            <li key={r.id}>
+              {r.to ? (
+                <Link to={r.to} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/50">
+                  <RecentRow r={r} />
+                </Link>
+              ) : (
+                <div className="flex items-center gap-3 px-5 py-3">
+                  <RecentRow r={r} />
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -285,7 +290,7 @@ export default function DashboardPage() {
         <Stats />
         <div className="grid gap-4 md:grid-cols-2" data-tour="quick-actions">
           <QuickAction to="/managers?create=1" icon={<UserPlus />} title="Create manager login" text="For someone who will run scrims" />
-          <QuickAction to="/teams?create=1" icon={<ShieldPlus />} title="Create team login" text="For a squad that wants to play" />
+          <QuickAction to="/players" icon={<UserRound />} title="See players" text="Everyone who signed up with Google" />
         </div>
         <TournamentsCard />
         <ReaderCard />
@@ -304,8 +309,15 @@ export default function DashboardPage() {
             title="Newest teams"
             to="/teams"
             loading={teams.isPending}
-            empty={<>No teams yet. <Link to="/teams?create=1" className="font-medium text-primary hover:underline">Create the first one</Link>.</>}
-            rows={newest(teams.data?.items).map((t) => ({ id: t.id, name: t.name, tag: t.tag, sub: `[${t.tag}] · ${t.registrationCount} registrations`, active: t.isActive, when: `Added ${relativeTime(t.createdAt)}` }))}
+            empty="No teams yet. Players create them after signing in with Google."
+            rows={newest(teams.data?.items).map((t) => ({
+              id: t.id,
+              name: t.name,
+              tag: t.tag,
+              sub: `${t.leader ? `Led by ${t.leader.ign || t.leader.displayName} · ` : ""}${t.memberCount} ${t.memberCount === 1 ? "player" : "players"} · ${t.registrationCount} registrations`,
+              when: `Created ${relativeTime(t.createdAt)}`,
+              to: `/teams?team=${t.id}`,
+            }))}
           />
         </div>
       </div>

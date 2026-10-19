@@ -83,12 +83,16 @@ function MineSummary({ t }: { t: TournamentSummary }) {
   );
 }
 
-/** Compact dashboard card: your next tournament match, or an open tournament to join. Renders nothing if neither. */
-export function TournamentsHomeCard() {
+/**
+ * Compact dashboard card: your next tournament match, or an open tournament to join. Renders nothing if neither.
+ * `mineOnly` skips the "open tournament to join" fallback (when the page already shows open tournaments elsewhere).
+ */
+export function TournamentsHomeCard({ mineOnly = false }: { mineOnly?: boolean } = {}) {
   const mine = useTeamTournaments("mine");
   const open = useTeamTournaments("open");
   const active = (mine.data ?? []).find((t) => ACTIVE.has(t.status));
   if (active) return <MineSummary t={active} />;
+  if (mineOnly) return null;
   const mineIds = new Set((mine.data ?? []).map((t) => t.id));
   const join = (open.data ?? []).find((t) => !mineIds.has(t.id));
   if (!join) return null;

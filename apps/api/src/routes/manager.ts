@@ -1,7 +1,6 @@
 import { Router } from "express";
 import {
   searchQuerySchema,
-  createTeamSchema,
   teamAvailabilityQuerySchema,
   APP_COOKIE,
   createScrimSchema,
@@ -19,7 +18,7 @@ import { approveRegistration, rejectRegistration } from "../services/registratio
 import * as branding from "../services/branding.js";
 import * as matches from "../services/matches.js";
 import * as scrims from "../services/scrims.js";
-import * as teamRequests from "../services/teamRequests.js";
+import { checkAvailability } from "../services/players.js";
 import { mountMatchCenter } from "./matchCenter.js";
 import { tournamentManageRouter } from "./tournaments.js";
 import { mountManagerLive } from "./live.js";
@@ -106,13 +105,12 @@ export function managerRouter() {
   // ---- phase 4b: 7XEN Station (emulator recording + live stream) ----
   mountStation(r, false);
 
-  // ---- team login requests (admin approves) ----
-  // team search for tournament invites (active team logins only)
+  // team search for tournament invites (teams whose leader's account is active)
   r.get("/teams", async (req, res) => {
     const { q } = parse(searchQuerySchema, req.query);
     const teams = await prisma.team.findMany({
       where: {
-        user: { isActive: true },
+        leader: { isActive: true },
         ...(q ? { OR: [{ name: { contains: q, mode: "insensitive" as const } }, { tag: { contains: q, mode: "insensitive" as const } }] } : {}),
       },
       select: { id: true, name: true, tag: true },
@@ -123,17 +121,7 @@ export function managerRouter() {
   });
 
   r.get("/teams/availability", async (req, res) => {
-    res.json(await teamRequests.checkAvailability(parse(teamAvailabilityQuerySchema, req.query)));
-  });
-  r.get("/team-requests", async (req, res) => {
-    res.json({ items: await teamRequests.listManagerTeamRequests(currentUser(req).id) });
-  });
-  r.post("/team-requests", async (req, res) => {
-    res.status(201).json(await teamRequests.createTeamRequest(currentUser(req).id, parse(createTeamSchema, req.body)));
-  });
-  r.delete("/team-requests/:id", async (req, res) => {
-    await teamRequests.withdrawTeamRequest(currentUser(req).id, req.params.id);
-    res.status(204).end();
+    res.json(await checkAvailability(parse(teamAvailabilityQuerySchema, req.query)));
   });
 
   return r;

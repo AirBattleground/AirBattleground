@@ -33,6 +33,9 @@ export default defineConfig({
       VIDEO_DIR: path.join(tmpdir(), "7xen-api-test-videos"),
       CLAUDE_BIN: "/nonexistent/claude",
       SCREENSHOT_WORKER: "0",
+      // phase 5: players sign in with the dev email login in tests
+      PLAYER_DEV_LOGIN: "1",
+      GOOGLE_CLIENT_ID: "",
     },
   },
 });

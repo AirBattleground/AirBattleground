@@ -1,14 +1,25 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { ADMIN_COOKIE, APP_COOKIE, loginSchema, mobileLoginSchema, type AuthResponse, type MobileTokenResponse, type Role } from "@7xen/shared";
+import {
+  ADMIN_COOKIE,
+  APP_COOKIE,
+  devLoginSchema,
+  googleLoginSchema,
+  loginSchema,
+  mobileLoginSchema,
+  type AuthConfig,
+  type AuthResponse,
+  type MobileTokenResponse,
+  type Role,
+} from "@7xen/shared";
 import { prisma } from "../db.js";
-import { isTest } from "../env.js";
+import { env, isTest } from "../env.js";
 import { clearSessionCookie, setSessionCookie, signMobileToken } from "../lib/auth.js";
 import { AppError } from "../lib/errors.js";
 import { verifyPassword } from "../lib/password.js";
 import { toSessionUser, userWithTeamInclude } from "../lib/serialize.js";
 import { parse } from "../lib/validate.js";
-import { latestRequestForLogin } from "../services/teamRequests.js";
+import { devLoginEnabled, signInPlayer, verifyGoogleCredential } from "../services/playerAuth.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 
 const WRONG_CREDS = "Wrong username or password";
@@ -31,19 +42,9 @@ function loginLimiter() {
 /** Checks credentials for a login allowed on `roles`; same rules (and messages) for the web and the app. */
 async function checkLogin(username: string, password: string, roles: Role[]) {
   const user = await prisma.user.findUnique({ where: { username }, include: userWithTeamInclude });
-  if (!user && roles.includes("TEAM")) {
-    // a manager registered this team but the admin hasn't approved it (or rejected it)
-    const pending = await latestRequestForLogin(username);
-    if (pending && (await verifyPassword(password, pending.passwordHash))) {
-      throw new AppError(
-        "FORBIDDEN",
-        pending.status === "PENDING"
-          ? "Your team is waiting for admin approval. You can log in once it's approved."
-          : `Your team registration was not approved${pending.rejectionReason ? `: ${pending.rejectionReason}` : ""}. Contact your manager.`,
-      );
-    }
-  }
-  if (!user || !roles.includes(user.role) || !(await verifyPassword(password, user.passwordHash))) {
+  // players have no password (phase 5): they sign in with Google
+  if (user?.role === "PLAYER") throw new AppError("FORBIDDEN", "Players sign in with Google. Tap “Continue with Google”.");
+  if (!user || !user.passwordHash || !roles.includes(user.role) || !(await verifyPassword(password, user.passwordHash))) {
     throw new AppError("UNAUTHENTICATED", WRONG_CREDS);
   }
   if (!user.isActive) throw new AppError("FORBIDDEN", "This account is disabled. Contact the admin.");
@@ -54,10 +55,12 @@ async function checkLogin(username: string, password: string, roles: Role[]) {
 /** Builds login/logout/me for one session cookie and the roles allowed on it. */
 function authRouter(cookieName: string, roles: Role[]) {
   const r = Router();
+  /** username/password logins (players sign in with Google instead) */
+  const passwordRoles = roles.filter((x) => x !== "PLAYER");
 
   r.post("/login", loginLimiter(), async (req, res) => {
     const { username, password } = parse(loginSchema, req.body);
-    const user = await checkLogin(username, password, roles);
+    const user = await checkLogin(username, password, passwordRoles);
     setSessionCookie(res, cookieName, { sub: user.id, role: user.role });
     const body: AuthResponse = { user: toSessionUser(user) };
     res.json(body);
@@ -67,11 +70,34 @@ function authRouter(cookieName: string, roles: Role[]) {
   if (roles.includes("MANAGER")) {
     r.post("/token", loginLimiter(), async (req, res) => {
       const { username, password } = parse(mobileLoginSchema, req.body);
-      const user = await checkLogin(username, password, roles);
+      const user = await checkLogin(username, password, passwordRoles);
       if (user.role !== "MANAGER") throw new AppError("FORBIDDEN", "The 7XEN Manager app is for manager accounts only");
       const { token, expiresAt } = signMobileToken({ sub: user.id, role: user.role });
       const body: MobileTokenResponse = { token, expiresAt: expiresAt.toISOString(), user: toSessionUser(user) };
       res.setHeader("Cache-Control", "no-store");
+      res.json(body);
+    });
+  }
+
+  // ---- phase 5: players (Google sign-in; dev-only email login) ----
+  if (roles.includes("PLAYER")) {
+    r.get("/config", (_req, res) => {
+      const body: AuthConfig = { googleClientId: env.GOOGLE_CLIENT_ID, devLogin: devLoginEnabled() };
+      res.json(body);
+    });
+    r.post("/google", loginLimiter(), async (req, res) => {
+      const { credential } = parse(googleLoginSchema, req.body);
+      const user = await signInPlayer(await verifyGoogleCredential(credential));
+      setSessionCookie(res, cookieName, { sub: user.id, role: user.role });
+      const body: AuthResponse = { user: toSessionUser(user) };
+      res.json(body);
+    });
+    r.post("/dev-login", loginLimiter(), async (req, res) => {
+      if (!devLoginEnabled()) throw new AppError("NOT_FOUND", "Not found");
+      const { email, name } = parse(devLoginSchema, req.body);
+      const user = await signInPlayer({ email, name: name || null, googleSub: null, avatarUrl: null });
+      setSessionCookie(res, cookieName, { sub: user.id, role: user.role });
+      const body: AuthResponse = { user: toSessionUser(user) };
       res.json(body);
     });
   }
@@ -89,5 +115,5 @@ function authRouter(cookieName: string, roles: Role[]) {
   return r;
 }
 
-export const appAuthRouter = () => authRouter(APP_COOKIE, ["MANAGER", "TEAM"]);
+export const appAuthRouter = () => authRouter(APP_COOKIE, ["MANAGER", "PLAYER"]);
 export const adminAuthRouter = () => authRouter(ADMIN_COOKIE, ["ADMIN"]);

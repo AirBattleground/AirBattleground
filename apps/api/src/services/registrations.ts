@@ -12,6 +12,7 @@ import {
   toScrim,
 } from "../lib/serialize.js";
 import { scrimOccursOn, startsAtOf } from "./schedule.js";
+import { markSuggestionsDone } from "./suggestions.js";
 
 const REG_NOT_FOUND = "Registration not found";
 
@@ -150,7 +151,7 @@ export async function ensureSession(scrimId: string, date: string) {
 
 const ALREADY = "You're already registered for this scrim";
 
-export async function registerTeam(teamId: string, scrimId: string, date: string, now = new Date()): Promise<TeamRegistration> {
+export async function registerTeam(teamId: string, scrimId: string, date: string, now = new Date(), registeredById: string | null = null): Promise<TeamRegistration> {
   const scrim = await prisma.scrim.findUnique({ where: { id: scrimId }, include: { ...scrimInclude, manager: { select: { ...organizerSelect, isActive: true } } } });
   if (!scrim || !scrim.manager.isActive || scrim.status === "ARCHIVED") throw notFound("Scrim not found");
   if (!scrimOccursOn(scrim, date)) throw notFound("This scrim doesn't run on that date");
@@ -175,6 +176,7 @@ export async function registerTeam(teamId: string, scrimId: string, date: string
         rejectionReason: null,
         decidedAt: null,
         decidedById: null,
+        registeredById,
         createdAt: now,
       },
     });
@@ -182,13 +184,14 @@ export async function registerTeam(teamId: string, scrimId: string, date: string
     id = existing.id;
   } else {
     try {
-      const created = await prisma.registration.create({ data: { sessionId: session.id, teamId, status: "PENDING" } });
+      const created = await prisma.registration.create({ data: { sessionId: session.id, teamId, status: "PENDING", registeredById } });
       id = created.id;
     } catch (e) {
       if (isUniqueViolation(e)) throw conflict(ALREADY);
       throw e;
     }
   }
+  await markSuggestionsDone(teamId, { scrimId: scrim.id, date });
   const row = await prisma.registration.findUniqueOrThrow({ where: { id }, include: teamRegistrationInclude });
   return toTeamRegistration(row);
 }

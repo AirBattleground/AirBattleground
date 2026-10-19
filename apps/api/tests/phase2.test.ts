@@ -9,6 +9,8 @@ import {
   createManager,
   createScrim,
   createTeam,
+  joinTeam,
+  playerAgent,
   prisma,
   resetDb,
   server,
@@ -73,11 +75,18 @@ async function setup() {
   const admin = await adminAgent();
   const mgr = await createManager(admin, "boss");
   const scrim = await createScrim(mgr.agent);
-  const teams: Record<string, { id: string; agent: TestAgent }> = {};
-  for (const [i, k] of ["A", "B", "C", "D"].entries()) {
-    const t = await createTeam(admin, `Team ${k}`, `team${k.toLowerCase()}`);
-    teams[k] = { id: t.row.id, agent: t.agent };
-    void i;
+  // phase 5: each team = a leader + members whose IGNs are the lineup names (the roster comes from members)
+  const teams: Record<string, { id: string; agent: TestAgent; members: TestAgent[] }> = {};
+  for (const k of ["A", "B", "C", "D"]) {
+    const names = NAMES[k];
+    const t = await createTeam(admin, `Team ${k}`, names ? names[0] : `team${k.toLowerCase()}`);
+    const members: TestAgent[] = [];
+    for (const ign of names?.slice(1) ?? []) {
+      const p = await playerAgent(ign);
+      await joinTeam(t, p);
+      members.push(p.agent);
+    }
+    teams[k] = { id: t.row.id, agent: t.agent, members };
   }
   const session = await prisma.scrimSession.create({ data: { scrimId: scrim.id, date: new Date(`${yesterday()}T00:00:00.000Z`) } });
   for (const [i, k] of ["A", "B", "C"].entries()) {
@@ -244,8 +253,10 @@ describe("worker", () => {
     const fixed = d.teams.find((t: { slotNumber: number }) => t.slotNumber === 4);
     expect(fixed.players[2]).toMatchObject({ name: "BravoThree", ocrName: "BravoThree" });
 
-    const roster = await prisma.teamPlayer.findMany({ where: { teamId: teams.B!.id }, orderBy: { position: "asc" } });
-    expect(roster.map((r) => r.ign)).toEqual(NAMES.B);
+    // phase 5: confirmed names link to the members' player accounts (no TeamPlayer writes)
+    expect(await prisma.teamPlayer.count()).toBe(0);
+    const linked = await prisma.matchPlayer.findMany({ where: { matchTeam: { teamId: teams.B!.id } }, include: { user: { select: { ign: true } } }, orderBy: { position: "asc" } });
+    expect(linked.map((p) => p.user?.ign)).toEqual(NAMES.B);
 
     const samples = await prisma.trainingSample.findMany();
     expect(samples).toHaveLength(1);
@@ -410,26 +421,28 @@ describe("publish, standings, team access", () => {
 });
 
 describe("team roster", () => {
-  it("saves up to 6 players and suggests names from confirmed lineups", async () => {
+  it("is the team's members (leader first); can't be edited; suggests lineup names that aren't members", async () => {
     const { mgr, matches, teams } = await setup();
     const A = teams.A!.agent;
-    expect((await A.get("/api/team/roster")).body).toEqual({ players: [], suggestions: [] });
-    const saved = await A.put("/api/team/roster").send({ players: [{ ign: "AlphaOne", bgmiId: "5123456789" }, { ign: "NewGuy" }] });
-    expect(saved.status).toBe(200);
-    expect(saved.body.players).toEqual([
-      { id: expect.any(String), ign: "AlphaOne", bgmiId: "5123456789" },
-      { id: expect.any(String), ign: "NewGuy", bgmiId: null },
-    ]);
-    const tooMany = await A.put("/api/team/roster").send({ players: Array.from({ length: 7 }, (_, i) => ({ ign: `P${i}` })) });
-    expect(tooMany.status).toBe(400);
-    expect((await A.put("/api/team/roster").send({ players: [{ ign: "X" }, { ign: "x" }] })).status).toBe(400);
+    const r0 = (await A.get("/api/team/roster")).body;
+    expect(r0.players.map((p: { ign: string }) => p.ign)).toEqual(NAMES.A);
+    expect(r0.players[0]).toEqual({ id: expect.any(String), ign: "AlphaOne", bgmiId: expect.stringMatching(/^\d+$/) });
+    expect(r0.suggestions).toEqual([]);
+    // members get LEADER_ONLY, the leader is told the roster is the team now
+    const member = await teams.A!.members[0]!.put("/api/team/roster").send({ players: [{ ign: "X" }] });
+    expect(member.status).toBe(403);
+    expect(member.body.error.code).toBe("LEADER_ONLY");
+    const leader = await A.put("/api/team/roster").send({ players: [{ ign: "X" }] });
+    expect(leader.status).toBe(409);
+    expect(leader.body.error.message).toMatch(/My team page/);
 
-    await mgr.put(`/api/manager/matches/${matches[0]!.id}/lineup`).send(lineupBody(true));
-    // confirm added the lineup names that weren't on the roster (up to 6)
-    const r = (await A.get("/api/team/roster")).body;
-    expect(r.players.map((p: { ign: string }) => p.ign)).toEqual(["AlphaOne", "NewGuy", "AlphaTwo", "AlphaThree", "AlphaFour"]);
-    await A.put("/api/team/roster").send({ players: [{ ign: "AlphaOne" }] });
-    expect((await A.get("/api/team/roster")).body.suggestions).toEqual(["AlphaFour", "AlphaThree", "AlphaTwo"]);
+    const body = lineupBody(true);
+    body.teams[0]!.players = [{ position: 1, name: "alphaone" }, { position: 2, name: "Stranger" }];
+    expect((await mgr.put(`/api/manager/matches/${matches[0]!.id}/lineup`).send(body)).status).toBe(200);
+    expect((await A.get("/api/team/roster")).body.suggestions).toEqual(["Stranger"]);
+    // case-insensitive IGN match links the player account; unknown names stay unlinked
+    const mp = await prisma.matchPlayer.findMany({ where: { matchTeam: { teamId: teams.A!.id } }, orderBy: { position: "asc" } });
+    expect(mp.map((p) => !!p.userId)).toEqual([true, false]);
   });
 });
 

@@ -5,6 +5,7 @@ import type { TeamRegistration } from "@7xen/shared";
 import { SlotChip } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
+import { usePlayerSession } from "@/lib/auth";
 import { useCancelRegistration } from "../api";
 import { dayLabel, formatTime } from "../format";
 import { useNow } from "../useNow";
@@ -36,7 +37,8 @@ export function RegistrationCard({
   const cancel = useCancelRegistration();
   const [open, setOpen] = useState(false);
   const started = now >= new Date(reg.startsAt).getTime();
-  const canCancel = cancellable && !started && (reg.status === "PENDING" || reg.status === "APPROVED");
+  const { isLeader } = usePlayerSession();
+  const canCancel = cancellable && isLeader && !started && (reg.status === "PENDING" || reg.status === "APPROVED");
   const tour = (name: string) => (tourAnchor ? { "data-tour": name } : {});
 
   return (

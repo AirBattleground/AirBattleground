@@ -6,8 +6,8 @@ import {
   type PointsSystem,
 } from "@7xen/shared";
 import type {
-  TeamRequestRow,
   GameMap,
+  PlayerSummary,
   ManagerRow,
   OrganizerRef,
   Registration,
@@ -45,21 +45,49 @@ export const scrimInclude = {
 } satisfies Prisma.ScrimInclude;
 export type ScrimWithManager = Prisma.ScrimGetPayload<{ include: typeof scrimInclude }>;
 
-export const teamSelect = { id: true, name: true, tag: true, captainName: true } satisfies Prisma.TeamSelect;
+/** phase 5: small player identity (PlayerSummary) */
+export const playerSummarySelect = { id: true, ign: true, displayName: true, avatarUrl: true } satisfies Prisma.UserSelect;
+export const toPlayerSummary = (u: { id: string; ign: string | null; displayName: string; avatarUrl: string | null }): PlayerSummary => ({
+  id: u.id,
+  ign: u.ign,
+  displayName: u.displayName,
+  avatarUrl: u.avatarUrl,
+});
+
+/** Team + its leader's IGN (shown where the old free-text captainName was). */
+export const teamSelect = { id: true, name: true, tag: true, leader: { select: { ign: true, displayName: true } } } satisfies Prisma.TeamSelect;
+/** phase 5: the old `captainName` field = the leader's IGN */
+export const captainNameOf = (t: { leader: { ign: string | null; displayName: string } | null }): string | null =>
+  t.leader ? (t.leader.ign ?? t.leader.displayName) : null;
 export const registrationInclude = { team: { select: teamSelect } } satisfies Prisma.RegistrationInclude;
 type RegistrationWithTeam = Prisma.RegistrationGetPayload<{ include: typeof registrationInclude }>;
 
-export const userWithTeamInclude = { team: { select: { id: true, name: true, tag: true } } } satisfies Prisma.UserInclude;
+/** Session user: a player's team comes from their membership (phase 5). */
+export const userWithTeamInclude = {
+  membership: { select: { role: true, team: { select: { id: true, name: true, tag: true } } } },
+} satisfies Prisma.UserInclude;
 export type UserWithTeam = Prisma.UserGetPayload<{ include: typeof userWithTeamInclude }>;
 
 // ---------- mappers ----------
 export function toSessionUser(u: UserWithTeam): SessionUser {
+  const m = u.role === "PLAYER" ? u.membership : null;
   return {
     id: u.id,
     username: u.username,
     role: u.role,
     displayName: u.displayName,
-    team: u.role === "TEAM" && u.team ? { id: u.team.id, name: u.team.name, tag: u.team.tag } : null,
+    team: m ? toTeamSummary(m.team) : null,
+    player:
+      u.role === "PLAYER"
+        ? {
+            ign: u.ign,
+            bgmiId: u.bgmiId,
+            avatarUrl: u.avatarUrl,
+            email: u.email,
+            team: m ? { ...toTeamSummary(m.team), role: m.role } : null,
+            needsOnboarding: !u.ign,
+          }
+        : null,
   };
 }
 
@@ -97,7 +125,7 @@ export function toRegistration(r: RegistrationWithTeam): Registration {
     rejectionReason: r.rejectionReason,
     createdAt: r.createdAt.toISOString(),
     decidedAt: iso(r.decidedAt),
-    team: { ...toTeamSummary(r.team), captainName: r.team.captainName },
+    team: { ...toTeamSummary(r.team), captainName: captainNameOf(r.team) },
   };
 }
 
@@ -107,7 +135,7 @@ type ManagerWithCount = Prisma.UserGetPayload<{ include: typeof managerRowInclud
 export function toManagerRow(u: ManagerWithCount): ManagerRow {
   return {
     id: u.id,
-    username: u.username,
+    username: u.username ?? "",
     displayName: u.displayName,
     email: u.email,
     phone: u.phone,
@@ -119,47 +147,19 @@ export function toManagerRow(u: ManagerWithCount): ManagerRow {
 }
 
 export const teamRowInclude = {
-  user: true,
-  _count: { select: { registrations: true } },
-  request: { select: { manager: { select: { id: true, displayName: true } } } },
+  leader: { select: playerSummarySelect },
+  _count: { select: { registrations: true, members: true } },
 } satisfies Prisma.TeamInclude;
-type TeamWithUser = Prisma.TeamGetPayload<{ include: typeof teamRowInclude }>;
+type TeamWithLeader = Prisma.TeamGetPayload<{ include: typeof teamRowInclude }>;
 
-export function toTeamRow(t: TeamWithUser): TeamRow {
+export function toTeamRow(t: TeamWithLeader): TeamRow {
   return {
     id: t.id,
-    userId: t.userId,
     name: t.name,
     tag: t.tag,
-    captainName: t.captainName,
-    username: t.user.username,
-    email: t.user.email,
-    phone: t.user.phone,
-    isActive: t.user.isActive,
+    leader: t.leader ? toPlayerSummary(t.leader) : null,
+    memberCount: t._count.members,
     registrationCount: t._count.registrations,
-    lastLoginAt: iso(t.user.lastLoginAt),
     createdAt: t.createdAt.toISOString(),
-    requestedBy: t.request?.manager ?? null,
-  };
-}
-
-export const teamRequestInclude = { manager: { select: { id: true, displayName: true } } } satisfies Prisma.TeamRequestInclude;
-type TeamRequestWithManager = Prisma.TeamRequestGetPayload<{ include: typeof teamRequestInclude }>;
-
-export function toTeamRequestRow(r: TeamRequestWithManager): TeamRequestRow {
-  return {
-    id: r.id,
-    status: r.status,
-    teamName: r.teamName,
-    tag: r.tag,
-    captainName: r.captainName,
-    username: r.username,
-    email: r.email,
-    phone: r.phone,
-    rejectionReason: r.rejectionReason,
-    createdAt: r.createdAt.toISOString(),
-    reviewedAt: iso(r.reviewedAt),
-    manager: r.manager,
-    teamId: r.teamId,
   };
 }

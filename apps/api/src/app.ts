@@ -13,6 +13,7 @@ import { adminAuthRouter, appAuthRouter } from "./routes/auth.js";
 import { managerRouter } from "./routes/manager.js";
 import { mediaRouter } from "./routes/media.js";
 import { teamRouter } from "./routes/team.js";
+import { playerRouter } from "./routes/player.js";
 import { appReleaseRouter } from "./routes/appRelease.js";
 import { internalStationRouter, liveRouter } from "./routes/station.js";
 
@@ -28,6 +29,14 @@ function uniqueError(err: Prisma.PrismaClientKnownRequestError): { message: stri
   if (t.includes("username")) {
     const message = "That username is already taken";
     return { message, fields: { username: message } };
+  }
+  if (t.includes("email")) {
+    const message = "That email is already used by another account";
+    return { message, fields: { email: message } };
+  }
+  if (t.includes("bgmiid")) {
+    const message = "This BGMI ID is already linked to another account";
+    return { message, fields: { bgmiId: message } };
   }
   if (t.includes("slotnumber")) return { message: "That slot was just taken. Please try again." };
   if (t.includes("teamid")) return { message: "You're already registered for this scrim" };
@@ -96,6 +105,7 @@ export function createApp() {
   app.use(`${API_PREFIX}/admin`, adminRouter());
   app.use(`${API_PREFIX}/manager`, managerRouter());
   app.use(`${API_PREFIX}/team`, teamRouter());
+  app.use(`${API_PREFIX}/player`, playerRouter());
   app.use(`${API_PREFIX}/media`, mediaRouter());
   app.use(`${API_PREFIX}/app`, appReleaseRouter());
   // phase 4b: 7XEN Station live streams (viewer auth inside) + station → API hooks (X-Station-Token)

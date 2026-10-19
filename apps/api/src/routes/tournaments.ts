@@ -115,7 +115,12 @@ export function tournamentManageRouter(admin: boolean) {
 }
 
 /** Team routes, mounted at /api/team/tournaments. `teamIdOf` resolves the signed-in team. */
-export function tournamentTeamRouter(teamIdOf: (req: Request) => string) {
+export function tournamentTeamRouter(
+  teamIdOf: (req: Request) => string,
+  /** phase 5: team id for mutations (leader only) */
+  leaderTeamIdOf: (req: Request) => string,
+  userIdOf: (req: Request) => string,
+) {
   const r = Router();
   const p = (req: Request, k: string) => req.params[k] as string;
   r.get("/", async (req, res) => {
@@ -126,13 +131,13 @@ export function tournamentTeamRouter(teamIdOf: (req: Request) => string) {
     res.json(await team.teamTournamentDetail(teamIdOf(req), p(req, "id")));
   });
   r.post("/:id/entry", async (req, res) => {
-    res.status(201).json(await team.registerForTournament(teamIdOf(req), p(req, "id"), parse(registerTournamentSchema, req.body)));
+    res.status(201).json(await team.registerForTournament(leaderTeamIdOf(req), p(req, "id"), parse(registerTournamentSchema, req.body), userIdOf(req)));
   });
   r.put("/:id/entry", async (req, res) => {
-    res.json(await team.updatePreferences(teamIdOf(req), p(req, "id"), parse(registerTournamentSchema, req.body)));
+    res.json(await team.updatePreferences(leaderTeamIdOf(req), p(req, "id"), parse(registerTournamentSchema, req.body)));
   });
   r.delete("/:id/entry", async (req, res) => {
-    await team.withdrawFromTournament(teamIdOf(req), p(req, "id"));
+    await team.withdrawFromTournament(leaderTeamIdOf(req), p(req, "id"));
     res.status(204).end();
   });
   r.get("/:id/stages/:stageId", async (req, res) => {

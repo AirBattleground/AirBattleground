@@ -3,10 +3,12 @@
  * All paths are relative to the API origin and served under /api.
  *
  * Auth uses an httpOnly session cookie (JWT). Two separate cookies so admin and app
- * sessions never mix:  sx_app (MANAGER | TEAM)  and  sx_admin (ADMIN).
+ * sessions never mix:  sx_app (MANAGER | PLAYER)  and  sx_admin (ADMIN).
+ * PHASE 5: players (Google sign-in), player teams, join requests, suggestions and the admin player endpoints are
+ * catalogued in players.ts. TEAM logins and team requests are removed (lines below marked "removed in phase 5").
  *
  * APP AUTH (cookie sx_app)
- *   POST   /api/auth/login                 LoginInput            → AuthResponse   (MANAGER|TEAM only)
+ *   POST   /api/auth/login                 LoginInput            → AuthResponse   (MANAGER only; players use /api/auth/google — players.ts)
  *   POST   /api/auth/logout                                      → 204
  *   GET    /api/auth/me                                          → AuthResponse
  *
@@ -22,13 +24,13 @@
  *   PATCH  /api/admin/managers/:id         UpdateManagerInput    → ManagerRow
  *   POST   /api/admin/managers/:id/reset-password ResetPasswordInput → 204
  *   GET    /api/admin/teams?q=                                   → ListResponse<TeamRow>
- *   POST   /api/admin/teams                CreateTeamInput       → TeamRow        (409 CONFLICT name/username taken; error.fields says which: teamName | username)
+ *   POST   /api/admin/teams                CreateTeamInput       → TeamRow        (409 CONFLICT name/username taken; error.fields says which: teamName | username)   [removed in phase 5]
  *   PATCH  /api/admin/teams/:id            UpdateTeamInput       → TeamRow        (:id = team id)
- *   POST   /api/admin/teams/:id/reset-password ResetPasswordInput → 204
- *   GET    /api/admin/teams/availability?teamName=&username=        → TeamAvailability
- *   GET    /api/admin/team-requests?status=PENDING|APPROVED|REJECTED → ListResponse<TeamRequestRow> (default PENDING; oldest first for PENDING)
- *   POST   /api/admin/team-requests/:id/approve                     → TeamRow  (creates the login; 409 CONFLICT if name/username got taken meanwhile)
- *   POST   /api/admin/team-requests/:id/reject   RejectTeamRequestInput → TeamRequestRow (frees the name/username)
+ *   POST   /api/admin/teams/:id/reset-password ResetPasswordInput → 204   [removed in phase 5]
+ *   GET    /api/admin/teams/availability?teamName=&username=        → TeamAvailability   [removed in phase 5]
+ *   GET    /api/admin/team-requests?status=PENDING|APPROVED|REJECTED → ListResponse<TeamRequestRow> (default PENDING; oldest first for PENDING)   [removed in phase 5]
+ *   POST   /api/admin/team-requests/:id/approve                     → TeamRow  (creates the login; 409 CONFLICT if name/username got taken meanwhile)   [removed in phase 5]
+ *   POST   /api/admin/team-requests/:id/reject   RejectTeamRequestInput → TeamRequestRow (frees the name/username)   [removed in phase 5]
  *
  * MANAGER (role MANAGER; only sees own scrims)
  *   GET    /api/manager/dashboard                                → ManagerDashboard
@@ -41,9 +43,9 @@
  *   GET    /api/manager/requests                                 → ListResponse<PendingRequest> (all PENDING for upcoming sessions, soonest first)
  *   POST   /api/manager/registrations/:id/approve                → Registration   (409 SLOTS_FULL; auto-allots lowest free slot)
  *   POST   /api/manager/registrations/:id/reject  RejectRegistrationInput → Registration (works on PENDING or APPROVED; frees slot)
- *   GET    /api/manager/team-requests                            → ListResponse<TeamRequestRow> (own requests, newest first)
- *   POST   /api/manager/team-requests      CreateTeamInput       → TeamRequestRow (201; 409 CONFLICT + fields teamName|username if taken or pending elsewhere)
- *   DELETE /api/manager/team-requests/:id                        → 204 (withdraw; PENDING only)
+ *   GET    /api/manager/team-requests                            → ListResponse<TeamRequestRow> (own requests, newest first)   [removed in phase 5]
+ *   POST   /api/manager/team-requests      CreateTeamInput       → TeamRequestRow (201; 409 CONFLICT + fields teamName|username if taken or pending elsewhere)   [removed in phase 5]
+ *   DELETE /api/manager/team-requests/:id                        → 204 (withdraw; PENDING only)   [removed in phase 5]
  *   GET    /api/manager/teams?q=                                   → ListResponse<TeamSummary> (active teams, max 20; for tournament invites)
  *   GET    /api/manager/teams/availability?teamName=&username=   → TeamAvailability
  *

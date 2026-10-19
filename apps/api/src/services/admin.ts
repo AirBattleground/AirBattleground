@@ -1,42 +1,45 @@
 import type { Prisma } from "@prisma/client";
 import {
-  teamNameKey,
+  type AdminPlayerRow,
   type AdminStats,
+  type AdminTeamDetail,
+  type AdminUpdatePlayerInput,
   type CreateManagerInput,
-  type CreateTeamInput,
   type ManagerRow,
   type TeamRow,
   type UpdateManagerInput,
-  type UpdateTeamInput,
 } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { notFound } from "../lib/errors.js";
 import { hashPassword } from "../lib/password.js";
-import { managerRowInclude, teamRowInclude, toManagerRow, toTeamRow } from "../lib/serialize.js";
+import { iso, managerRowInclude, playerSummarySelect, teamRowInclude, toManagerRow, toPlayerSummary, toTeamRow } from "../lib/serialize.js";
+import { countUpcomingTeamRegistrations, deleteTeam } from "./players.js";
 import { countUpcomingRegistrations } from "./schedule.js";
-import { assertAvailable, countPendingTeamRequests } from "./teamRequests.js";
 
 const contains = (q: string) => ({ contains: q, mode: "insensitive" as const });
 
 // ---------- stats ----------
 export async function adminStats(now = new Date()): Promise<AdminStats> {
-  const [mTotal, mActive, tTotal, tActive, sTotal, sActive, pending, approvedUpcoming, pendingTeamRequests] = await Promise.all([
+  const [mTotal, mActive, tTotal, tActive, sTotal, sActive, pending, approvedUpcoming, pTotal, pActive] = await Promise.all([
     prisma.user.count({ where: { role: "MANAGER" } }),
     prisma.user.count({ where: { role: "MANAGER", isActive: true } }),
     prisma.team.count(),
-    prisma.team.count({ where: { user: { isActive: true } } }),
+    prisma.team.count({ where: { leader: { isActive: true } } }),
     prisma.scrim.count(),
     prisma.scrim.count({ where: { status: "ACTIVE" } }),
     countUpcomingRegistrations({ status: "PENDING" }, now),
     countUpcomingRegistrations({ status: "APPROVED" }, now),
-    countPendingTeamRequests(),
+    prisma.user.count({ where: { role: "PLAYER" } }),
+    prisma.user.count({ where: { role: "PLAYER", isActive: true } }),
   ]);
   return {
     managers: { total: mTotal, active: mActive },
     teams: { total: tTotal, active: tActive },
     scrims: { total: sTotal, active: sActive },
     registrations: { pending, approvedUpcoming },
-    teamRequests: { pending: pendingTeamRequests },
+    // phase 5: team requests are gone (players create teams); kept in the shape for compatibility
+    teamRequests: { pending: 0 },
+    players: { total: pTotal, active: pActive },
   };
 }
 
@@ -88,80 +91,82 @@ export async function resetManagerPassword(id: string, password: string): Promis
   await prisma.user.update({ where: { id }, data: { passwordHash: await hashPassword(password) } });
 }
 
-// ---------- teams ----------
+// ---------- teams (phase 5: groups of players; no team logins) ----------
 export async function listTeams(q?: string): Promise<TeamRow[]> {
   const where: Prisma.TeamWhereInput = {};
   if (q) {
     where.OR = [
       { name: contains(q) },
       { tag: contains(q) },
-      { user: { username: contains(q) } },
-      { user: { displayName: contains(q) } },
-      { user: { email: contains(q) } },
+      { members: { some: { user: { OR: [{ ign: contains(q) }, { displayName: contains(q) }, { email: contains(q) }] } } } },
     ];
   }
   const rows = await prisma.team.findMany({ where, include: teamRowInclude, orderBy: { createdAt: "desc" } });
   return rows.map(toTeamRow);
 }
 
-export async function createTeam(input: CreateTeamInput): Promise<TeamRow> {
-  await assertAvailable({ teamName: input.teamName, username: input.username });
-  const passwordHash = await hashPassword(input.password);
-  const team = await prisma.$transaction(async (tx) => {
-    const user = await tx.user.create({
-      data: {
-        role: "TEAM",
-        username: input.username,
-        passwordHash,
-        displayName: input.teamName,
-        email: input.email ?? null,
-        phone: input.phone ?? null,
-      },
-    });
-    return tx.team.create({
-      data: {
-        userId: user.id,
-        name: input.teamName,
-        nameKey: teamNameKey(input.teamName),
-        tag: input.tag,
-        captainName: input.captainName ?? null,
-      },
-      include: teamRowInclude,
-    });
+export async function teamDetail(id: string): Promise<AdminTeamDetail> {
+  const t = await prisma.team.findUnique({
+    where: { id },
+    include: {
+      leader: { select: playerSummarySelect },
+      members: { include: { user: { select: { ...playerSummarySelect, bgmiId: true } } }, orderBy: { joinedAt: "asc" } },
+    },
   });
-  return toTeamRow(team);
+  if (!t) throw notFound("Team not found");
+  return {
+    id: t.id,
+    name: t.name,
+    tag: t.tag,
+    leader: toPlayerSummary(t.leader),
+    members: t.members
+      .map((m) => ({ ...toPlayerSummary(m.user), bgmiId: m.user.bgmiId, role: m.role, joinedAt: m.joinedAt.toISOString() }))
+      .sort((a, b) => (a.role === b.role ? 0 : a.role === "LEADER" ? -1 : 1)),
+    upcomingRegistrations: await countUpcomingTeamRegistrations(t.id),
+    createdAt: t.createdAt.toISOString(),
+  };
 }
 
-export async function updateTeam(id: string, input: UpdateTeamInput): Promise<TeamRow> {
-  const existing = await prisma.team.findUnique({ where: { id }, select: { userId: true } });
-  if (!existing) throw notFound("Team not found");
-  if (input.teamName !== undefined) await assertAvailable({ teamName: input.teamName }, { excludeTeamId: id });
-  const team = await prisma.$transaction(async (tx) => {
-    await tx.user.update({
-      where: { id: existing.userId },
-      data: {
-        displayName: input.teamName,
-        email: input.email,
-        phone: input.phone,
-        isActive: input.isActive,
-      },
-    });
-    return tx.team.update({
-      where: { id },
-      data: {
-        name: input.teamName,
-        nameKey: input.teamName !== undefined ? teamNameKey(input.teamName) : undefined,
-        tag: input.tag,
-        captainName: input.captainName,
-      },
-      include: teamRowInclude,
-    });
-  });
-  return toTeamRow(team);
+export async function disbandTeam(id: string): Promise<void> {
+  const t = await prisma.team.findUnique({ where: { id }, select: { id: true } });
+  if (!t) throw notFound("Team not found");
+  await deleteTeam(id, { checkEntries: false });
 }
 
-export async function resetTeamPassword(id: string, password: string): Promise<void> {
-  const team = await prisma.team.findUnique({ where: { id }, select: { userId: true } });
-  if (!team) throw notFound("Team not found");
-  await prisma.user.update({ where: { id: team.userId }, data: { passwordHash: await hashPassword(password) } });
+// ---------- players ----------
+const playerRowInclude = {
+  membership: { select: { role: true, team: { select: { id: true, name: true, tag: true } } } },
+} satisfies Prisma.UserInclude;
+type PlayerWithTeam = Prisma.UserGetPayload<{ include: typeof playerRowInclude }>;
+
+const toAdminPlayerRow = (u: PlayerWithTeam): AdminPlayerRow => ({
+  ...toPlayerSummary(u),
+  email: u.email,
+  bgmiId: u.bgmiId,
+  isActive: u.isActive,
+  team: u.membership ? { ...u.membership.team, role: u.membership.role } : null,
+  lastLoginAt: iso(u.lastLoginAt),
+  createdAt: u.createdAt.toISOString(),
+});
+
+export async function listPlayers(q?: string): Promise<AdminPlayerRow[]> {
+  const where: Prisma.UserWhereInput = { role: "PLAYER" };
+  if (q) {
+    where.OR = [
+      { ign: contains(q) },
+      { displayName: contains(q) },
+      { email: contains(q) },
+      { bgmiId: { contains: q } },
+      { membership: { team: { name: contains(q) } } },
+    ];
+  }
+  const rows = await prisma.user.findMany({ where, include: playerRowInclude, orderBy: { createdAt: "desc" }, take: 500 });
+  return rows.map(toAdminPlayerRow);
+}
+
+export async function updatePlayer(id: string, input: AdminUpdatePlayerInput): Promise<AdminPlayerRow> {
+  const u = await prisma.user.findUnique({ where: { id }, select: { role: true } });
+  if (!u || u.role !== "PLAYER") throw notFound("Player not found");
+  const row = await prisma.user.update({ where: { id }, data: { isActive: input.isActive }, include: playerRowInclude });
+  return toAdminPlayerRow(row);
 }

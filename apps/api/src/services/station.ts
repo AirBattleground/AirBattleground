@@ -272,7 +272,7 @@ export async function screenshotsHook(matchId: string, kind: ScreenshotKind, ima
 
 // ---------------------------------------------------------------- viewers (HLS)
 
-export type Viewer = { id: string; role: "ADMIN" | "MANAGER" | "TEAM"; teamId: string | null };
+export type Viewer = { id: string; role: "ADMIN" | "MANAGER" | "PLAYER"; teamId: string | null };
 
 /** Is the team playing in this match (approved slot in the scrim session, or in the tournament group)? */
 async function teamInMatch(teamId: string, m: { sessionId: string | null; groupId: string | null }): Promise<boolean> {

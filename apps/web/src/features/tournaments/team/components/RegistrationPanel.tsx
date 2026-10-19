@@ -16,6 +16,8 @@ import { cn } from "@7xen/ui/lib/utils";
 import { Countdown } from "../../shared/Countdown";
 import { RegistrationMeter } from "../../shared/RegistrationMeter";
 import { fmtWhen } from "../../shared/format";
+import { usePlayerSession } from "@/lib/auth";
+import { AskLeaderButton, LeaderOnlyNote } from "@/features/player/components/AskLeader";
 import { useRegisterTournament, useUpdateTournamentPreferences, useWithdrawTournament } from "../api";
 import { isDrawn } from "../journey";
 import { SlotPicker } from "./SlotPicker";
@@ -49,6 +51,7 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
   const [confirmWithdraw, setConfirmWithdraw] = useState(false);
   useEffect(() => setPrefs(saved), [saved]);
 
+  const { isLeader } = usePlayerSession();
   const register = useRegisterTournament(t.id);
   const update = useUpdateTournamentPreferences(t.id);
   const withdraw = useWithdrawTournament(t.id);
@@ -114,20 +117,26 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
         </p>
       </div>
 
-      {hasSlots && (
+      {hasSlots && (isLeader || canEdit) && (
         <div className="mt-5">
           <h3 className="font-display text-lg font-bold">When can you play?</h3>
           <p className="mb-3 text-xs text-muted-foreground">
             The {t.stages[0]?.name ?? "first stage"} is already scheduled. The draw honours preferences in registration order, so registering early helps.
           </p>
           <div className="-mx-1 max-h-72 overflow-y-auto overscroll-contain px-1 py-0.5 [scrollbar-width:thin] [mask-image:linear-gradient(to_bottom,#000_calc(100%-1.5rem),transparent)] pb-6">
-            <SlotPicker options={t.slotOptions} value={prefs} onChange={setPrefs} disabled={busy} />
+            <SlotPicker options={t.slotOptions} value={prefs} onChange={setPrefs} disabled={busy || !isLeader} />
           </div>
         </div>
       )}
 
       <div className="mt-5 flex flex-col gap-2">
-        {canRegister ? (
+        {!isLeader ? (
+          canRegister ? (
+            <AskLeaderButton input={{ kind: "TOURNAMENT", tournamentId: t.id }} />
+          ) : (
+            <LeaderOnlyNote className="justify-center rounded-xl border border-dashed py-2.5">Only your team leader can change preferences or withdraw.</LeaderOnlyNote>
+          )
+        ) : canRegister ? (
           <Button size="lg" className="h-12 w-full text-base shadow-glow" disabled={busy} onClick={() => register.mutate({ timePreferences: prefs })} data-tour="register-btn">
             {register.isPending ? <Loader2 className="animate-spin" /> : <UserPlus />}
             {full ? "Join the waiting list" : me.state === "WITHDRAWN" ? "Register again" : "Register my team"}

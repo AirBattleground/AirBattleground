@@ -99,10 +99,10 @@ async function requireViewer(req: Request, _res: Response, next: NextFunction) {
     const key = `${pl.sub}:${pl.role}:${matchId}`;
     let d = decisions.get(key);
     if (!d || Date.now() - d.at > DECISION_TTL_MS) {
-      const user = await prisma.user.findUnique({ where: { id: pl.sub }, include: { team: { select: { id: true } } } });
+      const user = await prisma.user.findUnique({ where: { id: pl.sub }, include: { membership: { select: { teamId: true } } } });
       let ok: Decision["ok"] = false;
       if (user && user.isActive && user.role === pl.role) {
-        ok = (await station.mayWatch({ id: user.id, role: user.role, teamId: user.team?.id ?? null }, matchId)) ?? "missing";
+        ok = (await station.mayWatch({ id: user.id, role: user.role, teamId: user.membership?.teamId ?? null }, matchId)) ?? "missing";
       } else {
         ok = null; // not a usable session
       }

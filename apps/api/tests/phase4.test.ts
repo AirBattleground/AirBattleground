@@ -144,9 +144,9 @@ describe("mobile bearer auth", () => {
     expect((await app.get("/api/admin/stats")).status).toBe(403);
 
     expect((await tokenFor("boss", "nope")).status).toBe(401);
-    const t = await tokenFor("bearerteam", "Team@1234");
-    expect(t.status).toBe(403);
-    expect(t.body.error.message).toMatch(/manager/i);
+    // phase 5: players have no username/password at all
+    expect((await tokenFor("bearerteam", "Team@1234")).status).toBe(401);
+    expect(team.row.id).toBeTruthy();
     expect((await tokenFor("admin", "Admin@12345")).status).toBe(401);
     expect((await http().post("/api/auth/token").send({ username: "" })).status).toBe(400);
 

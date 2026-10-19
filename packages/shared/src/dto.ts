@@ -20,6 +20,15 @@ export type ApiErrorCode =
   | "OFFSET_MISMATCH"
   /** phase 4: not enough free disk space for a video upload (HTTP 507) */
   | "STORAGE_FULL"
+  /** phase 5 (players & teams, see players.ts) */
+  | "NO_TEAM"
+  | "LEADER_ONLY"
+  | "ALREADY_IN_TEAM"
+  | "TEAM_FULL"
+  | "BGMI_ID_REQUIRED"
+  | "BGMI_ID_TAKEN"
+  | "INVITE_INVALID"
+  | "JOIN_REQUEST_PENDING"
   | "INTERNAL";
 
 export interface ApiErrorBody {
@@ -39,11 +48,14 @@ export interface TeamSummary {
 
 export interface SessionUser {
   id: string;
-  username: string;
+  /** null for players (they sign in with Google) */
+  username: string | null;
   role: Role;
   displayName: string;
-  /** Present when role === "TEAM" */
+  /** role PLAYER: the player's team (null when not in a team) */
   team: TeamSummary | null;
+  /** role PLAYER only (null otherwise) */
+  player: import("./players").SessionPlayer | null;
 }
 
 export interface AuthResponse {
@@ -56,8 +68,10 @@ export interface AdminStats {
   teams: { total: number; active: number };
   scrims: { total: number; active: number };
   registrations: { pending: number; approvedUpcoming: number };
-  /** manager-submitted team logins waiting for the admin */
+  /** manager-submitted team logins waiting for the admin (phase 5: always 0 — team requests are gone) */
   teamRequests: { pending: number };
+  /** phase 5 (additive): player accounts */
+  players?: { total: number; active: number };
 }
 
 export interface ManagerRow {
@@ -74,20 +88,13 @@ export interface ManagerRow {
 
 export interface TeamRow {
   id: string;
-  /** the team's login user id */
-  userId: string;
   name: string;
   tag: string;
-  captainName: string | null;
-  username: string;
-  email: string | null;
-  phone: string | null;
-  isActive: boolean;
+  /** phase 5: teams are groups of players with a leader (no team logins any more) */
+  leader: import("./players").PlayerSummary | null;
+  memberCount: number;
   registrationCount: number;
-  lastLoginAt: string | null;
   createdAt: string;
-  /** manager who requested this team; null when the admin created it directly */
-  requestedBy: { id: string; displayName: string } | null;
 }
 
 export interface TeamRequestRow {
@@ -169,6 +176,8 @@ export interface ScrimOnDate {
 /** Team view of a scrim on a date: includes the team's own registration if any. */
 export interface TeamScrimOnDate extends ScrimOnDate {
   myRegistration: { id: string; status: RegistrationStatus; slotNumber: number | null; rejectionReason: string | null } | null;
+  /** phase 5 (additive): the team's OPEN "ask my leader" suggestion for this scrim + date */
+  mySuggestion?: { id: string; fromIgn: string | null } | null;
 }
 
 export interface Registration {
@@ -226,4 +235,7 @@ export interface TeamDashboard {
   counts: { approvedUpcoming: number; pending: number; totalPlayed: number };
   /** phase 2: points summary (null until the team has a published match) */
   results: import("./phase2").TeamResultsSummary | null;
+  /** phase 5 (additive): the caller's role in the team, and OPEN suggestions waiting for the leader */
+  myTeamRole?: import("./players").TeamRole;
+  openSuggestions?: number;
 }

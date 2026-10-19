@@ -1,8 +1,9 @@
 /**
  * Seeds the admin account from env (ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_NAME) and the real
  * screenshots in datasets/bgmi-screenshots/real as training samples (source SEED, unverified).
- * With SEED_DEMO=1 also creates demo managers, teams, scrims, registrations, rosters and published
- * match results and an open demo tournament (idempotent).
+ * With SEED_DEMO=1 also creates demo managers, players (phase 5: dev-login emails player1@7xen.dev…) in teams with
+ * leaders, a pending join request, an "ask my leader" suggestion, scrims, registrations, published match results and
+ * an open demo tournament (idempotent).
  */
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
@@ -10,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { PrismaClient, type Prisma, type RegistrationStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { DEFAULT_POINTS_SYSTEM, addDays, matchPoints, teamNameKey, todayInAppTz, weekdayOf } from "@7xen/shared";
+import { newInviteCode as newInviteCodeForSeed } from "../src/services/players.js";
 import { createDemoTournament } from "../src/services/tournaments/demo.js";
 import { ensureDefaultRecipes } from "../src/services/recipes.js";
 import { imageInfo, saveBuffer, sha256, splitForSha, storageRoot } from "../src/lib/storage.js";
@@ -19,18 +21,29 @@ const d = (s: string) => new Date(`${s}T00:00:00.000Z`);
 const hash = (p: string) => bcrypt.hash(p, 10);
 
 const MANAGER_PASSWORD = "Manager@123";
-const TEAM_PASSWORD = "Team@1234";
+
+/** phase 5: players (sign in locally with dev login: player1@7xen.dev …). The first player of each team leads it. */
+const PLAYERS = [
+  { n: 1, name: "Mortal", ign: "SouLMortaL", team: "Team Soul" },
+  { n: 2, name: "Viper", ign: "SouLViper", team: "Team Soul" },
+  { n: 3, name: "Regaltos", ign: "SouLRegaltos", team: "Team Soul" },
+  { n: 4, name: "Owais", ign: "SouLOwais", team: "Team Soul" },
+  { n: 5, name: "Jonathan", ign: "GodLJonathan", team: "GodLike Esports" },
+  { n: 6, name: "ZGOD", ign: "GodLZGOD", team: "GodLike Esports" },
+  { n: 7, name: "Neyoo", ign: "GodLNeyoo", team: "GodLike Esports" },
+  { n: 8, name: "Manya", ign: "BlindManya", team: "Blind Esports" },
+  { n: 9, name: "Nakul", ign: "BlindNakul", team: "Blind Esports" },
+  // no team yet: has asked to join Team Soul
+  { n: 10, name: "Rookie", ign: "NewKidOnBlock", team: null },
+] as const;
 
 const TEAMS = [
-  { name: "Team Soul", tag: "SOUL", username: "soul", captain: "Mortal" },
-  { name: "GodLike Esports", tag: "GODL", username: "godlike", captain: "Jonathan" },
-  { name: "Blind Esports", tag: "BLND", username: "blind", captain: "Manya" },
-  { name: "Orangutan", tag: "OG", username: "orangutan", captain: "Ash" },
-  { name: "Global Esports", tag: "GE", username: "global", captain: "Mavi" },
-  { name: "Revenant", tag: "RNT", username: "revenant", captain: "Sensei" },
-  { name: "Team XSpark", tag: "TX", username: "xspark", captain: "Scout" },
-  { name: "Medal Esports", tag: "MDL", username: "medal", captain: "Spower" },
+  { name: "Team Soul", tag: "SOUL" },
+  { name: "GodLike Esports", tag: "GODL" },
+  { name: "Blind Esports", tag: "BLND" },
 ] as const;
+
+const playerEmail = (n: number) => `player${n}@7xen.dev`;
 
 async function seedAdmin() {
   const username = (process.env.ADMIN_USERNAME ?? "admin").trim().toLowerCase();
@@ -46,7 +59,7 @@ async function seedAdmin() {
   return { username, password };
 }
 
-async function upsertUser(username: string, password: string, role: "MANAGER" | "TEAM", displayName: string) {
+async function upsertUser(username: string, password: string, role: "MANAGER", displayName: string) {
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) return existing;
   return prisma.user.create({ data: { username, passwordHash: await hash(password), role, displayName } });
@@ -125,6 +138,39 @@ async function seedRegistrations(
   }
 }
 
+/** phase 5: players + teams (leader = first player listed for the team) + one pending join request. */
+async function seedPlayersAndTeams(): Promise<{ id: string; name: string }[]> {
+  const users = new Map<number, string>();
+  for (const p of PLAYERS) {
+    const email = playerEmail(p.n);
+    const bgmiId = String(5_100_000_000 + p.n);
+    const u =
+      (await prisma.user.findUnique({ where: { email } })) ??
+      (await prisma.user.create({ data: { role: "PLAYER", email, displayName: p.name, ign: p.ign, bgmiId } }));
+    users.set(p.n, u.id);
+  }
+  const teams: { id: string; name: string }[] = [];
+  for (const t of TEAMS) {
+    const roster = PLAYERS.filter((p) => p.team === t.name);
+    const leaderId = users.get(roster[0]!.n)!;
+    let team = await prisma.team.findUnique({ where: { nameKey: teamNameKey(t.name) } });
+    if (!team) {
+      team = await prisma.team.create({ data: { name: t.name, nameKey: teamNameKey(t.name), tag: t.tag, leaderId, inviteCode: newInviteCodeForSeed() } });
+    }
+    for (const [i, p] of roster.entries()) {
+      const userId = users.get(p.n)!;
+      if (await prisma.teamMember.findUnique({ where: { userId } })) continue;
+      await prisma.teamMember.create({ data: { teamId: team.id, userId, role: i === 0 && team.leaderId === userId ? "LEADER" : "MEMBER" } });
+    }
+    teams.push(team);
+  }
+  const rookie = users.get(10)!;
+  if (!(await prisma.teamMember.findUnique({ where: { userId: rookie } })) && !(await prisma.teamJoinRequest.findFirst({ where: { userId: rookie, status: "PENDING" } }))) {
+    await prisma.teamJoinRequest.create({ data: { teamId: teams[0]!.id, userId: rookie, message: "IGL from college tourneys, can play any role" } });
+  }
+  return teams;
+}
+
 async function seedDemo() {
   const today = todayInAppTz();
   const tomorrow = addDays(today, 1);
@@ -132,25 +178,8 @@ async function seedDemo() {
   const m1 = await upsertUser("manager1", MANAGER_PASSWORD, "MANAGER", "Rahul (Scrim Host)");
   const m2 = await upsertUser("manager2", MANAGER_PASSWORD, "MANAGER", "Night Owl Org");
 
-  const teams: { id: string; name: string }[] = [];
-  for (const t of TEAMS) {
-    const nameKey = teamNameKey(t.name);
-    const found = await prisma.team.findUnique({ where: { nameKey } });
-    if (found) {
-      teams.push(found);
-      continue;
-    }
-    const user = await upsertUser(t.username, TEAM_PASSWORD, "TEAM", t.name);
-    const team = await prisma.team.upsert({
-      where: { userId: user.id },
-      create: { userId: user.id, name: t.name, nameKey, tag: t.tag, captainName: t.captain },
-      update: {},
-    });
-    teams.push(team);
-  }
-  const [soul, godl, blnd, og, ge, rnt, tx, mdl] = teams.map((t) => t.id) as [
-    string, string, string, string, string, string, string, string,
-  ];
+  const teams = await seedPlayersAndTeams();
+  const [soul, godl, blnd] = teams.map((t) => t.id) as [string, string, string];
 
   const daily = await upsertScrim(m1.id, {
     title: "Daily Evening Showdown",
@@ -198,32 +227,27 @@ async function seedDemo() {
   await seedRegistrations(daily.id, today, m1.id, [
     { teamId: soul, status: "APPROVED", slot: 3 },
     { teamId: godl, status: "APPROVED", slot: 4 },
-    { teamId: blnd, status: "APPROVED", slot: 5 },
-    { teamId: og, status: "PENDING" },
-    { teamId: ge, status: "REJECTED", reason: "Roster not confirmed" },
+    { teamId: blnd, status: "REJECTED", reason: "Roster not confirmed" },
   ]);
   await seedRegistrations(daily.id, tomorrow, m1.id, [
     { teamId: soul, status: "APPROVED", slot: 3 },
-    { teamId: rnt, status: "APPROVED", slot: 4 },
     { teamId: godl, status: "PENDING" },
-    { teamId: tx, status: "PENDING" },
-    { teamId: mdl, status: "PENDING" },
   ]);
   await seedRegistrations(vr1.id, tomorrow, m1.id, [
     { teamId: blnd, status: "APPROVED", slot: 1 },
     { teamId: soul, status: "PENDING" },
-    { teamId: og, status: "PENDING" },
-    { teamId: ge, status: "CANCELLED" },
   ]);
-  await seedRegistrations(night.id, today, m2.id, [
-    { teamId: tx, status: "APPROVED", slot: 1 },
-    { teamId: mdl, status: "PENDING" },
-    { teamId: rnt, status: "PENDING" },
-  ]);
-  await seedRegistrations(night.id, tomorrow, m2.id, [
-    { teamId: soul, status: "PENDING" },
-    { teamId: godl, status: "APPROVED", slot: 1 },
-  ]);
+  await seedRegistrations(night.id, today, m2.id, [{ teamId: blnd, status: "PENDING" }]);
+  await seedRegistrations(night.id, tomorrow, m2.id, [{ teamId: godl, status: "APPROVED", slot: 1 }]);
+
+  // a member of Team Soul asks the leader to register for Night Owl Scrims the day after tomorrow
+  const viper = await prisma.user.findUniqueOrThrow({ where: { email: playerEmail(2) } });
+  const askDate = addDays(today, 2);
+  if (!(await prisma.teamSuggestion.findFirst({ where: { teamId: soul, scrimId: night.id, date: askDate } }))) {
+    await prisma.teamSuggestion.create({
+      data: { teamId: soul, fromUserId: viper.id, kind: "SCRIM", scrimId: night.id, date: askDate, note: "We need practice on Sanhok" },
+    });
+  }
 
   await seedDemoResults(daily, m1.id, teams);
   // phase 3: an open tournament with the demo teams registered (8 of 16 spots taken)
@@ -275,16 +299,14 @@ async function seedSamples(): Promise<number> {
 
 // ---------------------------------------------------------------- phase 2: demo results
 
+/** Names in the demo results (the ones matching a member's IGN get linked to that player). */
 const ROSTERS: Record<string, string[]> = {
   "Team Soul": ["SouLMortaL", "SouLViper", "SouLRegaltos", "SouLOwais"],
   "GodLike Esports": ["GodLJonathan", "GodLZGOD", "GodLNeyoo", "GodLClutchgod"],
   "Blind Esports": ["BlindManya", "BlindNakul", "BlindRony", "BlindSpraygod"],
-  Orangutan: ["OGAshTheBoss", "OGAquaNox", "OGWizzGod", "OGLucifer"],
-  "Global Esports": ["GEMavi", "GESlug", "GEHector", "GEBeast"],
-  Revenant: ["RNTSensei", "RNTFury", "RNTApollo", "RNTTracegod"],
 };
 
-/** Yesterday's "Daily Evening Showdown": 6 approved teams with rosters and 2 published matches. */
+/** Yesterday's "Daily Evening Showdown": 3 approved teams and 2 published matches. */
 async function seedDemoResults(scrim: { id: string; maps: string[] }, managerId: string, teams: { id: string; name: string }[]) {
   const date = addDays(todayInAppTz(), -1);
   const demoTeams = teams.filter((t) => ROSTERS[t.name]);
@@ -294,10 +316,6 @@ async function seedDemoResults(scrim: { id: string; maps: string[] }, managerId:
     managerId,
     demoTeams.map((t, i) => ({ teamId: t.id, status: "APPROVED" as const, slot: 3 + i })),
   );
-  for (const t of demoTeams) {
-    if ((await prisma.teamPlayer.count({ where: { teamId: t.id } })) > 0) continue;
-    await prisma.teamPlayer.createMany({ data: ROSTERS[t.name]!.map((ign, i) => ({ teamId: t.id, ign, position: i + 1 })) });
-  }
   const session = await prisma.scrimSession.findUniqueOrThrow({ where: { scrimId_date: { scrimId: scrim.id, date: d(date) } } });
   // a demo team may already be registered there in another state (dev DB): approve it on a free slot
   for (const t of demoTeams) {
@@ -322,9 +340,12 @@ async function seedDemoResults(scrim: { id: string; maps: string[] }, managerId:
 
   // placement + per-player kills, in demoTeams order
   const results: [number, number[]][][] = [
-    [[2, [2, 1, 3, 0]], [1, [4, 3, 2, 2]], [5, [1, 0, 1, 0]], [3, [3, 2, 0, 1]], [6, [0, 0, 1, 0]], [4, [2, 1, 1, 1]]],
-    [[1, [3, 4, 2, 1]], [4, [1, 2, 0, 1]], [2, [2, 3, 1, 2]], [6, [0, 1, 0, 0]], [3, [2, 1, 2, 0]], [5, [1, 0, 1, 1]]],
+    [[2, [2, 1, 3, 0]], [1, [4, 3, 2, 2]], [3, [1, 0, 1, 0]]],
+    [[1, [3, 4, 2, 1]], [3, [1, 2, 0, 1]], [2, [2, 3, 1, 2]]],
   ];
+  const userByIgn = new Map(
+    (await prisma.user.findMany({ where: { role: "PLAYER", ign: { not: null } }, select: { id: true, ign: true } })).map((u) => [u.ign!.toLowerCase(), u.id]),
+  );
   for (const [mi, rows] of results.entries()) {
     const match = await prisma.match.findUniqueOrThrow({ where: { sessionId_number: { sessionId: session.id, number: mi + 1 } } });
     if (match.status === "PUBLISHED") continue;
@@ -341,7 +362,9 @@ async function seedDemoResults(scrim: { id: string; maps: string[] }, managerId:
           placement,
           kills,
           ...pts,
-          players: { create: ROSTERS[t.name]!.map((name, i) => ({ position: i + 1, name, kills: playerKills[i] ?? 0 })) },
+          players: {
+            create: ROSTERS[t.name]!.map((name, i) => ({ position: i + 1, name, kills: playerKills[i] ?? 0, userId: userByIgn.get(name.toLowerCase()) ?? null })),
+          },
         },
       });
     }
@@ -365,9 +388,10 @@ async function main() {
   console.log(`  Training      : ${samples} new real screenshot sample(s) in ${storageRoot()}/samples/seed`);
   if (demo) {
     console.log(`  Managers      : manager1, manager2  /  ${MANAGER_PASSWORD}`);
-    console.log(`  Teams         : ${TEAMS.map((t) => t.username).join(", ")}  /  ${TEAM_PASSWORD}`);
+    console.log(`  Players       : dev login (PLAYER_DEV_LOGIN=1) as ${playerEmail(1)} … ${playerEmail(PLAYERS.length)}`);
+    console.log(`                  leaders: ${playerEmail(1)} (Team Soul), ${playerEmail(5)} (GodLike), ${playerEmail(8)} (Blind); ${playerEmail(10)} has no team`);
   } else {
-    console.log("  (Set SEED_DEMO=1 to also create demo managers, teams and scrims.)");
+    console.log("  (Set SEED_DEMO=1 to also create demo managers, players, teams and scrims.)");
   }
   console.log("");
 }

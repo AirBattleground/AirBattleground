@@ -5,6 +5,8 @@ import type { TeamScrimOnDate } from "@7xen/shared";
 import { SlotChip } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
+import { usePlayerSession } from "@/lib/auth";
+import { AskLeaderButton } from "@/features/player/components/AskLeader";
 import { useCancelRegistration, useRegister } from "../api";
 import { formatTime } from "../format";
 import { useNow } from "../useNow";
@@ -92,8 +94,10 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
   const full = counts.slotsLeft <= 0;
   const status = my?.status === "CANCELLED" ? null : (my?.status ?? null);
 
+  const { isLeader } = usePlayerSession();
   const register = useRegister();
   const cancel = useCancelRegistration();
+  const ask = <AskLeaderButton input={{ kind: "SCRIM", scrimId: scrim.id, date }} asked={!!item.mySuggestion} askedBy={item.mySuggestion?.fromIgn} />;
   const [regOpen, setRegOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
 
@@ -185,7 +189,7 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
                   </div>
                 </div>
               )}
-              {status === "APPROVED" && !started && (
+              {status === "APPROVED" && !started && isLeader && (
                 <Button variant="ghost" size="sm" className="self-start text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>
                   Cancel
                 </Button>
@@ -199,7 +203,7 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
                   <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                     <Hourglass className="mt-0.5 size-3.5 shrink-0" /> Waiting for the organiser · updates live
                   </p>
-                  {!started && (
+                  {!started && isLeader && (
                     <Button variant="ghost" size="sm" className="self-start text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>
                       Cancel request
                     </Button>
@@ -211,20 +215,27 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
                 <>
                   <TeamStatusBadge status="REJECTED" className="self-start px-3 py-1 text-sm" />
                   {rejectionReason && <p className="text-xs text-muted-foreground">Reason: “{rejectionReason}”</p>}
-                  {open && (
-                    <Button variant="outline" onClick={() => setRegOpen(true)} disabled={register.isPending}>
-                      <RotateCw /> Request again
-                    </Button>
-                  )}
+                  {open &&
+                    (isLeader ? (
+                      <Button variant="outline" onClick={() => setRegOpen(true)} disabled={register.isPending}>
+                        <RotateCw /> Request again
+                      </Button>
+                    ) : (
+                      ask
+                    ))}
                 </>
               )}
 
               {status === null && open && (
                 <>
-                  <Button size="lg" className="h-11 w-full text-base font-semibold shadow-glow" onClick={() => setRegOpen(true)} disabled={register.isPending}>
-                    {register.isPending ? <Loader2 className="animate-spin" /> : null}
-                    Register my team
-                  </Button>
+                  {isLeader ? (
+                    <Button size="lg" className="h-11 w-full text-base font-semibold shadow-glow" onClick={() => setRegOpen(true)} disabled={register.isPending}>
+                      {register.isPending ? <Loader2 className="animate-spin" /> : null}
+                      Register my team
+                    </Button>
+                  ) : (
+                    ask
+                  )}
                   {full && <p className="text-center text-xs font-medium text-warning-foreground dark:text-warning">All slots filled · you'll join the waiting list</p>}
                 </>
               )}

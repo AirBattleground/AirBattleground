@@ -1,6 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
 import { LogoMark } from "@7xen/ui/components/brand/logo";
+import { BrandPicker } from "@7xen/ui/components/brand/theme-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { cn } from "@7xen/ui/lib/utils";
 import type { NavItem, SidebarSlot, SidebarSlotState, ShellBrand } from "./types";
@@ -129,14 +130,14 @@ export function SidebarContent({ nav, homeHref, collapsed, layoutId, header, act
             // expanded: full wordmark; collapsed rail (76px): cross-fades to the compact mark
             <span className="relative block h-10">
               <Fade collapsed={collapsed} className="block h-full">
-                <img src={brand.wordmarkInk} alt="" className="h-full w-auto dark:hidden" />
-                <img src={brand.wordmark} alt="" className="hidden h-full w-auto dark:block" />
+                <img src={brand.wordmarkInk} alt="" className="brand-ink h-full w-auto dark:hidden" />
+                <img src={brand.wordmark} alt="" className="brand-ink hidden h-full w-auto dark:block" />
               </Fade>
               <img
                 src={brand.mark}
                 alt=""
                 aria-hidden
-                className={cn("absolute top-1/2 -left-1.5 h-7 w-auto -translate-y-1/2 transition-opacity duration-200", collapsed ? "opacity-100 delay-100" : "pointer-events-none opacity-0")}
+                className={cn("brand-ink absolute top-1/2 -left-1.5 h-7 w-auto -translate-y-1/2 transition-opacity duration-200", collapsed ? "opacity-100 delay-100" : "pointer-events-none opacity-0")}
               />
             </span>
           ) : (
@@ -169,9 +170,13 @@ export function SidebarContent({ nav, homeHref, collapsed, layoutId, header, act
         {action && <div className="mt-4">{action(slot)}</div>}
       </nav>
 
-      <Fade collapsed={collapsed} className="shrink-0 px-6 pb-4 text-[11px] text-muted-foreground">
-        <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">Ctrl</kbd> + <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">B</kbd> to collapse
-      </Fade>
+      {/* bottom: brand colour picker (stays centred in the 76px rail) + collapse hint */}
+      <div className="flex shrink-0 items-center gap-3 px-5 pb-4">
+        <BrandPicker />
+        <Fade collapsed={collapsed} className="text-[11px] whitespace-nowrap text-muted-foreground">
+          <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">Ctrl</kbd> + <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">B</kbd> to collapse
+        </Fade>
+      </div>
     </div>
   );
 }

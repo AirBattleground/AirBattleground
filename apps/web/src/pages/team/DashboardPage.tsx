@@ -1,18 +1,22 @@
-import { Link } from "react-router-dom";
-import type { ReactNode } from "react";
-import { ArrowRight, CalendarCheck, Hourglass, Search, Trophy } from "lucide-react";
-import { todayInAppTz, type TeamRegistration } from "@7xen/shared";
-import { TeamAvatar } from "@7xen/ui/components/brand/status";
-import { PageHeader } from "@7xen/ui/components/brand/page";
-import { Button } from "@7xen/ui/components/ui/button";
+import { useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { CalendarCheck, Medal, Ticket } from "lucide-react";
+import { todayInAppTz, type OrganizerRef, type TeamRegistration } from "@7xen/shared";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
-import { useAuth } from "@/lib/auth";
+import { ME_KEY, usePlayerSession } from "@/lib/auth";
+import { NoTeamHome } from "@/features/player/components/NoTeamHome";
+import { SuggestionsPanel } from "@/features/player/components/SuggestionsPanel";
 import { useTeamDashboard } from "@/features/team/api";
-import { NextMatchCard, NextMatchSkeleton } from "@/features/team/components/NextMatchCard";
 import { QueryError } from "@/features/team/components/QueryError";
 import { RegistrationCard, RegistrationCardSkeleton } from "@/features/team/components/RegistrationCard";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
+import { HomeHero } from "@/features/team/home/HomeHero";
+import { OrganiserStrip, tallyOrganisers } from "@/features/team/home/OrganiserStrip";
+import { ScrimShowcase, useHomeScrims } from "@/features/team/home/ScrimShowcase";
+import { SeasonCard } from "@/features/team/home/SeasonCard";
+import { SectionHeader } from "@/features/team/home/SectionHeader";
+import { TournamentRail, useFeaturedTournaments } from "@/features/team/home/TournamentRail";
 import { LastResultCard } from "@/features/results/components/LastResultCard";
 import { TournamentsHomeCard } from "@/features/tournaments/team/components/TournamentsHomeCard";
 import { NextRoomCard } from "@/features/live/components/TeamRoom";
@@ -20,37 +24,25 @@ import { TeamLiveCards } from "@/features/station/components/TeamLiveCard";
 
 const STEPS: TourStep[] = [
   { title: "Welcome to AirBattleground!", description: "This is your team's home. Here's a quick look around — it takes 20 seconds." },
-  { element: '[data-tour="watch-live"]', title: "Watch live", description: "When one of your matches is being streamed, it shows up right here. Tap it to watch the game live.", side: "bottom" },
+  { element: '[data-tour="find-scrim"]', title: "Find a scrim", description: "Your main button: browse scrims by day and register your team.", side: "bottom" },
   { element: '[data-tour="next-match"]', title: "Your next match", description: "Once an organiser approves you, your slot number, time and maps show up here with a live countdown.", side: "bottom" },
+  { element: '[data-tour="stats"]', title: "Your numbers", description: "Approved matches, requests still waiting for approval, matches played and your best finish.", side: "top" },
+  { element: '[data-tour="watch-live"]', title: "Watch live", description: "When one of your matches is being streamed, it shows up right here. Tap it to watch the game live.", side: "bottom" },
   { element: '[data-tour="next-room"]', title: "Room ID & password", description: "Before each match the room ID and password appear here, with copy buttons. Until then it shows when they'll appear.", side: "bottom" },
-  { element: '[data-tour="home-tournaments"]', title: "Tournaments", description: "Your next tournament match, or an open tournament you can join. Tap it for the full details.", side: "bottom" },
-  { element: '[data-tour="last-result"]', title: "Your last result", description: "Your rank and points from the latest published scrim. Tap it for the full points table.", side: "bottom" },
-  { element: '[data-tour="stats"]', title: "Your numbers", description: "Approved matches, requests still waiting for approval, and matches you've played.", side: "top" },
+  { element: '[data-tour="team-suggestions"]', title: "Asked by your team", description: "Scrims and tournaments your members want to play. Register in one tap, or dismiss.", side: "top" },
+  { element: '[data-tour="home-tournaments"]', title: "Tournaments", description: "Live cups and ones open for registration. Tap a poster for the full details and to register.", side: "top" },
+  { element: '[data-tour="home-scrims"]', title: "Scrims you can join", description: "Today's and tomorrow's scrims that still take teams. Register right from here.", side: "top" },
   { element: '[data-tour="upcoming"]', title: "Everything coming up", description: "All your upcoming scrims with their status — waiting or approved with a slot.", side: "top" },
-  { element: '[data-tour="find-scrim"]', title: "Find a scrim", description: "Tap here to browse scrims by day and register your team.", side: "bottom" },
+  { element: '[data-tour="last-result"]', title: "Your last result", description: "Your rank and points from the latest published scrim. Tap it for the full points table.", side: "top" },
+  { element: '[data-tour="organisers"]', title: "Organisers", description: "The organisers running scrims and tournaments you can play.", side: "top" },
 ];
 
-const STAT_TONES = { success: "bg-success/10 text-success", warning: "bg-warning/15 text-warning-foreground dark:text-warning", brand: "bg-primary/10 text-primary" };
-
-/** One card, three numbers: side by side on every screen so phones don't scroll past three tall boxes. */
-function StatStrip({ items }: { items: { label: string; hint: string; value: number | null; icon: ReactNode; tone: keyof typeof STAT_TONES }[] }) {
-  return (
-    <div className="grid grid-cols-3 divide-x overflow-hidden rounded-2xl border bg-card shadow-sm" data-tour="stats">
-      {items.map((s) => (
-        <div key={s.label} className="flex min-w-0 flex-col gap-3 p-4 sm:flex-row sm:items-center sm:gap-4 sm:p-6">
-          <span className={cn("hidden size-12 shrink-0 items-center justify-center rounded-2xl sm:flex [&_svg]:size-6", STAT_TONES[s.tone])}>{s.icon}</span>
-          <div className="min-w-0">
-            <p className="font-display text-3xl leading-none font-bold tabular-nums sm:text-4xl">
-              {s.value ?? <span className="inline-block h-8 w-8 animate-pulse rounded bg-muted align-middle" />}
-            </p>
-            <p className="mt-1.5 text-xs leading-snug font-semibold text-foreground sm:text-sm">{s.label}</p>
-            <p className="mt-0.5 hidden text-xs text-muted-foreground sm:block">{s.hint}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
+const START_STEPS: TourStep[] = [
+  { title: "Welcome to AirBattleground!", description: "Scrims and tournaments are played as a team. Let's get you into one." },
+  { element: '[data-tour="create-team"]', title: "Create your team", description: "Start your own squad. You become the leader and get an invite link to share.", side: "bottom" },
+  { element: '[data-tour="join-code"]', title: "Join with a code", description: "Got an invite from a friend? Type their code or paste the link here.", side: "top" },
+  { element: '[data-tour="how-teams-work"]', title: "How teams work", description: "The leader registers; members tap “Ask my leader”. Everyone sees the slots and results.", side: "top" },
+];
 
 function greeting() {
   const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hourCycle: "h23", timeZone: "Asia/Kolkata" }).format(new Date()));
@@ -59,79 +51,95 @@ function greeting() {
   return "Good evening";
 }
 
+/** /team: the player hub. No team yet → create / join; otherwise the team's home. */
 export default function DashboardPage() {
+  const { hasTeam } = usePlayerSession();
+  return hasTeam ? <TeamHome /> : <StartHome />;
+}
+
+function StartHome() {
+  usePageTour("team.start", START_STEPS);
+  return <NoTeamHome greeting={greeting()} />;
+}
+
+function TeamHome() {
   usePageTour("team.dashboard", STEPS);
-  const { user } = useAuth();
+  const { user, isLeader } = usePlayerSession();
+  const qc = useQueryClient();
   const q = useTeamDashboard();
   const d = q.data;
+  // leadership moved since the session was read → refresh it so the right buttons show
+  const serverRole = d?.myTeamRole;
+  const sessionRole = user?.player?.team?.role;
+  useEffect(() => {
+    if (serverRole && sessionRole && serverRole !== sessionRole) void qc.invalidateQueries({ queryKey: ME_KEY });
+  }, [serverRole, sessionRole, qc]);
   const team = d?.team ?? user?.team ?? null;
   const today = d?.today ?? todayInAppTz();
   const upcoming: TeamRegistration[] = d ? d.upcoming.filter((r) => r.id !== d.nextMatch?.id) : [];
-
-  const loading = q.isLoading || !d;
+  const failed = q.isError && !d;
+  const loading = !d && !failed;
   const booked = !!d?.nextMatch;
 
+  const scrims = useHomeScrims(today);
+  const featured = useFeaturedTournaments();
+
+  // hero art: the next match's poster, else anything upcoming, else a featured tournament or today's scrim
+  const backdropUrl = useMemo(() => {
+    const candidates = [
+      d?.nextMatch?.scrim.posterUrl,
+      ...(d?.upcoming ?? []).map((r) => r.scrim.posterUrl),
+      ...featured.items.map((t) => t.posterUrl),
+      ...scrims.today.items.map((s) => s.scrim.posterUrl),
+      ...scrims.tomorrow.items.map((s) => s.scrim.posterUrl),
+    ];
+    return candidates.find((u): u is string => !!u) ?? null;
+  }, [d, featured.items, scrims.today.items, scrims.tomorrow.items]);
+
+  const organisers = useMemo(() => {
+    const fromScrims: OrganizerRef[] = [];
+    const seen = new Set<string>();
+    const scrim = (id: string, m: OrganizerRef) => {
+      if (seen.has(id)) return;
+      seen.add(id);
+      fromScrims.push(m);
+    };
+    for (const s of [...scrims.today.items, ...scrims.tomorrow.items]) scrim(s.scrim.id, s.scrim.manager);
+    for (const r of d ? [...(d.nextMatch ? [d.nextMatch] : []), ...d.upcoming] : []) scrim(r.scrim.id, r.scrim.manager);
+    return tallyOrganisers(fromScrims, featured.items.map((t) => t.manager));
+  }, [d, featured.items, scrims.today.items, scrims.tomorrow.items]);
+
+  const showUpcoming = loading || booked || upcoming.length > 0;
+
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        eyebrow={greeting()}
-        title={
-          <span className="flex items-center gap-3">
-            {team && <TeamAvatar name={team.name} tag={team.tag} size="lg" />}
-            <span className="min-w-0">
-              <span className="block truncate">{team?.name ?? user?.displayName ?? "Your team"}</span>
-              {team && <span className="block text-sm font-semibold tracking-[0.25em] text-muted-foreground">[{team.tag}]</span>}
-            </span>
-          </span>
-        }
-        actions={
-          // with nothing booked, the "No match booked yet" card owns the one Find-a-scrim button
-          booked && (
-            <Button asChild size="lg" className="h-11" data-tour="find-scrim">
-              <Link to="/team/scrims">
-                <Search /> Find a scrim
-              </Link>
-            </Button>
-          )
-        }
-        className="mb-0"
-      />
+    <div className="flex flex-col gap-8 sm:gap-10">
+      <div className="flex flex-col gap-4">
+        <HomeHero
+          team={team}
+          greeting={greeting()}
+          data={d}
+          loading={loading}
+          backdropUrl={backdropUrl}
+          error={failed ? <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your dashboard" className="bg-background/70 py-8 backdrop-blur" /> : undefined}
+        />
+        <TeamLiveCards />
+        <NextRoomCard />
+      </div>
 
-      <TeamLiveCards />
+      {isLeader && <SuggestionsPanel />}
 
-      {q.isError && !d ? (
-        <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your dashboard" />
-      ) : (
-        <>
-          {loading ? <NextMatchSkeleton /> : <NextMatchCard match={d.nextMatch} today={today} />}
+      <div className="flex flex-col gap-4">
+        <TournamentRail {...featured} />
+        <TournamentsHomeCard mineOnly />
+      </div>
 
-          <NextRoomCard />
+      <ScrimShowcase data={scrims} />
 
-          <TournamentsHomeCard />
-
-          <LastResultCard results={d?.results ?? null} loading={loading} />
-
-          <StatStrip
-            items={[
-              { label: "Approved upcoming", hint: "Matches you have a slot in", value: d?.counts.approvedUpcoming ?? null, icon: <CalendarCheck />, tone: "success" },
-              { label: "Waiting for approval", hint: "Organiser hasn't decided yet", value: d?.counts.pending ?? null, icon: <Hourglass />, tone: "warning" },
-              { label: "Matches played", hint: "All time", value: d?.counts.totalPlayed ?? null, icon: <Trophy />, tone: "brand" },
-            ]}
-          />
-
-          {/* Upcoming only earns its space when there's something in it, or to say "nothing else" under a booked match */}
-          {(loading || booked || upcoming.length > 0) && (
-            <section className="space-y-3" data-tour="upcoming">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-display text-2xl font-bold">Upcoming</h2>
-                {upcoming.length > 0 && (
-                  <Button asChild variant="ghost" size="sm">
-                    <Link to="/team/registrations">
-                      See all <ArrowRight />
-                    </Link>
-                  </Button>
-                )}
-              </div>
+      {!failed && (
+        <div className={cn("grid gap-8 sm:gap-10", showUpcoming && "lg:grid-cols-[1.15fr_1fr] lg:gap-6")}>
+          {showUpcoming && (
+            <section className="space-y-4" data-tour="upcoming">
+              <SectionHeader eyebrow="Your schedule" title="Coming up" icon={<Ticket />} to={upcoming.length > 0 ? "/team/registrations" : undefined} />
               {loading ? (
                 <div className="space-y-3">
                   <RegistrationCardSkeleton />
@@ -144,7 +152,7 @@ export default function DashboardPage() {
                 </p>
               ) : (
                 <StaggerList className="space-y-3">
-                  {upcoming.slice(0, 6).map((r) => (
+                  {upcoming.slice(0, 5).map((r) => (
                     <StaggerItem key={r.id}>
                       <RegistrationCard reg={r} today={today} showDate compact cancellable={false} />
                     </StaggerItem>
@@ -153,8 +161,18 @@ export default function DashboardPage() {
               )}
             </section>
           )}
-        </>
+
+          <section className="space-y-4">
+            <SectionHeader eyebrow="Results" title="Your form" icon={<Medal />} />
+            <div className={cn("grid gap-4", !showUpcoming && "lg:grid-cols-2")}>
+              <LastResultCard results={d?.results ?? null} loading={loading} />
+              <SeasonCard results={d?.results ?? null} loading={loading} />
+            </div>
+          </section>
+        </div>
       )}
+
+      <OrganiserStrip items={organisers} />
     </div>
   );
 }

@@ -22,7 +22,7 @@ export const yesterday = () => addDays(todayInAppTz(), -1);
 
 export async function resetDb() {
   await prisma.$executeRawUnsafe(
-    'TRUNCATE TABLE "MatchRecording", "Recipe", "AppSetting", "GroupTeam", "TournamentGroup", "TournamentEntry", "TournamentStage", "Tournament", "TrainingSample", "MatchPlayer", "MatchTeam", "Screenshot", "Match", "TeamPlayer", "TeamRequest", "Registration", "ScrimSession", "Scrim", "Team", "User" RESTART IDENTITY CASCADE',
+    'TRUNCATE TABLE "MatchRecording", "Recipe", "AppSetting", "GroupTeam", "TournamentGroup", "TournamentEntry", "TournamentStage", "Tournament", "TrainingSample", "MatchPlayer", "MatchTeam", "Screenshot", "Match", "TeamPlayer", "TeamSuggestion", "TeamJoinRequest", "TeamMember", "Registration", "ScrimSession", "Scrim", "Team", "User" RESTART IDENTITY CASCADE',
   );
 }
 
@@ -57,12 +57,46 @@ export async function createManager(admin: TestAgent, username = `mgr${++seq}`) 
   return { row: res.body, agent: await appAgent(username, "Manager@123") };
 }
 
-export async function createTeam(admin: TestAgent, name = `Team ${++seq}`, username = `team${seq}`) {
-  const res = await admin
-    .post("/api/admin/teams")
-    .send({ teamName: name, tag: `T${seq}`.slice(0, 5), username, password: "Team@1234" });
+let bgmiSeq = 0;
+/** phase 5: a player signed in with the dev email login (IGN set; BGMI ID set unless `bgmiId: null`). */
+export async function playerAgent(
+  handle = `player${++seq}`,
+  opts: { ign?: string | null; bgmiId?: string | null } = {},
+): Promise<{ agent: TestAgent; userId: string; email: string }> {
+  const agent = request.agent(base());
+  const email = `${handle.toLowerCase()}@test.dev`;
+  const res = await agent.post("/api/auth/dev-login").send({ email, name: handle });
+  if (res.status !== 200) throw new Error(`dev login failed for ${email}: ${res.status} ${JSON.stringify(res.body)}`);
+  const ign = opts.ign === undefined ? handle : opts.ign;
+  const bgmiId = opts.bgmiId === undefined ? String(5_100_000_000 + ++bgmiSeq) : opts.bgmiId;
+  const patch: Record<string, string> = {};
+  if (ign) patch.ign = ign;
+  if (bgmiId) patch.bgmiId = bgmiId;
+  if (Object.keys(patch).length) {
+    const p = await agent.patch("/api/player/me").send(patch);
+    if (p.status !== 200) throw new Error(`profile update failed: ${JSON.stringify(p.body)}`);
+  }
+  return { agent, userId: res.body.user.id as string, email };
+}
+
+/**
+ * phase 5: a team = a leader player who created it. `agent` is the leader's session (it acts for the team on
+ * /api/team/*). The `admin` and `username` params are kept for older call sites (username → the leader's handle).
+ */
+export async function createTeam(_admin: TestAgent | null, name = `Team ${++seq}`, username = `team${seq}`) {
+  const leader = await playerAgent(username);
+  const res = await leader.agent.post("/api/player/team").send({ name, tag: `T${seq}`.slice(0, 5) });
   if (res.status !== 201) throw new Error(`create team failed: ${JSON.stringify(res.body)}`);
-  return { row: res.body, agent: await appAgent(username, "Team@1234") };
+  return { row: res.body as { id: string; name: string; inviteCode: string }, agent: leader.agent, leaderId: leader.userId };
+}
+
+/** phase 5: `player` joins `team` by its invite code and the leader approves. */
+export async function joinTeam(team: { row: { inviteCode: string }; agent: TestAgent }, player: { agent: TestAgent }) {
+  const jr = await player.agent.post("/api/player/join-requests").send({ code: team.row.inviteCode });
+  if (jr.status !== 201) throw new Error(`join request failed: ${JSON.stringify(jr.body)}`);
+  const ok = await team.agent.post(`/api/player/team/join-requests/${jr.body.id}/approve`);
+  if (ok.status !== 200) throw new Error(`approve failed: ${JSON.stringify(ok.body)}`);
+  return ok.body;
 }
 
 export async function createScrim(manager: TestAgent, overrides: Record<string, unknown> = {}) {

@@ -1,4 +1,5 @@
-export const ROLES = ["ADMIN", "MANAGER", "TEAM"] as const;
+/** phase 5: TEAM logins are gone — players sign up themselves (PLAYER) and form teams. */
+export const ROLES = ["ADMIN", "MANAGER", "PLAYER"] as const;
 export type Role = (typeof ROLES)[number];
 
 /** How a scrim repeats. ONCE = single date, DAILY = every day, WEEKENDS = Saturday + Sunday only. */

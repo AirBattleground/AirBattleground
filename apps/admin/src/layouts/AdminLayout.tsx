@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Compass, GraduationCap, LayoutDashboard, LogOut, Shield, ShieldCheck, Smartphone, Trophy, Users, type LucideIcon } from "lucide-react";
+import { ChevronLeft, Compass, GraduationCap, LayoutDashboard, LogOut, Shield, Smartphone, Trophy, UserRound, Users, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { AnimatedBackground } from "@7xen/ui/components/brand/animated-background";
 import { LogoMark } from "@7xen/ui/components/brand/logo";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
-import { ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
+import { BrandPicker, ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
+import { THEME_CONTROLS_ENABLED } from "@7xen/ui/theme";
 import { Button } from "@7xen/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -21,7 +22,6 @@ import { cn } from "@7xen/ui/lib/utils";
 import { useTour } from "@7xen/ui/tour";
 import { useIsDesktop } from "@/hooks/use-media-query";
 import { useAuth } from "@/lib/auth";
-import { useAdminStats } from "@/features/stats/api";
 import { useSamples } from "@/features/training/api";
 
 interface NavDef {
@@ -41,9 +41,9 @@ interface NavDef {
 const NAV: NavDef[] = [
   { to: "/", label: "Overview", short: "Home", icon: LayoutDashboard, tour: "nav-overview", end: true },
   { to: "/managers", label: "Managers", short: "Managers", icon: Users, tour: "nav-managers", end: false },
-  { to: "/teams", label: "Teams", short: "Teams", icon: Shield, tour: "nav-teams", end: false, mobileAlso: ["/team-requests"] },
-  // Phones: approvals fold into the Teams tab (badge + highlight carry over; Teams page links to it).
-  { to: "/team-requests", label: "Team approvals", short: "Approvals", icon: ShieldCheck, tour: "nav-team-requests", end: false, desktopOnly: true },
+  { to: "/teams", label: "Teams", short: "Teams", icon: Shield, tour: "nav-teams", end: false, mobileAlso: ["/players"] },
+  // Phones: Players folds into the Teams tab (highlight carries over; the Teams page links to it).
+  { to: "/players", label: "Players", short: "Players", icon: UserRound, tour: "nav-players", end: false, desktopOnly: true },
   { to: "/tournaments", label: "Tournaments", short: "Tourneys", icon: Trophy, tour: "nav-tournaments", end: false },
   { to: "/training", label: "Training", short: "Training", icon: GraduationCap, tour: "nav-training", end: false },
   // Phones: reachable from the Overview "Manager app" card (the tab bar keeps 5 items).
@@ -63,10 +63,8 @@ function titleFor(pathname: string) {
 }
 
 function useBadges(): Record<string, number> {
-  const stats = useAdminStats({ refetchInterval: 30_000 });
   const samples = useSamples();
   return {
-    "/team-requests": stats.data?.teamRequests.pending ?? 0,
     "/training": samples.data?.items.filter((s) => !s.verified && !s.excluded).length ?? 0,
   };
 }
@@ -282,7 +280,7 @@ function TopBar({ title, compact }: { title: ReactNode; compact: boolean }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.18 }}
-            className="truncate font-display text-lg leading-tight font-bold"
+            className={cn("truncate font-display text-lg leading-tight font-bold", compact && "sr-only")}
           >
             {title}
           </motion.div>
@@ -361,12 +359,21 @@ export default function AdminLayout() {
               <Fade collapsed={collapsed} className="mt-auto block">
                 <span className="block rounded-xl border bg-card/60 p-3 text-xs text-muted-foreground">
                   <span className="mb-1 block font-display text-sm font-bold text-foreground">You're in control</span>
-                  You create manager logins and approve teams managers register.
+                  You create manager logins. Players sign up with Google and make their own teams.
                   <span className="mt-2 block text-[11px]">
                     <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">Ctrl</kbd> + <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">B</kbd> collapses the menu
                   </span>
                 </span>
               </Fade>
+              {/* brand colour picker (centred in the 76px rail) */}
+              {THEME_CONTROLS_ENABLED && (
+                <div className="-mt-3 flex items-center gap-3 pl-2">
+                  <BrandPicker />
+                  <Fade collapsed={collapsed} className="text-xs whitespace-nowrap text-muted-foreground">
+                    Brand colour
+                  </Fade>
+                </div>
+              )}
             </div>
           </div>
           <Tooltip>

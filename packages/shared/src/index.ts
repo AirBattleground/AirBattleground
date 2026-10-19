@@ -10,3 +10,4 @@ export * from "./phase3";
 export * from "./tournament";
 export * from "./phase4";
 export * from "./station";
+export * from "./players";

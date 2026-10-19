@@ -64,11 +64,12 @@ export function Topbar({ nav, segmentLabels, homeHref, compact, brand }: { nav: 
     >
       {compact && (
         <Link to={homeHref} aria-label={`${brand?.name ?? "7XEN"} home`} className="-ml-1 shrink-0 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
-          {brand ? <img src={brand.mark} alt="" className="h-8 w-auto" /> : <LogoMark className="size-8" />}
+          {brand ? <img src={brand.mark} alt="" className="brand-ink h-8 w-auto" /> : <LogoMark className="size-8" />}
         </Link>
       )}
 
-      <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
+      {/* mobile: logo + actions only — the page name stays for screen readers (the page header shows it anyway) */}
+      <nav aria-label="Breadcrumb" className={cn("min-w-0 flex-1", compact && "[&_ol]:sr-only")}>
         <ol className="flex min-w-0 items-center gap-1.5 text-sm">
           {crumbs.map((c, i) => {
             const last = i === crumbs.length - 1;

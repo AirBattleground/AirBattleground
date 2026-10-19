@@ -34,6 +34,16 @@ const envSchema = z.object({
   STATION_URL: z.string().url().default("http://127.0.0.1:4500"),
   /** shared secret for API ↔ station calls (X-Station-Token); empty = station features disabled */
   STATION_TOKEN: z.string().default(""),
+  /** phase 5: Google OAuth client id for "Continue with Google" (players). Empty/unset = Google sign-in off */
+  GOOGLE_CLIENT_ID: z
+    .string()
+    .optional()
+    .transform((s) => (s && s.trim() ? s.trim() : null)),
+  /** phase 5: dev-only email login for players (POST /api/auth/dev-login). Never active in production */
+  PLAYER_DEV_LOGIN: z
+    .string()
+    .default("0")
+    .transform((s) => s === "1" || s.toLowerCase() === "true"),
   /** run the in-process screenshot worker (index.ts); set to 0 to disable */
   SCREENSHOT_WORKER: z
     .string()

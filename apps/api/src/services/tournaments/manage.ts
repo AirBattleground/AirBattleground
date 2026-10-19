@@ -276,7 +276,7 @@ export async function inviteTeam(id: string, actor: Actor, input: InviteTeamInpu
   if (!stage) throw new AppError("VALIDATION_ERROR", `This tournament has no stage ${input.stageOrder}`, { stageOrder: "No such stage" });
   if (stage.status !== "PENDING") throw conflict(`The ${stage.name} is already drawn`);
   if (stage.invitedSlots <= 0) throw conflict(`The ${stage.name} has no invite slots`);
-  const team = await prisma.team.findUnique({ where: { id: input.teamId }, select: { id: true, user: { select: { isActive: true } } } });
+  const team = await prisma.team.findUnique({ where: { id: input.teamId }, select: { id: true } });
   if (!team) throw new AppError("VALIDATION_ERROR", "Team not found", { teamId: "Team not found" });
 
   const entry = await prisma.$transaction(async (tx) => {

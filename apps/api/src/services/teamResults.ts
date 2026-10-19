@@ -4,7 +4,6 @@ import {
   todayInAppTz,
   type GameMap,
   type MatchScorecard,
-  type SaveRosterInput,
   type SessionStandings,
   type TeamResultsSummary,
   type TeamRoster,
@@ -130,9 +129,10 @@ export async function teamMatchScorecard(teamId: string, matchId: string): Promi
 
 // ---------------------------------------------------------------- roster
 
+/** phase 5: the roster is the team's members (IGN + BGMI ID); suggestions = lineup names not matching a member. */
 export async function getRoster(teamId: string): Promise<TeamRoster> {
-  const [players, seen] = await Promise.all([
-    prisma.teamPlayer.findMany({ where: { teamId }, orderBy: [{ position: "asc" }, { createdAt: "asc" }] }),
+  const [members, seen] = await Promise.all([
+    prisma.teamMember.findMany({ where: { teamId }, include: { user: { select: { id: true, ign: true, displayName: true, bgmiId: true } } } }),
     prisma.matchPlayer.findMany({
       where: { matchTeam: { teamId, match: { status: { in: ["LIVE", "RESULTS_REVIEW", "PUBLISHED"] } } } },
       select: { name: true },
@@ -140,6 +140,10 @@ export async function getRoster(teamId: string): Promise<TeamRoster> {
       take: 200,
     }),
   ]);
+  const players = members
+    .sort((a, b) => (a.role === b.role ? a.joinedAt.getTime() - b.joinedAt.getTime() : a.role === "LEADER" ? -1 : 1))
+    .map((m) => ({ id: m.user.id, ign: m.user.ign ?? m.user.displayName, bgmiId: m.user.bgmiId }))
+    .slice(0, MAX_ROSTER_PLAYERS);
   const onRoster = new Set(players.map((p) => p.ign.trim().toLowerCase()));
   const suggestions: string[] = [];
   const added = new Set<string>();
@@ -149,27 +153,10 @@ export async function getRoster(teamId: string): Promise<TeamRoster> {
     added.add(k);
     suggestions.push(name.trim());
   }
-  return {
-    players: players.map((p) => ({ id: p.id, ign: p.ign, bgmiId: p.bgmiId })),
-    suggestions: suggestions.sort((a, b) => a.localeCompare(b)).slice(0, 20),
-  };
+  return { players, suggestions: suggestions.sort((a, b) => a.localeCompare(b)).slice(0, 20) };
 }
 
-export async function saveRoster(teamId: string, input: SaveRosterInput): Promise<TeamRoster> {
-  const players = input.players.slice(0, MAX_ROSTER_PLAYERS);
-  const fields: Record<string, string> = {};
-  const seen = new Set<string>();
-  players.forEach((p, i) => {
-    const k = p.ign.toLowerCase();
-    if (seen.has(k)) fields[`players.${i}.ign`] = "This player is listed twice";
-    seen.add(k);
-  });
-  if (Object.keys(fields).length) throw new AppError("VALIDATION_ERROR", "Each player can only be listed once", fields);
-  await prisma.$transaction([
-    prisma.teamPlayer.deleteMany({ where: { teamId } }),
-    prisma.teamPlayer.createMany({
-      data: players.map((p, i) => ({ teamId, ign: p.ign, bgmiId: p.bgmiId ?? null, position: i + 1 })),
-    }),
-  ]);
-  return getRoster(teamId);
+/** phase 5: the roster can't be edited any more — it's the team's members. */
+export async function saveRoster(_teamId: string): Promise<TeamRoster> {
+  throw new AppError("CONFLICT", "Your roster is your team's players now. Invite players from the My team page.");
 }

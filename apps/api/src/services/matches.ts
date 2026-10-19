@@ -95,8 +95,15 @@ async function loadOwnScreenshot(id: string, managerId: string, bypass = false) 
   return s;
 }
 
-type SlotTeam = { slotNumber: number; team: { id: string; name: string; tag: string; players: { ign: string }[] } };
-const slotTeamSelect = { id: true, name: true, tag: true, players: { orderBy: { position: "asc" as const }, select: { ign: true } } };
+type SlotTeam = { slotNumber: number; team: { id: string; name: string; tag: string; members: { user: { ign: string | null } }[] } };
+/** phase 5: a team's roster = its members' IGNs (leader first) */
+const slotTeamSelect = {
+  id: true,
+  name: true,
+  tag: true,
+  members: { orderBy: [{ role: "asc" as const }, { joinedAt: "asc" as const }], select: { user: { select: { ign: true } } } },
+};
+const rosterNames = (t: SlotTeam["team"]): string[] => t.members.flatMap((m) => (m.user.ign ? [m.user.ign] : []));
 
 /** Who sits on which slot: the session's APPROVED registrations, or the group's teams. */
 async function matchSlots(owner: { sessionId: string | null; groupId: string | null }, db: Tx = prisma): Promise<SlotTeam[]> {
@@ -489,30 +496,24 @@ export async function saveLineup(matchId: string, managerId: string, input: Save
   );
 
   if (input.confirm) {
-    await updateRostersFromMatch(matchId);
+    await linkMatchPlayers(matchId);
     await recordLineupSamples(matchId, managerId);
   }
   return buildMatchDetail(matchId);
 }
 
-/** Add confirmed lineup names to each team's roster (up to MAX_ROSTER_PLAYERS, no duplicates). */
-async function updateRostersFromMatch(matchId: string) {
+/** phase 5: link confirmed lineup names to player accounts (name = a member's IGN, case-insensitive). */
+export async function linkMatchPlayers(matchId: string) {
   const teams = await prisma.matchTeam.findMany({
-    where: { matchId, teamId: { not: null } },
-    include: { players: { orderBy: { position: "asc" } } },
+    where: { matchId },
+    include: { players: true, team: { select: { members: { select: { userId: true, user: { select: { ign: true } } } } } } },
   });
   for (const t of teams) {
-    const roster = await prisma.teamPlayer.findMany({ where: { teamId: t.teamId! }, orderBy: { position: "asc" } });
-    const known = new Set(roster.map((r) => r.ign.trim().toLowerCase()));
-    let position = roster.reduce((mx, r) => Math.max(mx, r.position), 0);
-    let count = roster.length;
+    const byIgn = new Map<string, string>();
+    for (const m of t.team?.members ?? []) if (m.user.ign) byIgn.set(m.user.ign.trim().toLowerCase(), m.userId);
     for (const p of t.players) {
-      if (count >= MAX_ROSTER_PLAYERS) break;
-      const key = p.name.trim().toLowerCase();
-      if (!key || known.has(key)) continue;
-      known.add(key);
-      await prisma.teamPlayer.create({ data: { teamId: t.teamId!, ign: p.name.trim(), position: ++position } });
-      count++;
+      const userId = byIgn.get(p.name.trim().toLowerCase()) ?? null;
+      if (p.userId !== userId) await prisma.matchPlayer.update({ where: { id: p.id }, data: { userId } });
     }
   }
 }
@@ -615,6 +616,7 @@ export async function publishMatch(matchId: string, managerId: string, bypass = 
     await tx.match.update({ where: { id: matchId }, data: { status: "PUBLISHED", publishedAt: new Date() } });
   });
   await recordResultsSamples(matchId, managerId);
+  await linkMatchPlayers(matchId);
   return buildMatchDetail(matchId);
 }
 
@@ -674,7 +676,7 @@ export async function rosterForScreenshot(screenshotId: string): Promise<RosterS
   const regs = await matchSlots(s.match);
   const bySlot = new Map<number, RosterSlot>();
   for (const r of regs) {
-    bySlot.set(r.slotNumber, { slot: r.slotNumber, teamName: r.team.name, players: r.team.players.map((p) => p.ign) });
+    bySlot.set(r.slotNumber, { slot: r.slotNumber, teamName: r.team.name, players: rosterNames(r.team) });
   }
   if (s.kind === "RESULTS") {
     const lineup = await prisma.matchTeam.findMany({
@@ -710,7 +712,7 @@ export async function applyExtraction(screenshotId: string, result: ExtractionRe
       const regs = await matchSlots(m, tx);
       const ctx = {
         slotToTeam: new Map(regs.map((r) => [r.slotNumber, r.team.id])),
-        rosterBySlot: new Map(regs.map((r) => [r.slotNumber, r.team.players.map((p) => p.ign)])),
+        rosterBySlot: new Map(regs.map((r) => [r.slotNumber, rosterNames(r.team)])),
         lineupLocked: lineupLocked(m.status),
         resultsLocked: m.status === "PUBLISHED",
       };

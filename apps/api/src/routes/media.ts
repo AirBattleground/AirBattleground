@@ -10,7 +10,7 @@ import { brandingFile } from "../services/branding.js";
 
 export function mediaRouter() {
   const r = Router();
-  r.use(requireAuth(["MANAGER", "TEAM"], APP_COOKIE));
+  r.use(requireAuth(["MANAGER", "PLAYER"], APP_COOKIE));
   r.get("/branding/:file", async (req, res) => {
     const { key, mime } = brandingFile(req.params.file as string);
     await sendStoredFile(res, key, mime);

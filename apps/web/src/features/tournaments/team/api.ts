@@ -10,6 +10,8 @@ import {
   type TournamentSummary,
 } from "@7xen/shared";
 import { api } from "@/lib/api";
+import { invalidateSuggestions } from "@/features/player/api";
+import { teamAccessToast } from "@/features/team/api";
 
 export type TournamentScope = "open" | "live" | "mine" | "completed";
 
@@ -54,6 +56,7 @@ export function useTeamStage(id: string | undefined, stageId: string | undefined
 // ---------------------------------------------------------------------------
 
 function errorToast(title: string, err: unknown) {
+  if (teamAccessToast(err)) return;
   if (err instanceof ApiError) {
     if (err.code === "REGISTRATION_CLOSED") return toast.error("Registration closed", { description: err.message || "This tournament isn't taking teams any more." });
     if (err.code === "CONFLICT") return toast.error(title, { description: err.message || "Your team is already registered." });
@@ -91,7 +94,10 @@ export function useRegisterTournament(id: string) {
       }
     },
     onError: (err) => errorToast("Couldn't register", err),
-    onSettled: () => refresh(qc, id),
+    onSettled: () => {
+      refresh(qc, id);
+      invalidateSuggestions(qc);
+    },
   });
 }
 

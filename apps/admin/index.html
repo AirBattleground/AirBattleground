@@ -15,7 +15,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
-    <script>try{var t=localStorage.getItem("7xen.admin.theme")||"dark";if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t==="dark")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}</script>
+    <script>try{var t="dark";/* theme switcher hidden for now (THEME_CONTROLS_ENABLED in @7xen/ui/theme); going live: t=localStorage.getItem("7xen.admin.theme")||"dark" */if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t==="dark")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}</script>
+    <script>/* brand before paint (see @7xen/ui/theme): teal or the saved custom colour CSS */try{var d=document.documentElement,b=new URLSearchParams(location.search).get("brand")||localStorage.getItem("7xen.brand")||"teal";b="teal";/* brand picker hidden for now; going live: if(!/^(teal|gold|custom)$/.test(b))b="teal"; */var c=b==="custom"&&localStorage.getItem("7xen.brand.css");if(b==="custom"&&!c)b="teal";if(c){var s=document.createElement("style");s.id="sx-brand-custom";s.textContent=c;document.head.appendChild(s)}d.dataset.brand=b;}catch(e){document.documentElement.dataset.brand="teal"}</script>
   </head>
   <body>
     <div id="root"></div>

@@ -14,6 +14,9 @@ import { ScrimCard, ScrimCardSkeleton } from "@/features/team/components/ScrimCa
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
 import { dayLabel, formatDate } from "@/features/team/format";
 
+/** As many columns as fit with each card ≥ 21rem (its content is ~340px; wider cards were mostly empty space). auto-fill keeps a lone card from stretching. */
+const SCRIM_GRID = "grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,21rem),1fr))]";
+
 const STEPS: TourStep[] = [
   { title: "Find your next scrim", description: "Pick a day, see every scrim running that day, and register your team in one tap." },
   { element: '[data-tour="date-strip"]', title: "1. Pick a day", description: "Tap a day to see its scrims. Swipe sideways for more days, or use the calendar for dates further away.", side: "bottom" },
@@ -108,7 +111,7 @@ export default function BrowseScrimsPage() {
       {q.isError ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load scrims" />
       ) : q.isLoading ? (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className={SCRIM_GRID}>
           <ScrimCardSkeleton />
           <ScrimCardSkeleton />
           <ScrimCardSkeleton />
@@ -144,7 +147,7 @@ export default function BrowseScrimsPage() {
           }
         />
       ) : (
-        <StaggerList key={date} className="grid gap-4 lg:grid-cols-2">
+        <StaggerList key={date} className={SCRIM_GRID}>
           {items.map((s, i) => (
             <StaggerItem key={s.scrim.id} className="h-full">
               <ScrimCard item={s} tourAnchor={i === 0} rejectionReason={s.myRegistration ? reasons.get(s.myRegistration.id) : null} />

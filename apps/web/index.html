@@ -15,18 +15,29 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
-    <script>try{var t=localStorage.getItem("7xen.theme")||"dark";if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t==="dark")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}</script>
+    <script>try{var t="dark";/* theme switcher hidden for now (THEME_CONTROLS_ENABLED in @7xen/ui/theme); going live: t=localStorage.getItem("7xen.theme")||"dark" */if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t==="dark")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}</script>
+    <script>/* brand before paint (see @7xen/ui/theme): teal / gold / the saved custom colour CSS; --splash-color + --splash-bg recolour the boot splash */try{var d=document.documentElement,b=new URLSearchParams(location.search).get("brand")||localStorage.getItem("7xen.brand")||"teal";b="teal";/* brand picker hidden for now; going live: if(!/^(teal|gold|custom)$/.test(b))b="teal"; */var c=b==="custom"&&localStorage.getItem("7xen.brand.css");if(b==="custom"&&!c)b="teal";if(c){var s=document.createElement("style");s.id="sx-brand-custom";s.textContent=c;document.head.appendChild(s)}d.dataset.brand=b;var k=d.classList.contains("dark")?1:0,p={teal:["#005e5f","#25c2c2"],gold:["#ac8d1c","#d7b43b"]}[b];d.style.setProperty("--splash-color",p?p[k]:(localStorage.getItem("7xen.brand.color")||"#005e5f"));d.style.setProperty("--splash-bg",k?(b==="teal"?"#010e10":"#070a10"):"#f1eadc")}catch(e){document.documentElement.dataset.brand="teal"}</script>
     <style>
       /* Boot splash: painted before any JS loads; src/lib/splash.ts fades it out once the app is ready (min 2s). */
-      /* backgrounds match the backdrop baked into each video: splash-light.mp4 (light theme) / splash.mp4 (dark) */
-      #splash { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center; background: #f5f7fa; cursor: pointer; transition: opacity .5s ease-out, transform .5s ease-out; }
-      .dark #splash { background: #17181d; }
+      /* background = the app's own background for the theme + brand (set by the brand script above) */
+      #splash { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center; background: var(--splash-bg, #f1eadc); cursor: pointer; transition: opacity .5s ease-out, transform .5s ease-out; }
+      .dark #splash { background: var(--splash-bg, #070a10); }
       #splash.splash-out { opacity: 0; transform: scale(1.04); pointer-events: none; }
-      #splash video { width: 100%; height: 100%; object-fit: contain; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent); mask-image: linear-gradient(to bottom, transparent, #000 15%, #000 85%, transparent); }
+      /* the video is an orange logo on a plain backdrop: #sx-splash-tint keeps only the logo (as alpha) and paints it
+         in the brand colour, so the backdrop is transparent (no visible video box on phones) */
+      #splash video { width: 100%; height: 100%; object-fit: contain; filter: url(#sx-splash-tint); }
     </style>
   </head>
   <body>
     <div id="splash" role="presentation" onclick="this.classList.add('splash-out')">
+      <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+        <!-- alpha = how orange a pixel is (red − blue); colour = the brand colour -->
+        <filter id="sx-splash-tint" color-interpolation-filters="sRGB" x="0" y="0" width="100%" height="100%">
+          <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.6 0 -1.6 0 0" result="logo" />
+          <feFlood style="flood-color: var(--splash-color, #005e5f)" />
+          <feComposite in2="logo" operator="in" />
+        </filter>
+      </svg>
       <video autoplay muted playsinline preload="auto" aria-label="AirBattleground"></video>
     </div>
     <script>
@@ -39,6 +50,18 @@
         v.playbackRate = 2;
       })();
     </script>
+    <!-- .brand-ink (src/index.css): repaints the orange parts of the AirBattleground logo images in the brand colour,
+         keeping their white / ink lettering. alpha of "orange" = (red − blue) × source alpha. -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <filter id="sx-brand-ink" color-interpolation-filters="sRGB">
+        <feColorMatrix in="SourceGraphic" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  1.6 0 -1.6 0 0" result="hot" />
+        <feComposite in="hot" in2="SourceGraphic" operator="in" result="mask" />
+        <feFlood style="flood-color: var(--brand-500)" result="ink" />
+        <feComposite in="ink" in2="mask" operator="in" result="brand" />
+        <feComposite in="SourceGraphic" in2="mask" operator="out" result="rest" />
+        <feMerge><feMergeNode in="rest" /><feMergeNode in="brand" /></feMerge>
+      </filter>
+    </svg>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
