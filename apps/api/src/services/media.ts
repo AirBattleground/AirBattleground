@@ -20,7 +20,7 @@ export const devicePath = (deviceId: string) => `live/dev_${deviceId}`;
 /** phase 6b: the composed broadcast output, published by the API's own ffmpeg */
 export const outputPath = (deviceId: string) => `live/out_${deviceId}`;
 const PATH_RE = /^live\/dev_([A-Za-z0-9]{8,40})$/;
-const OUT_PATH_RE = /^live\/out_[A-Za-z0-9]{8,40}$/;
+const OUT_PATH_RE = /^live\/(out|show)_[A-Za-z0-9]{8,40}$/;
 
 /** user/pass the API uses for its own RTMP reads/publishes (query string ?user=&pass=). */
 export const internalCredentials = () => ({ user: INTERNAL_USER, pass: internalPassword() });
@@ -51,7 +51,7 @@ export interface MediaAuthRequest {
 export async function authorize(req: MediaAuthRequest): Promise<boolean> {
   const internal = req.user === INTERNAL_USER && !!req.password && safeEqual(req.password, internalPassword());
   if (req.action !== "publish") return internal;
-  // the composed output: only the API itself may publish it
+  // the composed output and Studio shows: only the API itself may publish them
   if (OUT_PATH_RE.test(req.path ?? "")) return internal;
 
   const m = PATH_RE.exec(req.path ?? "");
@@ -65,10 +65,18 @@ export async function authorize(req: MediaAuthRequest): Promise<boolean> {
   return safeEqual(sig, sign(device.id, device.keyHash, exp));
 }
 
+/** phase 8: MediaMTX path of a Studio show's broadcast. */
+export const showPath = (showId: string) => `live/show_${showId}`;
+
 /** GET a file of an HLS stream from MediaMTX — the phone's raw video or (output) the composed broadcast. Null when unreachable. */
 export async function fetchHls(deviceId: string, file: string, search: string, output = false): Promise<Response | null> {
+  return fetchHlsPath(output ? outputPath(deviceId) : devicePath(deviceId), file, search);
+}
+
+/** GET a file of any MediaMTX path's HLS stream (null when unreachable). */
+export async function fetchHlsPath(path: string, file: string, search: string): Promise<Response | null> {
   try {
-    return await fetch(`${env.MEDIA_HLS_URL}/${output ? outputPath(deviceId) : devicePath(deviceId)}/${file}${search}`, {
+    return await fetch(`${env.MEDIA_HLS_URL}/${path}/${file}${search}`, {
       headers: { Authorization: internalAuthHeader() },
       signal: AbortSignal.timeout(15_000),
     });
@@ -80,8 +88,13 @@ export async function fetchHls(deviceId: string, file: string, search: string, o
 
 /** Is MediaMTX receiving this device's video (or, `output`, its composed broadcast)? `readySince` = when it started; null = no. */
 export async function deviceStreamReady(deviceId: string, output = false): Promise<{ readySince: Date } | null> {
+  return pathReady(output ? outputPath(deviceId) : devicePath(deviceId));
+}
+
+/** Is MediaMTX receiving a stream on this path? */
+export async function pathReady(path: string): Promise<{ readySince: Date } | null> {
   try {
-    const res = await fetch(`${env.MEDIA_API_URL}/v3/paths/get/${encodeURIComponent(output ? outputPath(deviceId) : devicePath(deviceId))}`, {
+    const res = await fetch(`${env.MEDIA_API_URL}/v3/paths/get/${encodeURIComponent(path)}`, {
       headers: { Authorization: internalAuthHeader() },
       signal: AbortSignal.timeout(3_000),
     });

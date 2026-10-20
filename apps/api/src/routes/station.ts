@@ -31,9 +31,10 @@ import { parse } from "../lib/validate.js";
 import { currentUser } from "../middleware/requireAuth.js";
 import * as station from "../services/station.js";
 import { broadcastingDevice } from "../services/devices.js";
-import { fetchHls } from "../services/media.js";
+import { fetchHls, fetchHlsPath, showPath } from "../services/media.js";
 import { liveBroadcasts, matchOverlayPng } from "../services/broadcast/viewer.js";
 import { pipeUpstream } from "./broadcast.js";
+import * as studio from "../services/studio.js";
 
 const p = (v: unknown) => v as string;
 
@@ -173,7 +174,19 @@ export function liveRouter() {
   // signed in or not, can list and watch them (web /watch). Station recordings below stay limited to their viewers.
   r.get("/", async (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    res.json({ items: await liveBroadcasts() });
+    // phase 8: Studio shows first (they're produced shows), then single-device broadcasts
+    res.json({ items: [...(await studio.liveShows()), ...(await liveBroadcasts())] });
+  });
+  // phase 8: a live Studio show's HLS (public)
+  r.get("/s/:showId/:file", async (req, res) => {
+    const showId = p(req.params.showId);
+    const file = p(req.params.file);
+    if (!/^[A-Za-z0-9_.-]{1,80}\.(m3u8|mp4|m4s|ts)$/.test(file)) throw notFound("Not found");
+    if (!studio.showIsLive(showId)) throw notFound("This show isn't live");
+    const search = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
+    const upstream = await fetchHlsPath(showPath(showId), file, search);
+    if (!upstream || !upstream.ok || !upstream.body) throw notFound("The stream is starting. Try again in a few seconds.");
+    await pipeUpstream(res, upstream, file);
   });
   r.get("/:matchId/overlay.png", async (req, res) => {
     const png = await matchOverlayPng(p(req.params.matchId));

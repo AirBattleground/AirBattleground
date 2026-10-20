@@ -37,6 +37,7 @@ webrtc: no
 srt: no
 
 paths:
-  # dev_ = a phone's raw video (phone publishes), out_ = the composed broadcast (the API publishes)
-  "~^live/(dev|out)_[A-Za-z0-9]{8,40}$":
+  # dev_ = a phone's raw video (phone publishes), out_ = the composed broadcast (the API publishes),
+  # show_ = a Studio show mixed in the manager's browser (the API publishes, phase 8)
+  "~^live/(dev|out|show)_[A-Za-z0-9]{8,40}$":
     source: publisher

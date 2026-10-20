@@ -25,6 +25,7 @@ import { mountManagerLive } from "./live.js";
 import { mountStation } from "./station.js";
 import { mountManagerDevices } from "./devices.js";
 import { mountBroadcast } from "./broadcast.js";
+import { mountStudio } from "./studio.js";
 
 export function managerRouter() {
   const r = Router();
@@ -108,6 +109,7 @@ export function managerRouter() {
   mountStation(r, false);
   mountManagerDevices(r);
   mountBroadcast(r);
+  mountStudio(r);
 
   // team search for tournament invites (teams whose leader's account is active)
   r.get("/teams", async (req, res) => {

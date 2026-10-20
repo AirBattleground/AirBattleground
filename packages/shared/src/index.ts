@@ -18,3 +18,4 @@ export * from "./stream";
 export * from "./skin";
 export * from "./coins";
 export * from "./youtube";
+export * from "./studio";

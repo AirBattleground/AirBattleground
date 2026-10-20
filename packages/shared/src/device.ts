@@ -194,12 +194,16 @@ export interface DeviceCaptureResponse {
 
 /** Phase 6d: a match being broadcast right now (Live page, sidebar count). */
 export interface LiveBroadcastCard {
+  /** the match id — or "s_<showId>" for a Studio show (studio: true) */
   matchId: string;
   kind: "SCRIM" | "TOURNAMENT";
   title: string;
   subtitle: string;
+  /** match number (0 for a Studio show without a match) */
   number: number;
   map: GameMap;
+  /** phase 8: a Studio show (produced in the browser; layout already in the video, overlayUrl is "") */
+  studio?: boolean;
   startedAt: string;
   hlsUrl: string;
   overlayUrl: string;

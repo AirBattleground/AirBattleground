@@ -243,6 +243,22 @@ export async function startMatchBroadcast(matchId: string): Promise<MatchBroadca
   if (!s.refreshTokenEnc || !s.autoStream) return null;
   const d = await describe(matchId);
   if (!d) return null;
+  return startBroadcast(d);
+}
+
+/** Phase 8 (Studio): a broadcast for a show — the match's title when it has one, else the show's own title. */
+export async function startShowBroadcast(show: { title: string; matchId: string | null }): Promise<MatchBroadcast | null> {
+  const s = await load();
+  if (!s.refreshTokenEnc || !s.autoStream) return null;
+  const d = (show.matchId ? await describe(show.matchId) : null) ?? {
+    title: youtubeTitle(s.titleTemplate, { org: "AirBattleground", event: show.title, details: "Live", map: "" }),
+    description: `${show.title}\n\nLive on AirBattleground: ${publicUrl()}`,
+  };
+  return startBroadcast(d);
+}
+
+async function startBroadcast(d: { title: string; description: string }): Promise<MatchBroadcast> {
+  const s = await load();
   try {
     const b = await yt<{ id: string }>("POST", "/liveBroadcasts?part=snippet,status,contentDetails", {
       snippet: { title: d.title, description: d.description.slice(0, 5000), scheduledStartTime: new Date().toISOString() },
@@ -260,7 +276,7 @@ export async function startMatchBroadcast(matchId: string): Promise<MatchBroadca
     return { broadcastId: b.id, title: d.title, watchUrl: `https://youtu.be/${b.id}`, target: `${ingestionAddress.replace(/\/+$/, "")}/${streamName}` };
   } catch (err) {
     const msg = err instanceof YoutubeError ? err.message : "Couldn't reach YouTube.";
-    logger.warn({ err: (err as Error).message, matchId }, "youtube broadcast create failed");
+    logger.warn({ err: (err as Error).message, title: d.title }, "youtube broadcast create failed");
     await save({ lastError: msg });
     throw new YoutubeError(msg);
   }

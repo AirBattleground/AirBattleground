@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { CalendarPlus, CheckCircle2, Crosshair, Inbox, LayoutDashboard, Plus, Radio, Smartphone, Swords, Trophy, Users } from "lucide-react";
+import { CalendarPlus, CheckCircle2, Clapperboard, Crosshair, Inbox, LayoutDashboard, Plus, Radio, Smartphone, Swords, Trophy, Users } from "lucide-react";
 import type { ListResponse, PendingRequest } from "@7xen/shared";
 import { api } from "@/lib/api";
 import { AppShell, type MobileAction, type NavItem, type SidebarSlot, type WelcomeStep } from "@/components/shell";
@@ -47,6 +47,7 @@ export default function ManagerLayout() {
     { key: "tournaments", to: "/manager/tournaments", label: "Tournaments", short: "Cups", icon: Trophy },
     { key: "tdm", to: "/manager/tdm", label: "TDM battles", short: "TDM", icon: Crosshair },
     { key: "devices", to: "/manager/devices", label: "Devices", icon: Smartphone },
+    { key: "studio", to: "/manager/studio", label: "Studio", icon: Clapperboard },
     { key: "live", to: "/manager/live", label: "Live", icon: Radio, badge: liveCount, mobileOnlyWithBadge: true },
   ];
 

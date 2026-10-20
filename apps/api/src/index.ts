@@ -7,6 +7,7 @@ import { startScreenshotWorker } from "./services/screenshotWorker.js";
 import { ensureDefaultRecipes } from "./services/recipes.js";
 import { startRetentionSweeper } from "./services/recordings.js";
 import { resumeOutputs, shutdownOutputs } from "./services/broadcast/compositor.js";
+import { shutdownStudio, startStudioWatchdog } from "./services/studio.js";
 
 const app = createApp();
 const server = app.listen(env.PORT, () => {
@@ -21,12 +22,15 @@ void ensureDefaultRecipes().catch((err) => logger.error({ err }, "could not crea
 const stopSweeper = startRetentionSweeper();
 // phase 6b: broadcast outputs that were on before a restart come back by themselves
 void resumeOutputs().catch((err) => logger.error({ err }, "could not resume broadcast outputs"));
+// phase 8: Studio shows end by themselves when their browser stops sending
+startStudioWatchdog();
 
 function shutdown(signal: string) {
   logger.info(`${signal} received, shutting down`);
   stopWorker();
   stopSweeper();
   void shutdownOutputs();
+  void shutdownStudio();
   server.close(() => {
     void prisma.$disconnect().finally(() => process.exit(0));
   });

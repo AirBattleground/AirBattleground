@@ -187,6 +187,7 @@ model User {
   managerInvitesSent      ManagerInvite[]     @relation("ManagerInviteInvitedBy")
   managerInviteAccepted   ManagerInvite[]     @relation("ManagerInviteAccepted")
   devices                 Device[]
+  studioShows             StudioShow[]
   streamLayout            StreamLayout?
   streamDestinations      StreamDestination[]
   coinAwards              CoinAward[]
@@ -812,4 +813,26 @@ model CoinAward {
 
   @@index([teamId])
   @@index([userId])
+}
+
+/// Phase 8: a Studio show — mixed in the manager's browser, sent in chunks, broadcast at live/show_<id>.
+model StudioShow {
+  id             String    @id @default(cuid())
+  managerId      String
+  manager        User      @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  title          String
+  /// the match the scorecard/MVP sources read (optional)
+  matchId        String?
+  /// IDLE | LIVE | ENDED
+  state          String    @default("IDLE")
+  liveSince      DateTime?
+  /// StreamDestination ids relayed to while live
+  destinationIds String[]  @default([])
+  /// the Studio page's saved setup (scenes, overlays…); shape owned by the web app
+  config         Json      @default("{}")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([managerId])
+  @@index([state])
 }
