@@ -104,8 +104,9 @@ First decide which BGMI screen it is and set "screen":
 - "custom_lobby": custom-room lobby / team list — a grid of team cards, each with a slot number and up to 4 player names.
 - "tdm_lobby": Team Deathmatch room / team list — two sides (e.g. left/right or blue/red), each listing its players.
 - "custom_results": custom-room results — rank blocks (rank number, up to 4 players, each with "N finishes").
-- "tdm_results": Team Deathmatch results — two teams with a final team score (one side Victory/Win, the other Defeat), and
-  each player's eliminations/kills (may also show deaths, assists, score, MVP).
+- "tdm_results": Team Deathmatch results — a big "VICTORY"/"DEFEAT" banner, two big team kill totals in the top corners
+  (left/blue and right/red, e.g. 40 and 17), and under each side a table of up to 4 players with "Finishes", "F/D", "Assists"
+  (plus small "N Combo" and "MVP" tags).
 - "classic_results": a normal (non-custom) match end screen that shows only ONE team's placement (e.g. "#3/100") and its players.
 - "other": anything else (menus, loading screens, the map, spectator view without a table, etc.).
 Rules:
@@ -130,8 +131,11 @@ const RESULTS_PROMPT = `This should be a match RESULTS screen.
 - custom_results: the left panel shows rank 1 (wings/trophy icon, may have no digit) and rank 2. The right panel shows more rank
   blocks, each with a big rank number, up to 4 player names, and each player's "N finishes" (finishes = kills). Return every
   fully visible rank block (including ranks 1 and 2 on the left) with rank as an integer and each player's name and kills.
-- tdm_results: return two rows — rank 1 = the winning team (Victory / higher team score), rank 2 = the other team — each with
-  its players and each player's eliminations as kills. If it's a draw, rank them in the order shown and add a warning "Draw".
+- tdm_results: two sides, left (blue) and right (red), each with up to 4 players. The winner is the side with the larger big
+  team kill total in its top corner — NOT the side the VICTORY/DEFEAT banner seems to belong to (the banner is from the
+  screenshot taker's view). Return two rows: rank 1 = the side with more team kills, rank 2 = the other side. For each player,
+  kills = the "Finishes" number. Ignore F/D (a ratio, e.g. 2.9), Assists, "N Combo" and "MVP" tags — they are not kills and not
+  part of the name. If the two totals are equal, rank left first and add the warning "Draw — both teams have the same kills".
 - classic_results: return one row with the placement number shown (e.g. #3 → rank 3) and that team's players and kills, plus
   the warning "This screen shows only one team — capture the full results table if there is one".
 - Any other screen: return no rows and one warning saying it isn't a results screen.`;
