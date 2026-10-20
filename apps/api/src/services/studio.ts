@@ -26,7 +26,7 @@ const SHOW_NOT_FOUND = "Show not found";
 /** no chunk for this long → the show ends */
 const IDLE_END_MS = 25_000;
 const RETRY_MS = 4_000;
-const VIDEO_KBPS = 3500;
+const VIDEO_KBPS = 2500;
 
 // ---------------------------------------------------------------- CRUD
 
@@ -149,7 +149,7 @@ function ffmpegArgs(showId: string, codec: IngestQuery["codec"]): string[] {
   const video =
     codec === "h264"
       ? ["-c:v", "copy"]
-      : ["-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-b:v", `${VIDEO_KBPS}k`, "-maxrate", `${VIDEO_KBPS}k`, "-bufsize", `${VIDEO_KBPS * 2}k`, "-g", "60", "-keyint_min", "60", "-sc_threshold", "0", "-pix_fmt", "yuv420p"];
+      : ["-c:v", "libx264", "-preset", "superfast", "-tune", "zerolatency", "-b:v", `${VIDEO_KBPS}k`, "-maxrate", `${VIDEO_KBPS}k`, "-bufsize", `${VIDEO_KBPS * 2}k`, "-g", "60", "-keyint_min", "60", "-sc_threshold", "0", "-pix_fmt", "yuv420p"];
   return [
     "-hide_banner",
     "-loglevel", "warning",
@@ -381,9 +381,15 @@ export async function liveShows(): Promise<LiveBroadcastCard[]> {
 }
 
 /** Is this show broadcasting publicly (public HLS gate)? Private test streams aren't served. */
+const listedCache = new Map<string, { at: number; listed: boolean }>();
+/** Public HLS gate (called for every playlist/segment request): the listing flag is cached for 3 s. */
 export async function showIsLive(showId: string): Promise<boolean> {
   if (!runners.has(showId)) return false;
+  const c = listedCache.get(showId);
+  if (c && Date.now() - c.at < 3000) return c.listed;
   const s = await prisma.studioShow.findUnique({ where: { id: showId }, select: { publicListing: true } });
+  if (listedCache.size > 500) listedCache.clear();
+  listedCache.set(showId, { at: Date.now(), listed: !!s?.publicListing });
   return !!s?.publicListing;
 }
 

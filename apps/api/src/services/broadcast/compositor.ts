@@ -113,7 +113,7 @@ function ffmpegArgs(deviceId: string): string[] {
       `[bg][ov]overlay=0:0:eof_action=repeat:repeatlast=1:format=auto,format=yuv420p[out]`,
     "-map", "[out]",
     "-map", "0:a?",
-    "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency",
+    "-c:v", "libx264", "-preset", "superfast", "-tune", "zerolatency",
     "-b:v", `${VIDEO_KBPS}k`, "-maxrate", `${VIDEO_KBPS}k`, "-bufsize", `${VIDEO_KBPS * 2}k`,
     "-g", "60", "-keyint_min", "60", "-sc_threshold", "0",
     "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
