@@ -1,4 +1,4 @@
-import { Crosshair } from "lucide-react";
+import { Crosshair, Scale } from "lucide-react";
 import type { MatchScorecard } from "@7xen/shared";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { cn } from "@7xen/ui/lib/utils";
@@ -64,5 +64,20 @@ export function ScorecardList({ teams, highlightTeamId }: { teams: Row[]; highli
         );
       })}
     </ol>
+  );
+}
+
+/** TDM: both teams had the same kills, so the manager picked the winner — shows their reason. */
+export function TieNote({ note }: { note: string | null | undefined }) {
+  const t = useT(resultsMsg);
+  if (!note) return null;
+  return (
+    <div className="flex items-start gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-4">
+      <Scale className="mt-0.5 size-5 shrink-0 text-primary" />
+      <div className="min-w-0">
+        <p className="font-semibold">{t("tie_title")}</p>
+        <p className="text-sm text-muted-foreground">{note}</p>
+      </div>
+    </div>
   );
 }

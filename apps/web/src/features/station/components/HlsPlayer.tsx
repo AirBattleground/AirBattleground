@@ -88,6 +88,8 @@ export function HlsPlayer({
   const [state, setState] = useState<PlayerState>("connecting");
   const [attempts, setAttempts] = useState(0);
   const [muted, setMuted] = useState(true);
+  /** the stream carries a sound track (null = not known yet); drives the "Tap for sound" button */
+  const [hasAudio, setHasAudio] = useState<boolean | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   const stateCb = useRef(onStateChange);
   stateCb.current = onStateChange;
@@ -185,6 +187,7 @@ export function HlsPlayer({
         });
         hls = h;
         h.on(HlsCtor.Events.MANIFEST_PARSED, tryPlay);
+        h.on(HlsCtor.Events.BUFFER_CODECS, (_e, data) => !disposed && setHasAudio(!!(data as { audio?: unknown; audiovideo?: unknown }).audio || !!(data as { audiovideo?: unknown }).audiovideo));
         h.on(HlsCtor.Events.ERROR, (_e, data) => {
           if (!data.fatal || disposed) return;
           if (data.type === HlsCtor.ErrorTypes.MEDIA_ERROR && mediaRecoveries < 2) {
@@ -285,6 +288,16 @@ export function HlsPlayer({
         {!showEnded && children}
 
         {dvr && !showEnded && state !== "connecting" && <DvrBar video={ownRef} />}
+
+        {!showEnded && muted && hasAudio !== false && state !== "connecting" && (
+          <button
+            type="button"
+            onClick={() => setMuted(false)}
+            className={cn("absolute left-3 z-10 flex items-center gap-2 rounded-full bg-background/85 px-3.5 py-2 text-sm font-semibold text-foreground shadow-lg backdrop-blur-sm transition-colors outline-none hover:bg-background focus-visible:ring-[3px] focus-visible:ring-ring/50", dvr ? "bottom-16" : "bottom-3")}
+          >
+            <VolumeX className="size-4 text-primary" /> {t("tap_for_sound")}
+          </button>
+        )}
 
         {!showEnded && (
           <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 p-2 sm:p-3">

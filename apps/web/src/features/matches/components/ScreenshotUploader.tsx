@@ -223,7 +223,7 @@ export function ScreenshotUploader({
       )}
 
       {(screenshots.length > 0 || uploading) && (
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8">
           {screenshots.map((s, i) => (
             <li key={s.id} className="overflow-hidden rounded-lg border bg-card">
               <button
@@ -269,11 +269,6 @@ export function ScreenshotUploader({
                 {s.status === "FAILED" && s.error && (
                   <p className="line-clamp-1 text-[11px] text-muted-foreground" title={s.error}>
                     {s.error}
-                  </p>
-                )}
-                {s.status === "DONE" && (s.extraction?.warnings.length ?? 0) > 0 && (
-                  <p className="line-clamp-1 text-[11px] text-muted-foreground" title={s.extraction?.warnings.join("\n")}>
-                    {s.extraction?.warnings[0]}
                   </p>
                 )}
               </div>

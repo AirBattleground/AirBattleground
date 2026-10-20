@@ -209,6 +209,9 @@ export interface MatchDetail {
   warnings: string[];
   /** phase 3: set when the match is a tournament group match (then `scrim` is the tournament-as-scrim view) */
   tournament?: { id: string; title: string; stageId: string; stageName: string; groupId: string; groupName: string } | null;
+  /** TDM battle match (2 teams; a kills tie needs the manager to pick the winner with a tieNote) */
+  isTdm?: boolean;
+  tieNote?: string | null;
 }
 
 export const saveLineupSchema = z.object({
@@ -240,6 +243,8 @@ export const saveResultsSchema = z.object({
       }),
     )
     .max(25),
+  /** TDM: why the manager picked the winner when both teams have the same kills ("" clears; omitted = unchanged) */
+  tieNote: z.string().trim().max(200).optional(),
 });
 export type SaveResultsInput = z.infer<typeof saveResultsSchema>;
 
@@ -280,6 +285,8 @@ export interface MatchScorecard {
     killPoints: number;
     totalPoints: number;
   }[];
+  /** TDM: set when both teams had the same kills and the manager picked the winner — their reason */
+  tieNote?: string | null;
 }
 
 export interface TeamSessionResult {

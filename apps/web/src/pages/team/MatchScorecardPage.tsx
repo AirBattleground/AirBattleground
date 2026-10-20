@@ -13,7 +13,7 @@ import { resultsMsg, useOrdinal } from "@/i18n/results";
 import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 import { useTeamScorecard } from "@/features/results/api";
-import { ScorecardList } from "@/features/results/components/Scorecard";
+import { ScorecardList, TieNote } from "@/features/results/components/Scorecard";
 
 export default function MatchScorecardPage() {
   const t = useT(resultsMsg);
@@ -88,6 +88,7 @@ export default function MatchScorecardPage() {
               </div>
             </section>
           )}
+          <TieNote note={s.tieNote} />
           <ScorecardList teams={s.teams} highlightTeamId={user?.team?.id} />
         </div>
       )}

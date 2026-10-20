@@ -7,7 +7,7 @@ import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
 import { useTeamScorecard } from "@/features/results/api";
-import { ScorecardList } from "@/features/results/components/Scorecard";
+import { ScorecardList, TieNote } from "@/features/results/components/Scorecard";
 import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 import { useMemo } from "react";
@@ -87,6 +87,7 @@ export default function TournamentMatchPage() {
               </div>
             </div>
           )}
+          <TieNote note={s.tieNote} />
           <ScorecardList teams={s.teams} highlightTeamId={user?.team?.id} />
         </div>
       )}

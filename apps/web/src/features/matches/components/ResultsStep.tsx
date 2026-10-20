@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowDownUp, Info, Save, ShieldAlert, Trophy } from "lucide-react";
+import { AlertTriangle, ArrowDownUp, Info, Save, Scale, ShieldAlert, Trophy } from "lucide-react";
 import { matchPoints, type MatchDetail, type MatchTeamRow, type SaveResultsInput } from "@7xen/shared";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@7xen/ui/components/ui/select";
+import { Textarea } from "@7xen/ui/components/ui/textarea";
 import { cn } from "@7xen/ui/lib/utils";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { PODIUM } from "@/features/results/components/Rank";
@@ -17,10 +18,12 @@ export interface ResultsDraft {
   pkills: Record<string, number | null>;
   /** manual team finishes override */
   tkills: Record<number, number | null>;
+  /** TDM tie: why the manager picked the winner (undefined = unchanged) */
+  tieNote?: string;
 }
 export const emptyResultsDraft = (): ResultsDraft => ({ placement: {}, pkills: {}, tkills: {} });
 export const resultsDirty = (d: ResultsDraft) =>
-  Object.keys(d.placement).length > 0 || Object.keys(d.pkills).length > 0 || Object.keys(d.tkills).length > 0;
+  Object.keys(d.placement).length > 0 || Object.keys(d.pkills).length > 0 || Object.keys(d.tkills).length > 0 || d.tieNote !== undefined;
 
 interface Eff {
   row: MatchTeamRow;
@@ -55,6 +58,7 @@ function resultsInput(m: MatchDetail, d: ResultsDraft): SaveResultsInput {
         players: e.players.map((p) => ({ position: p.position, kills: p.kills })),
       };
     }),
+    ...(d.tieNote !== undefined ? { tieNote: d.tieNote.trim() } : {}),
   };
 }
 
@@ -112,9 +116,14 @@ export function ResultsStep({
   // slots without a registered team don't count on the points table, so they don't need a rank
   const noRank = rows.filter((r) => r.placement == null && r.row.team).length;
   const mismatches = rows.filter((r) => r.playerSum != null && r.kills != null && r.playerSum !== r.kills).length;
+  // TDM: a kills tie can't pick the winner, so the manager does (rank 1) and writes why — teams see the reason
+  const teamRows = rows.filter((r) => r.row.team);
+  const tied = !!m.isTdm && teamRows.length === 2 && (teamRows[0]!.kills ?? 0) === (teamRows[1]!.kills ?? 0) && teamRows.some((r) => r.kills != null);
+  const tieNote = draft.tieNote ?? m.tieNote ?? "";
   const blockers = [
     noRank > 0 && `${noRank} team${noRank === 1 ? " has" : "s have"} no rank`,
     dupRanks.length > 0 && `Rank ${dupRanks.join(", ")} ${dupRanks.length === 1 ? "is" : "are"} used more than once`,
+    tied && !tieNote.trim() && "Tie — pick the winner and say why",
   ].filter(Boolean) as string[];
 
   const doSave = () => save.mutate(resultsInput(m, draft), { onSuccess: () => setDraft(emptyResultsDraft) });
@@ -167,6 +176,29 @@ export function ResultsStep({
             </li>
           ))}
         </ul>
+      )}
+
+      {tied && (
+        <div className="space-y-2 rounded-xl border border-primary/40 bg-primary/5 p-4" data-tour="results-tie">
+          <p className="flex items-center gap-2 font-display text-lg font-bold">
+            <Scale className="size-5 text-primary" /> Tie — {teamRows[0]!.kills ?? 0} kills each
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Only one team can win. Give the winner <strong className="text-foreground">Rank 1</strong> below, then write why. Both teams will see this reason.
+          </p>
+          <Textarea
+            value={tieNote}
+            disabled={readOnly}
+            maxLength={200}
+            rows={2}
+            placeholder="e.g. Won the tie-break 1v1 · Fewer deaths · Higher-ranked seed"
+            aria-label="Why this team wins the tie"
+            onChange={(e) => {
+              const v = e.target.value;
+              setDraft((d) => ({ ...d, tieNote: v }));
+            }}
+          />
+        </div>
       )}
 
       <div className="overflow-hidden rounded-xl border bg-card shadow-sm" data-tour="results-table">

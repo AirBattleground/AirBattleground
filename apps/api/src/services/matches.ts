@@ -354,6 +354,8 @@ async function buildMatchDetail(matchId: string): Promise<MatchDetail> {
     teams: teams.map((t) => toMatchTeamRow(t, teams)),
     sessionSlots: regs.map((r) => ({ slotNumber: r.slotNumber, team: toTeamSummary(r.team) })),
     warnings,
+    isTdm: m.group?.stage.tournament.mode === "TDM",
+    tieNote: m.tieNote,
   };
 }
 
@@ -578,7 +580,10 @@ export async function saveResults(matchId: string, managerId: string, input: Sav
         }
         await tx.matchTeam.update({ where: { id: mt.id }, data: { placement: t.placement, kills } });
       }
-      if (m.status !== "RESULTS_REVIEW") await tx.match.update({ where: { id: matchId }, data: { status: "RESULTS_REVIEW" } });
+      const tieNote = input.tieNote === undefined ? undefined : input.tieNote || null;
+      if (m.status !== "RESULTS_REVIEW" || tieNote !== undefined) {
+        await tx.match.update({ where: { id: matchId }, data: { status: "RESULTS_REVIEW", ...(tieNote !== undefined ? { tieNote } : {}) } });
+      }
     },
     { maxWait: 10_000, timeout: 20_000 },
   );
@@ -609,6 +614,15 @@ export async function publishMatch(matchId: string, managerId: string, bypass = 
     throw new AppError("VALIDATION_ERROR", message, fields);
   }
 
+  // TDM: equal kills can't decide the match, so the manager picks the winner (rank 1) and says why
+  const tdm = m.group?.stage.tournament.mode === "TDM";
+  const tied = tdm && placed.length === 2 && (placed[0]!.kills ?? 0) === (placed[1]!.kills ?? 0);
+  if (tied && !m.tieNote) {
+    throw new AppError("VALIDATION_ERROR", "Both teams have the same kills. Give the winner rank 1 and add a short reason.", {
+      tieNote: "Say why this team wins the tie",
+    });
+  }
+
   const ps = matchPointsSystem(m);
   await prisma.$transaction(async (tx) => {
     await lockMatch(tx, matchId);
@@ -617,7 +631,7 @@ export async function publishMatch(matchId: string, managerId: string, bypass = 
     // TDM battles pay the champion only (awardChampionCoins), not each match winner
     const tour = m.group?.stage.tournament;
     await awardMatchCoins(tx, matchId, m.session?.scrim.winCoins ?? (tour && tour.mode !== "TDM" ? tour.winCoins : 0));
-    await tx.match.update({ where: { id: matchId }, data: { status: "PUBLISHED", publishedAt: new Date() } });
+    await tx.match.update({ where: { id: matchId }, data: { status: "PUBLISHED", publishedAt: new Date(), ...(tied ? {} : { tieNote: null }) } });
   });
   await recordResultsSamples(matchId, managerId);
   await linkMatchPlayers(matchId);

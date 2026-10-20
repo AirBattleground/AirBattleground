@@ -39,7 +39,7 @@ export interface MatchLabel {
 }
 
 /** Message the manager pastes into the WhatsApp group. */
-function roomMessage(label: MatchLabel, room: RoomDetails): string {
+export function roomMessage(label: MatchLabel, room: RoomDetails): string {
   return [`*${label.title} — Match ${label.number} (${MAP_LABELS[label.map]})*`, "", `Room ID: ${room.roomId}`, `Password: ${room.password}`, "", "Join with your registered slot. GLHF!"].join("\n");
 }
 

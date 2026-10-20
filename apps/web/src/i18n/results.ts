@@ -91,6 +91,7 @@ export const resultsMsg = defineMessages({
     rank_n: "Rank {n}",
     // Scorecard
     you: "YOU",
+    tie_title: "Tie on kills — the manager picked the winner",
     no_players: "No player names",
     // Standings
     copied: "Points table copied",
@@ -183,6 +184,7 @@ export const resultsMsg = defineMessages({
     dinners_other: "{count} चिकन डिनर",
     rank_n: "रैंक {n}",
     you: "आप",
+    tie_title: "किल्स बराबर थे — विजेता मैनेजर ने चुना",
     no_players: "प्लेयर के नाम नहीं हैं",
     copied: "Points table कॉपी हो गई",
     copied_desc: "इसे WhatsApp या Discord में पेस्ट करें।",
@@ -273,6 +275,7 @@ export const resultsMsg = defineMessages({
     dinners_other: "{count} chicken dinners",
     rank_n: "Rank {n}",
     you: "TUM",
+    tie_title: "Kills barabar the — winner manager ne choose kiya",
     no_players: "Player names nahi hain",
     copied: "Points table copy ho gayi",
     copied_desc: "Ise WhatsApp ya Discord mein paste karo.",

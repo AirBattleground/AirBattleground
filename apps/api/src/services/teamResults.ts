@@ -125,6 +125,7 @@ export async function teamMatchScorecard(teamId: string | null, matchId: string)
       killPoints: t.killPoints ?? 0,
       totalPoints: t.totalPoints ?? 0,
     })),
+    tieNote: m.tieNote,
   };
 }
 
