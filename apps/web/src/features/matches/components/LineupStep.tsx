@@ -112,22 +112,24 @@ export function LineupStep({
   return (
     <div className="space-y-4">
       {/* summary */}
-      <div data-tour="lineup-summary" className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3 text-sm shadow-sm">
-        <span className="font-display text-2xl font-bold">{cards.length}</span>
-        <span className="mr-2 text-muted-foreground">team{cards.length === 1 ? "" : "s"} in this match</span>
+      <div data-tour="lineup-summary" className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm">
+        <span>
+          <span className="font-display text-2xl font-bold">{cards.length}</span>{" "}
+          <span className="text-muted-foreground">team{cards.length === 1 ? "" : "s"}</span>
+        </span>
         {lowConf > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/15 px-2.5 py-0.5 text-xs font-semibold text-warning-foreground dark:text-warning">
-            <AlertTriangle className="size-3.5" /> {lowConf} name{lowConf === 1 ? "" : "s"} to double-check
+          <span className="inline-flex items-center gap-1 font-semibold text-warning-foreground dark:text-warning">
+            <AlertTriangle className="size-3.5" /> {lowConf} name{lowConf === 1 ? "" : "s"} to check
           </span>
         )}
         {unregistered > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive">
-            <ShieldAlert className="size-3.5" /> {unregistered} slot{unregistered === 1 ? "" : "s"} without a registered team
+          <span className="inline-flex items-center gap-1 font-semibold text-destructive">
+            <ShieldAlert className="size-3.5" /> {unregistered} unregistered slot{unregistered === 1 ? "" : "s"}
           </span>
         )}
-        {empty > 0 && <span className="text-xs text-muted-foreground">· {empty} without player names</span>}
+        {empty > 0 && <span className="text-muted-foreground">{empty} without names</span>}
         {lowConf === 0 && unregistered === 0 && empty === 0 && cards.length > 0 && (
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-success">
+          <span className="inline-flex items-center gap-1 font-semibold text-success">
             <CheckCircle2 className="size-3.5" /> Looks good
           </span>
         )}
@@ -144,12 +146,8 @@ export function LineupStep({
       )}
 
       {!readOnly && missing.length > 0 && (
-        <div className="rounded-xl border border-dashed p-3">
-          <p className="mb-2 text-sm">
-            <span className="font-semibold">Registered but not in this lineup.</span>{" "}
-            <span className="text-muted-foreground">Add them if they played.</span>
-          </p>
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed p-3">
+          <span className="text-sm text-muted-foreground">Registered, not in lineup:</span>
             {missing.map((s) => (
               <Button
                 key={s.slotNumber}
@@ -162,13 +160,12 @@ export function LineupStep({
                 <Plus /> <span className="font-display">#{pad(s.slotNumber)}</span> {s.team.name}
               </Button>
             ))}
-          </div>
         </div>
       )}
 
       {cards.length === 0 ? (
         <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-          No teams yet. Upload the team list screenshots above, or add a slot by hand below.
+          No teams yet. Upload screenshots above, or add a slot below.
         </div>
       ) : (
         <ul data-tour="lineup-grid" className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
@@ -190,7 +187,7 @@ export function LineupStep({
         <div className="flex flex-wrap items-center gap-2">
           <Select value={addSlot} onValueChange={setAddSlot}>
             <SelectTrigger className="w-44" aria-label="Slot to add">
-              <SelectValue placeholder="Add a slot by hand" />
+              <SelectValue placeholder="Add a slot" />
             </SelectTrigger>
             <SelectContent>
               {allSlots.map((s) => (
@@ -218,14 +215,10 @@ export function LineupStep({
       {!readOnly && (
         <div
           data-tour="lineup-confirm"
-          className="sticky bottom-3 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur"
+          className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] z-20 lg:bottom-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur"
         >
           <p className="text-sm text-muted-foreground">
-            {confirmed
-              ? dirty
-                ? "You have unsaved changes to the lineup."
-                : "Lineup confirmed. You can still fix names here."
-              : "Check every name, then confirm. Confirmed names help read the results automatically."}
+            {confirmed ? (dirty ? "Unsaved changes." : "Lineup confirmed.") : dirty ? "Unsaved changes." : "Check the names, then confirm."}
           </p>
           <div className="flex gap-2">
             {!confirmed && (
@@ -252,8 +245,8 @@ export function LineupStep({
         title={`Confirm ${cards.length} team${cards.length === 1 ? "" : "s"}?`}
         description={
           unregistered > 0
-            ? `${unregistered} slot${unregistered === 1 ? " has" : "s have"} no registered team — they won't appear on the points table. The match moves to “In progress”; you can still fix names later.`
-            : "The match moves to “In progress”. When it ends, upload the final results screenshots. You can still fix names later."
+            ? `${unregistered} slot${unregistered === 1 ? " has" : "s have"} no registered team and won't appear on the points table. You can still fix names later.`
+            : "Next you'll upload the results. You can still fix names later."
         }
         confirmLabel="Confirm lineup"
         onConfirm={() => doSave(true)}
@@ -283,22 +276,20 @@ function SlotCard({
 
   return (
     <li className={cn("flex flex-col overflow-hidden rounded-xl border bg-card shadow-sm", !c.team && "border-destructive/40")}>
-      <div className="flex items-center gap-3 border-b bg-gradient-to-r from-primary/10 to-transparent p-3">
-        <span className="grid min-w-14 place-items-center rounded-xl border border-primary/40 bg-primary/10 px-2 py-1 font-display text-3xl font-bold leading-none">
-          <span className="text-[9px] font-semibold tracking-[0.25em] text-primary">SLOT</span>
+      <div className="flex items-center gap-3 border-b p-2.5 pl-3">
+        <span className="font-display text-3xl font-bold leading-none tabular-nums text-primary" title={`Slot ${c.slot}`}>
           {pad(c.slot)}
         </span>
         {c.team ? (
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <TeamAvatar name={c.team.name} tag={c.team.tag} size="sm" />
-            <div className="min-w-0">
-              <p className="truncate font-semibold">{c.team.name}</p>
-              <p className="text-xs text-muted-foreground">[{c.team.tag}]</p>
-            </div>
+            <p className="min-w-0 truncate font-semibold">
+              {c.team.name} <span className="text-xs font-normal text-muted-foreground">[{c.team.tag}]</span>
+            </p>
           </div>
         ) : (
           <p className="flex min-w-0 flex-1 items-center gap-1.5 text-sm font-semibold text-destructive">
-            <ShieldAlert className="size-4 shrink-0" /> No team registered on this slot
+            <ShieldAlert className="size-4 shrink-0" /> No registered team
           </p>
         )}
         {!readOnly && (
@@ -316,8 +307,8 @@ function SlotCard({
           </Button>
         )}
       </div>
-      <div className="grid flex-1 gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)]">
-        <div className="space-y-2">
+      <div className={cn("grid flex-1 gap-3 p-3", (source || flags.length > 0) && "sm:grid-cols-[minmax(0,1fr)_minmax(0,9rem)]")}>
+        <div className="space-y-1.5">
           {Array.from({ length: count }, (_, i) => i + 1).map((pos) => {
             const key = `${c.slot}:${pos}`;
             const server = c.row?.players.find((p) => p.position === pos);
@@ -340,10 +331,12 @@ function SlotCard({
                   />
                 </div>
                 {(low || (differs && !touched)) && server?.ocrName && (
-                  <p className={cn("mt-0.5 pl-1 text-[11px]", low ? "text-warning-foreground dark:text-warning" : "text-muted-foreground")}>
-                    Read as “{server.ocrName}”
-                    {server.ocrConfidence != null && ` · ${Math.round(server.ocrConfidence * 100)}% sure`}
-                    {differs && !low && " · matched to a known name"}
+                  <p
+                    className={cn("mt-0.5 pl-1 text-[11px]", low ? "text-warning-foreground dark:text-warning" : "text-muted-foreground")}
+                    title={differs && !low ? "Matched to a known player name" : undefined}
+                  >
+                    Read “{server.ocrName}”
+                    {server.ocrConfidence != null && ` · ${Math.round(server.ocrConfidence * 100)}%`}
                   </p>
                 )}
               </div>
@@ -360,14 +353,8 @@ function SlotCard({
             </Button>
           )}
         </div>
-        <div className="space-y-2">
-          {source ? (
-            <ScreenshotCrop source={source} onClick={() => onOpenShot(source.shot.id)} />
-          ) : (
-            <div className="grid aspect-[2/1] place-items-center rounded-lg border border-dashed p-2 text-center text-[11px] text-muted-foreground">
-              Typed by hand
-            </div>
-          )}
+        <div className={cn("space-y-2", !source && flags.length === 0 && "hidden")}>
+          {source && <ScreenshotCrop source={source} onClick={() => onOpenShot(source.shot.id)} />}
           {flags.length > 0 && (
             <ul className="space-y-1">
               {flags.map((f, i) => (

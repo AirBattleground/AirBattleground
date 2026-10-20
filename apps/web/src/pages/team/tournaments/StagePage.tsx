@@ -32,9 +32,9 @@ export default function StagePage() {
     () => [
       { title: ts("tour_title"), description: ts("tour_desc") },
       { element: '[data-tour="my-group"]', title: ts("tour_mygroup_title"), description: ts("tour_mygroup_desc"), side: "bottom" },
-      { element: '[data-tour="on-fire"]', title: ts("tour_fire_title"), description: ts("tour_fire_desc"), side: "top" },
       { element: '[data-tour="stage-tabs"]', title: ts("tour_tabs_title"), description: ts("tour_tabs_desc"), side: "bottom" },
       { element: '[data-tour="group-grid"]', title: ts("tour_grid_title"), description: ts("tour_grid_desc"), side: "top" },
+      { element: '[data-tour="on-fire"]', title: ts("tour_fire_title"), description: ts("tour_fire_desc"), side: "top" },
     ],
     [ts],
   );
@@ -108,7 +108,6 @@ export default function StagePage() {
     <>
       {back}
       <PageHeader
-        eyebrow={d.tournament.title}
         title={
           <span className="flex flex-wrap items-center gap-3">
             {s.name} <StatusPill kind="stage" status={s.status} className="text-sm" />
@@ -122,7 +121,7 @@ export default function StagePage() {
         })}
       />
 
-      <div className="space-y-5">
+      <div className="space-y-6">
         {t && (
           <section className="rounded-2xl border bg-card px-3 pb-2 shadow-sm sm:px-4" aria-label={ts("all_stages")}>
             <StageFlow
@@ -141,7 +140,7 @@ export default function StagePage() {
             type="button"
             onClick={jumpToMine}
             data-tour="my-group"
-            className="flex w-full items-center gap-4 rounded-2xl border border-primary/40 bg-primary/5 p-4 text-left shadow-glow outline-none transition-colors hover:bg-primary/10 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            className="flex w-full items-center gap-4 rounded-2xl border border-primary/40 bg-primary/5 p-4 sm:p-5 text-left shadow-glow outline-none transition-colors hover:bg-primary/10 focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <SlotChip slot={myRow.slotNumber} />
             <span className="min-w-0 flex-1">
@@ -165,8 +164,6 @@ export default function StagePage() {
             </span>
           </p>
         )}
-
-        <OnFire stage={d} />
 
         <Tabs value={tab} onValueChange={(v) => setParams(v === "groups" ? {} : { tab: v }, { replace: true })} className="gap-4">
           <TabsList className="h-10" data-tour="stage-tabs">
@@ -209,6 +206,8 @@ export default function StagePage() {
             <StageMatches d={d} myGroupName={myGroup?.name} />
           </TabsContent>
         </Tabs>
+
+        <OnFire stage={d} />
       </div>
     </>
   );

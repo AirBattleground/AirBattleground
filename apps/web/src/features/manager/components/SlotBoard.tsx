@@ -8,7 +8,7 @@ export function SlotBoard({ slots, highlight }: { slots: SessionDetail["slots"];
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
       {slots.map((s) => (
-        <div key={s.slotNumber} className="relative h-[68px]">
+        <div key={s.slotNumber} className="relative h-12">
           <AnimatePresence mode="popLayout" initial={false}>
             {s.team ? (
               <motion.div
@@ -18,14 +18,13 @@ export function SlotBoard({ slots, highlight }: { slots: SessionDetail["slots"];
                 exit={{ opacity: 0, scale: 0.85 }}
                 transition={{ type: "spring", stiffness: 380, damping: 24 }}
                 className={cn(
-                  "absolute inset-0 flex items-center gap-3 rounded-xl border border-primary/40 bg-gradient-to-br from-primary/20 to-primary/5 px-3",
+                  "absolute inset-0 flex items-center gap-2.5 rounded-lg border border-primary/40 bg-primary/10 px-2.5",
                   highlight && s.registrationId === highlight && "ring-2 ring-success shadow-glow",
                 )}
               >
-                <span className="font-display text-2xl font-bold leading-none text-primary">{slotLabel(s.slotNumber)}</span>
-                <span className="min-w-0">
-                  <span className="block truncate font-display text-base font-bold leading-tight">{s.team.tag}</span>
-                  <span className="block truncate text-xs text-muted-foreground">{s.team.name}</span>
+                <span className="font-display text-xl font-bold leading-none text-primary tabular-nums">{slotLabel(s.slotNumber)}</span>
+                <span className="min-w-0 truncate text-sm font-semibold" title={`${s.team.name} [${s.team.tag}]`}>
+                  {s.team.name}
                 </span>
               </motion.div>
             ) : (
@@ -34,10 +33,10 @@ export function SlotBoard({ slots, highlight }: { slots: SessionDetail["slots"];
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="absolute inset-0 flex items-center gap-3 rounded-xl border-2 border-dashed px-3 text-muted-foreground"
+                className="absolute inset-0 flex items-center gap-2.5 rounded-lg border border-dashed px-2.5 text-muted-foreground"
               >
-                <span className="font-display text-2xl font-bold leading-none opacity-60">{slotLabel(s.slotNumber)}</span>
-                <span className="text-sm">Free</span>
+                <span className="font-display text-xl font-bold leading-none opacity-60 tabular-nums">{slotLabel(s.slotNumber)}</span>
+                <span className="text-xs">Free</span>
               </motion.div>
             )}
           </AnimatePresence>

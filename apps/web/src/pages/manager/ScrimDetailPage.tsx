@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,7 +8,7 @@ import {
   ChevronDown,
   Clock,
   Copy,
-  Inbox,
+  Info,
   Lock,
   LockOpen,
   Pencil,
@@ -49,16 +49,17 @@ import { ScrimPosterCard } from "@/features/manager/components/BrandingCards";
 import { ScrimStatusPill } from "@/features/manager/components/ScrimStatusPill";
 import { SlotBoard, slotListText } from "@/features/manager/components/SlotBoard";
 import { useNow } from "@/features/manager/components/useNow";
+import { Zone, ZoneLabel } from "@/features/manager/components/Zone";
 import { SessionMatches } from "@/features/matches/components/SessionMatches";
 
 const TOUR: TourStep[] = [
   { title: "Running a session", description: "Here you decide which teams play on a given day." },
-  { element: '[data-tour="detail-poster"]', title: "Scrim poster", description: "Upload a poster for this scrim. Teams see it when they browse and register." },
   { element: '[data-tour="detail-dates"]', title: "Pick the day", description: "Only days this scrim runs are shown. Each day has its own list of teams." },
   { element: '[data-tour="detail-tabs"]', title: "Teams or matches", description: "“Teams” is for approvals and slots. After the scrim starts, “Matches & results” is where you upload screenshots and publish results." },
   { element: '[data-tour="detail-summary"]', title: "How full is it?", description: "Confirmed teams, requests waiting, slots left — and when registration closes." },
   { element: '[data-tour="detail-requests"]', title: "Approve or reject", description: "Approving gives the team the lowest free slot automatically. You can remove a team later to free their slot." },
-  { element: '[data-tour="detail-board"]', title: "Slot board", description: "Who is in which slot. Use “Copy slot list” to paste it into WhatsApp or Discord." },
+  { element: '[data-tour="detail-board"]', title: "Slot board", description: "Who is in which slot. Use “Copy” to paste the list into WhatsApp or Discord." },
+  { element: '[data-tour="detail-info"]', title: "Scrim details & poster", description: "Time, slots, maps and the poster teams see. Open it to upload or change the poster." },
 ];
 
 export default function ScrimDetailPage() {
@@ -125,14 +126,13 @@ function Detail({ scrim }: { scrim: Scrim }) {
       <PageHeader
         eyebrow={
           <span className="flex items-center gap-1.5">
-            <Repeat className="size-3.5" /> {recurrenceLabel(scrim)}
+            <Repeat className="size-3.5" /> {recurrenceLabel(scrim)} · {formatTime(scrim.startTime)} IST
           </span>
         }
         title={scrim.title}
-        description={scrim.description ?? undefined}
         actions={
           <>
-            <ScrimStatusPill status={scrim.status} />
+            {scrim.status !== "ACTIVE" && <ScrimStatusPill status={scrim.status} />}
             <Button asChild variant="outline">
               <Link to={`/manager/scrims/${scrim.id}/edit`}>
                 <Pencil /> Edit
@@ -142,32 +142,18 @@ function Detail({ scrim }: { scrim: Scrim }) {
         }
       />
 
-      <div className="mb-6 grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,440px)] xl:items-stretch">
-        <div className="flex flex-wrap content-center items-center gap-x-6 gap-y-3 rounded-xl border bg-card p-4 text-sm shadow-sm">
-          <span className="flex items-center gap-2">
-            <Clock className="size-4 text-primary" />
-            <span className="font-display text-lg font-bold">{formatTime(scrim.startTime)}</span> IST
-          </span>
-          <span className="flex items-center gap-2 text-muted-foreground">
-            <Users className="size-4 text-primary" /> {slotRangeLabel(scrim.firstSlot, scrim.slotCount)}
-          </span>
-          <span className="text-muted-foreground">{dateRangeLabel(scrim)}</span>
-          <MapChips maps={scrim.maps} numbered className="w-full sm:w-auto" />
-        </div>
-        <ScrimPosterCard scrimId={scrim.id} url={scrim.posterUrl} compact tour="detail-poster" />
-      </div>
-
+      <div className="space-y-6">
       {scrim.status !== "ACTIVE" && (
-        <div className="mb-4 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
+        <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
           {scrim.status === "PAUSED"
-            ? "This scrim is paused — teams can't send new requests until you resume it from the Scrims page."
-            : "This scrim is archived — it no longer runs. You can still view past sessions."}
+            ? "Paused — teams can't send new requests until you resume it."
+            : "Archived — it no longer runs. Past sessions are still here."}
         </div>
       )}
 
-      <div data-tour="detail-dates" className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center">
+      <div data-tour="detail-dates" className="flex flex-col gap-3 lg:flex-row lg:items-center">
         {scrim.recurrence === "ONCE" ? (
-          <div className="flex items-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 py-2 font-display text-xl font-bold">
+          <div className="flex items-center gap-2 font-display text-xl font-bold">
             <CalendarDays className="size-5 text-primary" />
             One-time · {formatDate(scrim.startDate)}
           </div>
@@ -194,7 +180,7 @@ function Detail({ scrim }: { scrim: Scrim }) {
         <EmptyState
           icon={<CalendarOff />}
           title={`${scrim.title} doesn't run on ${formatDate(date)}`}
-          description="Pick one of the highlighted days above to see its teams."
+          description="Pick a highlighted day above."
           action={
             <Button onClick={() => setDate(fallback)} disabled={!occursOn(scrim, fallback)}>
               Go to {formatDate(fallback)}
@@ -202,7 +188,45 @@ function Detail({ scrim }: { scrim: Scrim }) {
           }
         />
       )}
+
+      <details data-tour="detail-info" className="group rounded-xl border bg-card shadow-sm">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-4 text-sm font-semibold sm:px-5 [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center gap-2">
+            <Info className="size-4 text-primary" /> Scrim details & poster
+          </span>
+          <ChevronDown className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+        <div className="grid gap-5 border-t p-4 sm:p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
+          <dl className="divide-y text-sm">
+            <InfoRow label="Start time">
+              <span className="font-display text-base font-bold">{formatTime(scrim.startTime)}</span> IST
+            </InfoRow>
+            <InfoRow label="Slots">{slotRangeLabel(scrim.firstSlot, scrim.slotCount)}</InfoRow>
+            <InfoRow label="Runs">{dateRangeLabel(scrim)}</InfoRow>
+            <InfoRow label="Matches">
+              <MapChips maps={scrim.maps} numbered className="justify-end" />
+            </InfoRow>
+            {scrim.description && (
+              <div className="py-2.5">
+                <dt className="text-muted-foreground">Description</dt>
+                <dd className="mt-1 whitespace-pre-line">{scrim.description}</dd>
+              </div>
+            )}
+          </dl>
+          <ScrimPosterCard scrimId={scrim.id} url={scrim.posterUrl} compact tour="detail-poster" className="border-0 bg-transparent p-0 shadow-none sm:p-0" />
+        </div>
+      </details>
+      </div>
     </>
+  );
+}
+
+function InfoRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-2.5 first:pt-0">
+      <dt className="shrink-0 text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-right">{children}</dd>
+    </div>
   );
 }
 
@@ -214,7 +238,7 @@ function SessionView({ scrim, date }: { scrim: Scrim; date: string }) {
         <EmptyState
           icon={<CalendarOff />}
           title={`No session on ${formatDate(date)}`}
-          description="This scrim doesn't run on this day. Pick another date above."
+          description="Pick another date above."
         />
       );
     return <QueryError error={q.error} onRetry={() => void q.refetch()} />;
@@ -306,167 +330,148 @@ function Session({ s }: { s: SessionDetail }) {
 
   return (
     <div className="space-y-6">
-      {/* summary bar */}
-      <div data-tour="detail-summary" className="grid gap-3 rounded-xl border bg-card p-4 shadow-sm sm:grid-cols-2 lg:grid-cols-4 sm:p-5">
-        <div className="sm:col-span-2 lg:col-span-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Teams confirmed</p>
-          <p className="font-display text-3xl font-bold">
+      {/* key numbers */}
+      <div data-tour="detail-summary" className="grid grid-cols-2 gap-4 rounded-xl border bg-card p-4 shadow-sm sm:grid-cols-4 sm:p-5">
+        <div>
+          <ZoneLabel>Confirmed</ZoneLabel>
+          <p className="font-display text-3xl font-bold tabular-nums">
             {s.counts.approved}
             <span className="text-lg text-muted-foreground">/{s.scrim.slotCount}</span>
           </p>
-          <Progress value={pct} className={cn("mt-1 h-2", full && "[&>[data-slot=progress-indicator]]:bg-success")} />
+          <Progress value={pct} className={cn("mt-1 h-1.5", full && "[&>[data-slot=progress-indicator]]:bg-success")} />
         </div>
-        <SummaryStat label="Waiting" value={s.counts.pending} tone={s.counts.pending > 0 ? "text-warning" : undefined} />
+        <SummaryStat label="Waiting" value={s.counts.pending} tone={s.counts.pending > 0 ? "text-warning-foreground dark:text-warning" : undefined} />
         <SummaryStat label="Slots left" value={full ? "Full" : s.counts.slotsLeft} tone={full ? "text-success" : undefined} />
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Registration</p>
+          <ZoneLabel>Registration</ZoneLabel>
           {s.registrationOpen && left ? (
             <>
-              <p className="flex items-center gap-1.5 font-display text-xl font-bold text-success">
+              <p className="flex items-center gap-1.5 font-display text-2xl font-bold text-success">
                 <LockOpen className="size-4" /> Open
               </p>
-              <p className="text-xs text-muted-foreground">Closes in {left} (at {formatTime(s.scrim.startTime)})</p>
+              <p className="text-xs text-muted-foreground">Closes in {left}</p>
             </>
           ) : (
             <>
-              <p className="flex items-center gap-1.5 font-display text-xl font-bold text-muted-foreground">
+              <p className="flex items-center gap-1.5 font-display text-2xl font-bold text-muted-foreground">
                 <Lock className="size-4" /> Closed
               </p>
-              <p className="text-xs text-muted-foreground">{left ? "Teams can't register right now" : "The session has started"}</p>
+              <p className="text-xs text-muted-foreground">{left ? "Not taking requests" : "Session started"}</p>
             </>
           )}
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
-        {/* Requests pane */}
-        <section data-tour="detail-requests" className="space-y-6">
-          <div>
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="flex items-center gap-2 font-display text-2xl font-bold">
-                Requests
-                {pending.length > 0 && (
-                  <span className="grid min-w-7 place-items-center rounded-full bg-warning/20 px-2 text-base text-warning-foreground dark:text-warning">
-                    {pending.length}
-                  </span>
-                )}
-              </h2>
-              {pending.length > 1 && (
-                <Button variant="outline" onClick={() => setConfirmAll(true)} disabled={full || bulkRunning}>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:items-start">
+        <div className="space-y-4">
+          {/* Requests */}
+          <Zone
+            data-tour="detail-requests"
+            label={`Requests${pending.length ? ` · ${pending.length}` : ""}`}
+            className={pending.length > 0 ? "border-warning/50" : undefined}
+            aside={
+              pending.length > 1 && (
+                <Button size="sm" variant="outline" onClick={() => setConfirmAll(true)} disabled={full || bulkRunning}>
                   <CheckCheck /> {bulkRunning ? "Approving…" : "Approve all"}
                 </Button>
-              )}
-            </div>
+              )
+            }
+          >
             {pending.length === 0 ? (
-              <div className="flex items-center gap-3 rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-                <Inbox className="size-5 text-primary" />
-                No teams waiting. New requests show up here automatically.
-              </div>
+              <p className="text-sm text-muted-foreground">No teams waiting.</p>
             ) : (
-              <div className="space-y-2">
-                {full && (
-                  <p className="rounded-lg bg-warning/10 p-3 text-sm">
-                    All slots are taken. Remove an approved team to make room, or reject the remaining requests.
-                  </p>
-                )}
-                {pending.map((r) => (
-                  <RequestCard
-                    key={r.id}
-                    reg={r}
-                    full={full}
-                    busy={bulkRunning}
-                    onApprove={() =>
-                      approve.mutate(
-                        { id: r.id, teamName: r.team.name },
-                        { onSuccess: (reg) => flash(reg.id) },
-                      )
-                    }
-                    onReject={() => setRejecting({ reg: r, mode: "reject" })}
-                  />
-                ))}
-              </div>
+              <>
+                {full && <p className="mb-2 rounded-lg bg-warning/10 p-2.5 text-sm">All slots are taken. Remove a team to make room.</p>}
+                <div className="-my-2.5 divide-y">
+                  {pending.map((r) => (
+                    <RequestCard
+                      key={r.id}
+                      reg={r}
+                      full={full}
+                      busy={bulkRunning}
+                      onApprove={() =>
+                        approve.mutate(
+                          { id: r.id, teamName: r.team.name },
+                          { onSuccess: (reg) => flash(reg.id) },
+                        )
+                      }
+                      onReject={() => setRejecting({ reg: r, mode: "reject" })}
+                    />
+                  ))}
+                </div>
+              </>
             )}
-          </div>
+          </Zone>
 
-          <div>
-            <h3 className="mb-3 font-display text-xl font-bold">
-              Approved <span className="text-muted-foreground">({approved.length})</span>
-            </h3>
+          {/* Approved */}
+          <Zone label={`Approved · ${approved.length}`}>
             {approved.length === 0 ? (
-              <p className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-                No teams approved yet. Approve a request and they'll get slot #{s.scrim.firstSlot}.
-              </p>
+              <p className="text-sm text-muted-foreground">None yet — the first approved team gets slot #{s.scrim.firstSlot}.</p>
             ) : (
-              <ul className="divide-y rounded-xl border bg-card">
+              <ul className="-my-2 divide-y">
                 {approved.map((r) => (
-                  <li key={r.id} className="flex items-center gap-3 p-3">
+                  <li key={r.id} className="flex items-center gap-3 py-2">
                     {r.slotNumber != null && <SlotChip slot={r.slotNumber} size="sm" />}
-                    <TeamAvatar name={r.team.name} tag={r.team.tag} size="sm" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">
-                        {r.team.name} <span className="text-xs text-muted-foreground">({r.team.tag})</span>
-                      </p>
-                      {r.team.captainName && <p className="truncate text-xs text-muted-foreground">Captain: {r.team.captainName}</p>}
-                    </div>
+                    <p className="min-w-0 flex-1 truncate font-semibold">
+                      {r.team.name} <span className="text-xs font-normal text-muted-foreground">[{r.team.tag}]</span>
+                    </p>
                     <Button
                       variant="ghost"
-                      size="sm"
-                      className="text-muted-foreground hover:text-destructive"
+                      size="icon"
+                      className="size-10 text-muted-foreground hover:text-destructive"
                       onClick={() => setRejecting({ reg: r, mode: "remove" })}
+                      aria-label={`Remove ${r.team.name}`}
+                      title="Remove from this session"
                     >
-                      <UserMinus /> <span className="hidden sm:inline">Remove</span>
+                      <UserMinus />
                     </Button>
                   </li>
                 ))}
               </ul>
             )}
-          </div>
 
-          {closed.length > 0 && (
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowClosed((v) => !v)}
-                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
-                <ChevronDown className={cn("size-4 transition-transform", showClosed && "rotate-180")} />
-                Rejected & cancelled ({closed.length})
-              </button>
-              {showClosed && (
-                <ul className="mt-2 divide-y rounded-xl border bg-card/60">
-                  {closed.map((r) => (
-                    <li key={r.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
-                      <TeamAvatar name={r.team.name} tag={r.team.tag} size="sm" className="opacity-70" />
-                      <span className="min-w-0 flex-1">
-                        <span className="font-medium">{r.team.name}</span>
-                        {r.rejectionReason && <span className="block text-xs text-muted-foreground">“{r.rejectionReason}”</span>}
-                      </span>
-                      <StatusBadge status={r.status} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </section>
+            {closed.length > 0 && (
+              <div className="mt-3 border-t pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowClosed((v) => !v)}
+                  className="flex min-h-8 items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronDown className={cn("size-4 transition-transform", showClosed && "rotate-180")} />
+                  Rejected & cancelled ({closed.length})
+                </button>
+                {showClosed && (
+                  <ul className="mt-1 divide-y">
+                    {closed.map((r) => (
+                      <li key={r.id} className="flex items-center gap-3 py-2 text-sm">
+                        <TeamAvatar name={r.team.name} tag={r.team.tag} size="sm" className="opacity-70" />
+                        <span className="min-w-0 flex-1">
+                          <span className="font-medium">{r.team.name}</span>
+                          {r.rejectionReason && <span className="block truncate text-xs text-muted-foreground">“{r.rejectionReason}”</span>}
+                        </span>
+                        <StatusBadge status={r.status} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </Zone>
+        </div>
 
         {/* Slot board */}
-        <section data-tour="detail-board" className="lg:sticky lg:top-20 lg:self-start">
-          <div className="rounded-xl border bg-card p-4 shadow-sm sm:p-5">
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <div>
-                <h2 className="font-display text-2xl font-bold">Slot board</h2>
-                <p className="text-xs text-muted-foreground">
-                  {formatDate(s.date)} · {formatTime(s.scrim.startTime)} IST
-                </p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => void copyList()}>
-                <Copy /> Copy slot list
-              </Button>
-            </div>
-            <SlotBoard slots={s.slots} highlight={highlight} />
-          </div>
-        </section>
+        <Zone
+          data-tour="detail-board"
+          label="Slot board"
+          className="lg:sticky lg:top-20"
+          aside={
+            <Button variant="outline" size="sm" onClick={() => void copyList()}>
+              <Copy /> Copy
+            </Button>
+          }
+        >
+          <SlotBoard slots={s.slots} highlight={highlight} />
+        </Zone>
       </div>
 
       <RejectDialog
@@ -497,8 +502,8 @@ function Session({ s }: { s: SessionDetail }) {
 function SummaryStat({ label, value, tone }: { label: string; value: number | string; tone?: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={cn("font-display text-3xl font-bold", tone)}>{value}</p>
+      <ZoneLabel>{label}</ZoneLabel>
+      <p className={cn("font-display text-3xl font-bold tabular-nums", tone)}>{value}</p>
     </div>
   );
 }
@@ -524,7 +529,6 @@ function DetailSkeleton() {
     <div className="space-y-6">
       <Skeleton className="h-6 w-28" />
       <Skeleton className="h-12 w-80" />
-      <Skeleton className="h-16 rounded-xl" />
       <Skeleton className="h-20 rounded-xl" />
       <SessionSkeleton />
     </div>

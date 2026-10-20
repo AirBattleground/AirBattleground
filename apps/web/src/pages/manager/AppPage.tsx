@@ -20,17 +20,17 @@ const TOUR: TourStep[] = [
 ];
 
 const INSTALL = [
-  { icon: FileDown, title: "Download the app on your phone", text: "Open this page in Chrome on your Android phone and tap Download. If Chrome says the file might be harmful, tap Download anyway — it's from AirBattleground." },
-  { icon: ShieldCheck, title: "Allow installs from this source", text: "When you open the file, Android asks for permission. Tap Settings, turn on “Allow from this source” for Chrome, then go back." },
-  { icon: Smartphone, title: "Open the file and tap Install", text: "Find it in Downloads (or the notification) and tap Install. If Play Protect warns you, tap More details → Install anyway — the app isn't on the Play Store." },
-  { icon: LogIn, title: "Sign in", text: "Use the same username and password as this portal. Your scrim and tournament matches for today show up right away." },
+  { icon: FileDown, title: "Download on your phone", text: "Open this page in Chrome on Android and tap Download. If Chrome warns you, tap Download anyway." },
+  { icon: ShieldCheck, title: "Allow installs from Chrome", text: "Android asks once: tap Settings → turn on “Allow from this source” → go back." },
+  { icon: Smartphone, title: "Tap Install", text: "If Play Protect warns you, tap More details → Install anyway (it isn't on the Play Store)." },
+  { icon: LogIn, title: "Sign in", text: "Same username and password as this portal. Today's matches show up right away." },
 ];
 
 const PERMISSIONS = [
-  { icon: Layers, title: "Display over other apps", text: "Shows the small AirBattleground bubble and the room checklist on top of BGMI." },
-  { icon: Bell, title: "Notifications", text: "Keeps recording running with Stop / Pause controls, and shows upload progress." },
-  { icon: MonitorPlay, title: "Screen capture", text: "Records the match and spots the team list and results screens. Android asks every time you go live." },
-  { icon: Accessibility, title: "Accessibility — Auto mode only", text: "Lets the app tap the room-creation steps for you. Not needed for the default Assisted mode, where you tap and the app guides you." },
+  { icon: Layers, title: "Display over other apps", text: "Shows the bubble and room checklist on top of BGMI." },
+  { icon: Bell, title: "Notifications", text: "Recording controls and upload progress." },
+  { icon: MonitorPlay, title: "Screen capture", text: "Records the match and spots the team list and results screens." },
+  { icon: Accessibility, title: "Accessibility (Auto mode only)", text: "Taps the room-creation steps for you. Not needed in Assisted mode." },
 ];
 
 export default function AppPage() {
@@ -75,19 +75,17 @@ export default function AppPage() {
   return (
     <>
       {back}
-      <PageHeader eyebrow="Android app" title={<>AirBattleground <span className="text-gradient-brand">Manager</span></>} description="Run match day from your phone: record every game, create the room, and capture the team list and results automatically." />
+      <PageHeader eyebrow="Android app" title={<>AirBattleground <span className="text-gradient-brand">Manager</span></>} description="Record games, create the room and capture screenshots from your phone." />
 
       <div className="space-y-6">
-        <section className="relative overflow-hidden rounded-2xl border border-primary/30 bg-card p-5 shadow-glow sm:p-7">
-          <div className="pointer-events-none absolute inset-0 bg-grid opacity-60" />
-          <div className="pointer-events-none absolute -top-24 -right-20 size-72 rounded-full bg-primary/20 blur-3xl animate-aurora" />
-          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-glow animate-float">
-              <Smartphone className="size-8" />
+        <section className="rounded-xl border border-primary/30 bg-card p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <Smartphone className="size-6" />
             </div>
             <div className="min-w-0 flex-1 space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-2xl font-bold sm:text-3xl">Version {r.version}</h2>
+                <h2 className="font-display text-2xl font-bold">Version {r.version}</h2>
                 <Pill tone="brand">Android</Pill>
               </div>
               <p className="text-sm text-muted-foreground">
@@ -104,17 +102,18 @@ export default function AppPage() {
         </section>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <section data-tour="app-install" className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
-            <h2 className="mb-4 font-display text-2xl font-bold">Install in 4 steps</h2>
+          <section data-tour="app-install" className="rounded-xl border bg-card p-4 shadow-sm sm:p-5">
+            <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Install in 4 steps</h2>
             <ol className="space-y-4">
               {INSTALL.map((s, i) => (
                 <li key={s.title} className="flex gap-3">
-                  <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl border border-primary/40 bg-gradient-to-b from-primary/25 to-primary/5 text-primary">
-                    <s.icon className="size-5" />
-                    <span className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-primary font-display text-xs font-bold text-primary-foreground">{i + 1}</span>
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary font-display text-sm font-bold text-primary-foreground" aria-hidden>
+                    {i + 1}
                   </span>
                   <div className="min-w-0">
-                    <div className="font-display text-lg leading-snug font-bold">{s.title}</div>
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <s.icon className="size-4 text-primary" /> {s.title}
+                    </div>
                     <p className="text-sm text-muted-foreground">{s.text}</p>
                   </div>
                 </li>
@@ -122,12 +121,11 @@ export default function AppPage() {
             </ol>
           </section>
 
-          <section data-tour="app-permissions" className="rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
-            <h2 className="mb-1 font-display text-2xl font-bold">Permissions it asks for</h2>
-            <p className="mb-4 text-sm text-muted-foreground">The app explains each one when it asks. Here's why it needs them.</p>
-            <ul className="space-y-3">
+          <section data-tour="app-permissions" className="rounded-xl border bg-card p-4 shadow-sm sm:p-5">
+            <h2 className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Permissions it asks for</h2>
+            <ul className="divide-y">
               {PERMISSIONS.map((p) => (
-                <li key={p.title} className="flex gap-3 rounded-xl border bg-background/60 p-3">
+                <li key={p.title} className="flex gap-3 py-2.5 first:pt-0 last:pb-0">
                   <p.icon className="mt-0.5 size-5 shrink-0 text-primary" />
                   <div className="min-w-0">
                     <div className="font-semibold">{p.title}</div>
@@ -139,32 +137,33 @@ export default function AppPage() {
           </section>
         </div>
 
-        <section data-tour="app-warning" className="flex gap-3 rounded-2xl border border-warning/50 bg-warning/10 p-4 sm:p-5">
+        <section data-tour="app-warning" className="flex gap-3 rounded-xl border border-warning/50 bg-warning/10 p-4 sm:p-5">
           <ShieldAlert className="mt-0.5 size-6 shrink-0 text-warning-foreground dark:text-warning" />
           <div className="space-y-1">
-            <h2 className="font-display text-xl font-bold">Auto mode and BGMI — read this first</h2>
+            <h2 className="font-display text-lg font-bold">Auto mode can get an account flagged</h2>
             <p className="text-sm">
-              In <strong>Auto mode</strong> the app taps through room creation for you. BGMI's anti-cheat may treat automatic taps as a third-party tool and could flag or ban the
-              account. Auto mode is off by default — <strong>Assisted mode</strong> (you tap, the app shows the next step) is safe to use. If you switch Auto mode on, use a
-              spare host account, never your main one.
+              BGMI may treat automatic taps as a third-party tool. <strong>Assisted mode</strong> (the default) is safe. If you turn Auto mode on, use a spare host account —
+              never your main one.
             </p>
           </div>
         </section>
 
-        <section className="grid gap-3 sm:grid-cols-2">
-          <div className="flex gap-3 rounded-xl border bg-card p-4">
-            <BatteryCharging className="mt-0.5 size-5 shrink-0 text-primary" />
-            <p className="text-sm">
-              <span className="font-semibold">Turn off battery optimisation</span> for AirBattleground Manager (Settings → Apps → AirBattleground Manager → Battery → Unrestricted) so recording isn't
-              stopped mid-match.
-            </p>
-          </div>
-          <div className="flex gap-3 rounded-xl border bg-card p-4">
-            <Wifi className="mt-0.5 size-5 shrink-0 text-primary" />
-            <p className="text-sm">
-              <span className="font-semibold">Videos upload on Wi-Fi</span> by default and resume if the connection drops. Watch them later in each match center.
-            </p>
-          </div>
+        <section className="rounded-xl border bg-card p-4 shadow-sm sm:p-5">
+          <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Tips</h2>
+          <ul className="space-y-2.5 text-sm">
+            <li className="flex gap-3">
+              <BatteryCharging className="mt-0.5 size-4 shrink-0 text-primary" />
+              <span>
+                <span className="font-semibold">Set battery to Unrestricted</span> (Settings → Apps → AirBattleground Manager → Battery) so recording isn't stopped.
+              </span>
+            </li>
+            <li className="flex gap-3">
+              <Wifi className="mt-0.5 size-4 shrink-0 text-primary" />
+              <span>
+                <span className="font-semibold">Videos upload on Wi-Fi</span> and resume if the connection drops.
+              </span>
+            </li>
+          </ul>
         </section>
       </div>
     </>

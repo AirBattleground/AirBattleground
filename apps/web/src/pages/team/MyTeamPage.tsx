@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
+  ChevronDown,
   Crown,
   Hash,
   LogOut,
@@ -10,8 +11,6 @@ import {
   ShieldX,
   UserCheck,
   UserMinus,
-  UserPlus,
-  Users,
   X,
 } from "lucide-react";
 import { type PlayerTeam, type TeamJoinRequestRow, type TeamMemberRow } from "@7xen/shared";
@@ -85,13 +84,13 @@ function Confirm({ state, onClose }: { state: ConfirmState | null; onClose: () =
   );
 }
 
-function Section({ title, icon, count, children, className, tour, action }: { title: string; icon: ReactNode; count?: number; children: ReactNode; className?: string; tour?: string; action?: ReactNode }) {
+function Section({ title, count, children, className, tour, action }: { title: string; count?: ReactNode; children: ReactNode; className?: string; tour?: string; action?: ReactNode }) {
   return (
     <section className={cn("rounded-2xl border bg-card shadow-sm", className)} data-tour={tour}>
-      <div className="flex items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
-        <h2 className="flex items-center gap-2 font-display text-xl font-bold [&_svg]:size-5 [&_svg]:text-primary">
-          {icon} {title}
-          {count != null && <span className="rounded-full bg-muted px-2 py-0.5 font-sans text-xs font-semibold text-muted-foreground tabular-nums">{count}</span>}
+      <div className="flex min-h-12 items-center justify-between gap-3 px-4 pt-3 sm:px-5">
+        <h2 className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+          {title}
+          {count != null && <span className="ml-1.5 text-foreground tabular-nums">{count}</span>}
         </h2>
         {action}
       </div>
@@ -136,13 +135,12 @@ function RequestRow({ r }: { r: TeamJoinRequestRow }) {
 
 function MemberRow({ m, me, leaderView, onAsk }: { m: TeamMemberRow; me: boolean; leaderView: boolean; onAsk: (c: ConfirmState) => void }) {
   const t = useT(myTeamMsg);
-  const fmt = useDateFormat();
   const remove = useRemoveMember();
   const transfer = useTransferLeader();
   const n = name(m);
   const leader = m.role === "LEADER";
   return (
-    <li className="flex items-center gap-3 px-4 py-3 sm:px-5">
+    <li className="flex min-h-14 items-center gap-3 px-4 py-2.5 sm:px-5">
       <div className="relative">
         <PlayerAvatar name={n} url={m.avatarUrl} size="md" className={cn(leader && "ring-2 ring-warning/70")} />
         {leader && (
@@ -155,7 +153,6 @@ function MemberRow({ m, me, leaderView, onAsk }: { m: TeamMemberRow; me: boolean
         <p className="flex items-center gap-2 truncate font-semibold">
           <span className="truncate">{n}</span>
           {me && <span className="rounded-md bg-primary/15 px-1.5 py-px text-[10px] font-bold tracking-wider text-primary uppercase">{t("you")}</span>}
-          {leader && <span className="rounded-md bg-warning/15 px-1.5 py-px text-[10px] font-bold tracking-wider text-warning uppercase">{t("leader")}</span>}
         </p>
         <p className="truncate text-xs text-muted-foreground">
           {m.bgmiId ? (
@@ -165,8 +162,7 @@ function MemberRow({ m, me, leaderView, onAsk }: { m: TeamMemberRow; me: boolean
             </span>
           ) : (
             t("no_bgmi")
-          )}{" "}
-          · {t("joined", { when: fmt(m.joinedAt, "d MMM yyyy") })}
+          )}
         </p>
       </div>
       {leaderView && !me && (
@@ -289,7 +285,7 @@ function MyTeamView() {
     });
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="space-y-6">
       <PageHeader
         eyebrow={tr("eyebrow")}
         title={
@@ -301,16 +297,11 @@ function MyTeamView() {
             </span>
           </span>
         }
-        description={
-          <>
-            {tr.rich(
-              "players_role",
-              { b: (c) => <span className="font-semibold text-foreground">{c}</span> },
-              { count: t.members.length, max: t.maxMembers, role: leaderView ? tr("role_leader") : tr("role_member") },
-            )}
-            {!leaderView && tr("member_hint")}
-          </>
-        }
+        description={tr.rich(
+          "players_role",
+          { b: (c) => <span className="font-semibold text-foreground">{c}</span> },
+          { count: t.members.length, max: t.maxMembers, role: leaderView ? tr("role_leader") : tr("role_member") },
+        )}
         actions={
           leaderView ? (
             <Button variant="outline" onClick={() => setEditOpen(true)}>
@@ -318,83 +309,84 @@ function MyTeamView() {
             </Button>
           ) : undefined
         }
-        className="mb-2"
+        className="mb-0"
       />
 
-      {leaderView && t.inviteCode && <InvitePlayersCard team={t} onRotate={askRotate} />}
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+        <div className="space-y-4">
+          {leaderView && t.joinRequests.length > 0 && (
+            <Section title={tr("join_requests")} count={t.joinRequests.length} tour="join-requests" className="border-warning/40">
+              <ul className="divide-y">
+                {t.joinRequests.map((r) => (
+                  <RequestRow key={r.id} r={r} />
+                ))}
+              </ul>
+            </Section>
+          )}
 
-      {leaderView && (
-        <Section title={tr("join_requests")} icon={<UserPlus />} count={t.joinRequests.length} tour="join-requests">
-          {t.joinRequests.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground sm:px-5">{tr("no_requests")}</p>
-          ) : (
+          <Section title={tr("members")} count={`${t.members.length}/${t.maxMembers}`} tour="team-members">
             <ul className="divide-y">
-              {t.joinRequests.map((r) => (
-                <RequestRow key={r.id} r={r} />
+              {members.map((m) => (
+                <MemberRow key={m.id} m={m} me={m.id === user?.id} leaderView={leaderView} onAsk={setConfirm} />
               ))}
             </ul>
-          )}
-        </Section>
-      )}
-
-      <Section title={tr("members")} icon={<Users />} count={t.members.length} tour="team-members">
-        <ul className="divide-y">
-          {members.map((m) => (
-            <MemberRow key={m.id} m={m} me={m.id === user?.id} leaderView={leaderView} onAsk={setConfirm} />
-          ))}
-        </ul>
-        {t.members.length < 4 && (
-          <p className="border-t px-4 py-3 text-xs text-muted-foreground sm:px-5">
-            {tr("squad_hint", { max: t.maxMembers })} {leaderView ? tr("invite_more_leader") : tr("invite_more_member")}
-          </p>
-        )}
-      </Section>
-
-      <section className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:p-5" data-tour="team-danger">
-        <div className="min-w-0 flex-1">
-          <h2 className="font-display text-lg font-bold">{leaderView ? tr("disband_team") : tr("leave_team")}</h2>
-          <p className="text-sm text-muted-foreground">
-            {leaderView
-              ? others > 0
-                ? tr("disband_hint_others")
-                : tr("disband_hint_alone")
-              : tr("leave_hint")}
-          </p>
+          </Section>
         </div>
-        {leaderView ? (
-          <Button
-            variant="destructive"
-            disabled={disband.isPending}
-            onClick={() =>
-              setConfirm({
-                title: tr("disband_q", { team: t.name }),
-                description: tr("disband_desc"),
-                action: tr("disband_yes"),
-                destructive: true,
-                run: () => disband.mutate(undefined, { onSuccess: () => navigate("/team", { replace: true }) }),
-              })
-            }
-          >
-            <ShieldX /> {tr("disband_team")}
-          </Button>
-        ) : (
-          <Button
-            variant="destructive"
-            disabled={leave.isPending}
-            onClick={() =>
-              setConfirm({
-                title: tr("leave_q", { team: t.name }),
-                description: tr("leave_desc"),
-                action: tr("leave_yes"),
-                destructive: true,
-                run: () => leave.mutate(undefined, { onSuccess: () => navigate("/team", { replace: true }) }),
-              })
-            }
-          >
-            <LogOut /> {tr("leave_team")}
-          </Button>
-        )}
-      </section>
+
+        <div className="space-y-4">
+          {leaderView && t.inviteCode && <InvitePlayersCard team={t} onRotate={askRotate} />}
+
+          <details className="group rounded-2xl border bg-card shadow-sm" data-tour="team-danger">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-4 text-sm font-medium text-muted-foreground hover:text-foreground sm:px-5 [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-2">
+                {leaderView ? <ShieldX className="size-4" /> : <LogOut className="size-4" />}
+                {leaderView ? tr("disband_team") : tr("leave_team")}
+              </span>
+              <ChevronDown className="size-4 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="space-y-3 border-t px-4 py-4 sm:px-5">
+              <p className="text-sm text-muted-foreground">
+                {leaderView ? (others > 0 ? tr("disband_hint_others") : tr("disband_hint_alone")) : tr("leave_hint")}
+              </p>
+              {leaderView ? (
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  disabled={disband.isPending}
+                  onClick={() =>
+                    setConfirm({
+                      title: tr("disband_q", { team: t.name }),
+                      description: tr("disband_desc"),
+                      action: tr("disband_yes"),
+                      destructive: true,
+                      run: () => disband.mutate(undefined, { onSuccess: () => navigate("/team", { replace: true }) }),
+                    })
+                  }
+                >
+                  <ShieldX /> {tr("disband_team")}
+                </Button>
+              ) : (
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  disabled={leave.isPending}
+                  onClick={() =>
+                    setConfirm({
+                      title: tr("leave_q", { team: t.name }),
+                      description: tr("leave_desc"),
+                      action: tr("leave_yes"),
+                      destructive: true,
+                      run: () => leave.mutate(undefined, { onSuccess: () => navigate("/team", { replace: true }) }),
+                    })
+                  }
+                >
+                  <LogOut /> {tr("leave_team")}
+                </Button>
+              )}
+            </div>
+          </details>
+        </div>
+      </div>
 
       <Confirm state={confirm} onClose={() => setConfirm(null)} />
       <EditTeamDialog open={editOpen} onOpenChange={setEditOpen} team={{ name: t.name, tag: t.tag }} />

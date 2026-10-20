@@ -11,6 +11,7 @@ import { Label } from "@7xen/ui/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@7xen/ui/components/ui/select";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { Switch } from "@7xen/ui/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@7xen/ui/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@7xen/ui/components/ui/toggle-group";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
@@ -21,8 +22,8 @@ import { HlsPlayer } from "@/features/station/components/HlsPlayer";
 
 const TOUR: TourStep[] = [
   { title: "Your broadcast layout", description: "The graphics drawn over your phone's stream: title bar, team list, points table, ticker and sponsors. One layout for all your devices." },
-  { element: '[data-tour="layout-preview"]', title: "Live preview", description: "Every change shows here straight away. Real match data appears once you pick a match on the device page.", side: "left" },
-  { element: '[data-tour="layout-panels"]', title: "Turn parts on and off", description: "Switch each part on or off, choose which side it sits on, and set the text.", side: "right" },
+  { element: '[data-tour="layout-preview"]', title: "Live preview", description: "Every change shows here straight away. Real match data appears once you pick a match on the device page.", side: "bottom" },
+  { element: '[data-tour="layout-panels"]', title: "Turn parts on and off", description: "Panels, extras (ticker, socials, sponsors) and the look. Switch each part on or off and set its side and text.", side: "left" },
   { element: '[data-tour="layout-save"]', title: "Save", description: "Saving updates every live device view within a second.", side: "top" },
 ];
 
@@ -46,13 +47,13 @@ export default function BroadcastLayoutPage() {
   return (
     <>
       {back}
-      <PageHeader eyebrow="Broadcast" title={<>Stream <span className="text-gradient-brand">layout</span></>} description="Design the graphics shown over your live stream. Changes preview instantly." />
+      <PageHeader title="Stream layout" description="Graphics over your live stream · one layout for all devices." />
       {q.isError ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your layout" />
       ) : !q.data ? (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-          <Skeleton className="h-[600px] rounded-2xl" />
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
           <Skeleton className="aspect-video rounded-2xl" />
+          <Skeleton className="h-[480px] rounded-2xl" />
         </div>
       ) : (
         <Editor initial={q.data.config} sponsors={q.data.sponsors} deviceId={deviceId} liveSrc={device.data?.videoReady ? deviceLiveUrl(device.data.id) : null} />
@@ -72,128 +73,142 @@ function Editor({ initial, sponsors, deviceId, liveSrc }: { initial: StreamLayou
     if (saved) reset(saved.config);
   });
 
+  const [group, setGroup] = useState<"look" | "panels" | "extras">("panels");
+
   return (
-    <form onSubmit={onSubmit} noValidate className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
-      <div data-tour="layout-panels" className="order-2 space-y-4 xl:order-1">
-        <Section icon={<Palette />} title="Look">
-          <Field label="Brand colour">
-            <Controller
-              control={control}
-              name="accent"
-              render={({ field }) => (
-                <div className="flex flex-wrap items-center gap-2">
-                  {ACCENTS.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => field.onChange(c)}
-                      aria-label={`Colour ${c}`}
-                      className={cn("size-8 rounded-full border-2 shadow-sm transition-transform hover:scale-110", field.value.toLowerCase() === c ? "border-foreground" : "border-transparent")}
-                      style={{ background: c }}
-                    />
-                  ))}
-                  <label className="relative flex size-8 cursor-pointer items-center justify-center overflow-hidden rounded-full border bg-muted text-xs font-bold" title="Any colour">
-                    +
-                    <input type="color" value={field.value} onChange={(e) => field.onChange(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0" />
-                  </label>
+    <form onSubmit={onSubmit} noValidate className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] xl:items-start">
+      <div data-tour="layout-preview" className="space-y-2 xl:sticky xl:top-20">
+        <Preview config={values} deviceId={deviceId} liveSrc={liveSrc} />
+        <p className="text-xs text-muted-foreground">
+          {liveSrc ? "Over your phone's live video" : "Over a sample background"} · {deviceId ? "uses this device's match" : "sample teams until a device has a match"}
+        </p>
+      </div>
+
+      <div className="min-w-0 space-y-4">
+        <Tabs value={group} onValueChange={(v) => setGroup(v as typeof group)} data-tour="layout-panels">
+          <TabsList className="grid h-10 w-full grid-cols-3">
+            <TabsTrigger value="panels">Panels</TabsTrigger>
+            <TabsTrigger value="extras">Extras</TabsTrigger>
+            <TabsTrigger value="look">Look</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="panels" forceMount hidden={group !== "panels"} className="mt-4">
+            <Group>
+              <Item icon={<Type />} title="Title bar" control={control} enabledName="titleBar.enabled">
+                <Field label="Title">
+                  <Input placeholder="Scrim or tournament name" maxLength={60} {...register("titleBar.title")} />
+                </Field>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <SwitchRow control={control} name="titleBar.showLogo" label="Organisation logo" />
+                  <SwitchRow control={control} name="titleBar.showMatchInfo" label="Day & match number" />
+                  <SwitchRow control={control} name="titleBar.showMap" label="Map name" />
+                  <SwitchRow control={control} name="titleBar.showLiveTimer" label="LIVE timer" />
                 </div>
-              )}
-            />
-          </Field>
-          <Field label="Panel darkness">
-            <Controller control={control} name="panelOpacity" render={({ field }) => <Range value={field.value} min={30} max={100} onChange={field.onChange} suffix="%" />} />
-          </Field>
-        </Section>
+              </Item>
+              <Item icon={<Users />} title="Team list" control={control} enabledName="teams.enabled">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Side">
+                    <SidePicker control={control} name="teams.side" />
+                  </Field>
+                  <Field label="Most rows">
+                    <Controller control={control} name="teams.maxRows" render={({ field }) => <Range value={field.value} min={4} max={25} onChange={field.onChange} />} />
+                  </Field>
+                </div>
+              </Item>
+              <Item icon={<Trophy />} title="Points table" control={control} enabledName="points.enabled" hint="Day (scrim) or group (tournament) standings">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Side">
+                    <SidePicker control={control} name="points.side" />
+                  </Field>
+                  <Field label="Show top">
+                    <Controller control={control} name="points.topN" render={({ field }) => <Range value={field.value} min={3} max={16} onChange={field.onChange} />} />
+                  </Field>
+                </div>
+                {values.teams?.enabled && values.points?.enabled && values.teams.side === values.points.side && (
+                  <p className="text-xs text-muted-foreground">Same side as the team list — it moves to the other side.</p>
+                )}
+              </Item>
+            </Group>
+          </TabsContent>
 
-        <Section icon={<Type />} title="Title bar" control={control} enabledName="titleBar.enabled">
-          <Field label="Title" hint="Leave empty to use the scrim or tournament name.">
-            <Input placeholder="e.g. OPUS NIGHT SCRIMS" maxLength={60} {...register("titleBar.title")} />
-          </Field>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <SwitchRow control={control} name="titleBar.showLogo" label="Organisation logo" />
-            <SwitchRow control={control} name="titleBar.showMatchInfo" label="Day & match number" />
-            <SwitchRow control={control} name="titleBar.showMap" label="Map name" />
-            <SwitchRow control={control} name="titleBar.showLiveTimer" label="LIVE timer" />
-          </div>
-        </Section>
+          <TabsContent value="extras" forceMount hidden={group !== "extras"} className="mt-4">
+            <Group>
+              <Item icon={<Megaphone />} title="Ticker" control={control} enabledName="ticker.enabled">
+                <Input placeholder="e.g. Registrations for Sunday's cup are open" maxLength={200} aria-label="Ticker text" {...register("ticker.text")} />
+              </Item>
+              <Item icon={<Share2 />} title="Social handles" control={control} enabledName="socials.enabled">
+                <Input placeholder="e.g. YT @opusesports · IG @opus" maxLength={80} aria-label="Social handles text" {...register("socials.text")} />
+              </Item>
+              <Item icon={<ImagePlus />} title="Sponsors" control={control} enabledName="sponsors.enabled">
+                <Field label="Corner">
+                  <Controller
+                    control={control}
+                    name="sponsors.corner"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="w-full sm:w-56">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="top-left">Top left</SelectItem>
+                          <SelectItem value="top-right">Top right</SelectItem>
+                          <SelectItem value="bottom-left">Bottom left</SelectItem>
+                          <SelectItem value="bottom-right">Bottom right</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </Field>
+                <Controller control={control} name="sponsors.logoIds" render={({ field }) => <SponsorPicker sponsors={sponsors} value={field.value} onChange={field.onChange} />} />
+              </Item>
+            </Group>
+          </TabsContent>
 
-        <Section icon={<Users />} title="Team list" control={control} enabledName="teams.enabled">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Side">
-              <SidePicker control={control} name="teams.side" />
-            </Field>
-            <Field label="Most rows">
-              <Controller control={control} name="teams.maxRows" render={({ field }) => <Range value={field.value} min={4} max={25} onChange={field.onChange} />} />
-            </Field>
-          </div>
-        </Section>
+          <TabsContent value="look" forceMount hidden={group !== "look"} className="mt-4">
+            <Group>
+              <Item icon={<Palette />} title="Look">
+                <Field label="Brand colour">
+                  <Controller
+                    control={control}
+                    name="accent"
+                    render={({ field }) => (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {ACCENTS.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => field.onChange(c)}
+                            aria-label={`Colour ${c}`}
+                            className={cn("size-9 rounded-full border-2 shadow-sm transition-transform hover:scale-110", field.value.toLowerCase() === c ? "border-foreground" : "border-transparent")}
+                            style={{ background: c }}
+                          />
+                        ))}
+                        <label className="relative flex size-9 cursor-pointer items-center justify-center overflow-hidden rounded-full border bg-muted text-xs font-bold" title="Any colour">
+                          +
+                          <input type="color" value={field.value} onChange={(e) => field.onChange(e.target.value)} className="absolute inset-0 cursor-pointer opacity-0" />
+                        </label>
+                      </div>
+                    )}
+                  />
+                </Field>
+                <Field label="Panel darkness">
+                  <Controller control={control} name="panelOpacity" render={({ field }) => <Range value={field.value} min={30} max={100} onChange={field.onChange} suffix="%" />} />
+                </Field>
+              </Item>
+            </Group>
+          </TabsContent>
+        </Tabs>
 
-        <Section icon={<Trophy />} title="Points table" control={control} enabledName="points.enabled" hint="Standings of the day (scrim) or the group (tournament), from published results.">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Side">
-              <SidePicker control={control} name="points.side" />
-            </Field>
-            <Field label="Show top">
-              <Controller control={control} name="points.topN" render={({ field }) => <Range value={field.value} min={3} max={16} onChange={field.onChange} />} />
-            </Field>
-          </div>
-          {values.teams?.enabled && values.points?.enabled && values.teams.side === values.points.side && (
-            <p className="text-xs text-muted-foreground">Both panels on one side: the points table moves to the other side.</p>
-          )}
-        </Section>
-
-        <Section icon={<Megaphone />} title="Ticker" control={control} enabledName="ticker.enabled">
-          <Field label="Text">
-            <Input placeholder="e.g. Registrations for Sunday's cup are open, DM us to book a slot" maxLength={200} {...register("ticker.text")} />
-          </Field>
-        </Section>
-
-        <Section icon={<Share2 />} title="Social handles" control={control} enabledName="socials.enabled">
-          <Field label="Text">
-            <Input placeholder="e.g. YT @opusesports · IG @opus" maxLength={80} {...register("socials.text")} />
-          </Field>
-        </Section>
-
-        <Section icon={<ImagePlus />} title="Sponsors" control={control} enabledName="sponsors.enabled">
-          <Field label="Corner">
-            <Controller
-              control={control}
-              name="sponsors.corner"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full sm:w-56">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="top-left">Top left</SelectItem>
-                    <SelectItem value="top-right">Top right</SelectItem>
-                    <SelectItem value="bottom-left">Bottom left</SelectItem>
-                    <SelectItem value="bottom-right">Bottom right</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </Field>
-          <Controller control={control} name="sponsors.logoIds" render={({ field }) => <SponsorPicker sponsors={sponsors} value={field.value} onChange={field.onChange} />} />
-        </Section>
-
-        <div data-tour="layout-save" className="sticky bottom-20 z-10 flex items-center justify-end gap-3 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur lg:bottom-4">
-          <span className="mr-auto text-sm text-muted-foreground">{formState.isDirty ? "Unsaved changes" : "All changes saved"}</span>
-          <Button type="button" variant="ghost" onClick={() => reset(DEFAULT_STREAM_LAYOUT, { keepDefaultValues: true })}>
-            Reset to default
+        <div data-tour="layout-save" className="sticky bottom-20 z-10 flex flex-wrap items-center justify-end gap-2 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur lg:bottom-4">
+          <span className={cn("mr-auto text-sm", formState.isDirty ? "font-semibold text-warning-foreground dark:text-warning" : "text-muted-foreground")}>
+            {formState.isDirty ? "Unsaved changes" : "Saved"}
+          </span>
+          <Button type="button" variant="ghost" size="sm" onClick={() => reset(DEFAULT_STREAM_LAYOUT, { keepDefaultValues: true })}>
+            Reset
           </Button>
           <Button type="submit" disabled={!formState.isDirty || save.isPending} className="shadow-glow">
             {save.isPending ? <Loader2 className="animate-spin" /> : <Save />} Save layout
           </Button>
-        </div>
-      </div>
-
-      <div className="order-1 xl:order-2">
-        <div data-tour="layout-preview" className="space-y-2 xl:sticky xl:top-20">
-          <Preview config={values} deviceId={deviceId} liveSrc={liveSrc} />
-          <p className="text-xs text-muted-foreground">
-            {liveSrc ? "Preview over your phone's live video." : "Preview over a sample background."} {deviceId ? "Uses the match picked for this device." : "Shows sample teams until you pick a match on a device."}
-          </p>
         </div>
       </div>
     </form>
@@ -263,19 +278,24 @@ function Preview({ config, deviceId, liveSrc }: { config: StreamLayoutConfig; de
 
 type Name = Parameters<Control<StreamLayoutConfig>["register"]>[0];
 
-function Section({ icon, title, hint, control, enabledName, children }: { icon: ReactNode; title: string; hint?: string; control?: Control<StreamLayoutConfig>; enabledName?: Name; children: ReactNode }) {
+/** One card holding several items, separated by dividers (no cards inside cards). */
+function Group({ children }: { children: ReactNode }) {
+  return <section className="divide-y rounded-2xl border bg-card px-4 shadow-sm sm:px-5">{children}</section>;
+}
+
+function Item({ icon, title, hint, control, enabledName, children }: { icon: ReactNode; title: string; hint?: string; control?: Control<StreamLayoutConfig>; enabledName?: Name; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-      <div className="flex items-center gap-3">
-        <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary [&_svg]:size-5">{icon}</span>
+    <div className="py-4">
+      <div className="flex min-h-10 items-center gap-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary [&_svg]:size-4">{icon}</span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-xl leading-tight font-bold">{title}</h2>
-          {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+          <h2 className="font-display text-lg leading-tight font-bold">{title}</h2>
+          {hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
         </div>
         {control && enabledName && <Controller control={control} name={enabledName} render={({ field }) => <Switch checked={!!field.value} onCheckedChange={field.onChange} aria-label={`Show ${title}`} />} />}
       </div>
       {control && enabledName ? <EnabledBody control={control} name={enabledName}>{children}</EnabledBody> : <div className="mt-4 space-y-4">{children}</div>}
-    </section>
+    </div>
   );
 }
 
@@ -285,12 +305,11 @@ function EnabledBody({ control, name, children }: { control: Control<StreamLayou
   return <div className="mt-4 space-y-4">{children}</div>;
 }
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
       <Label className="text-sm font-semibold">{label}</Label>
       {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }
@@ -384,7 +403,7 @@ function SponsorPicker({ sponsors, value, onChange }: { sponsors: { id: string; 
           </button>
         )}
       </div>
-      <p className="text-xs text-muted-foreground">PNG or JPG, up to 5 MB. Tap a logo to show or hide it. New logos are saved right away.</p>
+      <p className="text-xs text-muted-foreground">PNG/JPG up to 5 MB · tap to show or hide.</p>
       <input
         ref={input}
         type="file"

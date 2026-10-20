@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, KeyRound, LayoutTemplate, Loader2, MonitorOff, Palette, Smartphone, WifiOff } from "lucide-react";
+import { ArrowLeft, KeyRound, LayoutTemplate, Loader2, MonitorOff, Palette, WifiOff } from "lucide-react";
 import { deviceLiveUrl } from "@7xen/shared";
 import { PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -16,6 +16,7 @@ import { DeviceKeyDialog } from "@/features/devices/components/DeviceDialogs";
 import { PairQr } from "@/features/devices/components/PairQr";
 import { LiveOverlay, MatchPicker, useLayoutToggle } from "@/features/broadcast/LiveOverlay";
 import { GoLivePanel } from "@/features/broadcast/GoLivePanel";
+import { Zone } from "@/features/tournaments/manager/components/Zone";
 
 const TOUR: TourStep[] = [
   { title: "Watching your phone", description: "This is the iPhone's screen, live. Only you can see it here. Nobody can control the phone from 7xen." },
@@ -64,24 +65,21 @@ export default function DeviceLivePage() {
     <>
       {back}
       <PageHeader
-        eyebrow="Device"
         title={d.name}
         description={[d.model ?? "iPhone", d.osVersion && `iOS ${d.osVersion}`, d.appVersion && `app ${d.appVersion}`].filter(Boolean).join(" · ")}
         actions={
-          <Button variant="outline" onClick={() => setShowKey(true)}>
-            <KeyRound /> Key & QR
-          </Button>
+          <>
+            <DeviceStreamBadges device={d} />
+            <Button variant="outline" onClick={() => setShowKey(true)}>
+              <KeyRound /> Key & QR
+            </Button>
+          </>
         }
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <DeviceStreamBadges device={d} />
-            <span className="text-xs text-muted-foreground">Only you can see this stream.</span>
-          </div>
-
-          <div data-tour="device-layout" className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3">
+          <div data-tour="device-layout" className="flex flex-wrap items-center gap-3 rounded-xl border bg-card p-3 shadow-sm">
             <div className="flex items-center gap-2">
               <Switch id="show-layout" checked={showLayout} onCheckedChange={setShowLayout} />
               <Label htmlFor="show-layout" className="flex items-center gap-1.5 font-semibold">
@@ -109,14 +107,14 @@ export default function DeviceLivePage() {
                   <>
                     <Loader2 className="size-8 animate-spin text-primary" />
                     <p className="font-display text-xl font-bold">Waiting for the video…</p>
-                    <p className="max-w-sm text-sm text-muted-foreground">The phone says it's streaming. The picture appears here in a few seconds.</p>
+                    <p className="max-w-sm text-sm text-muted-foreground">The picture appears in a few seconds.</p>
                   </>
                 ) : d.status === "ONLINE" ? (
                   <>
                     <MonitorOff className="size-8 text-muted-foreground" />
                     <p className="font-display text-xl font-bold">Connected, not streaming</p>
                     <p className="max-w-sm text-sm text-muted-foreground">
-                      On the iPhone, tap <strong className="text-foreground">Start streaming</strong> → 7XEN Stream → Start Broadcast. The picture appears here by itself.
+                      On the iPhone tap <strong className="text-foreground">Start streaming</strong> → Start Broadcast.
                     </p>
                   </>
                 ) : (
@@ -125,7 +123,7 @@ export default function DeviceLivePage() {
                     <p className="flex items-center gap-1.5 font-display text-xl font-bold">
                       <WifiOff className="size-5 text-muted-foreground" /> Phone not connected
                     </p>
-                    <p className="max-w-sm text-sm text-muted-foreground">Open 7XEN Stream on the iPhone and scan this QR, then tap Start streaming.</p>
+                    <p className="max-w-sm text-sm text-muted-foreground">Scan this QR in 7XEN Stream on the iPhone.</p>
                   </>
                 )}
               </div>
@@ -133,21 +131,20 @@ export default function DeviceLivePage() {
           </div>
         </div>
 
-        <aside data-tour="device-health" className="space-y-3">
+        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
           <GoLivePanel deviceId={d.id} videoReady={d.videoReady} hasMatch={!!d.match} />
-          <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-            <Smartphone className="size-5 text-primary" /> Phone health
-          </h2>
-          {d.status === "OFFLINE" || !d.health ? (
-            <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">Shows up once the phone connects.</p>
-          ) : (
-            <DeviceHealthPanel device={d} className="sm:grid-cols-1" />
-          )}
-          {live && (
-            <p className="text-xs text-muted-foreground">
-              Stopping: on the iPhone tap the red pill at the top, or Stop in the 7XEN Stream app. You can't stop it from here because 7xen never controls the phone.
-            </p>
-          )}
+          <Zone label="Phone health" data-tour="device-health">
+            {d.status === "OFFLINE" || !d.health ? (
+              <p className="text-sm text-muted-foreground">Shows up once the phone connects.</p>
+            ) : (
+              <DeviceHealthPanel device={d} className="border-0 bg-transparent p-0 sm:grid-cols-1" />
+            )}
+            {live && (
+              <p className="mt-3 border-t pt-3 text-xs text-muted-foreground" title="7xen never controls the phone, so streaming can only be stopped on the iPhone.">
+                To stop: tap the red pill on the iPhone, or Stop in 7XEN Stream.
+              </p>
+            )}
+          </Zone>
         </aside>
       </div>
 

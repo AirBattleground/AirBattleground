@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { Check, Copy, Hash, Link2, RefreshCw, Send, Share2, UserPlus, X } from "lucide-react";
+import { Check, Copy, Hash, RefreshCw, Send, Share2, UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError, bgmiIdSchema, inviteLinkPath, type PlayerTeam } from "@7xen/shared";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Input } from "@7xen/ui/components/ui/input";
 import { useInviteByBgmi, useRevokeInvite } from "../api";
 import { PlayerAvatar } from "./PlayerAvatar";
-import { playerFormMsg } from "@/i18n/onboarding";
 import { useT } from "@/i18n/core";
 import { squadMsg } from "@/i18n/team";
 
@@ -21,7 +20,6 @@ function WhatsAppIcon() {
 /** Leader: one card to bring players in — by BGMI ID, or by sharing the link / code. Also lists invites still waiting. */
 export function InvitePlayersCard({ team, onRotate }: { team: PlayerTeam; onRotate: () => void }) {
   const t = useT(squadMsg);
-  const tf = useT(playerFormMsg);
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<"link" | "code" | null>(null);
@@ -67,24 +65,22 @@ export function InvitePlayersCard({ team, onRotate }: { team: PlayerTeam; onRota
   };
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-primary/30 bg-card shadow-glow" data-tour="team-invite">
-      <div aria-hidden className="pointer-events-none absolute -top-20 -right-16 size-56 rounded-full bg-primary/20 blur-3xl" />
-      <div className="relative p-4 sm:p-5">
-        <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.25em] text-primary uppercase">
-          <UserPlus className="size-3.5" /> {t("invite_eyebrow")}
-        </p>
-        <h2 className="mt-0.5 font-display text-2xl leading-tight font-bold">{t("invite_title")}</h2>
-        <p className="text-sm text-muted-foreground">
-          {full ? t("team_full_hint") : t("team_count_hint", { count: team.members.length, max: team.maxMembers })}
-        </p>
+    <section className="rounded-2xl border border-primary/30 bg-card shadow-sm" data-tour="team-invite">
+      <div className="space-y-4 p-4 sm:p-5">
+        <div>
+          <h2 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">
+            <UserPlus className="size-3.5" /> {t("invite_eyebrow")}
+          </h2>
+          {full && <p className="mt-1 text-sm text-muted-foreground">{t("team_full_hint")}</p>}
+        </div>
 
         {/* by BGMI ID */}
-        <form onSubmit={submit} noValidate className="mt-4" data-tour="invite-bgmi">
-          <label htmlFor="invite-bgmi" className="mb-1.5 block text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+        <form onSubmit={submit} noValidate data-tour="invite-bgmi" title={t("invite_note")}>
+          <label htmlFor="invite-bgmi" className="sr-only">
             {t("invite_by_bgmi")}
           </label>
           <div className="flex gap-2">
-            <div className="relative flex-1">
+            <div className="relative min-w-0 flex-1">
               <Hash className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="invite-bgmi"
@@ -97,61 +93,56 @@ export function InvitePlayersCard({ team, onRotate }: { team: PlayerTeam; onRota
                   setValue(e.target.value.replace(/[^\d\s]/g, ""));
                   setError(null);
                 }}
-                className="h-11 bg-background/70 pl-9 font-mono"
+                className="h-11 bg-background pl-9 font-mono"
               />
             </div>
-            <Button type="submit" size="lg" className="h-11 shadow-glow" disabled={full || invite.isPending || !value.trim()}>
-              <Send /> <span className="hidden sm:inline">{invite.isPending ? tf("sending") : t("send_invite")}</span>
-              <span className="sm:hidden">{invite.isPending ? "…" : t("invite_short")}</span>
+            <Button type="submit" className="h-11" disabled={full || invite.isPending || !value.trim()}>
+              <Send /> {invite.isPending ? "…" : t("invite_short")}
             </Button>
           </div>
-          {error ? <p className="mt-1.5 text-sm text-destructive">{error}</p> : <p className="mt-1.5 text-xs text-muted-foreground">{t("invite_note")}</p>}
+          {error && <p className="mt-1.5 text-sm text-destructive">{error}</p>}
         </form>
 
         {/* by link */}
-        <div className="mt-5 flex items-center gap-3 text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-          <span className="h-px flex-1 bg-border" /> {t("or_share")} <span className="h-px flex-1 bg-border" />
-        </div>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border bg-background/70 px-3 py-2.5 text-sm">
-            <Link2 className="size-4 shrink-0 text-primary" />
-            <span className="truncate font-mono text-xs text-muted-foreground sm:text-sm">{link}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 sm:flex">
-            <Button onClick={() => void copy("link")}>
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">{t("or_share")}</p>
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={() => void copy("link")} className="h-10">
               {copied === "link" ? <Check /> : <Copy />} {t("copy_link")}
             </Button>
-            <Button asChild variant="outline" className="border-success/40 text-success hover:bg-success/10 hover:text-success">
+            <Button asChild variant="outline" className="h-10 border-success/40 text-success hover:bg-success/10 hover:text-success">
               <a href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">
                 <WhatsAppIcon /> WhatsApp
               </a>
             </Button>
-            {canShare && (
-              <Button variant="outline" size="icon" onClick={() => void share()} aria-label={t("share_aria")} className="hidden sm:inline-flex">
-                <Share2 />
-              </Button>
-            )}
           </div>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <button type="button" onClick={() => void copy("code")} className="inline-flex items-center gap-1.5 rounded-md outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50" aria-label={t("code_aria", { code })}>
-            {t("code")} <span className="font-mono text-sm font-bold tracking-[0.2em] text-primary">{code}</span> {copied === "code" ? <Check className="size-3 text-success" /> : <Copy className="size-3" />}
-          </button>
-          <button type="button" onClick={onRotate} className="inline-flex items-center gap-1.5 underline-offset-4 hover:text-foreground hover:underline">
-            <RefreshCw className="size-3.5" /> {t("new_code")}
-          </button>
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <button type="button" onClick={() => void copy("code")} className="inline-flex min-h-8 items-center gap-1.5 rounded-md outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50" aria-label={t("code_aria", { code })} title={link}>
+              {t("code")} <span className="font-mono text-sm font-bold tracking-[0.2em] text-primary">{code}</span> {copied === "code" ? <Check className="size-3 text-success" /> : <Copy className="size-3" />}
+            </button>
+            <span className="flex items-center gap-2">
+              {canShare && (
+                <button type="button" onClick={() => void share()} aria-label={t("share_aria")} className="inline-flex size-8 items-center justify-center rounded-md hover:bg-accent hover:text-foreground">
+                  <Share2 className="size-3.5" />
+                </button>
+              )}
+              <button type="button" onClick={onRotate} aria-label={t("new_code")} title={t("new_code")} className="inline-flex size-8 items-center justify-center rounded-md hover:bg-accent hover:text-foreground">
+                <RefreshCw className="size-3.5" />
+              </button>
+            </span>
+          </div>
         </div>
       </div>
 
       {team.invites.length > 0 && (
-        <div className="relative border-t">
+        <div className="border-t">
           <p className="px-4 pt-3 text-xs font-semibold tracking-wider text-muted-foreground uppercase sm:px-5">{t("waiting_answer")}</p>
           <ul className="divide-y">
             {team.invites.map((i) => {
               const n = i.player.ign ?? i.player.displayName;
               return (
-                <li key={i.id} className="flex items-center gap-3 px-4 py-3 sm:px-5">
-                  <PlayerAvatar name={n} url={i.player.avatarUrl} size="md" />
+                <li key={i.id} className="flex items-center gap-3 px-4 py-2.5 sm:px-5">
+                  <PlayerAvatar name={n} url={i.player.avatarUrl} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{n}</p>
                     <p className="truncate font-mono text-xs text-muted-foreground">BGMI {i.player.bgmiId}</p>

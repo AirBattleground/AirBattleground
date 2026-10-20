@@ -11,7 +11,6 @@ import {
   Clock,
   Crosshair,
   Hash,
-  LayoutGrid,
   Loader2,
   Play,
   Save,
@@ -54,6 +53,7 @@ import { DrawReveal } from "@/features/tournaments/manager/components/DrawReveal
 import { Advanced } from "@/features/tournaments/manager/components/form";
 import { DisqualifyDialog, MoveTeamDialog, RescheduleMatchDialog } from "@/features/tournaments/manager/components/GroupTools";
 import { PromotionPanel } from "@/features/tournaments/manager/components/PromotionPanel";
+import { Zone } from "@/features/tournaments/manager/components/Zone";
 import { ScheduleEditor } from "@/features/tournaments/manager/components/ScheduleEditor";
 import { SchedulePreview } from "@/features/tournaments/manager/components/SchedulePreview";
 import { fmtRange, fmtTime, fmtWhen } from "@/features/tournaments/shared/format";
@@ -161,7 +161,7 @@ function StageView({ s, stages, back }: { s: StageDetail; stages?: StageDetail["
       <PageHeader
         eyebrow={`${s.tournament.title} · Stage ${st.order}`}
         title={st.name}
-        description={`${st.teamsIn} teams · ${st.groupCount > 1 ? `${st.groupCount} groups × ${st.lobbySize}` : "1 lobby"} · ${st.matchesPerGroup} matches each${isLast ? " · decides the champion" : ` · top ${st.advancePerGroup}${st.groupCount > 1 ? " per group" : ""}${st.wildcardCount ? ` + ${st.wildcardCount} wildcards` : ""} go through`}`}
+        description={`${st.teamsIn} teams · ${st.groupCount > 1 ? `${st.groupCount} groups × ${st.lobbySize}` : "1 lobby"} · ${st.matchesPerGroup} matches${isLast ? " · decides the champion" : ` · top ${st.advancePerGroup}${st.groupCount > 1 ? "/group" : ""}${st.wildcardCount ? ` + ${st.wildcardCount}` : ""} go through`}`}
         actions={
           <>
             <StatusPill kind="stage" status={st.status} className="text-sm" />
@@ -176,48 +176,49 @@ function StageView({ s, stages, back }: { s: StageDetail; stages?: StageDetail["
       />
 
       <div className="space-y-6">
-        {stages && stages.length > 1 && (
-          <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-            <StageFlow stages={stages} selectedStageId={st.id} stageHref={(x) => (x.id === st.id ? undefined : `/manager/tournaments/${tId}/stages/${x.id}`)} />
-          </section>
-        )}
-
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border bg-card px-4 py-3 text-sm shadow-sm">
-          <span className="flex items-center gap-2">
-            <CalendarClock className="size-4 text-primary" /> {st.startsAt ? fmtRange(st.startsAt, st.endsAt) : st.schedule ? "Scheduled" : "Not scheduled yet"}
-          </span>
-          {st.plan && (
-            <span className="text-muted-foreground">
-              {st.plan.days} {st.plan.days === 1 ? "evening" : "evenings"} · {st.schedule?.parallelLobbies ?? 1} {st.schedule?.parallelLobbies === 1 ? "lobby" : "lobbies"} at a time
+        <Zone label="This stage" bodyClassName="space-y-4">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <span className="flex items-center gap-2">
+              <CalendarClock className="size-4 text-primary" /> {st.startsAt ? fmtRange(st.startsAt, st.endsAt) : st.schedule ? "Scheduled" : "Not scheduled yet"}
             </span>
+            {st.plan && (
+              <span className="text-muted-foreground">
+                {st.plan.days} {st.plan.days === 1 ? "day" : "days"}
+              </span>
+            )}
+            {st.drawSeed && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="flex cursor-help items-center gap-1 text-xs text-muted-foreground">
+                    <Hash className="size-3.5" /> <span className="font-mono">{st.drawSeed}</span>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">Draw seed — the same seed always gives the same groups, so anyone can check the draw was fair.</TooltipContent>
+              </Tooltip>
+            )}
+            <span className="flex flex-wrap gap-1.5 sm:ml-auto">
+              {st.maps.map((m, i) => (
+                <MapChip key={i} map={m} index={i} />
+              ))}
+            </span>
+          </div>
+          {stages && stages.length > 1 && (
+            <div className="border-t pt-4">
+              <StageFlow stages={stages} selectedStageId={st.id} stageHref={(x) => (x.id === st.id ? undefined : `/manager/tournaments/${tId}/stages/${x.id}`)} />
+            </div>
           )}
-          {st.drawSeed && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="flex cursor-help items-center gap-1 text-muted-foreground">
-                  <Hash className="size-3.5" /> Draw seed <span className="font-mono font-semibold text-foreground">{st.drawSeed}</span>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs">The draw is random but repeatable: the same seed and sign-up order always give the same groups, so anyone can check it was fair.</TooltipContent>
-            </Tooltip>
-          )}
-          <span className="flex flex-wrap gap-1.5 sm:ml-auto">
-            {st.maps.map((m, i) => (
-              <MapChip key={i} map={m} index={i} />
-            ))}
-          </span>
-        </div>
+        </Zone>
 
         <Tabs value={tab} onValueChange={setTab}>
-          <TabsList data-tour="s-tabs" className="h-10">
+          <TabsList data-tour="s-tabs" className="grid h-10 w-full grid-cols-3 sm:inline-flex sm:w-auto">
             <TabsTrigger value="groups" className="px-3 sm:px-4">
-              <LayoutGrid /> Groups
+Groups
             </TabsTrigger>
             <TabsTrigger value="schedule" className="px-3 sm:px-4">
-              <CalendarClock /> Schedule
+Schedule
             </TabsTrigger>
             <TabsTrigger value="promotion" className="px-3 sm:px-4">
-              {isLast ? <Trophy /> : <TrendingUp />} {isLast ? "Results" : "Promotion"}
+              {isLast ? "Results" : "Promotion"}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="groups" className="mt-4">
@@ -262,22 +263,19 @@ function DrawDialog({ open, onOpenChange, s, busy, onDraw, redraw }: { open: boo
             <Shuffle className="size-5 text-primary" /> {redraw ? "Redraw the groups?" : `Draw the ${st.name} groups`}
           </DialogTitle>
           <DialogDescription>
-            {first
-              ? "Teams are placed in sign-up order, each into their highest-ranked time slot that still has room. Slot numbers are shuffled."
-              : "Teams are snake-seeded by their results from the previous stage (invited teams take the top seeds)."}
-            {redraw && " The current groups and match times are replaced."}
+            {first ? "Teams get their best time slot with room, in sign-up order." : "Teams are seeded by their previous-stage results."}
+            {redraw && " Current groups and match times are replaced."}
           </DialogDescription>
         </DialogHeader>
         {!st.schedule && (
           <p className="flex items-start gap-2 rounded-xl border border-warning/50 bg-warning/10 p-3 text-sm">
-            <CalendarX2 className="mt-0.5 size-4 shrink-0" /> This stage has no schedule yet, so groups won't get match times. Set one in the Schedule tab first if you can.
+            <CalendarX2 className="mt-0.5 size-4 shrink-0" /> No schedule yet — groups won't get match times. Set one in the Schedule tab first.
           </p>
         )}
         <Advanced title="Draw seed" hint="Leave empty for a random seed">
           <div className="space-y-2">
             <Label htmlFor="draw-seed">Seed</Label>
             <Input id="draw-seed" value={seed} onChange={(e) => setSeed(e.target.value)} maxLength={40} placeholder="e.g. winter-cup-2026" className="font-mono" />
-            <p className="text-xs text-muted-foreground">The seed is shown publicly — the same seed always gives the same draw.</p>
           </div>
         </Advanced>
         <DialogFooter>
@@ -307,7 +305,7 @@ function GroupsTab({ s, onDraw }: { s: StageDetail; onDraw: () => void }) {
       <EmptyState
         icon={<Shuffle />}
         title="Groups haven't been drawn yet"
-        description={st.order === 1 ? "When registration is closed, draw the groups. Teams get their lobby, slot number and match times." : "Once the previous stage is promoted, draw the groups here."}
+        description={st.order === 1 ? "Close registration, then draw the groups." : "Promote the previous stage, then draw the groups."}
         action={
           st.status === "PENDING" && (
             <Button onClick={onDraw}>
@@ -460,14 +458,12 @@ function ScheduleTab({ s }: { s: StageDetail }) {
       <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h3 className="font-display text-lg font-bold">When is the {st.name} played?</h3>
-            <p className="text-sm text-muted-foreground">
-              {editable
-                ? st.status === "DRAWN"
-                  ? "Saving moves the drawn groups' match times to the new plan."
-                  : "Each group plays its matches back-to-back in one lobby."
-                : "The stage has started — move single matches from the Groups tab instead."}
-            </p>
+            <h3 className="font-display text-lg font-bold">Schedule</h3>
+            {(st.status === "DRAWN" || !editable) && (
+              <p className="text-sm text-muted-foreground">
+                {editable ? "Saving moves the drawn groups' match times." : "Stage started — move single matches from the Groups tab."}
+              </p>
+            )}
           </div>
         </div>
         <ScheduleEditor value={cfg} onChange={setCfg} errors={errors} disabled={!editable} />

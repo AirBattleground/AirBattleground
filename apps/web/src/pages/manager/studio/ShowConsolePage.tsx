@@ -11,6 +11,7 @@ import {
   Film,
   Headphones,
   Layers,
+  ListOrdered,
   Loader2,
   Mic,
   MicOff,
@@ -20,11 +21,13 @@ import {
   Smartphone,
   Square,
   Trash2,
+  Trophy,
   Upload,
   Youtube,
 } from "lucide-react";
 import { toast } from "sonner";
-import { STUDIO_HEIGHT, STUDIO_WIDTH, type DeviceRow, type StudioShow } from "@7xen/shared";
+import { STUDIO_HEIGHT, STUDIO_WIDTH, type DeviceRow, type MatchDetail, type StudioShow } from "@7xen/shared";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@7xen/ui/components/ui/dialog";
 import { Input } from "@7xen/ui/components/ui/input";
@@ -38,11 +41,10 @@ import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
 import { useDevices } from "@/features/devices/api";
 import { useStreamLayout, useUpcomingMatches } from "@/features/broadcast/api";
-import { useDestinations } from "@/features/broadcast/output";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { useMatch } from "@/features/matches/api";
-import { useShow, useShowStatus, useUpdateShow } from "@/features/studio/api";
+import { useShow, useShowStatus, useStudioOutputs, useUpdateShow } from "@/features/studio/api";
 import { LAYOUTS } from "@/features/studio/engine/layouts";
 import { StudioMixer, type MixerStatus } from "@/features/studio/engine/mixer";
 import { addProp, listProps, removeProp, type PropMeta } from "@/features/studio/engine/props";
@@ -53,6 +55,7 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="studio-program"]', title: "Program (on air)", description: "Exactly what goes out to AirBattleground and YouTube.", side: "bottom" },
   { element: '[data-tour="studio-scenes"]', title: "Scenes", description: "Click a scene to preview it, then TAKE to put it on air (or double-click / press 1–9). Edit a scene to change its frame and sources.", side: "top" },
   { element: '[data-tour="studio-sources-panel"]', title: "Sources", description: "Phones, your webcam and mic, and prop videos (intro, break, outro) saved in this browser.", side: "right" },
+  { element: '[data-tour="studio-capture"]', title: "Capture for the match", description: "With a match selected: put the team list or results screen on air, then tap Team list / Results. The screenshot goes to the match center and is read automatically.", side: "bottom" },
   { element: '[data-tour="studio-golive"]', title: "Go live", description: "Starts the broadcast. Keep this tab open while you're live; your intro scene is a good place to start.", side: "bottom" },
 ];
 
@@ -260,7 +263,7 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
             </Button>
           ) : (
             <Button data-tour="studio-golive" className="shadow-glow" onClick={goLive}>
-              <Radio /> Go live
+              <Radio /> {matchId ? "Start match broadcast" : "Go live"}
             </Button>
           )}
         </div>
@@ -275,6 +278,7 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
             <div data-tour="studio-program">
               <MonitorLabel tone={live ? "live" : "program"} text={live ? "On air" : "Program"} sub={program?.name} />
               <ProgramMonitor mixer={mixer} live={live} />
+              {matchId && <MatchBar mixer={mixer} matchId={matchId} detail={match.data ?? null} onCaptured={() => void match.refetch()} />}
             </div>
             <div className="flex flex-col gap-3">
               <div>
@@ -324,7 +328,10 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
           </section>
         </div>
 
-        <OverlaysPanel config={config} setConfig={setConfig} />
+        <aside className="flex flex-col gap-3">
+          <OutputsPanel show={show} live={live} />
+          <OverlaysPanel config={config} setConfig={setConfig} />
+        </aside>
       </div>
 
       <SceneEditor
@@ -395,6 +402,80 @@ function PreviewMonitor({ mixer, scene }: { mixer: StudioMixer; scene: Scene | n
     return () => window.clearInterval(t);
   }, [mixer, scene]);
   return <canvas ref={ref} width={480} height={270} className="block aspect-video w-full rounded-lg border-2 border-warning/50 bg-black" />;
+}
+
+// ---------------------------------------------------------------- match bar (capture)
+
+type Kind = "SLOT_LIST" | "RESULTS";
+
+/** Link of a match's match center (scrim or tournament). */
+function matchCenterHref(d: MatchDetail): string {
+  return d.tournament
+    ? `/manager/tournaments/${d.tournament.id}/stages/${d.tournament.stageId}/matches/${d.match.id}`
+    : `/manager/scrims/${d.scrim.id}/${d.date}/matches/${d.match.id}`;
+}
+
+/**
+ * Under the program monitor while a match is selected: capture what's ON AIR as the match's team-list or results
+ * screenshot (put the scoreboard on screen first), plus a link to the match center to check what was read.
+ */
+function MatchBar({ mixer, matchId, detail, onCaptured }: { mixer: StudioMixer; matchId: string; detail: MatchDetail | null; onCaptured: () => void }) {
+  const [busy, setBusy] = useState<Kind | null>(null);
+  const counts = detail?.match.screenshotCounts;
+  const capture = async (kind: Kind) => {
+    setBusy(kind);
+    try {
+      const png = await mixer.snapshot();
+      const form = new FormData();
+      form.append("kind", kind);
+      form.append("source", "WEB");
+      form.append("files", new File([png], `studio-${kind.toLowerCase()}-${Date.now()}.png`, { type: "image/png" }));
+      const res = await fetch(`/api/manager/matches/${matchId}/screenshots`, { method: "POST", credentials: "include", body: form });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
+        throw new Error(body?.error?.message ?? "Upload failed");
+      }
+      toast.success(kind === "SLOT_LIST" ? "Team list captured" : "Results captured", {
+        description: "It's being read now — check it in the match center.",
+        action: detail ? { label: "Open", onClick: () => window.open(matchCenterHref(detail), "_blank") } : undefined,
+      });
+      onCaptured();
+    } catch (e) {
+      toast.error("Couldn't capture", { description: e instanceof Error ? e.message : undefined });
+    } finally {
+      setBusy(null);
+    }
+  };
+  const btn = (kind: Kind, icon: React.ReactNode, label: string, n?: number) => (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="outline" size="sm" disabled={!!busy} onClick={() => void capture(kind)} aria-label={`Capture ${label} from the screen`} className="gap-1.5">
+          {busy === kind ? <Loader2 className="animate-spin" /> : icon}
+          {label}
+          {n ? <span className="rounded-full bg-muted px-1.5 text-[10px] font-bold">{n}</span> : null}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>Show the {label.toLowerCase()} on air, then capture</TooltipContent>
+    </Tooltip>
+  );
+  return (
+    <div data-tour="studio-capture" className="mt-2 flex flex-wrap items-center gap-2 rounded-lg border bg-card px-3 py-2">
+      <Camera className="size-4 shrink-0 text-primary" />
+      <span className="min-w-0 flex-1 truncate text-sm">
+        <span className="font-semibold">{detail ? `${detail.scrim.title} · Match ${detail.match.number}` : "Match"}</span>
+        <span className="text-muted-foreground"> · capture what's on air</span>
+      </span>
+      {btn("SLOT_LIST", <ListOrdered />, "Team list", counts?.slotList)}
+      {btn("RESULTS", <Trophy />, "Results", counts?.results)}
+      {detail && (
+        <Button asChild variant="ghost" size="sm">
+          <Link to={matchCenterHref(detail)} target="_blank">
+            Match center <ExternalLink />
+          </Link>
+        </Button>
+      )}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------- health
@@ -748,12 +829,63 @@ function Panel({ title, icon, children }: { title: string; icon: React.ReactNode
 
 // ---------------------------------------------------------------- overlays
 
+/** Where the show goes: public Live page, the site YouTube channel (if connected), own stream-key channels. */
+function OutputsPanel({ show, live }: { show: StudioShow; live: boolean }) {
+  const outputs = useStudioOutputs();
+  const update = useUpdateShow(show.id);
+  const [pub, setPub] = useState(show.publicListing);
+  const [yt, setYt] = useState(show.siteYoutube);
+  const [dests, setDests] = useState<string[]>(show.destinationIds);
+  const o = outputs.data;
+  const save = (patch: { publicListing?: boolean; siteYoutube?: boolean; destinationIds?: string[] }) => update.mutate(patch);
+  return (
+    <Panel title="Where it goes" icon={<Radio />}>
+      <div className="space-y-2.5 text-sm">
+        <Row label="AirBattleground Live page" checked={pub} disabled={live} onChange={(v) => (setPub(v), save({ publicListing: v }))} />
+        {!pub && <p className="-mt-1 text-[11px] text-muted-foreground">Private: only you can watch (a test stream).</p>}
+        {o?.siteYoutube ? (
+          <Row
+            label={
+              <span className="flex items-center gap-1.5">
+                <Youtube className="size-4 text-destructive" /> {o.siteYoutube.channelTitle}
+              </span>
+            }
+            checked={yt}
+            disabled={live}
+            onChange={(v) => (setYt(v), save({ siteYoutube: v }))}
+          />
+        ) : (
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Youtube className="size-4" /> Site YouTube channel isn't connected
+          </p>
+        )}
+        {(o?.destinations ?? []).map((d) => (
+          <Row
+            key={d.id}
+            label={d.name}
+            checked={dests.includes(d.id)}
+            disabled={live}
+            onChange={(v) => {
+              const next = v ? [...dests, d.id] : dests.filter((x) => x !== d.id);
+              setDests(next);
+              save({ destinationIds: next });
+            }}
+          />
+        ))}
+        <Link to="/manager/devices" className="block text-xs font-semibold text-primary hover:underline">
+          + Add your own channel (stream key)
+        </Link>
+        {live && <p className="text-[11px] text-muted-foreground">Change these before going live.</p>}
+      </div>
+    </Panel>
+  );
+}
+
 function OverlaysPanel({ config, setConfig }: { config: StudioConfigV1; setConfig: React.Dispatch<React.SetStateAction<StudioConfigV1>> }) {
   const o = config.overlays;
   const set = (patch: Partial<StudioConfigV1["overlays"]>) => setConfig((c) => ({ ...c, overlays: { ...c.overlays, ...patch } }));
-  const dests = useDestinations();
   return (
-    <aside className="flex flex-col gap-3">
+    <>
       <Panel title="Overlays" icon={<Layers />}>
         <div className="space-y-2.5 text-sm">
           <Row label="LIVE bug + clock" checked={o.liveBug} onChange={(v) => set({ liveBug: v })} />
@@ -769,21 +901,15 @@ function OverlaysPanel({ config, setConfig }: { config: StudioConfigV1; setConfi
           {o.ticker && <Input value={o.tickerText} onChange={(e) => set({ tickerText: e.target.value })} placeholder="e.g. Next match at 9 PM · Follow us on Instagram" className="h-8 text-sm" />}
         </div>
       </Panel>
-      <Panel title="Where it goes" icon={<Radio />}>
-        <p className="text-xs text-muted-foreground">
-          Always on the AirBattleground Live page. Also on the site YouTube channel when it's connected
-          {dests.data?.length ? `, and your channels set on the device page (${dests.data.map((d) => d.name).join(", ")}).` : "."}
-        </p>
-      </Panel>
-    </aside>
+    </>
   );
 }
 
-function Row({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Row({ label, checked, onChange, disabled }: { label: React.ReactNode; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
-    <label className="flex items-center justify-between gap-2">
-      <span>{label}</span>
-      <Switch checked={checked} onCheckedChange={onChange} />
+    <label className={cn("flex items-center justify-between gap-2", disabled && "opacity-60")}>
+      <span className="min-w-0 truncate">{label}</span>
+      <Switch checked={checked} onCheckedChange={onChange} disabled={disabled} />
     </label>
   );
 }

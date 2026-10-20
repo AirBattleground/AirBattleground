@@ -149,8 +149,8 @@ function Center({ m, stage, back, base }: { m: MatchDetail; stage?: StageDetail;
               </Button>
             </div>
             <Button asChild variant="outline">
-              <Link to={back}>
-                <LayoutGrid /> Group standings
+              <Link to={back} aria-label="Group standings">
+                <LayoutGrid /> <span className="hidden sm:inline">Group standings</span>
               </Link>
             </Button>
           </>
@@ -168,10 +168,10 @@ function Center({ m, stage, back, base }: { m: MatchDetail; stage?: StageDetail;
               title="Who's playing?"
               text={
                 published
-                  ? "This match is published, so the lineup is locked. Unpublish it to make changes."
+                  ? "Published — unpublish to change the lineup."
                   : lineupConfirmed
-                    ? "The lineup is confirmed. You can still fix a name below and save."
-                    : "In the game, open the team list (the screen with slot numbers) and take screenshots of every page. Upload them here — or just type the names."
+                    ? "Lineup confirmed. You can still fix a name and save."
+                    : "Upload screenshots of the in-game team list (all pages) — or type the names."
               }
             />
             <ScreenshotUploader
@@ -181,7 +181,6 @@ function Center({ m, stage, back, base }: { m: MatchDetail; stage?: StageDetail;
               readOnly={published || lineupConfirmed}
               onOpen={(index) => setLightbox({ kind: "SLOT_LIST", index })}
               title="Upload team list screenshots"
-              hint="The in-game screen with slot numbers and player names (all pages)."
             />
             <LineupStep
               m={m}
@@ -201,8 +200,8 @@ function Center({ m, stage, back, base }: { m: MatchDetail; stage?: StageDetail;
               title="How did it end?"
               text={
                 lineupConfirmed
-                  ? "After the match, screenshot the final results (all pages). Upload them, then check ranks and finishes."
-                  : "Confirm the lineup in step 1 first — results are matched to the confirmed player names."
+                  ? "Upload the final results screenshots, then check ranks and finishes."
+                  : "Confirm the lineup in step 1 first."
               }
             />
             {lineupConfirmed ? (
@@ -214,7 +213,6 @@ function Center({ m, stage, back, base }: { m: MatchDetail; stage?: StageDetail;
                     screenshots={resultShots}
                     onOpen={(index) => setLightbox({ kind: "RESULTS", index })}
                     title="Upload final results screenshots"
-                    hint="The end-of-match screen with ranks and “N finishes” (all pages)."
                   />
                 )}
                 <ResultsStep m={m} draft={results} setDraft={setResults} readOnly={published} />
@@ -229,13 +227,11 @@ function Center({ m, stage, back, base }: { m: MatchDetail; stage?: StageDetail;
 
         {step === "published" && (
           <section className="space-y-4">
-            <div className="relative overflow-hidden rounded-2xl border border-success/40 bg-card p-5 shadow-sm sm:p-6">
-              <div className="pointer-events-none absolute -top-16 -right-16 size-56 rounded-full bg-success/15 blur-3xl" />
-              <div className="relative flex flex-wrap items-center justify-between gap-4">
+            <div className="rounded-2xl border border-success/40 bg-success/5 p-4 shadow-sm sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold tracking-[0.2em] text-success uppercase">Published</p>
-                  <h2 className="font-display text-2xl font-bold">Teams can see these results</h2>
-                  <p className="text-sm text-muted-foreground">Group standings are updated. Found a mistake? Unpublish, fix it, and publish again.</p>
+                  <p className="text-[11px] font-semibold tracking-[0.2em] text-success uppercase">Published</p>
+                  <h2 className="font-display text-xl font-bold">Teams can see these results</h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => setUnpublishing(true)} disabled={unpublish.isPending}>
@@ -293,10 +289,10 @@ function Center({ m, stage, back, base }: { m: MatchDetail; stage?: StageDetail;
 function StepIntro({ n, title, text }: { n: number; title: string; text: string }) {
   return (
     <div>
-      <h2 className="font-display text-2xl font-bold">
+      <h2 className="font-display text-xl font-bold">
         <span className="text-primary">Step {n} ·</span> {title}
       </h2>
-      <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{text}</p>
+      <p className="mt-0.5 max-w-3xl text-sm text-muted-foreground">{text}</p>
     </div>
   );
 }

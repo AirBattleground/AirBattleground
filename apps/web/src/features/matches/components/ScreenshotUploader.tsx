@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
-import { AlertTriangle, CheckCircle2, ClipboardPaste, ImagePlus, Loader2, MonitorPlay, RotateCw, Smartphone, Trash2, UploadCloud, WifiOff, ZoomIn } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ImagePlus, Loader2, MonitorPlay, RotateCw, Smartphone, Trash2, UploadCloud, WifiOff, ZoomIn } from "lucide-react";
 import { toast } from "sonner";
 import {
   MAX_SCREENSHOT_BYTES,
@@ -47,28 +47,16 @@ function StatusChip({ s }: { s: ScreenshotRow }) {
   }
 }
 
-/** Phase 4: screenshots captured by the AirBattleground Manager app are tagged with their source. */
+/** Phase 4: screenshots captured by the station / app / iPhone are tagged with a small source icon. */
 function SourceBadge({ s }: { s: ScreenshotRow }) {
   const source = s.source as string;
-  if (source === "STATION")
-    return (
-      <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background/85 px-1.5 py-0.5 text-[11px] font-semibold text-primary backdrop-blur-sm">
-        <MonitorPlay className="size-3" />
-        From station
-      </span>
-    );
-  if (source === "DEVICE")
-    return (
-      <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background/85 px-1.5 py-0.5 text-[11px] font-semibold text-primary backdrop-blur-sm">
-        <Smartphone className="size-3" />
-        From iPhone
-      </span>
-    );
-  if (source !== "APP_AUTO" && source !== "APP_MANUAL") return null;
+  const label =
+    source === "STATION" ? "From station" : source === "DEVICE" ? "From iPhone" : source === "APP_AUTO" ? "From app (auto)" : source === "APP_MANUAL" ? "From app" : null;
+  if (!label) return null;
+  const Icon = source === "STATION" ? MonitorPlay : Smartphone;
   return (
-    <span className="absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-md border border-primary/30 bg-background/85 px-1.5 py-0.5 text-[11px] font-semibold text-primary backdrop-blur-sm">
-      <Smartphone className="size-3" />
-      {source === "APP_AUTO" ? "From app (auto)" : "From app"}
+    <span title={label} aria-label={label} className="absolute top-1 left-1 grid size-5 place-items-center rounded bg-background/85 text-primary backdrop-blur-sm">
+      <Icon className="size-3" />
     </span>
   );
 }
@@ -98,7 +86,8 @@ export function ScreenshotUploader({
   readOnly?: boolean;
   onOpen: (index: number) => void;
   title: string;
-  hint: string;
+  /** optional one-line helper under the title */
+  hint?: string;
 }) {
   const upload = useUploadScreenshots(matchId);
   const retry = useRetryScreenshot(matchId);
@@ -186,31 +175,26 @@ export function ScreenshotUploader({
           onDragLeave={() => setDrag(false)}
           onDrop={onDrop}
           className={cn(
-            "group relative flex cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-xl border-2 border-dashed px-4 py-7 text-center outline-none transition-all focus-visible:ring-[3px] focus-visible:ring-ring/50",
+            "group relative flex min-h-16 cursor-pointer flex-wrap items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3 outline-none transition-all focus-visible:ring-[3px] focus-visible:ring-ring/50",
             drag ? "border-primary bg-primary/10 shadow-glow" : "border-border bg-card hover:border-primary/50 hover:bg-primary/5",
             uploading && "cursor-progress",
           )}
         >
-          <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
-          <div className={cn("relative rounded-2xl bg-primary/10 p-3 text-primary transition-transform", drag && "scale-110 animate-float")}>
-            {uploading ? <Loader2 className="size-7 animate-spin" /> : <UploadCloud className="size-7" />}
+          <div className={cn("grid size-10 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition-transform", drag && "scale-110")}>
+            {uploading ? <Loader2 className="size-5 animate-spin" /> : <UploadCloud className="size-5" />}
           </div>
-          <div className="relative">
-            <p className="font-display text-lg font-bold">{uploading ? `Uploading ${pending.length} screenshot${pending.length === 1 ? "" : "s"}…` : drag ? "Drop to upload" : title}</p>
-            <p className="text-sm text-muted-foreground">{uploading ? "Keep this page open." : hint}</p>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">{uploading ? `Uploading ${pending.length} screenshot${pending.length === 1 ? "" : "s"}…` : drag ? "Drop to upload" : title}</p>
+            <p className="text-xs text-muted-foreground">
+              {uploading ? "Keep this page open." : (hint ?? "Drop, choose or paste (Ctrl+V) · PNG / JPG up to 10 MB")}
+            </p>
           </div>
           {uploading ? (
-            <Progress value={progress} className="relative h-2 w-full max-w-xs" />
+            <Progress value={progress} className="h-2 w-full sm:w-40" />
           ) : (
-            <div className="relative flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground">
-              <span className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-1">
-                <ImagePlus className="size-3.5" /> Click to choose
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-md border bg-background px-2 py-1">
-                <ClipboardPaste className="size-3.5" /> or paste with Ctrl+V
-              </span>
-              <span>PNG / JPG · up to 10 MB each</span>
-            </div>
+            <span className="hidden items-center gap-1 rounded-md border bg-background px-2.5 py-1.5 text-xs font-medium sm:inline-flex">
+              <ImagePlus className="size-3.5" /> Choose files
+            </span>
           )}
           <input
             ref={input}
@@ -232,16 +216,16 @@ export function ScreenshotUploader({
         <div className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
           <WifiOff className="mt-0.5 size-5 shrink-0 text-warning-foreground dark:text-warning" />
           <p>
-            <span className="font-semibold">The screenshot reader is offline right now.</span>{" "}
-            <span className="text-muted-foreground">No problem — type the details by hand below, or press “Retry” on a screenshot in a few minutes.</span>
+            <span className="font-semibold">Screenshot reader is offline.</span>{" "}
+            <span className="text-muted-foreground">Type the details below, or retry in a few minutes.</span>
           </p>
         </div>
       )}
 
       {(screenshots.length > 0 || uploading) && (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
           {screenshots.map((s, i) => (
-            <li key={s.id} className="overflow-hidden rounded-xl border bg-card shadow-sm">
+            <li key={s.id} className="overflow-hidden rounded-lg border bg-card">
               <button
                 type="button"
                 onClick={() => onOpen(i)}
@@ -259,7 +243,7 @@ export function ScreenshotUploader({
                   </span>
                 )}
               </button>
-              <div className="space-y-1.5 p-2.5">
+              <div className="space-y-1 p-1.5">
                 <div className="flex items-center justify-between gap-1">
                   <StatusChip s={s} />
                   {!readOnly && (
@@ -282,9 +266,13 @@ export function ScreenshotUploader({
                     </div>
                   )}
                 </div>
-                {s.status === "FAILED" && s.error && <p className="line-clamp-2 text-xs text-muted-foreground">{s.error}</p>}
+                {s.status === "FAILED" && s.error && (
+                  <p className="line-clamp-1 text-[11px] text-muted-foreground" title={s.error}>
+                    {s.error}
+                  </p>
+                )}
                 {s.status === "DONE" && (s.extraction?.warnings.length ?? 0) > 0 && (
-                  <p className="line-clamp-2 text-xs text-muted-foreground" title={s.extraction?.warnings.join("\n")}>
+                  <p className="line-clamp-1 text-[11px] text-muted-foreground" title={s.extraction?.warnings.join("\n")}>
                     {s.extraction?.warnings[0]}
                   </p>
                 )}
@@ -292,14 +280,14 @@ export function ScreenshotUploader({
             </li>
           ))}
           {pending.map((p) => (
-            <li key={p.key} className="overflow-hidden rounded-xl border border-primary/40 bg-card opacity-80 shadow-sm">
+            <li key={p.key} className="overflow-hidden rounded-lg border border-primary/40 bg-card opacity-80">
               <div className="relative aspect-[20/9] bg-muted">
                 <img src={p.url} alt="" className="size-full object-cover" />
                 <span className="absolute inset-0 grid place-items-center bg-background/50">
                   <Loader2 className="size-6 animate-spin text-primary" />
                 </span>
               </div>
-              <div className="p-2.5">
+              <div className="p-1.5">
                 <Pill tone="brand" icon={<UploadCloud className="size-3.5" />}>
                   Uploading {progress}%
                 </Pill>

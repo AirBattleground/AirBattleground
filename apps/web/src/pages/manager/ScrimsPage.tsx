@@ -12,7 +12,6 @@ import {
   Play,
   Plus,
   Repeat,
-  Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { addDays, DATE_RE, todayInAppTz, type Scrim, type ScrimStatus } from "@7xen/shared";
@@ -34,10 +33,10 @@ import { dateRangeLabel, formatDate, recurrenceLabel, slotRangeLabel } from "@/f
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { DatePickerButton } from "@/features/manager/components/DatePickerButton";
 import { DateStrip } from "@/features/manager/components/DateStrip";
-import { MapChips } from "@/features/manager/components/maps";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { ScrimStatusPill } from "@/features/manager/components/ScrimStatusPill";
 import { SessionCard, SessionCardSkeleton } from "@/features/manager/components/SessionCard";
+import { Zone } from "@/features/manager/components/Zone";
 
 const TOUR: TourStep[] = [
   { title: "Your scrims", description: "Everything you've set up lives here — by day, or as a full list." },
@@ -67,7 +66,6 @@ export default function ScrimsPage() {
     <>
       <PageHeader
         title="Scrims"
-        description="See what's running each day, and manage the scrims you've set up."
         actions={
           <Button asChild size="lg" data-tour="new-scrim">
             <Link to="/manager/scrims/new">
@@ -114,23 +112,20 @@ function ByDate({ date, today, onDate }: { date: string; today: string; onDate: 
         <DatePickerButton value={date} onChange={onDate} label="Other date" className="self-start lg:self-center" />
       </div>
 
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-2xl font-bold">{date === today ? "Today" : formatDate(date)}</h2>
-        {items && <span className="text-sm text-muted-foreground">{items.length} session{items.length === 1 ? "" : "s"}</span>}
-      </div>
-
       {q.isError ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} />
       ) : !items ? (
-        <div className="space-y-3">
-          <SessionCardSkeleton />
-          <SessionCardSkeleton />
-        </div>
+        <Zone label={date === today ? "Today" : formatDate(date)}>
+          <div className="-my-3 divide-y">
+            <SessionCardSkeleton />
+            <SessionCardSkeleton />
+          </div>
+        </Zone>
       ) : items.length === 0 ? (
         <EmptyState
           icon={<CalendarDays />}
           title={`No scrims on ${formatDate(date)}`}
-          description="None of your active scrims run on this day. Pick another day, or create a scrim for it."
+          description="Pick another day, or create a scrim for it."
           action={
             <Button asChild>
               <Link to="/manager/scrims/new">
@@ -140,11 +135,16 @@ function ByDate({ date, today, onDate }: { date: string; today: string; onDate: 
           }
         />
       ) : (
-        <div className={cn("space-y-3 transition-opacity", q.isPlaceholderData && "opacity-60")}>
-          {items.map((s) => (
-            <SessionCard key={s.scrim.id} session={s} />
-          ))}
-        </div>
+        <Zone
+          label={`${date === today ? "Today" : formatDate(date)} · ${items.length} session${items.length === 1 ? "" : "s"}`}
+          className={cn("transition-opacity", q.isPlaceholderData && "opacity-60")}
+        >
+          <div className="-my-3 divide-y">
+            {items.map((s) => (
+              <SessionCard key={s.scrim.id} session={s} />
+            ))}
+          </div>
+        </Zone>
       )}
     </div>
   );
@@ -158,9 +158,9 @@ function AllScrims() {
   if (q.isError) return <QueryError error={q.error} onRetry={() => void q.refetch()} />;
   if (!q.data)
     return (
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="space-y-2">
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-44 rounded-xl" />
+          <Skeleton key={i} className="h-14 rounded-xl" />
         ))}
       </div>
     );
@@ -169,7 +169,7 @@ function AllScrims() {
       <EmptyState
         icon={<CalendarPlus />}
         title="Create your first scrim"
-        description="Pick the maps, the time and how many slots. Teams can register as soon as it's live."
+        description="Teams can register as soon as it's live."
         action={
           <Button asChild size="lg">
             <Link to="/manager/scrims/new">
@@ -183,18 +183,22 @@ function AllScrims() {
   const archivedCount = sorted.filter((s) => s.status === "ARCHIVED").length;
   const visible = showArchived ? sorted : sorted.filter((s) => s.status !== "ARCHIVED");
   return (
-    <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-2">
+    <Zone
+      label={`${visible.length} scrim${visible.length === 1 ? "" : "s"}`}
+      aside={
+        archivedCount > 0 && (
+          <Button variant="ghost" size="sm" onClick={() => setShowArchived((v) => !v)}>
+            <Archive /> {showArchived ? "Hide" : "Show"} archived ({archivedCount})
+          </Button>
+        )
+      }
+    >
+      <ul className="-my-3 divide-y">
         {visible.map((s) => (
           <ScrimRow key={s.id} scrim={s} />
         ))}
-      </div>
-      {archivedCount > 0 && (
-        <Button variant="ghost" size="sm" onClick={() => setShowArchived((v) => !v)}>
-          <Archive /> {showArchived ? "Hide" : "Show"} archived ({archivedCount})
-        </Button>
-      )}
-    </div>
+      </ul>
+    </Zone>
   );
 }
 
@@ -211,74 +215,60 @@ function ScrimRow({ scrim }: { scrim: Scrim }) {
     );
   const archived = scrim.status === "ARCHIVED";
   return (
-    <div className={cn("flex flex-col gap-3 rounded-xl border bg-card p-4 shadow-sm transition-all hover:border-primary/40 sm:p-5", archived && "opacity-70")}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <Link to={`/manager/scrims/${scrim.id}`} className="block truncate font-display text-xl font-bold hover:text-primary">
-            {scrim.title}
-          </Link>
-          <p className="mt-0.5 flex items-center gap-1.5 text-sm font-medium">
-            <Repeat className="size-3.5 text-primary" /> {recurrenceLabel(scrim)}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <ScrimStatusPill status={scrim.status} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" aria-label="More actions" disabled={upd.isPending}>
-                <MoreHorizontal />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link to={`/manager/scrims/${scrim.id}`}>
-                  <ExternalLink /> Open
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to={`/manager/scrims/${scrim.id}/edit`}>
-                  <Pencil /> Edit
-                </Link>
-              </DropdownMenuItem>
-              {scrim.status === "ACTIVE" && (
-                <DropdownMenuItem onSelect={() => setStatus("PAUSED", `Paused “${scrim.title}” — teams can't register until you resume it`)}>
-                  <Pause /> Pause
-                </DropdownMenuItem>
-              )}
-              {scrim.status !== "ACTIVE" && (
-                <DropdownMenuItem onSelect={() => setStatus("ACTIVE", `“${scrim.title}” is live again`)}>
-                  <Play /> {archived ? "Restore" : "Resume"}
-                </DropdownMenuItem>
-              )}
-              {!archived && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onSelect={() => setConfirmArchive(true)}>
-                    <Archive /> Archive
-                  </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+    <li className={cn("flex items-center gap-3 py-3", archived && "opacity-70")}>
+      <div className="min-w-0 flex-1">
+        <Link to={`/manager/scrims/${scrim.id}`} className="block truncate font-display text-lg font-bold hover:text-primary">
+          {scrim.title}
+        </Link>
+        <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+          <Repeat className="size-3.5 shrink-0 text-primary" />
+          <span className="truncate">
+            {recurrenceLabel(scrim)} · {slotRangeLabel(scrim.firstSlot, scrim.slotCount)}
+            <span className="hidden sm:inline"> · {scrim.maps.length} match{scrim.maps.length === 1 ? "" : "es"} · {dateRangeLabel(scrim)}</span>
+          </span>
+        </p>
       </div>
-      <p className="text-sm text-muted-foreground">{dateRangeLabel(scrim)}</p>
-      <MapChips maps={scrim.maps} numbered />
-      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t pt-3">
-        <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Users className="size-4" /> {slotRangeLabel(scrim.firstSlot, scrim.slotCount)}
-        </span>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm">
+      {scrim.status !== "ACTIVE" && <ScrimStatusPill status={scrim.status} />}
+      <Button asChild size="sm" variant="outline" className="hidden h-10 sm:inline-flex">
+        <Link to={`/manager/scrims/${scrim.id}`}>Open</Link>
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="size-10" aria-label="More actions" disabled={upd.isPending}>
+            <MoreHorizontal />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild>
+            <Link to={`/manager/scrims/${scrim.id}`}>
+              <ExternalLink /> Open
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <Link to={`/manager/scrims/${scrim.id}/edit`}>
               <Pencil /> Edit
             </Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link to={`/manager/scrims/${scrim.id}`}>Open</Link>
-          </Button>
-        </div>
-      </div>
+          </DropdownMenuItem>
+          {scrim.status === "ACTIVE" && (
+            <DropdownMenuItem onSelect={() => setStatus("PAUSED", `Paused “${scrim.title}” — teams can't register until you resume it`)}>
+              <Pause /> Pause
+            </DropdownMenuItem>
+          )}
+          {scrim.status !== "ACTIVE" && (
+            <DropdownMenuItem onSelect={() => setStatus("ACTIVE", `“${scrim.title}” is live again`)}>
+              <Play /> {archived ? "Restore" : "Resume"}
+            </DropdownMenuItem>
+          )}
+          {!archived && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onSelect={() => setConfirmArchive(true)}>
+                <Archive /> Archive
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
       <ConfirmDialog
         open={confirmArchive}
         onOpenChange={setConfirmArchive}
@@ -288,6 +278,6 @@ function ScrimRow({ scrim }: { scrim: Scrim }) {
         destructive
         onConfirm={() => setStatus("ARCHIVED", `Archived “${scrim.title}”`)}
       />
-    </div>
+    </li>
   );
 }

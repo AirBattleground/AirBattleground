@@ -36,7 +36,8 @@ export default function ManagerLayout() {
   const inTournaments = pathname.startsWith("/manager/tournaments") || pathname.startsWith("/manager/tdm");
   // tournaments / TDM: "New …" FAB on the list only (the other tournament screens have their own primary action)
   const path = pathname.replace(/\/+$/, "");
-  const fab = !inTournaments ? NEW_SCRIM_FAB : path === "/manager/tournaments" ? NEW_TOURNAMENT_FAB : path === "/manager/tdm" ? NEW_TDM_FAB : undefined;
+  // the "New …" button only where you'd start one: home + the scrim / tournament / TDM lists (not on forms, Studio, etc.)
+  const fab = path === "/manager/scrims" ? NEW_SCRIM_FAB : path === "/manager/tournaments" ? NEW_TOURNAMENT_FAB : path === "/manager/tdm" ? NEW_TDM_FAB : undefined;
 
   const orgCard: SidebarSlot = useMemo(() => (s) => <OrgCard {...s} pending={pending} />, [pending]);
 

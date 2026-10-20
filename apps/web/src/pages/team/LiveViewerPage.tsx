@@ -60,8 +60,12 @@ export default function LiveViewerPage() {
   const steps = useMemo<TourStep[]>(
     () => [
       { title: t("v_tour_title"), description: t("v_tour_desc") },
-      { element: '[data-tour="live-player"]', title: t("v_tour_player_title"), description: t("v_tour_player_desc"), side: "bottom" },
-      { element: '[data-tour="live-note"]', title: t("v_tour_note_title"), description: t("v_tour_note_desc"), side: "top" },
+      {
+        element: '[data-tour="live-player"]',
+        title: t("v_tour_player_title"),
+        description: t("v_tour_player_desc"),
+        side: "bottom",
+      },
     ],
     [t],
   );
@@ -113,12 +117,7 @@ export default function LiveViewerPage() {
     return (
       <>
         <Back />
-        <EmptyState
-          icon={<MonitorOff />}
-          title={t("not_live_title")}
-          description={t("not_live_desc")}
-          action={<EndedActions />}
-        />
+        <EmptyState icon={<MonitorOff />} title={t("not_live_title")} description={t("watch_not_live_desc")} action={<EndedActions />} />
       </>
     );
 
@@ -135,30 +134,25 @@ export default function LiveViewerPage() {
         }
         description={shown.subtitle || undefined}
       />
-      <div className="space-y-3">
-        <div data-tour="live-player" className="-mx-4 sm:mx-0">
-          <HlsPlayer
-            src={shown.hlsUrl || liveHlsUrl(shown.matchId)}
-            startedAt={shown.startedAt}
-            ended={ended}
-            onStateChange={setPlayerState}
-            showLiveBadge={!shown.overlayUrl}
-            dvr={!!shown.overlayUrl}
-            frameClassName="rounded-none border-x-0 sm:rounded-xl sm:border-x"
-            endedSlot={
-              <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
-                <MonitorOff className="mx-auto size-7 text-muted-foreground" />
-                <p className="text-sm font-medium">{t("ended_long")}</p>
-                <EndedActions />
-              </div>
-            }
-          >
-            {shown.overlayUrl && !ended && <LiveOverlay url={shown.overlayUrl} />}
-          </HlsPlayer>
-        </div>
-        <p data-tour="live-note" className="text-xs text-muted-foreground">
-          {ended ? t("note_ended") : t("note_live")}
-        </p>
+      <div data-tour="live-player" className="-mx-4 sm:mx-0">
+        <HlsPlayer
+          src={shown.hlsUrl || liveHlsUrl(shown.matchId)}
+          startedAt={shown.startedAt}
+          ended={ended}
+          onStateChange={setPlayerState}
+          showLiveBadge={!shown.overlayUrl}
+          dvr={!!shown.overlayUrl}
+          frameClassName="rounded-none border-x-0 sm:rounded-xl sm:border-x"
+          endedSlot={
+            <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
+              <MonitorOff className="mx-auto size-7 text-muted-foreground" />
+              <p className="text-sm font-medium">{t("ended_long")}</p>
+              <EndedActions />
+            </div>
+          }
+        >
+          {shown.overlayUrl && !ended && <LiveOverlay url={shown.overlayUrl} />}
+        </HlsPlayer>
       </div>
     </>
   );

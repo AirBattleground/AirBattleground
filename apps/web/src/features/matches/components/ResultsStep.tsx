@@ -133,23 +133,25 @@ export function ResultsStep({
   if (m.teams.length === 0)
     return (
       <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">
-        There are no teams in this match's lineup yet. Go back to step 1 and confirm the lineup first.
+        No teams in the lineup yet. Confirm the team list first.
       </div>
     );
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-card p-3 text-sm shadow-sm" data-tour="results-summary">
-        <span className="font-display text-2xl font-bold">{rows.filter((r) => r.placement != null).length}</span>
-        <span className="mr-2 text-muted-foreground">of {rows.length} teams ranked</span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm" data-tour="results-summary">
+        <span>
+          <span className="font-display text-2xl font-bold">{rows.filter((r) => r.placement != null).length}</span>
+          <span className="text-muted-foreground">/{rows.length} ranked</span>
+        </span>
         {dupRanks.length > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive">
-            <AlertTriangle className="size-3.5" /> Duplicate rank {dupRanks.join(", ")}
+          <span className="inline-flex items-center gap-1 font-semibold text-destructive">
+            <AlertTriangle className="size-3.5" /> Rank {dupRanks.join(", ")} used twice
           </span>
         )}
         {mismatches > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-warning/40 bg-warning/15 px-2.5 py-0.5 text-xs font-semibold text-warning-foreground dark:text-warning">
-            <AlertTriangle className="size-3.5" /> {mismatches} finish total{mismatches === 1 ? "" : "s"} differ from players
+          <span className="inline-flex items-center gap-1 font-semibold text-warning-foreground dark:text-warning">
+            <AlertTriangle className="size-3.5" /> {mismatches} finish total{mismatches === 1 ? "" : "s"} to check
           </span>
         )}
         <Button size="sm" variant="ghost" className="ml-auto" onClick={() => setOrder((o) => (o === "rank" ? "slot" : "rank"))}>
@@ -232,7 +234,7 @@ export function ResultsStep({
                 </div>
 
                 <div className="col-span-3 flex flex-wrap gap-1.5 lg:col-span-1">
-                  {e.players.length === 0 && <span className="text-xs text-muted-foreground">No player names — enter the team total →</span>}
+                  {e.players.length === 0 && <span className="text-xs text-muted-foreground">No names — enter team finishes</span>}
                   {e.players.map((p) => (
                     <label key={p.position} className="inline-flex max-w-full items-center gap-1.5 rounded-lg border bg-background/70 py-0.5 pr-0.5 pl-2 text-xs">
                       <span className="max-w-32 truncate font-medium" title={p.name}>
@@ -275,9 +277,7 @@ export function ResultsStep({
                     >
                       Players add up to {e.playerSum}
                     </button>
-                  ) : (
-                    e.playerSum != null && <span className="mt-0.5 text-[10px] text-muted-foreground">= players' total</span>
-                  )}
+                  ) : null}
                 </div>
 
                 <div className="col-start-3 row-start-1 text-right lg:col-start-auto lg:row-start-auto">
@@ -299,19 +299,19 @@ export function ResultsStep({
       </div>
 
       {!readOnly && (
-        <div className="sticky bottom-3 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur" data-tour="results-publish">
+        <div className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] z-20 lg:bottom-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur" data-tour="results-publish">
           <div className="text-sm">
             {blockers.length > 0 ? (
               <p className="flex items-center gap-1.5 font-medium text-destructive">
                 <AlertTriangle className="size-4" /> {blockers.join(" · ")}
               </p>
             ) : (
-              <p className="text-muted-foreground">{dirty ? "You have unsaved changes." : "Everything is ranked. Publish when you're happy."}</p>
+              <p className="text-muted-foreground">{dirty ? "Unsaved changes." : "All ranked — ready to publish."}</p>
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" disabled={!dirty || save.isPending} onClick={doSave}>
-              <Save /> {save.isPending ? "Saving…" : "Save draft"}
+            <Button variant="outline" aria-label="Save draft" disabled={!dirty || save.isPending} onClick={doSave}>
+              <Save /> <span className="hidden sm:inline">{save.isPending ? "Saving…" : "Save draft"}</span>
             </Button>
             <Button size="lg" className="shadow-glow" disabled={blockers.length > 0 || publish.isPending || save.isPending} onClick={() => setConfirming(true)}>
               <Trophy /> {publish.isPending ? "Publishing…" : "Publish results"}
@@ -324,7 +324,7 @@ export function ResultsStep({
         open={confirming}
         onOpenChange={setConfirming}
         title={`Publish Match ${m.match.number} results?`}
-        description="Every team will see the scorecard and the updated points table. You can unpublish later if something needs fixing."
+        description="Every team sees the scorecard and the updated points table. You can unpublish later."
         confirmLabel="Publish results"
         onConfirm={() => void doPublish()}
       />

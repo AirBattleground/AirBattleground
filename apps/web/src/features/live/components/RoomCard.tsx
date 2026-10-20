@@ -58,12 +58,9 @@ export function RoomCard({ matchId, label, readOnly = false }: { matchId: string
 
   return (
     <section data-tour="room-card" aria-labelledby="room-card-title" className="relative flex flex-col overflow-hidden rounded-xl border bg-card p-4 shadow-sm sm:p-5">
-      <div className="pointer-events-none absolute -top-16 -right-16 size-44 rounded-full bg-primary/10 blur-3xl" />
       <div className="relative mb-3 flex items-center gap-2">
-        <span className="flex size-9 items-center justify-center rounded-lg bg-primary/15 text-primary">
-          <DoorOpen className="size-5" />
-        </span>
-        <h2 id="room-card-title" className="font-display text-xl font-bold">
+        <DoorOpen className="size-4 text-primary" />
+        <h2 id="room-card-title" className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Room
         </h2>
         {room && (
@@ -80,10 +77,7 @@ export function RoomCard({ matchId, label, readOnly = false }: { matchId: string
         </div>
       ) : !room ? (
         <div className="relative flex flex-1 flex-col items-start gap-3">
-          <p className="text-sm text-muted-foreground">
-            No room yet. Create the custom room in BGMI on the station, then add the room ID and password here — teams see them at the time you
-            choose.
-          </p>
+          <p className="text-sm text-muted-foreground">No room yet. Add the room ID and password — teams see them at the time you choose.</p>
           {!readOnly && (
             <Button onClick={() => setEditing(true)} data-tour="room-edit">
               <Plus /> Add room details
@@ -113,14 +107,12 @@ export function RoomCard({ matchId, label, readOnly = false }: { matchId: string
               <CopyButton value={room.password} label="Copy password" />
             </div>
           </div>
-          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <KeyRound className="size-4 shrink-0" />
-            {!room.revealAt
-              ? "Teams in this match can see it now."
-              : visible
-                ? `Teams can see it since ${fmtClock(room.revealAt)}.`
-                : `Teams see it at ${fmtClock(room.revealAt)}.`}
-          </p>
+          {room.revealAt && (
+            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <KeyRound className="size-4 shrink-0" />
+              {visible ? `Visible since ${fmtClock(room.revealAt)}` : `Teams see it at ${fmtClock(room.revealAt)}`}
+            </p>
+          )}
           <div className="flex flex-wrap gap-2">
             <CopyButton value={roomMessage(label, room)} variant="default" toastText="Copied — paste it in your WhatsApp group" data-tour="room-whatsapp">
               <MessageCircle /> Copy for WhatsApp
@@ -216,7 +208,7 @@ function RoomDialog({ matchId, room, onClose }: { matchId: string; room: RoomDet
               )}
             />
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Smartphone className="size-3.5" /> Until then teams see “Room details appear at …”.
+              <Smartphone className="size-3.5" /> Until then teams see when it will appear.
             </p>
           </div>
           <DialogFooter>

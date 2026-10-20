@@ -77,7 +77,8 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
   const tilt = useCardTilt<HTMLAnchorElement>();
   const tl = useT(tList);
   const labels = useStatusLabels();
-  const { fmtDay, fmtWhen } = useTournamentFormat();
+  const { fmtDay } = useTournamentFormat();
+  const regPhase = open || t.status === "REGISTRATION_CLOSED";
   return (
     <Link
       ref={tilt.ref}
@@ -96,54 +97,48 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
       <div className="tc-sheen pointer-events-none absolute inset-0 z-20" aria-hidden />
       <HudCorners />
 
-      {/* hero: status + organiser on top, title + prize sitting on the faded art */}
-      <div className="relative z-10 flex min-h-[13.5rem] flex-col justify-between gap-6 px-4 pt-4 sm:min-h-60 sm:px-5">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1.5 [&>*]:shadow-sm [&>*]:backdrop-blur-md">
+      {/* hero: one status pill on top, prize + title + organiser sitting on the faded art */}
+      <div className="relative z-10 flex min-h-[12rem] flex-col justify-between gap-6 px-4 pt-4 sm:min-h-56 sm:px-5">
+        <div className="flex [&>*]:shadow-sm [&>*]:backdrop-blur-md">
+          {chip ? (
+            <Pill tone={chip.tone} className="font-bold">
+              {chip.text}
+            </Pill>
+          ) : (
             <StatusPill status={t.status} />
-            {chip && (
-              <Pill tone={chip.tone} className="font-bold">
-                {chip.text}
-              </Pill>
-            )}
-          </div>
-          <OrganizerBadge
-            manager={t.manager}
-            className="max-w-[45%] shrink-0 rounded-full border bg-background/70 py-0.5 pr-2.5 pl-0.5 text-[11px] font-semibold shadow-sm backdrop-blur-md"
-            iconClassName="ml-1.5 size-3.5 text-primary"
-            logoClassName="size-5 rounded-full"
-            nameClassName="truncate"
-          />
+          )}
         </div>
         <div className="drop-shadow-[0_1px_8px_var(--card)]">
-          {t.prize && (
-            <p className="mb-1 inline-flex items-center gap-1.5">
-              <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground uppercase">{tl("prize_pool")}</span>
-              <span className="tc-prize font-display text-xl font-extrabold text-warning-foreground dark:text-warning">{fmtPrize(t.prize)}</span>
-            </p>
-          )}
+          {t.prize && <p className="tc-prize mb-1 font-display text-xl font-extrabold text-warning-foreground dark:text-warning">{fmtPrize(t.prize)}</p>}
           <h3 className="line-clamp-2 font-display text-[1.75rem] leading-[1.05] font-extrabold tracking-tight uppercase transition-colors duration-300 group-hover:text-primary sm:text-3xl">
             {t.title}
           </h3>
+          <OrganizerBadge
+            manager={t.manager}
+            className="mt-1.5 max-w-full text-xs text-muted-foreground"
+            iconClassName="size-3.5"
+            logoClassName="size-4 rounded-full"
+            nameClassName="truncate"
+          />
         </div>
       </div>
 
-      {/* segmented specs */}
-      <div className="relative z-10 mx-4 mt-4 grid grid-cols-3 divide-x overflow-hidden rounded-xl border bg-background/70 backdrop-blur-md sm:mx-5">
+      {/* key specs (teams move into the meter while registration is on) */}
+      <div className={cn("relative z-10 mx-4 mt-4 grid divide-x overflow-hidden rounded-xl border bg-background/70 backdrop-blur-md sm:mx-5", regPhase ? "grid-cols-2" : "grid-cols-3")}>
         <CardSegment icon={CalendarDays} label={tl("starts")} value={fmtDay(t.startsAt)} delay={80} />
         <CardSegment icon={Layers} label={tl("stages")} value={t.stagesCount} delay={160} />
-        <CardSegment icon={Users} label={tl("teams")} value={`${t.confirmedCount}/${t.maxTeams}`} delay={240} />
+        {!regPhase && <CardSegment icon={Users} label={tl("teams")} value={`${t.confirmedCount}/${t.maxTeams}`} delay={240} />}
       </div>
 
       {/* state */}
       <div className="relative z-10 flex flex-1 flex-col px-4 pt-3 pb-4 sm:px-5">
         <div className="mt-auto">
-          {open || t.status === "REGISTRATION_CLOSED" ? (
+          {regPhase ? (
             <>
               <RegistrationMeter confirmed={t.confirmedCount} max={t.maxTeams} waitlist={t.waitlistCount} size="sm" />
               {open && t.registrationClosesAt && (
                 <p className="mt-1.5 text-[11px] text-muted-foreground">
-                  {tl("closes_in")} <Countdown to={t.registrationClosesAt} className="font-semibold text-foreground" doneText={tl("moments")} /> · {fmtWhen(t.registrationClosesAt)}
+                  {tl("closes_in")} <Countdown to={t.registrationClosesAt} className="font-semibold text-foreground" doneText={tl("moments")} />
                 </p>
               )}
             </>

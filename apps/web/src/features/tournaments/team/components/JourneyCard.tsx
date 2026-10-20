@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AlertTriangle, CalendarClock, Clock, Flag, Target } from "lucide-react";
+import { AlertTriangle, CalendarClock, Clock, Target } from "lucide-react";
 import type { TeamTournamentDetail } from "@7xen/shared";
 import { SlotChip, type Tone } from "@7xen/ui/components/brand/status";
 import { cn } from "@7xen/ui/lib/utils";
@@ -56,70 +56,62 @@ export function JourneyCard({ t, className }: { t: TeamTournamentDetail; classNa
     <section
       data-tour="journey"
       aria-labelledby="journey-title"
-      className={cn("relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm sm:p-6", BORDER_TONE[c.tone], className)}
+      className={cn("relative overflow-hidden rounded-2xl border bg-card p-4 shadow-sm sm:p-5", BORDER_TONE[c.tone], className)}
     >
       {burst && <Confetti />}
-      <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
-      <div className="relative flex items-start gap-4">
+      <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">{c.eyebrow}</p>
+      <div className="mt-2 flex items-start gap-3">
         <motion.span
           initial={{ scale: 0.5, rotate: -12, opacity: 0 }}
           animate={{ scale: 1, rotate: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 320, damping: 16 }}
-          className={cn("flex size-14 shrink-0 items-center justify-center rounded-2xl", ICON_TONE[c.tone])}
+          className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl", ICON_TONE[c.tone])}
         >
-          <Icon className="size-7" />
+          <Icon className="size-6" />
         </motion.span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">{c.eyebrow}</p>
-          <h2 id="journey-title" className="mt-0.5 font-display text-2xl leading-tight font-bold sm:text-3xl">
+          <h2 id="journey-title" className="font-display text-2xl leading-tight font-bold">
             {c.title}
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">{c.body}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{c.body}</p>
         </div>
-        {me.slotNumber != null && (me.state === "PLAYING" || me.state === "CONFIRMED") && (
-          <SlotChip slot={me.slotNumber} className="hidden shrink-0 sm:inline-flex" />
-        )}
+        {me.slotNumber != null && (me.state === "PLAYING" || me.state === "CONFIRMED") && <SlotChip slot={me.slotNumber} className="shrink-0" />}
       </div>
 
-      {(goal || nm || assigned) && (
-        <div className="relative mt-5 grid gap-3 sm:grid-cols-2">
-          {goal && (
-            <div className="flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/5 p-3.5 sm:col-span-2" data-tour="next-goal">
-              <Target className="mt-0.5 size-5 shrink-0 text-primary" />
-              <div>
-                <p className="text-[11px] font-semibold tracking-wider text-primary uppercase">{tj("next_goal")}</p>
-                <p className="font-display text-lg leading-snug font-bold">{goal}</p>
-              </div>
-            </div>
-          )}
+      {goal && (
+        <p className="mt-4 flex items-start gap-2 text-sm" data-tour="next-goal">
+          <Target className="mt-0.5 size-4 shrink-0 text-primary" />
+          <span>
+            <span className="font-semibold text-primary">{tj("next_goal")}:</span> <span className="font-medium">{goal}</span>
+          </span>
+        </p>
+      )}
+
+      {(nm || assigned) && (
+        <div className="mt-4 divide-y border-t">
           {nm && (
-            <div className="flex flex-col gap-3 rounded-xl border bg-background/60 p-3.5" data-tour="next-tmatch">
-              <div className="flex items-start gap-3">
-                <Flag className="mt-0.5 size-5 shrink-0 text-primary" />
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">{tj("next_match")}</p>
-                  <p className="font-display text-lg leading-snug font-bold">
-                    {tj("match_group", { n: nm.number, group: nm.groupName })}
-                  </p>
-                  <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                    <MapChip map={nm.map} className="px-1.5 py-0.5 text-[11px]" />
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="size-3.5" /> {fmtWhen(nm.scheduledAt)}
-                    </span>
-                  </p>
-                </div>
+            <div className="space-y-3 py-4" data-tour="next-tmatch">
+              <div>
+                <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">{tj("next_match")}</p>
+                <p className="font-display text-lg leading-snug font-bold">{tj("match_group", { n: nm.number, group: nm.groupName })}</p>
+                <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <MapChip map={nm.map} className="px-1.5 py-0.5 text-[11px]" />
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="size-3.5" /> {fmtWhen(nm.scheduledAt)}
+                  </span>
+                </p>
               </div>
               {nm.scheduledAt && <Countdown to={nm.scheduledAt} variant="blocks" doneText={tj("match_time")} label={tj("time_until_next")} />}
               <MatchRoom matchId={nm.matchId} className="sm:grid-cols-1" />
               {stage && (
-                <Link to={`/team/tournaments/${t.id}/stages/${stage.id}`} className="text-xs font-semibold text-primary underline-offset-4 hover:underline">
+                <Link to={`/team/tournaments/${t.id}/stages/${stage.id}`} className="inline-flex min-h-10 items-center text-sm font-semibold text-primary underline-offset-4 hover:underline">
                   {tj("see_your_group")}
                 </Link>
               )}
             </div>
           )}
           {assigned && (
-            <div className="flex items-start gap-3 rounded-xl border bg-background/60 p-3.5">
+            <div className="flex items-start gap-3 py-4 last:pb-0">
               <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
               <div>
                 <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">{tj("your_time_slot")}</p>
@@ -130,17 +122,23 @@ export function JourneyCard({ t, className }: { t: TeamTournamentDetail; classNa
           )}
         </div>
       )}
-      {me.rosterWarning && (
-        <div className="relative mt-4 flex items-start gap-2.5 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning-foreground dark:text-warning" />
-          <p>
-            {me.rosterWarning}{" "}
-            <Link to="/team/profile" className="font-semibold text-primary underline-offset-4 hover:underline">
-              {tj("update_roster")}
-            </Link>
-          </p>
-        </div>
-      )}
+      {me.rosterWarning && <RosterWarning text={me.rosterWarning} className="mt-4" />}
     </section>
+  );
+}
+
+/** Roster problem that blocks playing, with a link to fix it. */
+export function RosterWarning({ text, className }: { text: string; className?: string }) {
+  const tj = useT(tJourney);
+  return (
+    <div className={cn("flex items-start gap-2.5 rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm", className)}>
+      <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning-foreground dark:text-warning" />
+      <p>
+        {text}{" "}
+        <Link to="/team/profile" className="font-semibold text-primary underline-offset-4 hover:underline">
+          {tj("update_roster")}
+        </Link>
+      </p>
+    </div>
   );
 }

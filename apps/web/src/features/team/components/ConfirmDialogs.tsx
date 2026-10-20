@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AlertTriangle, CalendarDays, Clock, ShieldCheck, User } from "lucide-react";
+import { AlertTriangle, CalendarDays, Clock, User } from "lucide-react";
 import type { GameMap } from "@7xen/shared";
 import {
   AlertDialog,
@@ -70,18 +70,13 @@ export function RegisterDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle className="font-display text-2xl">{again ? t("reg_again_title") : t("reg_title")}</AlertDialogTitle>
-          <AlertDialogDescription>{t("reg_check")}</AlertDialogDescription>
+          <AlertDialogDescription>{t.rich("reg_approve", { b: (c) => <strong className="text-foreground">{c}</strong> })}</AlertDialogDescription>
         </AlertDialogHeader>
         <SummaryBox s={summary} />
-        {full ? (
+        {full && (
           <div className="flex gap-3 rounded-xl border border-warning/40 bg-warning/15 p-3 text-sm text-warning-foreground dark:text-warning">
             <AlertTriangle className="mt-0.5 size-5 shrink-0" />
             <p>{t("reg_full")}</p>
-          </div>
-        ) : (
-          <div className="flex gap-3 rounded-xl border border-info/30 bg-info/10 p-3 text-sm text-info">
-            <ShieldCheck className="mt-0.5 size-5 shrink-0" />
-            <p>{t.rich("reg_approve", { b: (c) => <strong>{c}</strong> })}</p>
           </div>
         )}
         <AlertDialogFooter>

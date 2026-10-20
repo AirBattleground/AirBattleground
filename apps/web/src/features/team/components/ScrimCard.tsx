@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Hourglass, Loader2, Lock, Maximize2, RotateCw, Swords, Timer } from "lucide-react";
+import { CheckCircle2, Loader2, Lock, RotateCw, Swords, Timer } from "lucide-react";
 import type { TeamScrimOnDate } from "@7xen/shared";
 import { SlotChip } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -70,7 +70,7 @@ function Ambient({ url }: { url: string | null }) {
   );
 }
 
-/** "12/16 slots · 4 left" with a slim bar. */
+/** "4 left · 12/16" with a slim bar — slots left is the number that matters. */
 function SlotMeter({ approved, total, className }: { approved: number; total: number; className?: string }) {
   const t = useT(scrimUi);
   const filled = Math.min(approved, total);
@@ -79,14 +79,14 @@ function SlotMeter({ approved, total, className }: { approved: number; total: nu
   const almost = !full && left <= Math.max(2, Math.ceil(total * 0.2));
   const tone = full ? "bg-destructive" : almost ? "bg-warning" : "bg-success";
   return (
-    <span className={cn("inline-flex shrink-0 items-center gap-2 text-xs", className)}>
-      <span className="h-1.5 w-14 overflow-hidden rounded-full bg-muted">
+    <span className={cn("inline-flex shrink-0 items-center gap-2 text-xs", className)} title={`${filled}/${total}`}>
+      <span className={cn("text-sm font-bold whitespace-nowrap tabular-nums", full ? "text-destructive" : almost ? "text-warning-foreground dark:text-warning" : "text-success")}>
+        {full ? t("full") : t("left", { count: left })}
+      </span>
+      <span className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
         <span className={cn("block h-full rounded-full transition-[width] duration-700", tone)} style={{ width: `${total ? (filled / total) * 100 : 0}%` }} />
       </span>
-      <span className="font-medium whitespace-nowrap text-muted-foreground">
-        <span className="font-semibold text-foreground tabular-nums">{filled}/{total}</span> ·{" "}
-        <span className={cn("font-semibold", full ? "text-destructive" : almost ? "text-warning-foreground dark:text-warning" : "text-success")}>{full ? t("full") : t("left", { count: left })}</span>
-      </span>
+      <span className="font-medium text-muted-foreground tabular-nums">{filled}/{total}</span>
     </span>
   );
 }
@@ -190,38 +190,37 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
                   <motion.div initial={{ scale: 0.4, rotate: -8 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: "spring", stiffness: 380, damping: 14 }}>
                     {my?.slotNumber != null ? <SlotChip slot={my.slotNumber} /> : <CheckCircle2 className="size-10 text-success" />}
                   </motion.div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="font-display text-xl font-bold text-success">{t("youre_in")}</p>
-                    <p className="text-xs text-muted-foreground">{started ? t("in_progress") : t("be_ready")}</p>
+                    {started && <p className="text-xs text-muted-foreground">{t("in_progress")}</p>}
                   </div>
+                  {!started && isLeader && (
+                    <Button variant="ghost" className="h-10 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>
+                      {t("cancel")}
+                    </Button>
+                  )}
                 </div>
-              )}
-              {status === "APPROVED" && !started && isLeader && (
-                <Button variant="ghost" size="sm" className="self-start text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>
-                  {t("cancel")}
-                </Button>
               )}
 
               {status === "PENDING" && (
-                <>
+                <div className="flex items-center justify-between gap-2">
                   <div {...tour("scrim-status")}>
                     <TeamStatusBadge status="PENDING" className="px-3 py-1 text-sm" />
                   </div>
-                  <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <Hourglass className="mt-0.5 size-3.5 shrink-0" /> {t("waiting_live")}
-                  </p>
                   {!started && isLeader && (
-                    <Button variant="ghost" size="sm" className="self-start text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>
+                    <Button variant="ghost" className="h-10 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>
                       {t("cancel_request")}
                     </Button>
                   )}
-                </>
+                </div>
               )}
 
               {status === "REJECTED" && (
                 <>
-                  <TeamStatusBadge status="REJECTED" className="self-start px-3 py-1 text-sm" />
-                  {rejectionReason && <p className="text-xs text-muted-foreground">{t("reason", { reason: rejectionReason })}</p>}
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <TeamStatusBadge status="REJECTED" className="px-3 py-1 text-sm" />
+                    {rejectionReason && <p className="min-w-0 text-xs text-muted-foreground">{t("reason", { reason: rejectionReason })}</p>}
+                  </div>
                   {open &&
                     (isLeader ? (
                       <Button variant="outline" onClick={() => setRegOpen(true)} disabled={register.isPending}>

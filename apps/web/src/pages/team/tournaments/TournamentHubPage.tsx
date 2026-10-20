@@ -1,18 +1,17 @@
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Route, SearchX } from "lucide-react";
+import { ArrowLeft, SearchX } from "lucide-react";
 import { ApiError, type TeamTournamentDetail } from "@7xen/shared";
 import { EmptyState } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
-import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
 import { PointsLegend } from "@/features/results/components/Standings";
 import { QueryError } from "@/features/team/components/QueryError";
 import { StageFlow, StageFlowSkeleton } from "@/features/tournaments/shared/StageFlow";
 import { useTeamStage, useTeamTournament } from "@/features/tournaments/team/api";
-import { FormatSummary, OnFire, RulesSection, TournamentHero } from "@/features/tournaments/team/components/HubSections";
+import { FormatSummary, OnFire, RulesSection, TournamentHero, ZoneLabel } from "@/features/tournaments/team/components/HubSections";
 import { JourneyCard } from "@/features/tournaments/team/components/JourneyCard";
 import { RegistrationPanel } from "@/features/tournaments/team/components/RegistrationPanel";
 import { youFromMe } from "@/features/tournaments/team/journey";
@@ -22,14 +21,13 @@ import { tHub } from "@/i18n/tournamentsHub";
 
 function HubSkeleton() {
   return (
-    <div className="space-y-5">
-      <Skeleton className="h-52 rounded-2xl" />
-      <div className="rounded-2xl border bg-card p-5">
-        <StageFlowSkeleton />
-      </div>
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem]">
-        <Skeleton className="h-48 rounded-2xl" />
-        <Skeleton className="h-72 rounded-2xl" />
+    <div className="space-y-6">
+      <Skeleton className="h-60 rounded-2xl" />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
+        <div className="rounded-2xl border bg-card p-5 lg:col-start-1 lg:row-start-1">
+          <StageFlowSkeleton />
+        </div>
+        <Skeleton className="h-72 rounded-2xl lg:col-start-2 lg:row-start-1" />
       </div>
     </div>
   );
@@ -102,67 +100,51 @@ export default function TournamentHubPage() {
     );
 
   const regOpen = t.status === "REGISTRATION_OPEN";
+  // teams that aren't in: the registration panel is their status + action, the journey card would repeat it
+  const inIt = t.me.state !== "NOT_REGISTERED" && t.me.state !== "WITHDRAWN";
+  const stageHref = (s: { id: string }) => `/team/tournaments/${t.id}/stages/${s.id}`;
   return (
     <>
       {back}
-      <div className={cn("grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem]", stageQ.data ? "lg:grid-rows-[auto_auto_auto_auto_1fr]" : "lg:grid-rows-[auto_auto_auto_1fr]")}>
-        <div className="order-1 lg:col-span-2 lg:row-start-1">
-          <TournamentHero t={t} />
-        </div>
+      <div className="space-y-6">
+        <TournamentHero t={t} />
 
-        <section
-          data-tour="stage-flow"
-          aria-labelledby="flow-title"
-          className="order-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-5 lg:col-span-2 lg:row-start-2"
-        >
-          <div className="mb-1 flex flex-wrap items-center gap-2">
-            <Route className="size-5 text-primary" />
-            <h2 id="flow-title" className="font-display text-xl font-bold">
-              {th("road")}
-            </h2>
-            <span className="text-xs text-muted-foreground">{th("road_hint")}</span>
-          </div>
-          <StageFlow
-            stages={t.stages}
-            registration={{ open: regOpen, confirmed: t.confirmedCount, max: t.maxTeams }}
-            champion={t.champion}
-            you={you}
-            stageHref={(s) => `/team/tournaments/${t.id}/stages/${s.id}`}
-          />
-        </section>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start">
+          {/* right zone (first on phones): your status + the one action */}
+          <aside className="space-y-4 lg:col-start-2 lg:row-start-1" aria-label={th("zone_you")}>
+            {inIt && <JourneyCard t={t} />}
+            <RegistrationPanel t={t} />
+          </aside>
 
-        <div className="order-2 space-y-5 lg:col-start-1 lg:row-start-3">
-          {/* TeamLiveCard has no tournamentId — match by the next match or the tournament title */}
-          <TeamLiveCards filter={(c) => c.matchId === t.me.nextMatch?.matchId || c.title === t.title} />
-          <JourneyCard t={t} />
-        </div>
+          {/* main zone: what's happening in the tournament */}
+          <div className="min-w-0 space-y-6 lg:col-start-1 lg:row-start-1">
+            {/* TeamLiveCard has no tournamentId — match by the next match or the tournament title */}
+            <TeamLiveCards filter={(c) => c.matchId === t.me.nextMatch?.matchId || c.title === t.title} />
 
-        {/* desktop: the side column takes exactly the height of the left boxes and scrolls inside it,
-            so a long registration panel never stretches the grid */}
-        <aside className={cn("contents lg:relative lg:col-start-2 lg:row-start-3 lg:block lg:min-h-[26rem]", stageQ.data ? "lg:row-span-3" : "lg:row-span-2")}>
-          <div className="contents lg:absolute lg:inset-0 lg:flex lg:flex-col lg:gap-5 lg:overflow-y-auto lg:overscroll-contain lg:rounded-2xl lg:pr-1 lg:[scrollbar-gutter:stable] lg:[scrollbar-width:thin]">
-            <div className="order-3 shrink-0 empty:hidden lg:order-none">
-              <RegistrationPanel t={t} />
-            </div>
-            <div className="order-7 shrink-0 lg:order-none">
-              <PointsLegend ps={t.pointsSystem} className="rounded-2xl" />
-            </div>
-            {t.rules && (
-              <div className="order-8 shrink-0 lg:order-none">
-                <RulesSection rules={t.rules} />
+            <section data-tour="stage-flow" aria-labelledby="flow-title" className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+              <ZoneLabel id="flow-title" className="mb-1">
+                {th("road")}
+              </ZoneLabel>
+              <StageFlow
+                stages={t.stages}
+                registration={{ open: regOpen, confirmed: t.confirmedCount, max: t.maxTeams }}
+                champion={t.champion}
+                you={you}
+                stageHref={stageHref}
+              />
+            </section>
+
+            {stageQ.data && <OnFire stage={stageQ.data} limit={3} href={stageHref(stageQ.data.stage)} />}
+
+            <section aria-labelledby="details-title" className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+              <ZoneLabel id="details-title">{th("details")}</ZoneLabel>
+              <PointsLegend ps={t.pointsSystem} className="rounded-none border-0 bg-transparent p-0 shadow-none" />
+              <div className="mt-3 divide-y border-t">
+                <FormatSummary t={t} />
+                {t.rules && <RulesSection rules={t.rules} />}
               </div>
-            )}
+            </section>
           </div>
-        </aside>
-
-        {stageQ.data && (
-          <div className="order-5 empty:hidden lg:col-start-1 lg:row-start-4">
-            <OnFire stage={stageQ.data} href={`/team/tournaments/${t.id}/stages/${stageQ.data.stage.id}`} />
-          </div>
-        )}
-
-        <div className={cn("order-6 lg:col-start-1", stageQ.data ? "lg:row-start-5" : "lg:row-start-4")}>
-          <FormatSummary t={t} />
         </div>
       </div>
     </>

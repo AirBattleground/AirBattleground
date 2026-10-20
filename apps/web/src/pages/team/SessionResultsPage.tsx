@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Lock } from "lucide-react";
+import { ArrowLeft, ChevronRight, Lock } from "lucide-react";
 import { ApiError } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -13,7 +13,6 @@ import { resultsMsg } from "@/i18n/results";
 import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 import { useTeamStandings } from "@/features/results/api";
-import { MatchStatusPill } from "@/features/matches/components/MatchStatusPill";
 import { PointsLegend, StandingsBoard, StandingsSkeleton, StandingsSummary } from "@/features/results/components/Standings";
 
 export default function SessionResultsPage() {
@@ -63,47 +62,51 @@ export default function SessionResultsPage() {
       ) : !s ? (
         <StandingsSkeleton />
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <StandingsSummary standings={s} />
           <StandingsBoard
             standings={s}
             highlightTeamId={user?.team?.id}
             matchHref={(m) => (m.status === "PUBLISHED" ? `/team/results/${scrimId}/${date}/matches/${m.id}` : undefined)}
           />
-          <section data-tour="session-matches" className="space-y-2">
-            <h2 className="font-display text-xl font-bold">{t("match_scorecards")}</h2>
-            <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {s.matches.map((m) => {
-                const open = m.status === "PUBLISHED";
-                const inner = (
-                  <>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-display text-xl font-bold">{t("match_n", { n: m.number })}</span>
-                      {open ? <ArrowRight className="size-4 text-primary" /> : <MatchStatusPill status={m.status} className="text-[10px]" />}
-                    </div>
-                    <MapChip map={m.map} className="self-start" />
-                  </>
-                );
-                return (
-                  <li key={m.id}>
-                    {open ? (
-                      <Link
-                        to={`/team/results/${scrimId}/${date}/matches/${m.id}`}
-                        className="flex h-full flex-col gap-2 rounded-xl border bg-card p-3 shadow-sm outline-none transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                      >
-                        {inner}
-                      </Link>
-                    ) : (
-                      <div className={cn("flex h-full flex-col gap-2 rounded-xl border border-dashed p-3 opacity-70")} title={t("not_published")}>
-                        {inner}
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-          <PointsLegend ps={s.pointsSystem} />
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+            <section data-tour="session-matches" className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+              <h2 className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">{t("match_scorecards")}</h2>
+              <ul className="flex flex-wrap gap-2">
+                {s.matches.map((m) => {
+                  const open = m.status === "PUBLISHED";
+                  const inner = (
+                    <>
+                      <span className="font-display text-base font-bold">{t("match_n", { n: m.number })}</span>
+                      <MapChip map={m.map} className="px-1.5 py-0.5 text-[10px]" />
+                      {open && <ChevronRight className="size-4 text-muted-foreground" />}
+                    </>
+                  );
+                  const cls = "flex min-h-10 items-center gap-2 rounded-lg border px-3 py-1.5";
+                  return (
+                    <li key={m.id}>
+                      {open ? (
+                        <Link
+                          to={`/team/results/${scrimId}/${date}/matches/${m.id}`}
+                          className={cn(
+                            cls,
+                            "bg-background outline-none transition-colors hover:border-primary/50 focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                          )}
+                        >
+                          {inner}
+                        </Link>
+                      ) : (
+                        <div className={cn(cls, "border-dashed opacity-60")} title={t("not_published")}>
+                          {inner}
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+            <PointsLegend ps={s.pointsSystem} />
+          </div>
         </div>
       )}
     </>

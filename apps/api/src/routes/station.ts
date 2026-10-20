@@ -182,7 +182,7 @@ export function liveRouter() {
     const showId = p(req.params.showId);
     const file = p(req.params.file);
     if (!/^[A-Za-z0-9_.-]{1,80}\.(m3u8|mp4|m4s|ts)$/.test(file)) throw notFound("Not found");
-    if (!studio.showIsLive(showId)) throw notFound("This show isn't live");
+    if (!(await studio.showIsLive(showId))) throw notFound("This show isn't live");
     const search = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
     const upstream = await fetchHlsPath(showPath(showId), file, search);
     if (!upstream || !upstream.ok || !upstream.body) throw notFound("The stream is starting. Try again in a few seconds.");

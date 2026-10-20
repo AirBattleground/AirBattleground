@@ -828,6 +828,10 @@ model StudioShow {
   liveSince      DateTime?
   /// StreamDestination ids relayed to while live
   destinationIds String[]  @default([])
+  /// listed on the public AirBattleground Live/Watch pages while live (off = private test stream)
+  publicListing  Boolean   @default(true)
+  /// also go live on the site YouTube channel (when the admin connected one)
+  siteYoutube    Boolean   @default(true)
   /// the Studio page's saved setup (scenes, overlays…); shape owned by the web app
   config         Json      @default("{}")
   createdAt      DateTime  @default(now())

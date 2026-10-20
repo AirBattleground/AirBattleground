@@ -90,9 +90,9 @@ export function DeviceHealthPanel({ device: d, className }: { device: DeviceRow;
       {live && h.memMB != null && (
         <Meter icon={<MemoryStick />} label="App memory" value={`${Math.round(h.memMB)} / ${EXTENSION_MEM_LIMIT_MB} MB`} pct={(h.memMB / EXTENSION_MEM_LIMIT_MB) * 100} />
       )}
-      {live && (h.bitrateKbps != null || h.fps != null) && (
+      {live && (h.bitrateKbps != null || h.fps != null || h.quality) && (
         <p className="text-xs text-muted-foreground sm:col-span-2">
-          {[h.width && h.height && `${h.width}×${h.height}`, h.fps != null && `${Math.round(h.fps)} fps`, h.bitrateKbps != null && `${(h.bitrateKbps / 1000).toFixed(1)} Mbps`, h.network === "cellular" ? "mobile data" : h.network === "wifi" ? "Wi-Fi" : null]
+          {[h.quality && `${h.quality}${h.autoDowngraded ? " (lowered, phone hot)" : ""}`, h.width && h.height && `${h.width}×${h.height}`, h.fps != null && `${Math.round(h.fps)} fps`, h.bitrateKbps != null && `${(h.bitrateKbps / 1000).toFixed(1)} Mbps`, h.network === "cellular" ? "mobile data" : h.network === "wifi" ? "Wi-Fi" : null]
             .filter(Boolean)
             .join(" · ")}
         </p>
@@ -109,12 +109,6 @@ export function DeviceStreamBadges({ device: d }: { device: DeviceRow }) {
       <DeviceStatusPill status={d.status} />
       {live && d.streamingSince && <span className="font-display text-lg font-bold tabular-nums">{elapsed(d.streamingSince, now)}</span>}
       {d.broadcastLive && <Pill tone="danger">Live to teams</Pill>}
-      {live && d.health?.quality && (
-        <Pill tone="brand">
-          {d.health.quality}
-          {d.health.autoDowngraded && " · lowered (phone hot)"}
-        </Pill>
-      )}
     </>
   );
 }
@@ -135,26 +129,34 @@ export function DeviceCard({ device: d, onShowKey, onRename, onRegenerate, onRem
   const neverConnected = !d.lastSeenAt;
   const href = `/manager/devices/${d.id}`;
 
+  const now = useNow(1000);
+  const h = online ? d.health : null;
+  const healthBits = [
+    h?.battery != null && `${Math.round(h.battery * 100)}%${h.charging ? " ⚡" : ""}`,
+    h?.thermal && THERMAL[h.thermal].label,
+    live && h?.quality,
+  ].filter(Boolean);
+
   return (
     <article
       data-tour="device-card"
       onClick={() => navigate(href)}
       className={cn(
-        "group relative flex cursor-pointer flex-col gap-4 overflow-hidden rounded-2xl border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow",
-        live && "border-destructive/40 shadow-glow",
+        "group relative flex cursor-pointer flex-col gap-4 overflow-hidden rounded-2xl border bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow sm:p-5",
+        live && "border-destructive/40",
       )}
     >
       <header className="flex items-start gap-3">
-        <div className={cn("flex size-12 shrink-0 items-center justify-center rounded-xl", online ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
-          {live ? <Video className="size-6" /> : <Smartphone className="size-6" />}
+        <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl", online ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground")}>
+          {live ? <Video className="size-5" /> : <Smartphone className="size-5" />}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate font-display text-xl leading-tight font-bold">
+          <h3 className="truncate font-display text-lg leading-tight font-bold">
             <Link to={href} onClick={stop} className="outline-none hover:underline focus-visible:underline">
               {d.name}
             </Link>
           </h3>
-          <p className="truncate text-sm text-muted-foreground">{[d.model ?? "iPhone", d.osVersion && `iOS ${d.osVersion}`, d.appVersion && `app ${d.appVersion}`].filter(Boolean).join(" · ")}</p>
+          <p className="truncate text-xs text-muted-foreground">{[d.model ?? "iPhone", d.osVersion && `iOS ${d.osVersion}`, d.appVersion && `app ${d.appVersion}`].filter(Boolean).join(" · ")}</p>
         </div>
         <div onClick={stop}>
           <DropdownMenu>
@@ -182,26 +184,42 @@ export function DeviceCard({ device: d, onShowKey, onRename, onRegenerate, onRem
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <DeviceStreamBadges device={d} />
-        <span className="ml-auto text-xs text-muted-foreground">
-          {neverConnected ? "Never connected" : online ? "Connected" : `Last seen ${formatDistanceToNowStrict(new Date(d.lastSeenAt!))} ago`}
+      {/* state at a glance */}
+      <div
+        className={cn(
+          "flex items-center gap-3 rounded-xl px-3 py-2.5",
+          live ? "bg-destructive/10" : online ? "bg-success/10" : "bg-muted/60",
+        )}
+      >
+        <span className={cn("size-2.5 shrink-0 rounded-full", live ? "animate-pulse bg-destructive" : online ? "bg-success" : "bg-muted-foreground/50")} />
+        <span className={cn("font-display text-lg leading-none font-bold", live ? "text-destructive" : online ? "text-success" : "text-muted-foreground")}>
+          {STATUS[d.status].label}
+        </span>
+        {live && d.streamingSince && <span className="font-display text-lg leading-none font-bold tabular-nums">{elapsed(d.streamingSince, now)}</span>}
+        <span className="ml-auto truncate text-right text-xs text-muted-foreground">
+          {d.broadcastLive ? (
+            <span className="font-semibold text-destructive">Live to teams</span>
+          ) : neverConnected ? (
+            "Never connected"
+          ) : online ? (
+            healthBits.join(" · ") || "Connected"
+          ) : (
+            `Seen ${formatDistanceToNowStrict(new Date(d.lastSeenAt!))} ago`
+          )}
         </span>
       </div>
 
-      {!online ? (
-        <div data-tour="device-qr" className="flex items-center gap-4 rounded-xl border border-dashed p-3" onClick={stop}>
-          <PairQr deviceId={d.id} size={96} hidden />
-          <div className="min-w-0 space-y-1.5 text-sm">
-            <p className="font-semibold">{neverConnected ? "Connect the phone" : "Phone not connected"}</p>
-            <p className="text-muted-foreground">Open 7XEN Stream on the iPhone and scan this QR, or enter the key.</p>
-            <button type="button" onClick={onShowKey} className="font-semibold text-primary hover:underline">
+      {!online && (
+        <div data-tour="device-qr" className="flex items-center gap-3" onClick={stop}>
+          <PairQr deviceId={d.id} size={72} hidden />
+          <div className="min-w-0 space-y-1 text-sm">
+            <p className="font-semibold">{neverConnected ? "Pair this phone" : "Reconnect"}</p>
+            <p className="text-xs text-muted-foreground">Scan in 7XEN Stream, or enter the key.</p>
+            <button type="button" onClick={onShowKey} className="min-h-8 text-sm font-semibold text-primary hover:underline">
               Show key
             </button>
           </div>
         </div>
-      ) : (
-        <DeviceHealthPanel device={d} />
       )}
 
       <Button

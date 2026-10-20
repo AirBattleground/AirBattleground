@@ -34,7 +34,6 @@ export default function StandingsPage() {
       <PageHeader
         eyebrow={s ? `${formatDate(s.date)} · ${formatTime(s.scrim.startTime)} IST` : "Points table"}
         title={s ? s.scrim.title : "Points table"}
-        description="Overall ranking for this session. Only published matches count."
       />
       {q.isError ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} title="We couldn't load the points table" />

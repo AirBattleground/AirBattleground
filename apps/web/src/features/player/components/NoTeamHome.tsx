@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowRight, Crown, Hourglass, KeyRound, Loader2, Megaphone, Shield, Ticket, UserPlus, Users, X } from "lucide-react";
+import { ArrowRight, Hourglass, KeyRound, Loader2, Shield, UserPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { INVITE_CODE_LENGTH, normalizeInviteCode, type MyJoinRequest } from "@7xen/shared";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
@@ -10,7 +10,6 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { Input } from "@7xen/ui/components/ui/input";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
-import markUrl from "@/assets/brand/airbattleground-mark.webp";
 import { refreshMembership, useCancelJoinRequest, usePlayerProfile } from "../api";
 import { CreateTeamDialog } from "./CreateTeamDialog";
 import { MyInvitesPanel } from "./MyInvitesPanel";
@@ -86,8 +85,7 @@ export function PendingJoinCard({ request, className }: { request: MyJoinRequest
             <Hourglass className="size-3.5" /> {t("waiting_leader")}
           </p>
           <p className="truncate font-display text-lg leading-tight font-bold">{t("you_asked", { team: request.team.name })}</p>
-          <p className="text-xs text-muted-foreground">{t("switch_soon")}</p>
-        </div>
+                  </div>
       </div>
       <Button variant="ghost" size="sm" className="self-start text-muted-foreground hover:text-destructive sm:self-center" disabled={cancel.isPending} onClick={() => cancel.mutate(request.id)}>
         {cancel.isPending ? <Loader2 className="animate-spin" /> : <X />} {t("cancel_request")}
@@ -114,9 +112,9 @@ export function useWatchForApproval() {
 }
 
 const HOW = [
-  { icon: Crown, title: "how1_title", text: "how1_text" },
-  { icon: Megaphone, title: "how2_title", text: "how2_text" },
-  { icon: Ticket, title: "how3_title", text: "how3_text" },
+  { title: "how1_title", text: "how1_text" },
+  { title: "how2_title", text: "how2_text" },
+  { title: "how3_title", text: "how3_text" },
 ] as const;
 
 /**
@@ -130,67 +128,40 @@ export function CreateOrJoinTeam() {
   const pending = profile.data?.pendingJoinRequest ?? null;
 
   return (
-    <div className="flex flex-col gap-6 sm:gap-8">
+    <div className="space-y-6">
       <MyInvitesPanel />
-      <section className="relative isolate overflow-hidden rounded-3xl border border-primary/20 bg-card shadow-sm animate-rise" data-tour="start-hero">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_0%_0%,color-mix(in_oklch,var(--primary)_22%,transparent),transparent_60%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(80%_70%_at_100%_100%,color-mix(in_oklch,var(--brand-400)_18%,transparent),transparent_65%)]" />
-          <img src={markUrl} alt="" className="brand-ink absolute -right-16 -bottom-24 w-[26rem] max-w-none rotate-[-12deg] opacity-[0.1] sm:w-[34rem]" />
-          <div className="absolute inset-0 bg-grid opacity-50 [mask-image:linear-gradient(to_bottom,#000,transparent_85%)]" />
-          <div className="absolute inset-x-10 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/70 to-transparent" />
-        </div>
+      {pending && <PendingJoinCard request={pending} />}
 
-        <div className="p-5 sm:p-8">
-          {pending && <PendingJoinCard request={pending} className="mb-5" />}
+      <div className="grid gap-4 md:grid-cols-2" data-tour="start-hero">
+        <section className="flex flex-col rounded-2xl border border-primary/40 bg-card p-4 shadow-sm sm:p-5" data-tour="create-team">
+          <h2 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">
+            <Shield className="size-3.5" /> {t("create_title")}
+          </h2>
+          <p className="mt-1 flex-1 text-sm text-muted-foreground">{t("create_card_text")}</p>
+          <Button size="lg" className="mt-4 h-12 w-full text-base shadow-glow" onClick={() => setCreateOpen(true)}>
+            <UserPlus /> {t("create_a_team")}
+          </Button>
+        </section>
+        <section className="flex flex-col rounded-2xl border bg-card p-4 shadow-sm sm:p-5" data-tour="join-code">
+          <h2 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+            <Users className="size-3.5" /> {t("join_code_title")}
+          </h2>
+          <p className="mt-1 flex-1 text-sm text-muted-foreground">{t("join_card_text", { n: INVITE_CODE_LENGTH })}</p>
+          <JoinCodeForm className="mt-4" />
+        </section>
+      </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="group relative overflow-hidden rounded-2xl border border-primary/40 bg-background/60 p-5 shadow-glow backdrop-blur" data-tour="create-team">
-              <div aria-hidden className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-primary/25 blur-3xl transition-opacity group-hover:opacity-80" />
-              <span className="relative flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow">
-                <Shield className="size-6" />
-              </span>
-              <h2 className="relative mt-3 font-display text-2xl font-bold">{t("create_title")}</h2>
-              <p className="relative mt-1 text-sm text-muted-foreground">{t("create_card_text")}</p>
-              <Button size="lg" className="relative mt-4 h-12 w-full text-base shadow-glow" onClick={() => setCreateOpen(true)}>
-                <UserPlus /> {t("create_a_team")}
-              </Button>
-            </div>
-            <div className="relative overflow-hidden rounded-2xl border bg-background/60 p-5 backdrop-blur" data-tour="join-code">
-              <span className="flex size-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
-                <Users className="size-6" />
-              </span>
-              <h2 className="mt-3 font-display text-2xl font-bold">{t("join_code_title")}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">{t("join_card_text", { n: INVITE_CODE_LENGTH })}</p>
-              <JoinCodeForm className="mt-4" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="grid gap-3 sm:grid-cols-3" data-tour="how-teams-work">
-        {HOW.map((h, i) => {
-          const Icon = h.icon;
-          return (
-            <motion.div
-              key={h.title}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + i * 0.08 }}
-              className="flex items-start gap-3 rounded-2xl border bg-card/70 p-4"
-            >
-              <span className="relative flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Icon className="size-5" />
-                <span className="absolute -top-1.5 -left-1.5 flex size-5 items-center justify-center rounded-full bg-primary font-display text-xs font-bold text-primary-foreground">{i + 1}</span>
-              </span>
-              <span className="min-w-0">
-                <span className="block font-display text-lg leading-tight font-bold">{t(h.title)}</span>
-                <span className="block text-sm text-muted-foreground">{t(h.text)}</span>
-              </span>
-            </motion.div>
-          );
-        })}
-      </section>
+      <ol className="grid gap-x-6 gap-y-2 rounded-2xl border border-dashed p-4 text-sm sm:grid-cols-3 sm:p-5" data-tour="how-teams-work">
+        {HOW.map((h, i) => (
+          <li key={h.title} className="flex items-start gap-2.5">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-display text-xs font-bold text-primary">{i + 1}</span>
+            <span className="min-w-0">
+              <span className="block font-semibold">{t(h.title)}</span>
+              <span className="block text-xs text-muted-foreground">{t(h.text)}</span>
+            </span>
+          </li>
+        ))}
+      </ol>
 
       <CreateTeamDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>

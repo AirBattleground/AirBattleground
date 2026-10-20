@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Info, Loader2, Lock, LogOut, Save, UserPlus, Zap } from "lucide-react";
+import { Hourglass, Loader2, Lock, LogOut, Save, UserPlus } from "lucide-react";
 import type { TeamTournamentDetail } from "@7xen/shared";
 import {
   AlertDialog,
@@ -18,6 +18,7 @@ import { RegistrationMeter } from "../../shared/RegistrationMeter";
 import { useTournamentFormat } from "../../shared/format";
 import { useT, type T } from "@/i18n/core";
 import { tHub } from "@/i18n/tournamentsHub";
+import { tJourney } from "@/i18n/tournaments";
 
 type TH = T<(typeof tHub)["en"]>;
 import { usePlayerSession } from "@/lib/auth";
@@ -25,6 +26,7 @@ import { AskLeaderButton, LeaderOnlyNote } from "@/features/player/components/As
 import { NeedTeamDialog } from "@/features/player/components/NeedTeamDialog";
 import { useRegisterTournament, useUpdateTournamentPreferences, useWithdrawTournament } from "../api";
 import { isDrawn } from "../journey";
+import { RosterWarning } from "./JourneyCard";
 import { SlotPicker } from "./SlotPicker";
 
 function closedReason(t: TeamTournamentDetail, th: TH): string {
@@ -49,6 +51,7 @@ const sameList = (a: string[], b: string[]) => a.length === b.length && a.every(
 export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; className?: string }) {
   const me = t.me;
   const th = useT(tHub);
+  const tj = useT(tJourney);
   const { fmtWhen } = useTournamentFormat();
   const registered = me.state === "CONFIRMED" || me.state === "WAITLISTED";
   const canEdit = registered && t.status === "REGISTRATION_OPEN" && !isDrawn(t);
@@ -77,22 +80,20 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
     // teams already in the tournament: the journey card explains everything
     if (me.state !== "NOT_REGISTERED" && me.state !== "WITHDRAWN") return null;
     return (
-      <section data-tour="register" className={cn("rounded-2xl border bg-card p-5 shadow-sm", className)} aria-labelledby="reg-title">
-        <div className="flex items-start gap-3">
+      <section data-tour="register" className={cn("rounded-2xl border bg-card p-4 shadow-sm sm:p-5", className)} aria-labelledby="reg-title">
+        <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">{th("your_registration")}</p>
+        <div className="mt-2 flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
-            <Lock className="size-5" />
+            {me.state === "WITHDRAWN" ? <LogOut className="size-5" /> : <Lock className="size-5" />}
           </span>
           <div>
             <h2 id="reg-title" className="font-display text-xl font-bold">
-              {th("reg_closed")}
+              {me.state === "WITHDRAWN" ? tj("withdrew_title") : th("reg_closed")}
             </h2>
             <p className="mt-0.5 text-sm text-muted-foreground">{closedReason(t, th)}</p>
           </div>
         </div>
-        <RegistrationMeter confirmed={t.confirmedCount} max={t.maxTeams} waitlist={t.waitlistCount} hideHint className="mt-4" />
-        <Button disabled size="lg" className="mt-4 h-12 w-full text-base">
-          <Lock /> {th("reg_closed")}
-        </Button>
+        {me.rosterWarning && <RosterWarning text={me.rosterWarning} className="mt-4" />}
       </section>
     );
   }
@@ -100,16 +101,16 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
   const busy = register.isPending || update.isPending || withdraw.isPending;
 
   return (
-    <section data-tour="register" className={cn("rounded-2xl border border-primary/30 bg-card p-5 shadow-glow", className)} aria-labelledby="reg-title">
+    <section data-tour="register" className={cn("rounded-2xl border border-primary/30 bg-card p-4 shadow-glow sm:p-5", className)} aria-labelledby="reg-title">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">{canEdit ? th("your_registration") : th("reg_open")}</p>
-          <h2 id="reg-title" className="font-display text-2xl leading-tight font-bold">
+          <p className="text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">{canEdit ? th("your_registration") : th("reg_open")}</p>
+          <h2 id="reg-title" className="mt-1 font-display text-2xl leading-tight font-bold">
             {canEdit ? (me.state === "WAITLISTED" ? th("on_waitlist") : th("spot_confirmed")) : full ? th("join_waitlist") : th("grab_spot")}
           </h2>
         </div>
         {t.registrationClosesAt && (
-          <div className="shrink-0 text-right">
+          <div className="shrink-0 text-right" title={fmtWhen(t.registrationClosesAt)}>
             <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">{th("closes_in")}</p>
             <Countdown to={t.registrationClosesAt} doneText={th("closing")} className="font-display text-lg font-bold" />
           </div>
@@ -118,20 +119,18 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
 
       <RegistrationMeter confirmed={t.confirmedCount} max={t.maxTeams} waitlist={t.waitlistCount} className="mt-4" />
 
-      <div className="mt-4 flex gap-2.5 rounded-xl border border-info/30 bg-info/5 p-3 text-sm" data-tour="fcfs">
-        <Zap className="mt-0.5 size-4 shrink-0 text-info" />
-        <p className="text-foreground/90">
-          <span className="font-semibold">{th("fcfs")}</span>{" "}
-          {full ? th("fcfs_full", { max: t.maxTeams }) : th.plural("fcfs_left", left)}
+      {canRegister && full && (
+        <p className="mt-3 flex gap-2 text-xs text-muted-foreground" data-tour="fcfs">
+          <Hourglass className="mt-px size-3.5 shrink-0 text-warning-foreground dark:text-warning" />
+          {th("fcfs_full", { max: t.maxTeams })}
         </p>
-      </div>
+      )}
+      {me.rosterWarning && !registered && <RosterWarning text={me.rosterWarning} className="mt-4" />}
 
       {hasSlots && (actsAsLeader || canEdit) && (
-        <div className="mt-5">
+        <div className="mt-5 border-t pt-4">
           <h3 className="font-display text-lg font-bold">{th("when_play")}</h3>
-          <p className="mb-3 text-xs text-muted-foreground">
-            {th("when_play_hint", { stage: t.stages[0]?.name ?? th("first_stage") })}
-          </p>
+          <p className="mb-3 text-xs text-muted-foreground">{th("when_play_hint", { stage: t.stages[0]?.name ?? th("first_stage") })}</p>
           <div className="-mx-1 max-h-72 overflow-y-auto overscroll-contain px-1 py-0.5 [scrollbar-width:thin] [mask-image:linear-gradient(to_bottom,#000_calc(100%-1.5rem),transparent)] pb-6">
             <SlotPicker options={t.slotOptions} value={prefs} onChange={setPrefs} disabled={busy || !actsAsLeader} />
           </div>
@@ -166,11 +165,6 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
               <LogOut /> {th("withdraw_from")}
             </Button>
           </>
-        )}
-        {t.registrationClosesAt && (
-          <p className="flex items-center justify-center gap-1 text-center text-xs text-muted-foreground">
-            <Info className="size-3" /> {th("closes_note", { when: fmtWhen(t.registrationClosesAt) })}
-          </p>
         )}
       </div>
 

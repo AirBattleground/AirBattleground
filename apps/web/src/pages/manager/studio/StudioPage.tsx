@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { Clapperboard, Loader2, Plus, Radio, Smartphone, Trash2, Tv, WifiOff } from "lucide-react";
 import type { StudioShowRow } from "@7xen/shared";
@@ -27,13 +27,43 @@ const TOUR: TourStep[] = [
 
 const NO_MATCH = "none";
 
+/** /manager/studio?match=<id>&title=… (from a match center): open that match's show, creating it the first time. */
+function useOpenForMatch(shows: StudioShowRow[] | undefined) {
+  const [params] = useSearchParams();
+  const navigate = useNavigate();
+  const create = useCreateShow();
+  const done = useRef(false);
+  const matchId = params.get("match");
+  useEffect(() => {
+    if (!matchId || !shows || done.current) return;
+    done.current = true;
+    const existing = shows.find((s) => s.match?.id === matchId);
+    if (existing) {
+      navigate(`/manager/studio/${existing.id}`, { replace: true });
+      return;
+    }
+    const title = (params.get("title") ?? "Match stream").slice(0, 80);
+    create.mutate({ title: title.length >= 2 ? title : "Match stream", matchId }, { onSuccess: (s) => navigate(`/manager/studio/${s.id}`, { replace: true }) });
+  }, [matchId, shows, params, navigate, create]);
+  return !!matchId;
+}
+
 export default function StudioPage() {
   usePageTour("manager.studio", TOUR);
   const shows = useShows();
+  const opening = useOpenForMatch(shows.data);
   const devices = useDevices();
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<StudioShowRow | null>(null);
   const del = useDeleteShow();
+
+  if (opening)
+    return (
+      <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 text-muted-foreground">
+        <Loader2 className="size-8 animate-spin text-primary" />
+        Opening the Studio for this match…
+      </div>
+    );
 
   return (
     <>

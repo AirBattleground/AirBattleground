@@ -186,7 +186,6 @@ function WatchOne({ matchId }: { matchId: string }) {
           {shown.overlayUrl && !ended && <LiveOverlay url={shown.overlayUrl} />}
         </HlsPlayer>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">{t("delay_note")}</p>
     </>
   );
 }

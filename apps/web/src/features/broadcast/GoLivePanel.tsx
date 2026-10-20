@@ -56,10 +56,10 @@ export function GoLivePanel({ deviceId, videoReady, hasMatch }: { deviceId: stri
   const chosen = picked ?? list.map((d) => d.id);
 
   return (
-    <section data-tour="device-go-live" className="space-y-3 rounded-xl border bg-card p-4 shadow-sm">
+    <section data-tour="device-go-live" className={cn("space-y-3 rounded-2xl border bg-card p-4 shadow-sm sm:p-5", o?.state === "LIVE" && "border-destructive/40")}>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-          <Radio className={cn("size-5", running ? "text-destructive" : "text-primary")} /> Broadcast
+        <h2 className="flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">
+          <Radio className={cn("size-3.5", running && "text-destructive")} /> Broadcast
         </h2>
         <span
           className={cn(
@@ -118,9 +118,9 @@ export function GoLivePanel({ deviceId, videoReady, hasMatch }: { deviceId: stri
         </>
       ) : (
         <>
-          <p className="text-sm text-muted-foreground">
-            Sends the phone's video with your layout to the AirBattleground live page{list.length ? " and the channels you tick" : ""}.{" "}
-            {hasMatch ? "If the site YouTube channel is connected, the match goes live there too." : "Pick a match above so viewers see the right title."}
+          <p className="text-sm text-muted-foreground" title="If the site YouTube channel is connected, the match goes live there too.">
+            Phone video + your layout → AirBattleground live{list.length ? " and the channels you tick" : ""}.
+            {!hasMatch && <span className="mt-1 block text-warning-foreground dark:text-warning">Pick a match first so viewers see the right title.</span>}
           </p>
           {list.length > 0 && (
             <ul className="space-y-1.5">
@@ -141,7 +141,7 @@ export function GoLivePanel({ deviceId, videoReady, hasMatch }: { deviceId: stri
           <Button className="w-full" size="lg" disabled={!videoReady || start.isPending} onClick={() => start.mutate(chosen)}>
             {start.isPending ? <Loader2 className="animate-spin" /> : <Radio />} Go live
           </Button>
-          {!videoReady && <p className="text-xs text-muted-foreground">Start streaming on the phone first.</p>}
+          {!videoReady && <p className="text-center text-xs text-muted-foreground">Start streaming on the phone first.</p>}
         </>
       )}
       <button type="button" onClick={() => setManage(true)} className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
@@ -204,7 +204,7 @@ function DestinationsDialog({ open, onOpenChange }: { open: boolean; onOpenChang
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Your channels</DialogTitle>
-          <DialogDescription>Stream to your own YouTube or Facebook too. Paste the stream key from YouTube Studio → Go live → Stream.</DialogDescription>
+          <DialogDescription>Also stream to your own YouTube or Facebook. Paste the stream key (YouTube Studio → Go live → Stream).</DialogDescription>
         </DialogHeader>
 
         {(dests.data ?? []).length > 0 && (

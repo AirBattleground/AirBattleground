@@ -15,11 +15,11 @@ interface Meta {
 }
 
 const META: Record<ManagerActionKey, Meta> = {
-  FIX_FORMAT: { icon: Wrench, hint: () => "The format has a problem that stops it from being published. Open the format step to fix it." },
-  SET_SCHEDULE: { icon: CalendarClock, hint: (_t, s) => `Pick the days and playing hours for the ${s}. Teams choose their time slot from it.` },
+  FIX_FORMAT: { icon: Wrench, hint: () => "The format has a problem that blocks publishing." },
+  SET_SCHEDULE: { icon: CalendarClock, hint: (_t, s) => `Pick the days and playing hours for the ${s}.` },
   PUBLISH: {
     icon: Rocket,
-    hint: () => "Publishing opens registration — teams can find the tournament and sign up straight away.",
+    hint: () => "Opens registration — teams can sign up straight away.",
     confirm: {
       title: (t) => `Publish “${t.title}”?`,
       text: (t) => `Teams will see it and can register (first ${t.maxTeams} get a spot, the rest join a waitlist). The format can't be changed after this.`,
@@ -28,31 +28,31 @@ const META: Record<ManagerActionKey, Meta> = {
   },
   CLOSE_REGISTRATION: {
     icon: Lock,
-    hint: (t) => `${t.confirmedCount} of ${t.maxTeams} spots are taken. Close registration when you're ready to draw the groups.`,
+    hint: (t) => `${t.confirmedCount}/${t.maxTeams} spots taken. Close when you're ready to draw groups.`,
     confirm: {
       title: () => "Close registration?",
       text: (t) => `No new teams can sign up. ${t.waitlistCount ? `${t.waitlistCount} team${t.waitlistCount === 1 ? "" : "s"} on the waitlist will stay there. ` : ""}You can reopen it until the groups are drawn.`,
       cta: "Close registration",
     },
   },
-  DRAW: { icon: Shuffle, hint: (_t, s) => `Put the teams into ${s} groups. It takes a few seconds — and it's fun to watch.` },
+  DRAW: { icon: Shuffle, hint: (_t, s) => `Put the teams into ${s} groups.` },
   START_STAGE: {
     icon: Play,
-    hint: (_t, s) => `Groups are ready. Starting the ${s} lets you enter match results.`,
+    hint: (_t, s) => `Groups are ready. Go live to enter results.`,
     confirm: {
       title: (_t, s) => `Start the ${s}?`,
       text: () => "The stage goes live and registration closes for good. Teams already see their group and times.",
       cta: "Start stage",
     },
   },
-  PLAY_MATCHES: { icon: Swords, hint: (_t, s) => `The ${s} is live. Open each match to upload screenshots and publish results.` },
-  PROMOTE: { icon: TrendingUp, hint: (_t, s) => `Every ${s} match is published. Check who goes through and move them to the next stage.` },
+  PLAY_MATCHES: { icon: Swords, hint: (_t, s) => `The ${s} is live — publish each match result.` },
+  PROMOTE: { icon: TrendingUp, hint: (_t, s) => `All ${s} matches are published. Move the qualifiers on.` },
   COMPLETE: {
     icon: Crown,
-    hint: () => "The final is done. Complete the tournament to crown the champion.",
+    hint: () => "The final is done — crown the champion.",
     confirm: { title: () => "Complete the tournament?", text: () => "The champion is announced to every team and the tournament moves to Finished.", cta: "Crown the champion" },
   },
-  DONE: { icon: Trophy, hint: () => "This tournament is finished. Thanks for running it!" },
+  DONE: { icon: Trophy, hint: () => "This tournament is finished." },
 };
 
 /** The control center's ONE big button, driven by ManagerTournamentDetail.nextAction. */
@@ -103,18 +103,17 @@ export function NextAction({ t, className }: { t: ManagerTournamentDetail; class
       data-tour="t-next-action"
       className={cn(
         "relative overflow-hidden rounded-2xl border p-4 shadow-sm sm:p-5",
-        next.key === "DONE" ? "border-warning/40 bg-warning/10" : "border-primary/40 bg-gradient-to-br from-primary/15 via-card to-card",
+        next.key === "DONE" ? "border-warning/40 bg-warning/10" : "border-primary/40 bg-gradient-to-br from-primary/12 via-card to-card",
         className,
       )}
     >
-      <div className="pointer-events-none absolute -top-16 -right-10 size-48 rounded-full bg-primary/20 blur-3xl" />
-      <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="flex min-w-0 flex-1 items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-glow">
+      <div className="relative flex h-full flex-col gap-4 sm:flex-row sm:items-center">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
             <Icon className="size-5" />
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">{next.key === "DONE" ? "All done" : "Next step"}</p>
+            <p className="text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">{next.key === "DONE" ? "All done" : "Next step"}</p>
             <p className="font-display text-xl leading-tight font-bold">{next.label}</p>
             <p className="mt-0.5 text-sm text-muted-foreground">{meta.hint(t, stageName)}</p>
           </div>

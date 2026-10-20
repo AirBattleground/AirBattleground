@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Plus, Smartphone } from "lucide-react";
 import { DEVICE_ONLINE_WINDOW_MS, type DeviceRow } from "@7xen/shared";
-import { EmptyState, PageHeader, StatCard } from "@7xen/ui/components/brand/page";
+import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
+import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { QueryError } from "@/features/manager/components/QueryError";
@@ -13,8 +14,8 @@ import { DeviceKeyDialog, DeviceNameDialog } from "@/features/devices/components
 
 const TOUR: TourStep[] = [
   { title: "Your streaming devices", description: "iPhones that stream BGMI to 7xen. You watch the match and capture the team list and results from Match Center. Nobody can control the phone." },
-  { element: '[data-tour="devices-add"]', title: "Add an iPhone", description: "Name the phone and you get its security key. Enter that key in the 7XEN Stream app on the phone.", side: "bottom" },
-  { element: '[data-tour="devices-stats"]', title: "At a glance", description: "How many phones are connected and how many are streaming right now.", side: "bottom" },
+  { element: '[data-tour="devices-add"]', title: "Add an iPhone", description: "Name the phone, then scan its QR (or enter its key) in the 7XEN Stream app on the phone.", side: "bottom" },
+  { element: '[data-tour="devices-stats"]', title: "At a glance", description: "How many phones are online and streaming right now.", side: "bottom" },
   { element: '[data-tour="device-card"]', title: "Live status", description: `Online means the app is open. Streaming means the phone is sending its screen. A phone shows Offline after ${DEVICE_ONLINE_WINDOW_MS / 1000} seconds without a signal.`, side: "top" },
 ];
 
@@ -30,7 +31,8 @@ export default function DevicesPage() {
   const [confirmRegen, setConfirmRegen] = useState<DeviceRow | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<DeviceRow | null>(null);
 
-  const items = q.data ?? [];
+  const RANK = { STREAMING: 0, ONLINE: 1, OFFLINE: 2 } as const;
+  const items = [...(q.data ?? [])].sort((a, b) => RANK[a.status] - RANK[b.status]);
   const online = items.filter((d) => d.status !== "OFFLINE").length;
   const streaming = items.filter((d) => d.status === "STREAMING").length;
 
@@ -43,9 +45,24 @@ export default function DevicesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Streaming"
-        title={<>Your <span className="text-gradient-brand">devices</span></>}
-        description="iPhones that stream BGMI to 7xen. See which ones are connected and streaming right now."
+        title="Devices"
+        description={
+          items.length > 0 ? (
+            <span data-tour="devices-stats" className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>
+                <b className="font-display text-foreground">{items.length}</b> {items.length === 1 ? "phone" : "phones"}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-success" /> <b className="font-display text-foreground">{online}</b> online
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className={cn("size-2 rounded-full bg-destructive", streaming > 0 && "animate-pulse")} /> <b className="font-display text-foreground">{streaming}</b> streaming
+              </span>
+            </span>
+          ) : (
+            "iPhones that stream BGMI to 7xen."
+          )
+        }
         actions={items.length > 0 ? addButton : undefined}
       />
 
@@ -53,9 +70,6 @@ export default function DevicesPage() {
         <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your devices" />
       ) : q.isPending ? (
         <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-3">
-            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
-          </div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {[0, 1].map((i) => <Skeleton key={i} className="h-56 rounded-2xl" />)}
           </div>
@@ -64,16 +78,11 @@ export default function DevicesPage() {
         <EmptyState
           icon={<Smartphone />}
           title="Add your first iPhone"
-          description="Add a phone, enter its key in the 7XEN Stream app, and you'll see it here when it connects. Then pick it in Match Center to stream a match."
+          description="Add it, then scan its QR in the 7XEN Stream app."
           action={addButton}
         />
       ) : (
-        <div className="space-y-6">
-          <div data-tour="devices-stats" className="grid grid-cols-3 gap-3">
-            <StatCard label="Devices" value={items.length} tone="brand" />
-            <StatCard label="Online" value={online} tone="success" />
-            <StatCard label="Streaming" value={streaming} tone="warning" />
-          </div>
+        <div>
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {items.map((d) => (
               <DeviceCard

@@ -27,7 +27,7 @@ export default function LiveNowPage() {
 
   return (
     <>
-      <PageHeader eyebrow={t("streams")} title={t.rich("now_heading", { g: (c) => <span className="text-gradient-brand">{c}</span> })} description={t("now_desc")} />
+      <PageHeader eyebrow={t("streams")} title={t.rich("now_heading", { g: (c) => <span className="text-gradient-brand">{c}</span> })} />
       {q.isError ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_list_error")} />
       ) : q.isPending ? (

@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, CheckCheck, CheckCircle2, Clock, RefreshCw, Users } from "lucide-react";
+import { ArrowRight, CheckCheck, CheckCircle2, RefreshCw } from "lucide-react";
 import { todayInAppTz, type PendingRequest, type Registration } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
-import { Pill } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Checkbox } from "@7xen/ui/components/ui/checkbox";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
@@ -18,7 +17,7 @@ import { RequestCard } from "@/features/manager/components/RequestCard";
 
 const TOUR: TourStep[] = [
   { title: "Your approvals inbox", description: "Every team waiting for a decision, across all your scrims, soonest session first." },
-  { element: '[data-tour="req-group"]', title: "Grouped by session", description: "Each box is one scrim on one day, with how many slots are still free." },
+  { element: '[data-tour="req-group"]', title: "Grouped by session", description: "Each panel is one scrim on one day. The number on the right is how many slots are still free." },
   { element: '[data-tour="req-actions"]', title: "Approve or reject", description: "Approve gives the team the lowest free slot automatically. Reject lets you add a reason." },
   { element: '[data-tour="req-bulk"]', title: "Handle many at once", description: "Tick several teams and approve them together. This page refreshes on its own." },
 ];
@@ -84,10 +83,10 @@ export default function RequestsPage() {
     <>
       <PageHeader
         title="Approvals"
-        description="Teams waiting for your OK. Approving gives them the lowest free slot."
+        description="Approving gives the team the lowest free slot."
         actions={
-          <Button variant="ghost" size="sm" onClick={() => void q.refetch()} disabled={q.isFetching}>
-            <RefreshCw className={cn(q.isFetching && "animate-spin")} /> Refresh
+          <Button variant="ghost" size="sm" onClick={() => void q.refetch()} disabled={q.isFetching} aria-label="Refresh">
+            <RefreshCw className={cn(q.isFetching && "animate-spin")} /> <span className="hidden sm:inline">Refresh</span>
           </Button>
         }
       />
@@ -108,7 +107,7 @@ export default function RequestsPage() {
         <EmptyState
           icon={<CheckCircle2 />}
           title="You're all caught up"
-          description="No teams are waiting for approval. New requests appear here automatically."
+          description="New requests show up here automatically."
           action={
             <Button asChild variant="outline">
               <Link to="/manager/scrims">View schedule</Link>
@@ -119,7 +118,7 @@ export default function RequestsPage() {
         <div className="space-y-5">
           <div
             data-tour="req-bulk"
-            className="sticky top-16 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/90 p-3 shadow-sm backdrop-blur"
+            className="sticky top-16 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card/95 p-3 shadow-sm backdrop-blur"
           >
             <label className="flex cursor-pointer items-center gap-2.5 text-sm font-medium">
               <Checkbox
@@ -127,56 +126,51 @@ export default function RequestsPage() {
                 onCheckedChange={(v) => setSelected(v === true ? new Set(allIds) : new Set())}
                 aria-label="Select all"
               />
-              {sel.size > 0 ? `${sel.size} selected` : `Select all (${allIds.length} waiting)`}
+              {sel.size > 0 ? `${sel.size} selected` : `${allIds.length} waiting · select all`}
             </label>
             <Button
               disabled={sel.size === 0 || bulkRunning}
               onClick={() => setConfirmBulk(true)}
               className="bg-success text-success-foreground hover:bg-success/90"
             >
-              <CheckCheck /> {bulkRunning ? "Approving…" : `Approve selected${sel.size ? ` (${sel.size})` : ""}`}
+              <CheckCheck /> {bulkRunning ? "Approving…" : `Approve${sel.size ? ` ${sel.size}` : " selected"}`}
             </Button>
           </div>
 
           {groups.map((g, gi) => {
             const full = g.counts.slotsLeft === 0;
             return (
-              <section key={g.key} data-tour={gi === 0 ? "req-group" : undefined} className="animate-rise rounded-xl border bg-card/50 p-3 shadow-sm sm:p-4">
-                <header className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+              <section key={g.key} data-tour={gi === 0 ? "req-group" : undefined} className="animate-rise rounded-xl border bg-card p-4 shadow-sm sm:p-5">
+                <header className="flex items-start justify-between gap-3 border-b pb-3">
+                  <Link to={`/manager/scrims/${g.scrim.id}?date=${g.date}`} className="group min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                       {g.date === today ? "Today" : formatDate(g.date)} · {formatTime(g.scrim.startTime)}
                     </p>
-                    <h2 className="truncate font-display text-xl font-bold">{g.scrim.title}</h2>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Pill tone="warning" icon={<Clock className="size-3.5" />}>
-                      {g.items.length} waiting
-                    </Pill>
-                    <Pill tone={full ? "danger" : "success"} icon={<Users className="size-3.5" />}>
-                      {full ? "Full" : `${g.counts.slotsLeft} of ${g.scrim.slotCount} slots left`}
-                    </Pill>
-                    <Button asChild variant="ghost" size="sm">
-                      <Link to={`/manager/scrims/${g.scrim.id}?date=${g.date}`}>
-                        Open <ArrowRight />
-                      </Link>
-                    </Button>
+                    <h2 className="flex items-center gap-1 truncate font-display text-lg font-bold group-hover:text-primary">
+                      {g.scrim.title} <ArrowRight className="size-4 shrink-0 opacity-60" />
+                    </h2>
+                  </Link>
+                  <div className="shrink-0 text-right">
+                    <p className={cn("font-display text-2xl font-bold leading-none tabular-nums", full ? "text-destructive" : "text-success")}>
+                      {full ? "Full" : g.counts.slotsLeft}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">{full ? `${g.scrim.slotCount} slots` : `of ${g.scrim.slotCount} slots left`}</p>
                   </div>
                 </header>
-                <div className="space-y-2" data-tour={gi === 0 ? "req-actions" : undefined}>
+                <div className="divide-y" data-tour={gi === 0 ? "req-actions" : undefined}>
                   {g.items.map((r) => (
                     <RequestCard
                       key={r.id}
                       reg={r}
-                      compact
                       full={full}
                       busy={bulkRunning}
-                      className={cn(sel.has(r.id) && "border-primary/50 bg-primary/5")}
+                      className={cn(sel.has(r.id) && "-mx-2 rounded-lg bg-primary/5 px-2")}
                       leading={
                         <Checkbox
                           checked={sel.has(r.id)}
                           onCheckedChange={(v) => toggle(r.id, v === true)}
                           aria-label={`Select ${r.team.name}`}
+                          className="size-5"
                         />
                       }
                       onApprove={() => approve.mutate({ id: r.id, teamName: r.team.name })}

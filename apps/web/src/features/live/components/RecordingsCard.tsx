@@ -52,12 +52,12 @@ function RecordingItem({ r, onPlay }: { r: RecordingRow; onPlay: () => void }) {
           <span className="block space-y-1">
             <Progress value={pct} className="h-1.5" aria-label="Upload progress" />
             <span className="block text-xs text-muted-foreground">
-              {pct}% · {fmtBytes(r.uploadedBytes)} of {fmtBytes(r.sizeBytes)} — uploads from the phone in the background
+              {pct}% · {fmtBytes(r.uploadedBytes)} of {fmtBytes(r.sizeBytes)}
             </span>
           </span>
         )}
         {r.status === "STOPPED" && <span className="block text-xs text-muted-foreground">The phone uploads it on Wi-Fi.</span>}
-        {r.status === "PROCESSING" && <span className="block text-xs text-muted-foreground">Uploaded — preparing the video. Ready in a minute.</span>}
+        {r.status === "PROCESSING" && <span className="block text-xs text-muted-foreground">Preparing the video…</span>}
         {r.status === "FAILED" && r.error && <span className="line-clamp-2 block text-xs text-destructive">{r.error}</span>}
       </span>
     </>
@@ -101,7 +101,7 @@ export function LiveBanner({ matchId }: { matchId: string }) {
       </span>
       <p className="min-w-0 flex-1 text-sm">
         <span className="font-display text-base font-bold">Recording on {live.deviceName ?? "the manager's phone"}</span>
-        <span className="block text-muted-foreground">Screenshots the app captures show up below automatically.</span>
+        <span className="block text-muted-foreground">Captured screenshots appear below.</span>
       </p>
       <Smartphone className="hidden size-5 shrink-0 text-destructive sm:block" />
     </div>
@@ -117,10 +117,8 @@ export function RecordingsCard({ matchId, title }: { matchId: string; title: str
   return (
     <section data-tour="recordings-card" aria-labelledby="rec-card-title" className="relative flex flex-col overflow-hidden rounded-xl border bg-card p-4 shadow-sm sm:p-5">
       <div className="mb-3 flex items-center gap-2">
-        <span className={cn("flex size-9 items-center justify-center rounded-lg", items.some((r) => r.status === "LIVE") ? "bg-destructive/10 text-destructive" : "bg-primary/15 text-primary")}>
-          <Video className="size-5" />
-        </span>
-        <h2 id="rec-card-title" className="font-display text-xl font-bold">
+        <Video className={cn("size-4", items.some((r) => r.status === "LIVE") ? "text-destructive" : "text-primary")} />
+        <h2 id="rec-card-title" className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
           Recordings
         </h2>
         {items.length > 0 && <span className="text-sm text-muted-foreground">{items.length}</span>}
@@ -134,10 +132,7 @@ export function RecordingsCard({ matchId, title }: { matchId: string; title: str
           </div>
         </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No recordings yet. Press <span className="font-semibold text-foreground">Prepare</span> above — the station opens BGMI, records the whole game and saves it
-          here when you stop.
-        </p>
+        <p className="text-sm text-muted-foreground">No recordings yet. Recorded games show up here.</p>
       ) : (
         <ul className="-m-1.5 space-y-1">
           {items.map((r) => (

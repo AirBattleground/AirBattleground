@@ -8,7 +8,7 @@ import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
 import { useDayFormat } from "@/features/team/format";
-import { useDateFormat, useT } from "@/i18n/core";
+import { useT } from "@/i18n/core";
 import { resultsMsg, useOrdinal } from "@/i18n/results";
 import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
@@ -18,7 +18,6 @@ import { ScorecardList } from "@/features/results/components/Scorecard";
 export default function MatchScorecardPage() {
   const t = useT(resultsMsg);
   const ord = useOrdinal();
-  const fmt = useDateFormat();
   const { formatDate } = useDayFormat();
   const steps = useMemo<TourStep[]>(
     () => [
@@ -53,7 +52,6 @@ export default function MatchScorecardPage() {
             t("scorecard")
           )
         }
-        description={s ? t("published_at", { when: fmt(s.match.publishedAt, "d MMM, h:mm a") }) : undefined}
       />
       {q.isError ? (
         q.error instanceof ApiError && (q.error.status === 403 || q.error.status === 404) ? (
@@ -72,23 +70,23 @@ export default function MatchScorecardPage() {
           ))}
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {mine && (
-            <div data-tour="scorecard-mine" className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card p-5 shadow-glow">
-              <div className="pointer-events-none absolute inset-0 bg-grid opacity-50" />
-              <div className="relative flex flex-wrap items-center gap-x-8 gap-y-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">{t("your_team")}</p>
-                  <p className="font-display text-4xl font-bold">
-                    {mine.rank === 1 ? t("winner") : t("place_n", { ord: ord(mine.rank) })}
-                  </p>
-                </div>
-                <Stat label={t("stat_finishes")} value={mine.kills} />
-                <Stat label={t("placement_pts")} value={mine.placementPoints} />
-                <Stat label={t("finish_pts")} value={mine.killPoints} />
-                <Stat label={t("total")} value={mine.totalPoints} big />
+            <section data-tour="scorecard-mine" className="flex items-center gap-4 rounded-2xl border border-primary/40 bg-card p-4 shadow-sm sm:p-5">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold tracking-[0.2em] text-primary uppercase">{t("your_team")}</p>
+                <p className="truncate font-display text-3xl font-bold sm:text-4xl">
+                  {mine.rank === 1 ? t("winner") : t("place_n", { ord: ord(mine.rank) })}
+                </p>
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  {t.plural("finishes", mine.kills)} · {mine.placementPoints} + {mine.killPoints} {t("pts")}
+                </p>
               </div>
-            </div>
+              <div className="shrink-0 text-right">
+                <p className="font-display text-4xl leading-none font-bold text-primary tabular-nums sm:text-5xl">{mine.totalPoints}</p>
+                <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">{t("pts")}</p>
+              </div>
+            </section>
           )}
           <ScorecardList teams={s.teams} highlightTeamId={user?.team?.id} />
         </div>
@@ -97,11 +95,3 @@ export default function MatchScorecardPage() {
   );
 }
 
-function Stat({ label, value, big }: { label: string; value: number; big?: boolean }) {
-  return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={big ? "font-display text-4xl font-bold text-primary" : "font-display text-3xl font-bold"}>{value}</p>
-    </div>
-  );
-}

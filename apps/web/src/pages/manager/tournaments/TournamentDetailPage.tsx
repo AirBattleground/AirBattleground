@@ -1,28 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  CalendarClock,
-  CalendarDays,
-  ChevronRight,
-  Copy,
-  Crown,
-  Hourglass,
-  Layers,
-  LayoutDashboard,
-  ListChecks,
-  LockOpen,
-  MoreHorizontal,
-  Pencil,
-  ScrollText,
-  Ticket,
-  Trophy,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { ArrowLeft, ChevronRight, Copy, Crown, LockOpen, MoreHorizontal, Pencil, Trophy, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import type { ManagerTournamentDetail, StageSummary } from "@7xen/shared";
-import { PageHeader, StatCard } from "@7xen/ui/components/brand/page";
+import { PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@7xen/ui/components/ui/dropdown-menu";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
@@ -31,12 +12,12 @@ import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { formatDate, formatTime } from "@/features/manager/format";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
-import { MapChips } from "@/features/manager/components/maps";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { useTournament, useTournamentAction } from "@/features/tournaments/manager/api";
 import { FormatIssues } from "@/features/tournaments/manager/components/FormatIssues";
 import { NextAction } from "@/features/tournaments/manager/components/NextAction";
 import { pointsLabel } from "@/features/tournaments/manager/components/PointsPicker";
+import { Fact, Zone } from "@/features/tournaments/manager/components/Zone";
 import { RegistrationsTab } from "@/features/tournaments/manager/components/RegistrationsTab";
 import { fmtDay, fmtRange, fmtWhen, fmtPrize } from "@/features/tournaments/shared/format";
 import { RegistrationMeter } from "@/features/tournaments/shared/RegistrationMeter";
@@ -45,8 +26,8 @@ import { StatusPill } from "@/features/tournaments/shared/StatusPill";
 
 const TOUR: TourStep[] = [
   { title: "Tournament control center", description: "Everything about this tournament in one place — and one button that always tells you what to do next." },
-  { element: '[data-tour="t-hero"]', title: "At a glance", description: "Status, prize and how many teams have registered. “Copy summary” gives you a message to paste into WhatsApp or Discord." },
   { element: '[data-tour="t-next-action"]', title: "Your next step", description: "Publish, close registration, draw groups, start, promote… Just follow this button." },
+  { element: '[data-tour="t-hero"]', title: "At a glance", description: "Status, prize and how many teams have registered. “Copy summary” gives you a message to paste into WhatsApp or Discord." },
   { element: '[data-tour="t-flow"]', title: "Stage map", description: "How teams move through the stages. The current stage pulses — tap a stage to open it." },
   { element: '[data-tour="t-tabs"]', title: "More details", description: "Overview, the list of registered teams (with the waitlist), and every stage." },
 ];
@@ -116,18 +97,13 @@ function ControlCenter({ t }: { t: ManagerTournamentDetail }) {
     <>
       <BackLink />
       <PageHeader
-        eyebrow={
-          <span className="flex items-center gap-1.5">
-            <Trophy className="size-3.5" /> Tournament
-          </span>
-        }
         title={t.title}
-        description={t.description ?? undefined}
+        description={t.description ? <span className="line-clamp-1">{t.description}</span> : undefined}
         actions={
           <>
             <StatusPill status={t.status} className="text-sm" />
-            <Button variant="outline" onClick={() => void copy()}>
-              <Copy /> Copy summary
+            <Button variant="outline" onClick={() => void copy()} aria-label="Copy summary" title="Copy a summary to paste into WhatsApp or Discord">
+              <Copy /> <span className="hidden sm:inline">Copy summary</span>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -156,75 +132,41 @@ function ControlCenter({ t }: { t: ManagerTournamentDetail }) {
                     </DropdownMenuItem>
                   </>
                 )}
-                {closedForGood && (
-                  <DropdownMenuItem onSelect={() => void copy()}>
-                    <Copy /> Copy summary
-                  </DropdownMenuItem>
-                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </>
         }
       />
 
-      <div className="space-y-6">
-        {/* hero */}
-        <section data-tour="t-hero" className="bg-grid relative overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/15 via-card to-card p-5 shadow-sm sm:p-6">
-          <div className="pointer-events-none absolute -top-20 -right-20 size-64 rounded-full bg-primary/20 blur-3xl" />
-          <div className="relative grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,320px)] md:items-center">
-            <div className="min-w-0 space-y-2">
-              {t.champion ? (
-                <p className="flex items-center gap-2 font-display text-2xl font-bold">
-                  <Crown className="size-6 text-warning-foreground dark:text-warning" /> {t.champion.name} are the champions
-                </p>
-              ) : t.prize ? (
-                <p className="flex items-center gap-2 font-display text-3xl font-bold text-warning-foreground sm:text-4xl dark:text-warning">
-                  <Trophy className="size-7 shrink-0" /> {fmtPrize(t.prize)}
-                </p>
-              ) : (
-                <p className="font-display text-2xl font-bold">{t.stages.map((s) => s.name).join(" → ")}</p>
-              )}
-              <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <CalendarDays className="size-4 text-primary" /> {fmtRange(t.startsAt, t.stages[t.stages.length - 1]?.endsAt ?? null)}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Users className="size-4 text-primary" /> {t.teamSize} players per team
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <Layers className="size-4 text-primary" /> {t.stages.length} {t.stages.length === 1 ? "stage" : "stages"}
-                </span>
-              </p>
-            </div>
-            <RegistrationMeter confirmed={t.confirmedCount} max={t.maxTeams} waitlist={t.waitlistCount} hideHint={t.status !== "REGISTRATION_OPEN"} />
-          </div>
-        </section>
-
+      {/* phones: one column (next step → glance → rest); desktop: main column + key-facts rail */}
+      <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+        <div className="contents lg:block lg:min-w-0 lg:space-y-6">
         <NextAction t={t} />
 
-        {t.issues.length > 0 && t.status === "DRAFT" && <FormatIssues issues={t.issues} stageNames={t.stages.map((s) => s.name)} okText={null} />}
+        {t.issues.length > 0 && t.status === "DRAFT" && (
+          <FormatIssues issues={t.issues} stageNames={t.stages.map((s) => s.name)} okText={null} className="order-3 lg:order-none" />
+        )}
 
-        <section data-tour="t-flow" className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-          <h2 className="mb-1 font-display text-lg font-bold">Stage map</h2>
+        <Zone label="Stage map" data-tour="t-flow" className="order-3 min-w-0 lg:order-none">
           <StageFlow
             stages={t.stages}
             registration={{ open: t.status === "REGISTRATION_OPEN" || t.status === "DRAFT", confirmed: t.confirmedCount, max: t.maxTeams }}
             champion={t.champion}
             stageHref={(s) => `/manager/tournaments/${t.id}/stages/${s.id}`}
           />
-        </section>
+        </Zone>
 
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList data-tour="t-tabs" className="h-10">
+        <Tabs value={tab} onValueChange={setTab} className="order-3 min-w-0 lg:order-none">
+          <TabsList data-tour="t-tabs" className="grid h-10 w-full grid-cols-3 sm:inline-flex sm:w-auto">
             <TabsTrigger value="overview" className="px-3 sm:px-4">
-              <LayoutDashboard /> Overview
+Overview
             </TabsTrigger>
             <TabsTrigger value="registrations" className="px-3 sm:px-4">
-              <ListChecks /> Teams
+Teams
               <span className="ml-0.5 rounded-full bg-muted px-1.5 text-[11px] font-bold">{t.confirmedCount}</span>
             </TabsTrigger>
             <TabsTrigger value="stages" className="px-3 sm:px-4">
-              <Layers /> Stages
+Stages
             </TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="mt-4">
@@ -237,6 +179,8 @@ function ControlCenter({ t }: { t: ManagerTournamentDetail }) {
             <StagesList t={t} />
           </TabsContent>
         </Tabs>
+        </div>
+        <Glance t={t} />
       </div>
 
       <ConfirmDialog
@@ -257,22 +201,13 @@ function Overview({ t }: { t: ManagerTournamentDetail }) {
   const first = t.stages[0];
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatCard label="Registered" value={`${t.confirmedCount}/${t.maxTeams}`} icon={<Users />} />
-        <StatCard label="Waitlist" value={t.waitlistCount} icon={<Hourglass />} tone="warning" />
-        <StatCard label="Starts" value={<span className="text-2xl">{t.startsAt ? fmtDay(t.startsAt) : "—"}</span>} icon={<CalendarClock />} tone="info" />
-        <StatCard label="Registration closes" value={<span className="text-2xl">{t.registrationClosesAt ? fmtDay(t.registrationClosesAt) : "At start"}</span>} icon={<Ticket />} tone="success" />
-      </div>
-
       {t.slotOptions.length > 0 && (
-        <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-          <h3 className="font-display text-lg font-bold">{first?.name ?? "Qualifier"} time slots</h3>
-          <p className="mb-3 text-sm text-muted-foreground">Teams rank these when they register. The draw gives them their best slot with room, in sign-up order.</p>
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <Zone label={`${first?.name ?? "Qualifier"} time slots`} title="Teams rank these when they register. The draw gives each team its best slot with room, in sign-up order.">
+          <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {t.slotOptions.map((o) => {
               const pct = o.capacity ? Math.min(100, (o.taken / o.capacity) * 100) : 0;
               return (
-                <li key={o.id} className="rounded-xl border bg-background p-3">
+                <li key={o.id} className="rounded-xl bg-muted/50 p-3" title={`First choice of ${o.taken} team${o.taken === 1 ? "" : "s"}`}>
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="truncate text-sm font-semibold">{o.label}</span>
                     <span className="shrink-0 font-display text-sm font-bold">
@@ -282,39 +217,44 @@ function Overview({ t }: { t: ManagerTournamentDetail }) {
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
                     <div className={cn("h-full rounded-full transition-all", pct >= 100 ? "bg-warning" : "bg-primary")} style={{ width: `${pct}%` }} />
                   </div>
-                  <p className="mt-1 text-[11px] text-muted-foreground">first choice of {o.taken} team{o.taken === 1 ? "" : "s"}</p>
                 </li>
               );
             })}
           </ul>
-        </section>
+        </Zone>
       )}
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <InfoCard icon={<Trophy />} title="Scoring & slots">
-          <p>
-            <span className="font-semibold">Points:</span> {pointsLabel(t.pointsSystem)}
-          </p>
-          <p>
-            <span className="font-semibold">Slots:</span> teams start at #{t.firstSlot} in every lobby
-          </p>
-        </InfoCard>
-        <InfoCard icon={<ScrollText />} title="Rules">
-          {t.rules ? <p className="whitespace-pre-line">{t.rules}</p> : <p className="text-muted-foreground">No rules added. You can add them from “Edit details”.</p>}
-        </InfoCard>
-      </div>
+      <Zone label="Rules">
+        {t.rules ? <p className="text-sm whitespace-pre-line">{t.rules}</p> : <p className="text-sm text-muted-foreground">No rules yet — add them in “Edit details”.</p>}
+      </Zone>
     </div>
   );
 }
 
-function InfoCard({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
+/** Key facts zone: prize (or champion) big, registration meter, the rest as small key/value rows. */
+function Glance({ t }: { t: ManagerTournamentDetail }) {
   return (
-    <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-      <h3 className="mb-2 flex items-center gap-2 font-display text-lg font-bold [&_svg]:size-4.5 [&_svg]:text-primary">
-        {icon} {title}
-      </h3>
-      <div className="space-y-1 text-sm">{children}</div>
-    </section>
+    <Zone label="At a glance" data-tour="t-hero" className="order-2 lg:sticky lg:top-20 lg:order-none" bodyClassName="space-y-4">
+      {t.champion ? (
+        <p className="flex items-center gap-2 font-display text-xl font-bold">
+          <Crown className="size-5 shrink-0 text-warning-foreground dark:text-warning" /> <span className="truncate">{t.champion.name}</span>
+          <span className="text-sm font-semibold text-muted-foreground">champions</span>
+        </p>
+      ) : t.prize ? (
+        <p className="flex items-center gap-2 font-display text-2xl font-bold text-warning-foreground dark:text-warning">
+          <Trophy className="size-5 shrink-0" /> <span className="truncate">{fmtPrize(t.prize)}</span>
+        </p>
+      ) : null}
+      <RegistrationMeter confirmed={t.confirmedCount} max={t.maxTeams} waitlist={t.waitlistCount} hideHint={t.status !== "REGISTRATION_OPEN"} />
+      <dl className="divide-y border-t pt-3">
+        <Fact label="Dates">{fmtRange(t.startsAt, t.stages[t.stages.length - 1]?.endsAt ?? null)}</Fact>
+        {(t.status === "DRAFT" || t.status === "REGISTRATION_OPEN") && (
+          <Fact label="Registration closes">{t.registrationClosesAt ? fmtDay(t.registrationClosesAt) : "At start"}</Fact>
+        )}
+        <Fact label="Team size">{t.teamSize} players</Fact>
+        <Fact label="Points">{pointsLabel(t.pointsSystem)}</Fact>
+        <Fact label="First slot">#{t.firstSlot}</Fact>
+      </dl>
+    </Zone>
   );
 }
 
@@ -337,30 +277,30 @@ function StageRow({ t, s }: { t: ManagerTournamentDetail; s: StageSummary }) {
     <Link
       to={`/manager/tournaments/${t.id}/stages/${s.id}`}
       className={cn(
-        "group flex flex-col gap-3 rounded-2xl border bg-card p-4 shadow-sm outline-none transition-all hover:border-primary/40 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-row sm:items-center sm:p-5",
+        "group flex items-center gap-3 rounded-2xl border bg-card p-4 shadow-sm outline-none transition-all hover:border-primary/40 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:gap-4 sm:p-5",
         s.status === "LIVE" && "border-destructive/30",
       )}
     >
-      <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary/10 font-display text-xl font-bold text-primary">{s.order}</span>
-      <div className="min-w-0 flex-1 space-y-1.5">
+      <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 font-display text-lg font-bold text-primary">{s.order}</span>
+      <div className="min-w-0 flex-1 space-y-1">
         <p className="flex flex-wrap items-center gap-2">
-          <span className="font-display text-xl leading-tight font-bold group-hover:text-primary">{s.name}</span>
+          <span className="font-display text-lg leading-tight font-bold group-hover:text-primary">{s.name}</span>
           <StatusPill kind="stage" status={s.status} />
         </p>
-        <p className="text-sm text-muted-foreground">
-          {s.teamsIn} teams · {s.groupCount > 1 ? `${s.groupCount} groups × ${s.lobbySize}` : "1 lobby"} · {s.matchesPerGroup} matches ·{" "}
-          {last ? "decides the champion" : `top ${s.advancePerGroup}${s.groupCount > 1 ? "/group" : ""}${s.wildcardCount ? ` + ${s.wildcardCount} wildcards` : ""} → ${s.teamsOut}`}
-          {s.invitedSlots > 0 && ` · ${s.invitedSlots} invited`}
+        <p className="text-sm">
+          <span className="font-semibold">{s.teamsIn} teams</span>
+          <span className="text-muted-foreground">
+            {" "}· {s.groupCount > 1 ? `${s.groupCount} × ${s.lobbySize}` : "1 lobby"} · {s.matchesPerGroup} matches ·{" "}
+            {last ? "decides the champion" : `${s.teamsOut} go through`}
+          </span>
         </p>
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <CalendarClock className="size-3.5" />
+        <p className="text-xs text-muted-foreground">
           {cfg
-            ? `${formatDate(cfg.startDate)} → ${formatDate(cfg.endDate)} · ${cfg.windows.map((w) => `${formatTime(w.start)}–${formatTime(w.end)}`).join(", ")}${s.plan ? ` · ${s.plan.days} ${s.plan.days === 1 ? "evening" : "evenings"}` : ""}`
+            ? `${formatDate(cfg.startDate)} → ${formatDate(cfg.endDate)} · ${cfg.windows.map((w) => `${formatTime(w.start)}–${formatTime(w.end)}`).join(", ")}`
             : "Not scheduled yet"}
         </p>
-        <MapChips maps={s.maps} numbered />
       </div>
-      <ChevronRight className="hidden size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 sm:block" />
+      <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
     </Link>
   );
 }

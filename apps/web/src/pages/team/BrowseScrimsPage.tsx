@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { ArrowDownUp, CalendarX2, Search, X } from "lucide-react";
+import { ArrowDownUp, CalendarX2, Search, SlidersHorizontal, X } from "lucide-react";
 import { addDays, DATE_RE, todayInAppTz, type TeamScrimOnDate } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -47,6 +47,9 @@ export default function BrowseScrimsPage() {
   const week = useMemo(() => Array.from({ length: UPCOMING_DAYS }, (_, i) => addDays(today, i)), [today]);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<Sort>("time-asc");
+  const [toolsOpen, setToolsOpen] = useState(false);
+  // keep the search row visible while a search is active, even if the toggle was closed
+  const tools = toolsOpen || !!search;
 
   const setDate = (d: string | null) => {
     const next = new URLSearchParams(params);
@@ -89,31 +92,48 @@ export default function BrowseScrimsPage() {
   const mine = (q.data ?? []).filter((s) => s.myRegistration && s.myRegistration.status !== "CANCELLED").length;
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        eyebrow={t("eyebrow")}
-        title={t("title")}
-        description={t("description")}
-        className="mb-0"
-      />
+    <div className="space-y-6">
+      <PageHeader eyebrow={t("eyebrow")} title={t("title")} className="mb-0" />
 
-      <DateStrip value={date ?? ""} today={today} onChange={setDate} counts={counts} onUpcoming={() => setDate(null)} />
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="font-display text-2xl font-bold">
-            {date ? dayLabel(date, today) : t("next7")}
-            {date && (date === today || date === addDays(today, 1)) && <span className="ml-2 text-base font-semibold text-muted-foreground">{formatDate(date)}</span>}
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {q.isLoading ? t("loading") : `${ts.plural("scrims", total)}${mine ? t("youre_in", { count: mine }) : ""}`}
-          </p>
+      {/* zone 1: pick a day + what's on it; search & sort tucked behind one button */}
+      <section className="space-y-3 rounded-2xl border bg-card p-4 sm:p-5">
+        <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">{ts("pick_day")}</p>
+        <DateStrip value={date ?? ""} today={today} onChange={setDate} counts={counts} onUpcoming={() => setDate(null)} />
+        <div className="flex items-center justify-between gap-3 border-t pt-3">
+          <div className="min-w-0">
+            <h2 className="truncate font-display text-xl font-bold sm:text-2xl">
+              {date ? dayLabel(date, today) : t("next7")}
+              {date && (date === today || date === addDays(today, 1)) && <span className="ml-2 text-sm font-semibold text-muted-foreground">{formatDate(date)}</span>}
+            </h2>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {q.isLoading ? t("loading") : `${ts.plural("scrims", total)}${mine ? t("youre_in", { count: mine }) : ""}`}
+            </p>
+          </div>
+          {total > 0 && (
+            <Button
+              variant={tools ? "secondary" : "outline"}
+              size="icon"
+              className="size-10 shrink-0"
+              onClick={() => {
+                if (tools) {
+                  setToolsOpen(false);
+                  setSearch("");
+                } else setToolsOpen(true);
+              }}
+              aria-expanded={tools}
+              aria-label={t("search_label")}
+              title={t("search_label")}
+              data-tour="scrim-search"
+            >
+              {search || sort !== "time-asc" ? <SlidersHorizontal className="text-primary" /> : <Search />}
+            </Button>
+          )}
         </div>
-        {total > 0 && (
+        {total > 0 && tools && (
           <div className="flex gap-2">
-            <div className="relative flex-1 sm:w-64 sm:flex-none" data-tour="scrim-search">
+            <div className="relative flex-1 sm:max-w-sm">
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("search_placeholder")} className="h-10 pr-8 pl-9" aria-label={t("search_label")} />
+              <Input autoFocus value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("search_placeholder")} className="h-10 pr-8 pl-9" aria-label={t("search_label")} />
               {search && (
                 <button type="button" onClick={() => setSearch("")} className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground" aria-label={t("clear_search")}>
                   <X className="size-4" />
@@ -133,8 +153,9 @@ export default function BrowseScrimsPage() {
             </Select>
           </div>
         )}
-      </div>
+      </section>
 
+      {/* zone 2: the scrims */}
       {q.isError ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_error")} />
       ) : q.isLoading ? (
@@ -191,15 +212,12 @@ export default function BrowseScrimsPage() {
           ))}
         </StaggerList>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-6">
           {groups.map((g, gi) => (
             <section key={g.date} className="space-y-3">
               <h3 className="flex items-baseline gap-2 border-b pb-2 font-display text-xl font-bold">
                 <span className={g.date === today ? "text-primary" : undefined}>{dayLabel(g.date, today)}</span>
                 {dayLabel(g.date, today) !== formatDate(g.date) && <span className="text-sm font-medium text-muted-foreground">{formatDate(g.date)}</span>}
-                <span className="ml-auto text-xs font-medium text-muted-foreground">
-                  {ts.plural("scrims", g.items.length)}
-                </span>
               </h3>
               <StaggerList className={SCRIM_GRID}>
                 {g.items.map((s, i) => (

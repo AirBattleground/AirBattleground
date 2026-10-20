@@ -11,7 +11,7 @@ export function OrgLogoCard({ className, tour }: { className?: string; tour?: st
     <BrandingImageCard
       title="Organisation logo"
       icon={<Building2 />}
-      description="Teams see this logo on your scrims and tournaments. A square PNG works best."
+      description="Shown on your scrims and tournaments. Square PNG."
       aspect="logo"
       url={q.isError ? null : q.data?.url}
       pending={upload.isPending || remove.isPending}
@@ -29,7 +29,7 @@ export function ScrimPosterCard({ scrimId, url, compact, className, tour }: { sc
     <BrandingImageCard
       title="Scrim poster"
       icon={<ImageIcon />}
-      description="Teams see this poster when they browse and register. Square artwork looks best."
+      description="Teams see it when they browse. Square works best."
       aspect="square"
       compact={compact}
       url={url}
@@ -48,7 +48,7 @@ export function TournamentPosterCard({ tournamentId, url, compact, className, to
     <BrandingImageCard
       title="Tournament poster"
       icon={<ImageIcon />}
-      description="Teams see this poster on the tournament page. Square artwork looks best."
+      description="Shown on the tournament page. Square works best."
       aspect="square"
       compact={compact}
       url={url}

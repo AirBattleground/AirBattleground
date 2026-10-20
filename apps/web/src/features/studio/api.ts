@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { CreateShowInput, ListResponse, StudioShow, StudioShowRow, StudioStatus, UpdateShowInput } from "@7xen/shared";
+import type { CreateShowInput, ListResponse, StudioOutputs, StudioShow, StudioShowRow, StudioStatus, UpdateShowInput } from "@7xen/shared";
 import { api } from "@/lib/api";
 import { errorMessage } from "@/features/manager/api";
 
@@ -10,6 +10,11 @@ export const studioKeys = {
   show: (id: string) => ["manager", "studio", "show", id] as const,
   status: (id: string) => ["manager", "studio", "status", id] as const,
 };
+
+/** What a show can go out to (site YouTube when connected, the manager's own channels). */
+export function useStudioOutputs() {
+  return useQuery({ queryKey: [...studioKeys.all, "outputs"], queryFn: () => api.get<StudioOutputs>("/api/manager/studio/outputs"), staleTime: 30_000 });
+}
 
 export function useShows() {
   return useQuery({ queryKey: studioKeys.list, queryFn: async () => (await api.get<ListResponse<StudioShowRow>>("/api/manager/studio/shows")).items });

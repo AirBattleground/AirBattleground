@@ -16,6 +16,7 @@
  *                                                              starts the broadcast; chunks are applied in seq order)
  *   POST   /api/manager/studio/shows/:id/stop                → StudioStatus (ends the broadcast)
  *   GET    /api/manager/studio/shows/:id/status              → StudioStatus
+ *   GET    /api/manager/studio/outputs                       → StudioOutputs (what a show can go out to)
  * PUBLIC (no sign-in)
  *   Live shows appear in GET /api/live/ as LiveBroadcastCard with `studio: true` (matchId = "s_<showId>") and play at
  *   GET /api/live/s/:showId/<hls file>.
@@ -43,6 +44,10 @@ export const updateShowSchema = z.object({
   matchId: z.string().min(1).nullable().optional(),
   /** stream-key destinations (StreamDestination ids) to relay to while live */
   destinationIds: z.array(z.string()).max(5).optional(),
+  /** listed on the public AirBattleground Live/Watch pages */
+  publicListing: z.boolean().optional(),
+  /** also go live on the site YouTube channel (if connected) */
+  siteYoutube: z.boolean().optional(),
   config: studioConfigSchema.optional(),
 });
 export type UpdateShowInput = z.infer<typeof updateShowSchema>;
@@ -68,9 +73,19 @@ export interface StudioShowRow {
 
 export interface StudioShow extends StudioShowRow {
   destinationIds: string[];
+  publicListing: boolean;
+  siteYoutube: boolean;
   config: StudioConfig;
   /** public watch link while live */
   watchPath: string;
+}
+
+/** Where a show can be sent (for the Studio's "Where it goes" panel). */
+export interface StudioOutputs {
+  /** the site YouTube channel the admin connected (null = none / streaming to it is switched off) */
+  siteYoutube: { channelTitle: string; channelUrl: string } | null;
+  /** the manager's own stream-key channels */
+  destinations: { id: string; name: string; kind: "YOUTUBE" | "FACEBOOK" | "CUSTOM" }[];
 }
 
 export interface StudioStatus {

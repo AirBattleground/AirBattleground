@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronRight, Crown, Gift, Lock, Medal, Receipt, Search, Swords, Trophy } from "lucide-react";
+import { ChevronRight, Crown, Gift, Search, Swords, Trophy } from "lucide-react";
 import type { CoinTransaction, CoinWallet } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -24,7 +24,7 @@ function useCoinWallet() {
   return useQuery({ queryKey: ["team", "coins", "wallet"], queryFn: () => api.get<CoinWallet>("/api/team/coins"), staleTime: 30_000 });
 }
 
-/** /team/coins: the team's BG coin balance, transactions and (soon) redeeming. */
+/** /team/coins: two zones — the wallet (balance, rank, redeem soon) and the transaction history. */
 export default function CoinsPage() {
   const t = useT(coinsMsg);
   const steps = useMemo<TourStep[]>(
@@ -42,11 +42,12 @@ export default function CoinsPage() {
   const w = q.data;
 
   return (
-    <>
+    <div className="space-y-6">
       <PageHeader
         eyebrow={t("bg_coins")}
         title={t("title")}
         description={t("description")}
+        className="mb-0"
         actions={
           <Button asChild variant="outline">
             <Link to="/team#coins">
@@ -61,107 +62,85 @@ export default function CoinsPage() {
       ) : !hasTeam ? (
         <NoTeamHint icon={<BgCoin className="size-6" />}>{t("no_team")}</NoTeamHint>
       ) : (
-        <div className="space-y-6">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
-            <Balance w={w} />
-            <Redeem balance={w?.balance ?? 0} />
-          </div>
+        <div className="grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
+          <WalletPanel w={w} />
           <History w={w} />
         </div>
       )}
-    </>
+    </div>
   );
 }
 
-function Balance({ w }: { w: CoinWallet | undefined }) {
+const LABEL = "text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase";
+
+/** Left zone: balance (big), rank + wins (small), who it's credited to, and redeeming (coming soon). */
+function WalletPanel({ w }: { w: CoinWallet | undefined }) {
   const t = useT(coinsMsg);
   return (
-    <section data-tour="coins-balance" className="relative overflow-hidden rounded-2xl border border-warning/30 bg-card p-5 shadow-sm sm:p-6">
-      <div className="pointer-events-none absolute -top-24 -left-16 size-72 rounded-full bg-warning/20 blur-3xl" />
-      <div className="pointer-events-none absolute inset-0 bg-grid opacity-30" />
-      <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center">
-        <BgCoin className="size-20 sm:size-24" shine />
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-bold tracking-[0.25em] text-muted-foreground uppercase">{t("team_balance")}</p>
+    <aside className="relative overflow-hidden rounded-2xl border border-warning/30 bg-card shadow-sm">
+      <div className="pointer-events-none absolute -top-24 -left-16 size-64 rounded-full bg-warning/20 blur-3xl" />
+      <section data-tour="coins-balance" className="relative space-y-4 p-4 sm:p-5">
+        <p className={LABEL}>{t("team_balance")}</p>
+        <div className="flex items-center gap-4">
+          <BgCoin className="size-16 shrink-0" shine />
           {w ? (
-            <p className="mt-1 font-display text-5xl leading-none font-bold tabular-nums sm:text-6xl">{fmt(w.balance)}</p>
+            <p className="font-display text-5xl leading-none font-bold tabular-nums">{fmt(w.balance)}</p>
           ) : (
-            <Skeleton className="mt-2 h-12 w-40" />
+            <Skeleton className="h-12 w-36" />
           )}
-          <p className="mt-1 text-sm text-muted-foreground">{t("bg_coins")}</p>
         </div>
+        <dl className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <dt className="text-xs text-muted-foreground">{t("rank")}</dt>
+            <dd className="font-display text-2xl font-bold tabular-nums">{w ? (w.rank ? `#${w.rank}` : "—") : "…"}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-muted-foreground">{t("coin_wins")}</dt>
+            <dd className="font-display text-2xl font-bold tabular-nums">{w ? fmt(w.wins) : "…"}</dd>
+          </div>
+        </dl>
         {w?.team && (
-          <div className="flex items-center gap-3 rounded-xl border bg-background/60 p-3 backdrop-blur">
-            <TeamLogo name={w.team.name} tag={w.team.tag} logoUrl={w.team.logoUrl} size="md" />
+          <div className="flex items-center gap-3 border-t pt-4">
+            <TeamLogo name={w.team.name} tag={w.team.tag} logoUrl={w.team.logoUrl} size="sm" />
             <div className="min-w-0">
               <p className="truncate font-semibold">{w.team.name}</p>
               {w.leader && <p className="truncate text-xs text-muted-foreground">{t("credited_to", { name: w.leader.ign ?? w.leader.displayName })}</p>}
             </div>
           </div>
         )}
-      </div>
-      <div className="relative mt-5 grid grid-cols-2 gap-2.5 sm:max-w-md">
-        <Stat icon={<Medal />} label={t("rank")} value={w ? (w.rank ? `#${w.rank}` : "—") : null} />
-        <Stat icon={<Swords />} label={t("coin_wins")} value={w ? fmt(w.wins) : null} />
-      </div>
-    </section>
-  );
-}
-
-function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | null }) {
-  return (
-    <div className="rounded-xl border bg-background/60 p-3">
-      <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground [&_svg]:size-3.5 [&_svg]:text-primary">
-        {icon} {label}
-      </span>
-      {value == null ? <Skeleton className="mt-1 h-7 w-12" /> : <p className="mt-0.5 font-display text-2xl font-bold tabular-nums">{value}</p>}
-    </div>
-  );
-}
-
-/** Redeeming is planned; shown disabled so teams know it's coming. */
-function Redeem({ balance }: { balance: number }) {
-  const t = useT(coinsMsg);
-  return (
-    <section data-tour="coins-redeem" className="flex flex-col gap-4 rounded-2xl border border-dashed bg-card/60 p-5 sm:p-6">
-      <div className="flex items-start gap-3">
-        <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-          <Gift className="size-5" />
-        </span>
-        <div>
-          <p className="flex items-center gap-2 font-display text-xl font-bold">
+      </section>
+      {/* redeeming is planned; shown so teams know it's coming */}
+      <section data-tour="coins-redeem" className="relative flex items-start gap-3 border-t border-dashed p-4 sm:px-5">
+        <Gift className="mt-0.5 size-5 shrink-0 text-primary" />
+        <div className="min-w-0">
+          <p className="flex flex-wrap items-center gap-2 font-semibold">
             {t("redeem_title")}
             <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">{t("coming_soon")}</span>
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">{t("redeem_text", { coins: fmt(balance) })}</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("redeem_text", { coins: fmt(w?.balance ?? 0) })}</p>
         </div>
-      </div>
-      <Button size="lg" disabled className="mt-auto w-full" aria-describedby="redeem-soon">
-        <Lock /> {t("redeem")}
-      </Button>
-      <p id="redeem-soon" className="-mt-2 text-center text-xs text-muted-foreground">
-        {t("not_yet")}
-      </p>
-    </section>
+      </section>
+    </aside>
   );
 }
 
 function History({ w }: { w: CoinWallet | undefined }) {
   const t = useT(coinsMsg);
   return (
-    <section data-tour="coins-history" className="space-y-3">
-      <h2 className="flex items-center gap-2 font-display text-2xl font-bold">
-        <Receipt className="size-6 text-primary" /> {t("transactions")}
-        {w && w.transactions.length > 0 && <span className="text-sm font-medium text-muted-foreground">({w.transactions.length})</span>}
+    <section data-tour="coins-history" className="rounded-2xl border bg-card">
+      <h2 className={cn(LABEL, "flex items-center gap-2 px-4 pt-4 pb-2 sm:px-5")}>
+        {t("transactions")}
+        {w && w.transactions.length > 0 && <span className="tabular-nums">· {w.transactions.length}</span>}
       </h2>
       {!w ? (
-        <div className="space-y-2">
+        <div className="space-y-2 p-4 pt-2 sm:p-5 sm:pt-2">
           {Array.from({ length: 4 }, (_, i) => (
-            <Skeleton key={i} className="h-16 rounded-xl" />
+            <Skeleton key={i} className="h-12 rounded-lg" />
           ))}
         </div>
       ) : w.transactions.length === 0 ? (
         <EmptyState
+          className="border-0 bg-transparent"
           icon={<BgCoin className="size-8 opacity-70 grayscale" />}
           title={t("no_coins_title")}
           description={t("no_coins_text")}
@@ -174,7 +153,7 @@ function History({ w }: { w: CoinWallet | undefined }) {
           }
         />
       ) : (
-        <StaggerList className="space-y-2">
+        <StaggerList className="divide-y px-2 pb-2">
           {w.transactions.map((tx) => (
             <StaggerItem key={tx.id}>
               <TxRow t={tx} />
@@ -192,14 +171,14 @@ function TxRow({ t }: { t: CoinTransaction }) {
   const champion = t.kind === "CHAMPION";
   const body = (
     <>
-      <span className={cn("grid size-11 shrink-0 place-items-center rounded-xl [&_svg]:size-5", champion ? "bg-warning/15 text-warning-foreground dark:text-warning" : "bg-primary/10 text-primary")}>
+      <span className={cn("grid size-10 shrink-0 place-items-center rounded-lg [&_svg]:size-5", champion ? "bg-warning/15 text-warning-foreground dark:text-warning" : "bg-primary/10 text-primary")}>
         {champion ? <Crown /> : <Swords />}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold">{t.title}</span>
-        <span className="block truncate text-xs text-muted-foreground">{t.detail}</span>
-        <span className="block text-[11px] text-muted-foreground">
-          {fmtDate(t.createdAt, "d MMM yyyy, h:mm a")} · {tr("to", { name: t.creditedTo })}
+        <span className="block truncate text-xs text-muted-foreground">
+          {fmtDate(t.createdAt, "d MMM, h:mm a")}
+          {t.detail && ` · ${t.detail}`}
         </span>
       </span>
       <span className={cn("flex shrink-0 items-center gap-1.5 font-display text-lg font-bold tabular-nums", t.amount >= 0 ? "text-success" : "text-destructive")}>
@@ -210,12 +189,15 @@ function TxRow({ t }: { t: CoinTransaction }) {
       {t.href && <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />}
     </>
   );
-  const cls = "group flex items-center gap-3 rounded-xl border bg-card p-3 shadow-sm sm:p-4";
+  const cls = "group flex items-center gap-3 rounded-lg px-2 py-3 sm:px-3";
+  const credited = tr("to", { name: t.creditedTo });
   return t.href ? (
-    <Link to={t.href} className={cn(cls, "outline-none transition-colors hover:border-primary/40 focus-visible:ring-[3px] focus-visible:ring-ring/50")}>
+    <Link to={t.href} title={credited} className={cn(cls, "outline-none transition-colors hover:bg-muted/50 focus-visible:ring-[3px] focus-visible:ring-ring/50")}>
       {body}
     </Link>
   ) : (
-    <div className={cls}>{body}</div>
+    <div title={credited} className={cls}>
+      {body}
+    </div>
   );
 }

@@ -9,6 +9,9 @@ import * as studio from "../services/studio.js";
 const p = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 export function mountStudio(r: Router) {
+  r.get("/studio/outputs", async (req, res) => {
+    res.json(await studio.studioOutputs(currentUser(req).id));
+  });
   r.get("/studio/shows", async (req, res) => {
     res.json({ items: await studio.listShows(currentUser(req).id) });
   });

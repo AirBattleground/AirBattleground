@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,12 +11,10 @@ import {
   CalendarClock,
   Check,
   ClipboardList,
-  FileText,
+  Eye,
   GitBranch,
-  Hourglass,
   Image as ImageIcon,
   Info,
-  ListOrdered,
   Loader2,
   Plus,
   Rocket,
@@ -66,7 +64,9 @@ import { errorMessage, useCreateTournament, usePublishTournament, useTournament,
 import { fittingSchedule, groupSizes, normalizeStages, planSchedule, teamsOut, validateFormat } from "@/features/tournaments/manager/engine";
 import { formatInstant } from "@/features/tournaments/manager/format";
 import { DateTimeInput } from "@/features/tournaments/manager/components/DateTimeInput";
-import { Field, Section } from "@/features/tournaments/manager/components/form";
+import { Advanced, Field, Section } from "@/features/tournaments/manager/components/form";
+import { WizardSteps } from "@/features/tournaments/manager/components/WizardSteps";
+import { Zone } from "@/features/tournaments/manager/components/Zone";
 import { FormatFlow } from "@/features/tournaments/manager/components/FormatFlow";
 import { FormatIssues } from "@/features/tournaments/manager/components/FormatIssues";
 import { PointsPicker, pointsLabel } from "@/features/tournaments/manager/components/PointsPicker";
@@ -76,13 +76,13 @@ import { StageEditor } from "@/features/tournaments/manager/components/StageEdit
 import { coinsLabel, WinCoinsInput } from "@/features/coins/components/WinCoinsInput";
 
 const TOUR: TourStep[] = [
-  { title: "Create a tournament", description: "Four short steps. Nothing goes live until you press Publish — you can save a draft any time." },
-  { element: '[data-tour="wizard-steps"]', title: "Four steps", description: "Basics → Format → Schedule → Registration. Tap a step to jump back to it." },
-  { element: '[data-tour="wizard-basics"]', title: "Name and prize", description: "What teams see first, plus the BG coins each match winner earns. Rules and description are optional." },
+  { title: "Create a tournament", description: "Five short steps. Nothing goes live until you press Publish — you can save a draft any time." },
+  { element: '[data-tour="wizard-steps"]', title: "Five steps", description: "Basics → Format → Schedule → Sign-up → Review. Tap a step to jump back to it." },
+  { element: '[data-tour="wizard-basics"]', title: "Name and prize", description: "What teams see first, plus the BG coins each match winner earns. Team size, points and rules are under “More options”." },
   { element: '[data-tour="wizard-poster"]', title: "Poster", description: "Add the tournament poster here. It's saved together with the tournament." },
   { element: '[data-tour="wizard-presets"]', title: "Pick a size", description: "Choose a ready-made format. AirBattleground works out the groups and who goes through." },
   { element: '[data-tour="wizard-flow"]', title: "Live preview", description: "See how teams flow from registration to the final. It updates as you change numbers." },
-  { element: '[data-tour="wizard-stages"]', title: "Rounds", description: "Rounds are named and given their usual maps automatically. Drag the handle to reorder them, or open “Change …” to edit maps, lobbies and how many go through." },
+  { element: '[data-tour="wizard-stages"]', title: "Rounds", description: "Rounds get names and maps automatically. Open “Customise rounds” to reorder them or change maps, lobbies and how many go through." },
   { element: '[data-tour="wizard-schedule"]', title: "When it's played", description: "Pick the days and playing hours. Each group plays all its matches back-to-back in one lobby." },
   { element: '[data-tour="wizard-gantt"]', title: "Schedule preview", description: "Every group's time block per day and lobby. Tap a suggestion to apply it." },
   { element: '[data-tour="wizard-review"]', title: "Check everything", description: "A summary of the whole tournament before it goes live." },
@@ -108,8 +108,10 @@ const STEPS = [
   { key: "basics", label: "Basics", icon: Type },
   { key: "format", label: "Format", icon: GitBranch },
   { key: "schedule", label: "Schedule", icon: CalendarClock },
-  { key: "registration", label: "Registration", icon: ClipboardList },
+  { key: "registration", label: "Sign-up", icon: ClipboardList },
+  { key: "review", label: "Review", icon: Eye },
 ] as const;
+const LAST = STEPS.length - 1;
 
 const PRESETS: { key: string; teams: number | null; title: string; flow: string }[] = [
   { key: "final16", teams: 16, title: "16 teams", flow: "Final only" },
@@ -208,7 +210,7 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
 
   const isEdit = !!existing;
   const formatLocked = isEdit && !existing.canEditFormat;
-  const initialStep = Math.min(3, Math.max(0, Number(params.get("step") ?? 0) || 0));
+  const initialStep = Math.min(LAST, Math.max(0, Number(params.get("step") ?? 0) || 0));
   const [step, setStep] = useState(initialStep);
   const [dir, setDir] = useState(1);
 
@@ -435,7 +437,7 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
 
   const busy = saving !== null;
   const back = existing ? `/manager/tournaments/${existing.id}` : "/manager/tournaments";
-  const stepHasProblem = [Object.keys(errors).some((k) => k !== "registrationOpensAt" && k !== "registrationClosesAt"), errorsCount > 0, !!schedule && !scheduleOk, !!(errors.registrationOpensAt || errors.registrationClosesAt)];
+  const stepHasProblem = [Object.keys(errors).some((k) => k !== "registrationOpensAt" && k !== "registrationClosesAt"), errorsCount > 0, !!schedule && !scheduleOk, !!(errors.registrationOpensAt || errors.registrationClosesAt), false];
 
   return (
     <div>
@@ -443,46 +445,10 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
       <PageHeader
         eyebrow={existing ? "Edit tournament" : "New tournament"}
         title={title?.trim() || (existing ? existing.title : "Create a tournament")}
-        description={existing ? "Changes are saved when you press Save." : "Four short steps. Nothing is visible to teams until you publish."}
+        description={existing ? undefined : "Nothing is visible to teams until you publish."}
       />
 
-      {/* step header */}
-      <nav aria-label="Steps" data-tour="wizard-steps" className="mb-6">
-        <ol className="grid grid-cols-4 gap-1.5 sm:gap-3">
-          {STEPS.map((s, i) => {
-            const Icon = s.icon;
-            const active = i === step;
-            const done = i < step;
-            return (
-              <li key={s.key}>
-                <button
-                  type="button"
-                  onClick={() => void go(i)}
-                  aria-current={active ? "step" : undefined}
-                  className={cn(
-                    "group relative flex w-full flex-col items-center gap-1.5 rounded-xl border px-1 py-2.5 text-xs font-semibold outline-none transition-all focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-row sm:gap-3 sm:px-3 sm:text-sm",
-                    active ? "border-primary bg-primary/10 text-foreground shadow-glow" : "bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "grid size-8 shrink-0 place-items-center rounded-lg font-display text-sm font-bold transition-colors",
-                      active ? "bg-primary text-primary-foreground" : done ? "bg-success/15 text-success" : "bg-muted",
-                    )}
-                  >
-                    {done ? <Check className="size-4" /> : <Icon className="size-4" />}
-                  </span>
-                  <span className="truncate">
-                    <span className="hidden text-[10px] font-medium tracking-wider text-muted-foreground uppercase sm:block">Step {i + 1}</span>
-                    {s.label}
-                  </span>
-                  {stepHasProblem[i] && <span className="absolute top-1.5 right-1.5 size-2 rounded-full bg-destructive" aria-label="Needs attention" />}
-                </button>
-              </li>
-            );
-          })}
-        </ol>
-      </nav>
+      <WizardSteps steps={STEPS} step={step} onGo={(i) => void go(i)} problems={stepHasProblem} tour="wizard-steps" />
 
       <AnimatePresence mode="wait" initial={false} custom={dir}>
         <motion.div
@@ -495,69 +461,74 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
           className="space-y-6"
         >
           {step === 0 && (
-            <>
-              <Section icon={<Type />} title="Basics" description="What teams see when they find your tournament." tour="wizard-basics">
-                <div className="grid gap-5">
-                  <Field label="Tournament name" htmlFor="t-title" error={errors.title?.message}>
-                    <Input id="t-title" placeholder="e.g. AirBattleground Winter Cup" className="h-11 text-base" aria-invalid={!!errors.title || undefined} {...register("title")} />
-                  </Field>
-                  <Field label="Prize" optional htmlFor="t-prize" error={errors.prize?.message} hint="Shown big on the tournament page.">
+            <Section icon={<Type />} title="Basics" tour="wizard-basics">
+              <div className="grid gap-5">
+                <Field label="Tournament name" htmlFor="t-title" error={errors.title?.message}>
+                  <Input id="t-title" placeholder="e.g. AirBattleground Winter Cup" className="h-11 text-base" aria-invalid={!!errors.title || undefined} {...register("title")} />
+                </Field>
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field label="Prize" optional htmlFor="t-prize" error={errors.prize?.message}>
                     <div className="relative">
                       <Trophy className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-warning-foreground dark:text-warning" />
                       <Input id="t-prize" placeholder="e.g. ₹50,000 prize pool" className="h-11 pl-9 text-base" {...register("prize")} />
                     </div>
                   </Field>
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <Field label="Players per team" hint="Squad size, e.g. 4 for squads.">
-                      <Controller control={control} name="teamSize" render={({ field }) => <Stepper value={field.value ?? 4} onChange={field.onChange} min={1} max={6} suffix="players" />} />
-                    </Field>
-                    <Field label="First team slot" error={errors.firstSlot?.message} hint="Many rooms keep slots 1–2 for observers.">
-                      <Controller control={control} name="firstSlot" render={({ field }) => <Stepper value={field.value ?? 1} onChange={field.onChange} min={1} max={MAX_ROOM_SLOTS} />} />
-                    </Field>
-                  </div>
-                  <Field label="Points system" hint="Used for every match in every stage.">
-                    <Controller control={control} name="pointsSystem" render={({ field }) => <PointsPicker value={field.value ?? DEFAULT_POINTS_SYSTEM} onChange={field.onChange} />} />
-                  </Field>
-                  <Field label="BG coins per match win" htmlFor="t-coins" error={errors.winCoins?.message} hint="The winner of every match earns these coins. They go to the team's leader when you publish the results.">
+                  <Field label="BG coins per match win" htmlFor="t-coins" error={errors.winCoins?.message}>
                     <Controller control={control} name="winCoins" render={({ field }) => <WinCoinsInput id="t-coins" value={field.value} onChange={(v) => field.onChange(v)} invalid={!!errors.winCoins} />} />
                   </Field>
                 </div>
-              </Section>
-              <BrandingImageCard
-                title="Tournament poster"
-                icon={<ImageIcon />}
-                description="Optional. Teams see this on the tournament page. Square artwork looks best. It's saved with the tournament."
-                aspect="square"
-                compact
-                url={posterUrl}
-                onUpload={(f) => {
-                  setPosterFile(f);
-                  setPosterRemoved(false);
-                }}
-                onRemove={() => {
-                  setPosterFile(null);
-                  setPosterRemoved(true);
-                }}
-                tour="wizard-poster"
-              />
-              <Section icon={<FileText />} title="Description & rules" description="Optional — but teams appreciate clear rules.">
-                <div className="grid gap-5">
-                  <Field label="Description" optional htmlFor="t-desc" error={errors.description?.message}>
-                    <Textarea id="t-desc" rows={3} placeholder="Who can join, what's at stake, where to follow the action…" {...register("description")} />
-                  </Field>
-                  <Field label="Rules" optional htmlFor="t-rules" error={errors.rules?.message}>
-                    <Textarea id="t-rules" rows={5} placeholder={"e.g.\n• Be in the lobby 10 minutes before your group starts\n• No emulators\n• Teaming = disqualification"} {...register("rules")} />
-                  </Field>
-                </div>
-              </Section>
-            </>
+                <BrandingImageCard
+                  title="Poster"
+                  icon={<ImageIcon />}
+                  description="Optional · square artwork looks best."
+                  aspect="square"
+                  compact
+                  url={posterUrl}
+                  onUpload={(f) => {
+                    setPosterFile(f);
+                    setPosterRemoved(false);
+                  }}
+                  onRemove={() => {
+                    setPosterFile(null);
+                    setPosterRemoved(true);
+                  }}
+                  tour="wizard-poster"
+                  className="shadow-none"
+                />
+                <Advanced
+                  title="More options"
+                  hint={`${watch("teamSize") ?? 4} players · slots from #${firstSlot} · ${pointsLabel(pointsSystem)}`}
+                  defaultOpen={!!(errors.firstSlot || errors.teamSize || errors.pointsSystem || errors.description || errors.rules)}
+                >
+                  <div className="grid gap-5">
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <Field label="Players per team">
+                        <Controller control={control} name="teamSize" render={({ field }) => <Stepper value={field.value ?? 4} onChange={field.onChange} min={1} max={6} suffix="players" />} />
+                      </Field>
+                      <Field label="First team slot" error={errors.firstSlot?.message} hint="Rooms often keep 1–2 for observers.">
+                        <Controller control={control} name="firstSlot" render={({ field }) => <Stepper value={field.value ?? 1} onChange={field.onChange} min={1} max={MAX_ROOM_SLOTS} />} />
+                      </Field>
+                    </div>
+                    <Field label="Points system">
+                      <Controller control={control} name="pointsSystem" render={({ field }) => <PointsPicker value={field.value ?? DEFAULT_POINTS_SYSTEM} onChange={field.onChange} />} />
+                    </Field>
+                    <Field label="Description" optional htmlFor="t-desc" error={errors.description?.message}>
+                      <Textarea id="t-desc" rows={3} placeholder="Who can join, what's at stake, where to follow the action…" {...register("description")} />
+                    </Field>
+                    <Field label="Rules" optional htmlFor="t-rules" error={errors.rules?.message}>
+                      <Textarea id="t-rules" rows={5} placeholder={"e.g.\n• Be in the lobby 10 minutes before your group starts\n• No emulators\n• Teaming = disqualification"} {...register("rules")} />
+                    </Field>
+                  </div>
+                </Advanced>
+              </div>
+            </Section>
           )}
 
           {step === 1 && (
             <>
               {formatLocked && <LockedNote text="Registration has opened, so the format can't change any more. You can still edit the basics." />}
               <fieldset disabled={formatLocked} className="min-w-0 space-y-6 disabled:opacity-70">
-                <Section icon={<Users />} title="How big?" description="Pick a size. AirBattleground splits teams into lobbies and works out who goes through." tour="wizard-presets">
+                <Section icon={<Users />} title="How big?" tour="wizard-presets">
                   <div className="grid grid-cols-2 gap-2 lg:grid-cols-4" role="radiogroup" aria-label="Format preset">
                     {PRESETS.map((p) => {
                       const on = preset === p.key;
@@ -585,32 +556,28 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
                     })}
                   </div>
                   <div className="mt-5 grid gap-5 sm:grid-cols-2">
-                    <Field label="Total teams" hint="Registration closes when it's full; extra teams join a waitlist.">
+                    <Field label="Total teams" hint="Extra teams join a waitlist.">
                       <Stepper value={maxTeams} onChange={changeTotal} min={2} max={MAX_TOURNAMENT_TEAMS} suffix="teams" />
                     </Field>
-                    <Field label="Teams per lobby" hint={`Default ${DEFAULT_LOBBY_SIZE}, max ${MAX_ROOM_SLOTS}.`}>
+                    <Field label="Teams per lobby" hint={`Max ${MAX_ROOM_SLOTS}.`}>
                       <Stepper value={lobby} onChange={changeLobby} min={2} max={MAX_ROOM_SLOTS} suffix="teams" />
                     </Field>
                   </div>
                 </Section>
 
-                <section data-tour="wizard-flow" className="animate-rise overflow-hidden rounded-xl border bg-card shadow-sm">
-                  <div className="bg-grid border-b bg-gradient-to-br from-primary/10 to-transparent px-5 py-4">
-                    <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Live preview</p>
-                    <p className="font-display text-xl font-bold">How teams reach the final</p>
-                  </div>
-                  <div className="space-y-4 p-4 sm:p-5">
-                    <FormatFlow stages={stages} maxTeams={maxTeams} issues={issues} />
-                    <FormatIssues issues={issues} stageNames={stages.map((s) => s.name)} />
-                  </div>
-                </section>
+                <Zone label="Live preview · how teams reach the final" data-tour="wizard-flow" className="animate-rise" bodyClassName="space-y-4">
+                  <FormatFlow stages={stages} maxTeams={maxTeams} issues={issues} />
+                  <FormatIssues issues={issues} stageNames={stages.map((s) => s.name)} />
+                </Zone>
 
-                <div data-tour="wizard-stages" className="space-y-3">
-                  <div className="flex items-end justify-between gap-2">
-                    <div>
-                      <h2 className="font-display text-xl font-bold">Stages</h2>
-                      <p className="text-sm text-muted-foreground">Looks good? Move on. Want changes? Open a stage. Drag the handle to reorder rounds — names and maps move with them.</p>
-                    </div>
+                <Advanced
+                  tour="wizard-stages"
+                  title="Customise rounds"
+                  hint={stages.map((s) => s.name).join(" → ")}
+                  defaultOpen={issues.some((x) => x.stage != null)}
+                >
+                  <div className="space-y-3">
+                  <div className="flex justify-end">
                     <Button type="button" variant="outline" size="sm" onClick={addStage} disabled={stages.length >= MAX_STAGES}>
                       <Plus /> Add a round
                     </Button>
@@ -644,7 +611,8 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
                       onChange={(patch) => updateStage(stages.length - 1, patch)}
                     />
                   )}
-                </div>
+                  </div>
+                </Advanced>
               </fieldset>
             </>
           )}
@@ -655,7 +623,7 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
               <Section
                 icon={<CalendarClock />}
                 title={`${stages[0]?.name ?? "Qualifier"} schedule`}
-                description="Set the days and hours. Later stages can be scheduled from the tournament page once you know who qualified."
+                description="Later stages are scheduled from the tournament page."
                 tour="wizard-schedule"
               >
                 {schedule ? (
@@ -667,64 +635,49 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
                 )}
               </Section>
               {schedule && stages[0] && (
-                <section data-tour="wizard-gantt" className="animate-rise rounded-xl border bg-card p-4 shadow-sm sm:p-5">
-                  <div className="mb-4">
-                    <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Live preview</p>
-                    <p className="font-display text-xl font-bold">
-                      {stages[0].groupCount} groups × {stages[0].matchesPerGroup} matches
-                    </p>
-                  </div>
+                <Zone label={`Live preview · ${stages[0].groupCount} groups × ${stages[0].matchesPerGroup} matches`} data-tour="wizard-gantt" className="animate-rise">
                   <SchedulePreview plan={plan} config={schedule} groupCount={stages[0].groupCount} onApply={formatLocked ? undefined : setSchedule} />
-                </section>
+                </Zone>
               )}
             </>
           )}
 
           {step === 3 && (
-            <>
-              <Section icon={<ClipboardList />} title="Registration" description="When teams can sign up.">
-                <div className="space-y-5">
-                  <div className="grid gap-5 sm:grid-cols-2">
-                    <Field label="Opens" optional error={errors.registrationOpensAt?.message} hint={opensAt ? undefined : "Leave empty to open the moment you publish."}>
-                      <Controller
-                        control={control}
-                        name="registrationOpensAt"
-                        render={({ field }) => <DateTimeInput label="Opens" value={field.value} onChange={field.onChange} placeholder="As soon as I publish" />}
-                      />
-                    </Field>
-                    <Field label="Closes" optional error={errors.registrationClosesAt?.message} hint={closesAt ? undefined : "Leave empty to close when the first match starts."}>
-                      <Controller
-                        control={control}
-                        name="registrationClosesAt"
-                        render={({ field }) => <DateTimeInput label="Closes" value={field.value} onChange={field.onChange} placeholder="When play starts" invalid={!!errors.registrationClosesAt} />}
-                      />
-                    </Field>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Explainer icon={<ListOrdered />} title="First come, first served">
-                      The first {maxTeams} teams to register get a spot. When they register they rank the time slots they can play, and the draw honours those
-                      in sign-up order.
-                    </Explainer>
-                    <Explainer icon={<Hourglass />} title="Waitlist">
-                      Once it's full, teams can join the waitlist. If a team drops out before the draw, the next team on the waitlist gets their spot
-                      automatically.
-                    </Explainer>
-                  </div>
-                </div>
-              </Section>
+            <Section icon={<ClipboardList />} title="Sign-up" description={`First ${maxTeams} teams get a spot · the rest join a waitlist and move up if a team drops out.`}>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field label="Opens" optional error={errors.registrationOpensAt?.message}>
+                  <Controller
+                    control={control}
+                    name="registrationOpensAt"
+                    render={({ field }) => <DateTimeInput label="Opens" value={field.value} onChange={field.onChange} placeholder="As soon as I publish" />}
+                  />
+                </Field>
+                <Field label="Closes" optional error={errors.registrationClosesAt?.message}>
+                  <Controller
+                    control={control}
+                    name="registrationClosesAt"
+                    render={({ field }) => <DateTimeInput label="Closes" value={field.value} onChange={field.onChange} placeholder="When play starts" invalid={!!errors.registrationClosesAt} />}
+                  />
+                </Field>
+              </div>
+            </Section>
+          )}
 
+          {step === 4 && (
+            <>
               <section data-tour="wizard-review" className="animate-rise overflow-hidden rounded-xl border bg-card shadow-sm">
-                <div className="bg-grid relative overflow-hidden border-b bg-gradient-to-br from-primary/15 to-transparent p-5 sm:p-6">
+                <div className="border-b bg-gradient-to-br from-primary/12 to-transparent p-4 sm:p-5">
                   <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Review</p>
-                  <p className="mt-1 font-display text-3xl font-bold">{title?.trim() || "Untitled tournament"}</p>
+                  <p className="mt-1 font-display text-2xl font-bold sm:text-3xl">{title?.trim() || "Untitled tournament"}</p>
                   {prize?.trim() && (
                     <p className="mt-1 flex items-center gap-2 font-display text-xl font-bold text-warning-foreground dark:text-warning">
                       <Trophy className="size-5" /> {prize}
                     </p>
                   )}
                 </div>
-                <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+                <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5">
                   <ReviewItem label="Teams" value={`${maxTeams} teams · ${watch("teamSize") ?? 4} players each`} onEdit={() => void go(1)} />
+                  {posterUrl && <ReviewItem label="Poster" value="Added" onEdit={() => void go(0)} />}
                   <ReviewItem label="Format" value={stages.map((s) => s.name).join(" → ")} onEdit={() => void go(1)} />
                   <ReviewItem
                     label={`${stages[0]?.name ?? "Qualifier"} schedule`}
@@ -739,10 +692,10 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
                   <ReviewItem label="Points" value={pointsLabel(pointsSystem)} onEdit={() => void go(0)} />
                   <ReviewItem label="Match win reward" value={coinsLabel(winCoins)} onEdit={() => void go(0)} />
                   <ReviewItem label="Slots" value={`From #${firstSlot} in every lobby`} onEdit={() => void go(0)} />
-                  <ReviewItem label="Registration" value={`${opensAt ? `Opens ${formatInstant(opensAt)}` : "Opens when published"} · ${closesAt ? `closes ${formatInstant(closesAt)}` : "closes when play starts"}`} />
+                  <ReviewItem label="Sign-up" value={`${opensAt ? `Opens ${formatInstant(opensAt)}` : "Opens when published"} · ${closesAt ? `closes ${formatInstant(closesAt)}` : "closes when play starts"}`} onEdit={() => void go(3)} />
                 </div>
                 {publishBlockers.length > 0 && (
-                  <div className="mx-5 mb-5 rounded-xl border border-warning/50 bg-warning/10 p-3 text-sm sm:mx-6">
+                  <div className="mx-4 mb-4 rounded-xl border border-warning/50 bg-warning/10 p-3 text-sm sm:mx-5 sm:mb-5">
                     <p className="flex items-center gap-2 font-semibold">
                       <Info className="size-4" /> Before you can publish
                     </p>
@@ -778,21 +731,21 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
           Step {step + 1} of {STEPS.length} · {STEPS[step]!.label}
         </span>
         <div className="ml-auto flex flex-wrap gap-2">
-          {(step === 3 || isEdit) && (
+          {(step === LAST || isEdit) && (
             <Button type="button" variant="outline" onClick={() => void save(false)} disabled={busy}>
               {saving === "draft" ? <Loader2 className="animate-spin" /> : <Save />}
               {isEdit ? "Save changes" : "Save draft"}
             </Button>
           )}
-          {step < 3 ? (
+          {step < LAST ? (
             <Button type="button" size="lg" onClick={() => void go(step + 1)} disabled={busy}>
-              Next: {STEPS[step + 1]!.label} <ArrowRight />
+              Next<span className="hidden sm:inline">: {STEPS[step + 1]!.label}</span> <ArrowRight />
             </Button>
           ) : (
             (!existing || existing.status === "DRAFT") && (
               <Button type="button" size="lg" onClick={() => void save(true)} disabled={busy || publishBlockers.length > 0} className="shadow-glow">
                 {saving === "publish" ? <Loader2 className="animate-spin" /> : <Rocket />}
-                Publish & open registration
+                Publish<span className="hidden sm:inline"> & open registration</span>
               </Button>
             )
           )}
@@ -819,18 +772,6 @@ function LockedNote({ text }: { text: string }) {
   );
 }
 
-function Explainer({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
-  return (
-    <div className="flex gap-3 rounded-xl border bg-muted/30 p-4">
-      <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary [&_svg]:size-4.5">{icon}</span>
-      <div>
-        <p className="font-semibold">{title}</p>
-        <p className="mt-0.5 text-sm text-muted-foreground">{children}</p>
-      </div>
-    </div>
-  );
-}
-
 function ReviewItem({ label, value, onEdit, bad }: { label: string; value: string; onEdit?: () => void; bad?: boolean }) {
   return (
     <div className={cn("flex items-start justify-between gap-3 rounded-xl border bg-background p-3", bad && "border-warning/60")}>
@@ -851,8 +792,8 @@ function WizardSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-10 w-64" />
-      <div className="grid grid-cols-4 gap-3">
-        {Array.from({ length: 4 }, (_, i) => (
+      <div className="grid grid-cols-5 gap-2">
+        {Array.from({ length: 5 }, (_, i) => (
           <Skeleton key={i} className="h-14 rounded-xl" />
         ))}
       </div>

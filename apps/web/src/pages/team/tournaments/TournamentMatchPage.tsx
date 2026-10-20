@@ -72,19 +72,18 @@ export default function TournamentMatchPage() {
           ))}
         </div>
       ) : (
-        <div className="space-y-5">
+        <div className="space-y-6">
           {mine && (
-            <div data-tour="scorecard-mine" className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card p-5 shadow-glow">
-              <div className="pointer-events-none absolute inset-0 bg-grid opacity-50" />
-              <div className="relative flex flex-wrap items-center gap-x-8 gap-y-3">
-                <div>
-                  <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">{ts("your_team")}</p>
-                  <p className="font-display text-4xl font-bold">{mine.rank === 1 ? ts("winner_winner") : ts("place", { rank: ordFor(ts.lang, mine.rank) })}</p>
-                </div>
-                <Stat label={ts("finishes")} value={mine.kills} />
-                <Stat label={ts("placement_pts")} value={mine.placementPoints} />
-                <Stat label={ts("finish_pts")} value={mine.killPoints} />
-                <Stat label={ts("total")} value={mine.totalPoints} big />
+            <div data-tour="scorecard-mine" className="rounded-2xl border border-primary/40 bg-card p-4 shadow-glow sm:p-5">
+              <p className="text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">{ts("your_team")}</p>
+              <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <p className="font-display text-4xl leading-none font-bold">{mine.rank === 1 ? ts("winner_winner") : ts("place", { rank: ordFor(ts.lang, mine.rank) })}</p>
+                <dl className="grid grid-cols-4 gap-3 sm:gap-6">
+                  <Stat label={ts("finishes")} value={mine.kills} />
+                  <Stat label={ts("placement_pts")} value={mine.placementPoints} />
+                  <Stat label={ts("finish_pts")} value={mine.killPoints} />
+                  <Stat label={ts("total")} value={mine.totalPoints} big />
+                </dl>
               </div>
             </div>
           )}
@@ -97,9 +96,9 @@ export default function TournamentMatchPage() {
 
 function Stat({ label, value, big }: { label: string; value: number; big?: boolean }) {
   return (
-    <div>
-      <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">{label}</p>
-      <p className={big ? "font-display text-4xl font-bold text-primary" : "font-display text-3xl font-bold"}>{value}</p>
+    <div className="min-w-0">
+      <dt className="text-[10px] leading-tight font-semibold tracking-wider text-muted-foreground uppercase">{label}</dt>
+      <dd className={big ? "font-display text-3xl font-bold text-primary tabular-nums" : "font-display text-2xl font-bold tabular-nums"}>{value}</dd>
     </div>
   );
 }

@@ -82,7 +82,6 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 font-display text-lg leading-tight font-bold">
           {t("group_name", { name: group.name })}
-          {mine && <span className="rounded-full bg-primary px-1.5 py-px text-[10px] font-black tracking-wider text-primary-foreground">{t("your_group_tag")}</span>}
         </p>
         <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-muted-foreground">
           {group.startsAt && (
@@ -132,7 +131,21 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
       {rows.length === 0 ? (
         <p className="mt-3 rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">{t("gc_after_draw")}</p>
       ) : (
-        <ol className="mt-3 space-y-1" aria-label={t(order === "rank" ? "gc_aria_standings" : "gc_aria_teams", { name: group.name })}>
+        <>
+        <div className="mt-3 flex items-center gap-2 px-1.5 pb-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase" aria-hidden>
+          <span className="w-6 shrink-0 text-center">#</span>
+          <span className="w-9 shrink-0 text-center">{t("gc_slot")}</span>
+          <span className="min-w-0 flex-1 pl-8">{t("gc_team")}</span>
+          {played && (
+            <>
+              <span className="hidden w-8 shrink-0 justify-end sm:flex" title={t("gc_finishes")}>
+                <Crosshair className="size-3" />
+              </span>
+              <span className="w-9 shrink-0 text-right">{t("gc_pts")}</span>
+            </>
+          )}
+        </div>
+        <ol className="space-y-1" aria-label={t(order === "rank" ? "gc_aria_standings" : "gc_aria_teams", { name: group.name })}>
           <AnimatePresence initial={false}>
             {visible.map((r, i) => {
               const isMine = r.team.id === highlightTeamId;
@@ -172,7 +185,7 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
                       <span className="truncate font-medium">{r.team.name}</span>
                       {isMine && <span className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[9px] font-black text-primary-foreground">{t("you_tag")}</span>}
                     </span>
-                    <TeamStageBadge status={r.status} via={r.advancedVia} className="hidden sm:inline-flex" />
+                    <TeamStageBadge status={r.status} via={r.advancedVia} className="shrink-0" />
                     {played && (
                       <>
                         <span className="hidden w-8 shrink-0 items-center justify-end gap-0.5 text-xs text-muted-foreground tabular-nums sm:flex" title={t("gc_finishes")}>
@@ -182,7 +195,6 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
                         <span className="w-9 shrink-0 text-right font-display text-base font-bold tabular-nums">{r.totalPoints}</span>
                       </>
                     )}
-                    <TeamStageBadge status={r.status} via={r.advancedVia} className="sm:hidden" />
                   </div>
                   {showCut && (
                     <div className="my-1 flex items-center gap-2 text-[9px] font-bold tracking-[0.2em] text-success uppercase" aria-label={t("gc_qual_line")}>
@@ -194,6 +206,7 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
             })}
           </AnimatePresence>
         </ol>
+        </>
       )}
 
       {maxRows && rows.length > maxRows && (

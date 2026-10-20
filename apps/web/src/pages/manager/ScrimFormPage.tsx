@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { AlertTriangle, ArrowLeft, CalendarDays, Coins, Info, Layers, Loader2, Map as MapIcon, Save, Type } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, ChevronDown, Coins, Info, Loader2, Pencil, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
   addDays,
@@ -38,17 +38,36 @@ import { TimeSelect } from "@/features/manager/components/TimeSelect";
 import { coinsLabel, WinCoinsInput } from "@/features/coins/components/WinCoinsInput";
 
 const TOUR: TourStep[] = [
-  { title: "Set up a scrim", description: "Five quick sections. Everything can be changed later." },
+  { title: "Set up a scrim", description: "Five short steps. Everything can be changed later." },
+  { element: '[data-tour="form-steps"]', title: "Your progress", description: "Basics → Schedule → Matches → Slots → Review. Finished steps can be tapped to go back." },
   { element: '[data-tour="form-basics"]', title: "Give it a name", description: "Teams see this title when they browse scrims, so keep it clear — e.g. “Evening T3 Scrims”." },
   { element: '[data-tour="form-schedule"]', title: "When does it run?", description: "One-time, every day, or weekends only. Pick the start date and time (Indian time)." },
   { element: '[data-tour="form-maps"]', title: "Matches", description: "Add one map per match, in the order you'll play them. Use the arrows to reorder." },
   { element: '[data-tour="form-slots"]', title: "Slots", description: "How many teams can join, and which slot number they start from. The grid shows exactly which slots teams get." },
   { element: '[data-tour="form-coins"]', title: "BG coins", description: "Coins the winner of each match earns. They go to the winning team's leader when you publish the results." },
   { element: '[data-tour="form-poster"]', title: "Poster", description: "Optional: upload square poster artwork. Teams see it when they browse scrims. It saves right away." },
-  { element: '[data-tour="form-preview"]', title: "Check and save", description: "This preview shows the next dates it will run. Happy? Hit save." },
+  { element: '[data-tour="form-preview"]', title: "Check and save", description: "Everything in one place. Happy? Hit the button." },
+  { element: '[data-tour="form-nav"]', title: "Back and next", description: "Move between steps here. Each step is checked before you go on." },
 ];
 
+const STEPS = ["Basics", "Schedule", "Matches", "Slots", "Review"] as const;
+const LAST = STEPS.length - 1;
+
 type FormIn = z.input<typeof createScrimSchema>;
+type FieldName = keyof FormIn;
+
+/** Which fields each step validates (and where a field error sends the manager back to). */
+const STEP_FIELDS: FieldName[][] = [
+  ["title", "description"],
+  ["recurrence", "startDate", "startTime", "endDate"],
+  ["maps"],
+  ["slotCount", "firstSlot", "winCoins"],
+  [],
+];
+const stepOf = (f: string) => {
+  const i = STEP_FIELDS.findIndex((fs) => fs.includes(f as FieldName));
+  return i < 0 ? LAST : i;
+};
 
 function defaults(): FormIn {
   return {
@@ -121,7 +140,10 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
     defaultValues: scrim ? fromScrim(scrim) : defaults(),
     mode: "onTouched",
   });
-  const { register, control, handleSubmit, watch, setValue, setError, formState } = form;
+  const { register, control, handleSubmit, watch, setValue, setError, trigger, formState } = form;
+  const [step, setStep] = useState(isEdit ? LAST : 0);
+  const [reached, setReached] = useState(isEdit ? LAST : 0);
+  const [showCoins, setShowCoins] = useState(() => (scrim?.winCoins ?? 0) > 0);
   const { errors, isSubmitting, isDirty } = formState;
 
   const recurrence = watch("recurrence");
@@ -148,7 +170,8 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
     if (endDate && startDate && endDate < startDate) setValue("endDate", startDate, { shouldDirty: true });
   }, [startDate, endDate, setValue]);
 
-  const onSubmit = handleSubmit(async (values) => {
+  const onSubmit = handleSubmit(
+    async (values) => {
     setConflict(null);
     const payload: CreateScrimInput = { ...values, endDate: values.recurrence === "ONCE" ? null : (values.endDate ?? null) };
     try {
@@ -160,7 +183,9 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.fields) {
+          const keys = Object.keys(err.fields);
           for (const [k, msg] of Object.entries(err.fields)) setError(k as keyof FormIn, { message: msg });
+          if (keys.length) setStep(Math.min(...keys.map(stepOf)));
         }
         if (err.code === "CONFLICT") {
           setConflict(err.message);
@@ -170,48 +195,73 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
       }
       toast.error(isEdit ? "Couldn't save changes" : "Couldn't create the scrim", { description: errorMessage(err) });
     }
-  });
+    },
+    // client-side errors on submit: jump to the first step that has one
+    (errs) => {
+      const keys = Object.keys(errs);
+      if (keys.length) setStep(Math.min(...keys.map(stepOf)));
+    },
+  );
 
   const busy = isSubmitting || create.isPending || update.isPending;
   const saveLabel = isEdit ? "Save changes" : "Create scrim";
   const maxSlotCount = MAX_ROOM_SLOTS - firstSlot + 1;
   const maxFirstSlot = MAX_ROOM_SLOTS - slotCount + 1;
+  const cancelTo = isEdit ? `/manager/scrims/${scrim.id}` : "/manager/scrims";
+
+  const goTo = (n: number) => {
+    setStep(n);
+    setReached((r) => Math.max(r, n));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const next = async () => {
+    const ok = await trigger(STEP_FIELDS[step], { shouldFocus: true });
+    if (ok) goTo(Math.min(LAST, step + 1));
+  };
+  const submit = (e: FormEvent<HTMLFormElement>) => {
+    // Enter on an earlier step moves forward instead of creating the scrim.
+    if (!isEdit && step < LAST) {
+      e.preventDefault();
+      void next();
+      return;
+    }
+    void onSubmit(e);
+  };
 
   return (
-    <form onSubmit={onSubmit} noValidate>
-      <BackLink to={isEdit ? `/manager/scrims/${scrim.id}` : "/manager/scrims"} />
-      <PageHeader
-        eyebrow={isEdit ? "Edit scrim" : "New scrim"}
-        title={isEdit ? scrim.title : title?.trim() || "Create a scrim"}
-        description={isEdit ? "Changes apply to upcoming sessions." : "Fill in five quick sections. You can change any of it later."}
-      />
+    <form onSubmit={submit} noValidate>
+      <BackLink to={cancelTo} />
+      <PageHeader eyebrow={isEdit ? "Edit scrim" : "New scrim"} title={isEdit ? scrim.title : title?.trim() || "Create a scrim"} />
 
-      {conflict && (
-        <div role="alert" className="mb-6 flex animate-rise items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" />
-          <div>
-            <p className="font-semibold text-destructive">This change can't be saved</p>
-            <p className="text-sm text-foreground/80">{conflict}</p>
+      <div className="mx-auto max-w-3xl space-y-4">
+        {conflict && (
+          <div role="alert" className="flex animate-rise items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/10 p-4">
+            <AlertTriangle className="mt-0.5 size-5 shrink-0 text-destructive" />
+            <div>
+              <p className="font-semibold text-destructive">This change can't be saved</p>
+              <p className="text-sm text-foreground/80">{conflict}</p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="space-y-6">
-          {/* (a) Basics */}
-          <Section n={1} icon={<Type />} title="Basics" description="What teams will see when they browse scrims." tour="form-basics">
+        <WizardSteps step={step} reached={isEdit ? LAST : reached} onSelect={goTo} />
+
+        {step === 0 && (
+          <Section n={1} title="Basics" tour="form-basics">
             <div className="grid gap-4">
               <Field label="Scrim title" htmlFor="title" error={errors.title?.message}>
                 <Input id="title" placeholder="e.g. Evening T3 Scrims" className="h-11 text-base" aria-invalid={!!errors.title || undefined} {...register("title")} />
               </Field>
-              <Field label="Description" optional htmlFor="description" error={errors.description?.message} hint="Rules, eligibility, prize — anything teams should know.">
-                <Textarea id="description" rows={3} placeholder="e.g. Tier 3 teams only. Be in the lobby 10 minutes before start." {...register("description")} />
+              <Field label="Description" optional htmlFor="description" error={errors.description?.message}>
+                <Textarea id="description" rows={3} placeholder="Rules, eligibility, prize — anything teams should know." {...register("description")} />
               </Field>
+              {isEdit && <ScrimPosterCard scrimId={scrim.id} url={scrim.posterUrl} compact tour="form-poster" className="border-dashed shadow-none" />}
             </div>
           </Section>
+        )}
 
-          {/* (b) Schedule */}
-          <Section n={2} icon={<CalendarDays />} title="Schedule" description="How often it runs, from when, and at what time." tour="form-schedule">
+        {step === 1 && (
+          <Section n={2} title="Schedule" tour="form-schedule">
             <div className="space-y-5">
               <Controller
                 control={control}
@@ -234,7 +284,7 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
                     )}
                   />
                 </Field>
-                <Field label="Start time" error={errors.startTime?.message}>
+                <Field label="Start time (IST)" error={errors.startTime?.message}>
                   <Controller
                     control={control}
                     name="startTime"
@@ -244,12 +294,9 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
               </div>
 
               {recurrence !== "ONCE" && (
-                <div className="rounded-xl border bg-muted/30 p-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <Label htmlFor="no-end" className="font-semibold">Runs until I stop it</Label>
-                      <p className="text-xs text-muted-foreground">You can pause or archive it any time.</p>
-                    </div>
+                <div className="space-y-4 border-t pt-4">
+                  <div className="flex min-h-10 items-center justify-between gap-4">
+                    <Label htmlFor="no-end" className="font-semibold">Runs until I stop it</Label>
                     <Switch
                       id="no-end"
                       checked={noEnd}
@@ -259,37 +306,36 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
                     />
                   </div>
                   {!noEnd && (
-                    <div className="mt-4 animate-rise">
-                      <Field label="Last date" error={errors.endDate?.message}>
-                        <Controller
-                          control={control}
-                          name="endDate"
-                          render={({ field }) => (
-                            <DatePickerButton
-                              value={field.value}
-                              onChange={field.onChange}
-                              invalid={!!errors.endDate}
-                              className="h-11 w-full sm:w-64"
-                              isDisabled={(d) => !!startDate && d < startDate}
-                            />
-                          )}
-                        />
-                      </Field>
-                    </div>
+                    <Field label="Last date" error={errors.endDate?.message}>
+                      <Controller
+                        control={control}
+                        name="endDate"
+                        render={({ field }) => (
+                          <DatePickerButton
+                            value={field.value}
+                            onChange={field.onChange}
+                            invalid={!!errors.endDate}
+                            className="h-11 w-full sm:w-64"
+                            isDisabled={(d) => !!startDate && d < startDate}
+                          />
+                        )}
+                      />
+                    </Field>
                   )}
                 </div>
               )}
+              <p className="text-sm text-muted-foreground">{scheduleSummary({ recurrence, startDate, endDate, startTime })}</p>
             </div>
           </Section>
+        )}
 
-          {/* (c) Matches */}
+        {step === 2 && (
           <Section
             n={3}
-            icon={<MapIcon />}
             title="Matches"
-            description="One map per match, in the order you'll play them."
+            description="One map per match, in playing order."
             tour="form-maps"
-            aside={<span className="font-display text-lg font-bold text-muted-foreground">{maps.length} match{maps.length === 1 ? "" : "es"}</span>}
+            aside={<span className="font-display text-lg font-bold text-muted-foreground">{maps.length}</span>}
           >
             <Controller
               control={control}
@@ -300,9 +346,10 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
             />
             <FieldError message={errors.maps?.message ?? errors.maps?.root?.message} />
           </Section>
+        )}
 
-          {/* (d) Slots */}
-          <Section n={4} icon={<Layers />} title="Slots" description="How many teams can play, and which slot numbers they get." tour="form-slots">
+        {step === 3 && (
+          <Section n={4} title="Slots" tour="form-slots">
             <div className="space-y-6">
               <div className="grid gap-6 sm:grid-cols-2">
                 <Field label="Number of teams" error={errors.slotCount?.message}>
@@ -321,19 +368,11 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
                           aria-label="Number of teams"
                           className="w-full accent-primary"
                         />
-                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                          <span>2</span>
-                          <span>{MAX_ROOM_SLOTS}</span>
-                        </div>
                       </div>
                     )}
                   />
                 </Field>
-                <Field
-                  label="First team slot"
-                  error={errors.firstSlot?.message}
-                  hint="Organisers often reserve slots 1–2 for observers or casters."
-                >
+                <Field label="First team slot" error={errors.firstSlot?.message}>
                   <Controller
                     control={control}
                     name="firstSlot"
@@ -345,7 +384,9 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
               </div>
               <div>
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                  <span className="font-medium">Room preview</span>
+                  <span className="font-medium">
+                    Teams get <span className="font-display font-bold">#{firstSlot}–#{firstSlot + slotCount - 1}</span>
+                  </span>
                   <span className="flex items-center gap-3 text-xs text-muted-foreground">
                     <Legend className="border-primary/50 bg-primary/15" label="Teams" />
                     <Legend className="border-dashed bg-muted/60" label="Reserved" />
@@ -353,102 +394,178 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
                   </span>
                 </div>
                 <SlotGridPreview firstSlot={firstSlot} slotCount={slotCount} />
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Teams get <span className="font-semibold text-foreground">#{firstSlot} to #{firstSlot + slotCount - 1}</span>. The first approved team gets #{firstSlot}.
-                </p>
               </div>
-            </div>
-          </Section>
 
-          {/* (e) Rewards */}
-          <Section n={5} icon={<Coins />} title="BG coins" description="Coins the winner of each match earns. They go to the winning team's leader." tour="form-coins">
-            <Field label="Coins per match win" htmlFor="winCoins" error={errors.winCoins?.message} hint="Paid when you publish a match's results. Leave at 0 for no coins.">
-              <Controller
-                control={control}
-                name="winCoins"
-                render={({ field }) => <WinCoinsInput id="winCoins" value={field.value} onChange={(v) => field.onChange(v)} invalid={!!errors.winCoins} />}
-              />
-            </Field>
-          </Section>
-        </div>
-
-        {/* Live preview */}
-        <aside className="lg:sticky lg:top-20 lg:self-start">
-          <div data-tour="form-preview" className="overflow-hidden rounded-xl border bg-card shadow-sm">
-            <div className="bg-grid border-b bg-gradient-to-br from-primary/15 to-transparent p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Preview</p>
-              <p className="mt-1 truncate font-display text-2xl font-bold">{title?.trim() || "Untitled scrim"}</p>
-              <p className="mt-2 text-sm leading-relaxed">{scheduleSummary({ recurrence, startDate, endDate, startTime })}</p>
-            </div>
-            <div className="space-y-4 p-5">
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Next dates</p>
-                {upcoming.length ? (
-                  <ul className="flex flex-wrap gap-1.5">
-                    {upcoming.map((d) => (
-                      <li key={d} className="rounded-md border bg-muted/40 px-2 py-1 text-xs font-medium">
-                        {d === today ? "Today" : formatDate(d)}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No upcoming dates with these settings.</p>
+              <div data-tour="form-coins" className="border-t pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCoins((v) => !v)}
+                  aria-expanded={showCoins || !!errors.winCoins}
+                  className="flex min-h-10 w-full items-center justify-between gap-2 text-sm font-semibold"
+                >
+                  <span className="flex items-center gap-2">
+                    <Coins className="size-4 text-primary" /> BG coins per match win
+                    <span className="font-normal text-muted-foreground">· {coinsLabel(winCoins ?? 0)}</span>
+                  </span>
+                  <ChevronDown className={cn("size-4 text-muted-foreground transition-transform", (showCoins || errors.winCoins) && "rotate-180")} />
+                </button>
+                {(showCoins || errors.winCoins) && (
+                  <div className="mt-3 animate-rise">
+                    <Field label="Coins per match win" htmlFor="winCoins" error={errors.winCoins?.message} hint="Paid to the winning team's leader when you publish. 0 = no coins.">
+                      <Controller
+                        control={control}
+                        name="winCoins"
+                        render={({ field }) => <WinCoinsInput id="winCoins" value={field.value} onChange={(v) => field.onChange(v)} invalid={!!errors.winCoins} />}
+                      />
+                    </Field>
+                  </div>
                 )}
               </div>
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Matches</p>
-                {maps.length ? <MapChips maps={maps} numbered /> : <p className="text-sm text-muted-foreground">No matches yet</p>}
-              </div>
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Slots</p>
-                <p className="font-display text-lg font-bold">{slotRangeLabel(firstSlot, slotCount)}</p>
-              </div>
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Each match winner gets</p>
-                <p className="font-display text-lg font-bold">{coinsLabel(winCoins ?? 0)}</p>
-              </div>
-              {Object.keys(errors).length > 0 && (
-                <p className="flex items-center gap-2 rounded-lg bg-destructive/10 p-2.5 text-sm text-destructive">
-                  <Info className="size-4 shrink-0" /> Please fix the highlighted fields.
-                </p>
-              )}
-              <Button type="submit" size="lg" className="h-12 w-full text-base" disabled={busy || (isEdit && !isDirty)}>
-                {busy ? <Loader2 className="animate-spin" /> : <Save />}
-                {busy ? "Saving…" : saveLabel}
-              </Button>
-              <Button asChild variant="ghost" className="w-full">
-                <Link to={isEdit ? `/manager/scrims/${scrim.id}` : "/manager/scrims"}>Cancel</Link>
-              </Button>
             </div>
-          </div>
-          {isEdit && <ScrimPosterCard scrimId={scrim.id} url={scrim.posterUrl} className="mt-4" tour="form-poster" />}
-        </aside>
+          </Section>
+        )}
+
+        {step === LAST && (
+          <Section n={5} title={isEdit ? "Review" : "Review & create"} tour="form-preview">
+            <dl className="divide-y text-sm">
+              <ReviewRow label="Title" onEdit={() => goTo(0)}>
+                <span className="font-display text-lg font-bold">{title?.trim() || "Untitled scrim"}</span>
+              </ReviewRow>
+              <ReviewRow label="Schedule" onEdit={() => goTo(1)}>
+                <span>{scheduleSummary({ recurrence, startDate, endDate, startTime })}</span>
+                {upcoming.length ? (
+                  <span className="mt-1.5 flex flex-wrap gap-1.5">
+                    {upcoming.map((d) => (
+                      <span key={d} className="rounded-md border bg-muted/40 px-2 py-0.5 text-xs font-medium">
+                        {d === today ? "Today" : formatDate(d)}
+                      </span>
+                    ))}
+                  </span>
+                ) : (
+                  <span className="mt-1 block text-destructive">No upcoming dates with these settings.</span>
+                )}
+              </ReviewRow>
+              <ReviewRow label={`Matches · ${maps.length}`} onEdit={() => goTo(2)}>
+                {maps.length ? <MapChips maps={maps} numbered /> : <span className="text-destructive">No matches yet</span>}
+              </ReviewRow>
+              <ReviewRow label="Slots" onEdit={() => goTo(3)}>
+                <span className="font-display text-base font-bold">{slotRangeLabel(firstSlot, slotCount)}</span>
+              </ReviewRow>
+              <ReviewRow label="Each match winner gets" onEdit={() => goTo(3)}>
+                <span className="font-display text-base font-bold">{coinsLabel(winCoins ?? 0)}</span>
+              </ReviewRow>
+            </dl>
+            {Object.keys(errors).length > 0 && (
+              <p className="mt-3 flex items-center gap-2 rounded-lg bg-destructive/10 p-2.5 text-sm text-destructive">
+                <Info className="size-4 shrink-0" /> Please fix the highlighted fields.
+              </p>
+            )}
+          </Section>
+        )}
+
+        <div data-tour="form-nav" className="sticky bottom-[calc(env(safe-area-inset-bottom,0px)+5rem)] z-20 lg:bottom-3 flex items-center gap-2 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur">
+          {step > 0 ? (
+            <Button type="button" variant="outline" className="h-11" onClick={() => goTo(step - 1)}>
+              <ArrowLeft /> Back
+            </Button>
+          ) : (
+            <Button asChild variant="ghost" className="h-11">
+              <Link to={cancelTo}>Cancel</Link>
+            </Button>
+          )}
+          <span className="ml-auto hidden text-xs text-muted-foreground sm:inline">
+            Step {step + 1} of {STEPS.length}
+          </span>
+          {isEdit && step < LAST && (
+            <Button type="submit" variant="outline" className="h-11 sm:ml-0" disabled={busy || !isDirty}>
+              {busy ? <Loader2 className="animate-spin" /> : <Save />} <span className="hidden sm:inline">Save</span>
+            </Button>
+          )}
+          {step < LAST ? (
+            <Button type="button" className={cn("h-11", !isEdit && "ml-auto sm:ml-0")} onClick={() => void next()}>
+              Next: {STEPS[step + 1]} <ArrowRight />
+            </Button>
+          ) : (
+            <Button type="submit" size="lg" className="ml-auto h-11 shadow-glow sm:ml-0" disabled={busy || (isEdit && !isDirty)}>
+              {busy ? <Loader2 className="animate-spin" /> : <Save />}
+              {busy ? "Saving…" : saveLabel}
+            </Button>
+          )}
+        </div>
       </div>
     </form>
   );
 }
 
-function Section({ n, icon, title, description, tour, aside, children }: {
+function WizardSteps({ step, reached, onSelect }: { step: number; reached: number; onSelect: (n: number) => void }) {
+  return (
+    <ol data-tour="form-steps" className="grid grid-cols-5 gap-1 rounded-xl border bg-card p-1.5 shadow-sm">
+      {STEPS.map((label, i) => {
+        const current = i === step;
+        const done = i < step || (i <= reached && !current && i !== LAST);
+        const enabled = i <= reached;
+        return (
+          <li key={label}>
+            <button
+              type="button"
+              disabled={!enabled}
+              onClick={() => onSelect(i)}
+              aria-current={current ? "step" : undefined}
+              aria-label={`Step ${i + 1}: ${label}`}
+              className={cn(
+                "flex h-11 w-full items-center justify-center gap-1.5 rounded-lg px-1 text-sm font-semibold outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                current ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                !enabled && "cursor-not-allowed opacity-50 hover:bg-transparent hover:text-muted-foreground",
+              )}
+            >
+              <span
+                className={cn(
+                  "grid size-6 shrink-0 place-items-center rounded-full font-display text-xs font-bold",
+                  current ? "bg-primary-foreground/20" : done ? "bg-success/15 text-success" : "bg-muted",
+                )}
+              >
+                {done ? <Check className="size-3.5" /> : i + 1}
+              </span>
+              <span className="hidden truncate md:inline">{label}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function ReviewRow({ label, onEdit, children }: { label: string; onEdit: () => void; children: ReactNode }) {
+  return (
+    <div className="flex items-start gap-3 py-3 first:pt-0">
+      <div className="min-w-0 flex-1">
+        <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</dt>
+        <dd className="mt-1">{children}</dd>
+      </div>
+      <Button type="button" variant="ghost" size="sm" className="h-10 shrink-0 text-muted-foreground" onClick={onEdit}>
+        <Pencil /> Edit
+      </Button>
+    </div>
+  );
+}
+
+function Section({ n, title, description, tour, aside, children }: {
   n: number;
-  icon: ReactNode;
   title: string;
-  description: string;
+  description?: string;
   tour: string;
   aside?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <section data-tour={tour} className="animate-rise rounded-xl border bg-card p-5 shadow-sm sm:p-6">
+    <section data-tour={tour} className="animate-rise rounded-xl border bg-card p-4 shadow-sm sm:p-6">
       <header className="mb-5 flex items-start gap-3">
-        <span className="relative grid size-10 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary [&_svg]:size-5">
-          {icon}
-          <span className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-primary font-display text-[11px] font-bold text-primary-foreground">
-            {n}
-          </span>
-        </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-xl font-bold leading-tight">{title}</h2>
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Step {n} of {STEPS.length}
+          </p>
+          <h2 className="font-display text-2xl font-bold leading-tight">{title}</h2>
+          {description && <p className="text-sm text-muted-foreground">{description}</p>}
         </div>
         {aside}
       </header>

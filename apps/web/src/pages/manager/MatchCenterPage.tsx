@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useBlocker, useParams } from "react-router-dom";
-import { ArrowLeft, ChevronLeft, ChevronRight, EyeOff, ListChecks, Trophy } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, EyeOff, ListChecks, Trophy } from "lucide-react";
 import { MAP_LABELS, type MatchDetail, type MatchScorecard } from "@7xen/shared";
 import { PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -13,7 +13,6 @@ import { QueryError } from "@/features/manager/components/QueryError";
 import { screenshotUrl, useMatch, useSessionMatches, useUnpublishMatch } from "@/features/matches/api";
 import { Lightbox, type LightboxImage } from "@/features/matches/components/Lightbox";
 import { emptyLineupDraft, LineupStep, lineupDirty, type LineupDraft } from "@/features/matches/components/LineupStep";
-import { MatchStatusPill } from "@/features/matches/components/MatchStatusPill";
 import { MatchStepper, stepForStatus, type StepKey } from "@/features/matches/components/MatchStepper";
 import { emptyResultsDraft, ResultsStep, resultsDirty, type ResultsDraft } from "@/features/matches/components/ResultsStep";
 import { ScreenshotUploader } from "@/features/matches/components/ScreenshotUploader";
@@ -21,9 +20,9 @@ import { ScorecardList } from "@/features/results/components/Scorecard";
 import { MATCH_OPS_TOUR, MatchOps } from "@/features/live/components/MatchOps";
 
 const TOUR: TourStep[] = [
-  { title: "Match center", description: "Three simple steps: team list → results → publish. AirBattleground reads your screenshots; you just check them." },
+  { title: "Match center", description: "Three steps: team list → results → publish. Screenshots are read for you; you just check them." },
   ...MATCH_OPS_TOUR,
-  { element: '[data-tour="match-stepper"]', title: "Where you are", description: "The highlighted step is what to do next. Finished steps get a tick — click them to go back." },
+  { element: '[data-tour="match-stepper"]', title: "Where you are", description: "The highlighted step is what to do now. Finished steps get a tick — tap them to go back." },
   { element: '[data-tour="uploader"]', title: "Upload screenshots", description: "Drag them in, click to choose, or copy a screenshot and press Ctrl+V. You can add several at once." },
   { element: '[data-tour="lineup-grid"]', title: "Check what was read", description: "One card per slot. Names in amber need a second look — the hint shows what was read. Fix anything by typing." },
   { element: '[data-tour="lineup-confirm"]', title: "Confirm", description: "When names look right, confirm the lineup. Confirmed names help AirBattleground read the results." },
@@ -118,7 +117,7 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
     <>
       <BackLink to={back} />
       <PageHeader
-        eyebrow={`Match center · ${m.scrim.title} · ${formatDate(m.date)}`}
+        eyebrow={`${m.scrim.title} · ${formatDate(m.date)}`}
         title={
           <span className="flex flex-wrap items-center gap-3">
             Match {m.match.number} <MapChip map={m.match.map} className="text-sm" />
@@ -126,7 +125,6 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
         }
         actions={
           <>
-            <MatchStatusPill status={status} className="text-sm" />
             <div className="flex">
               <Button asChild={!!prev} variant="outline" size="icon" disabled={!prev} aria-label="Previous match" className="rounded-r-none">
                 {prev ? (
@@ -147,9 +145,9 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
                 )}
               </Button>
             </div>
-            <Button asChild variant="outline">
+            <Button asChild variant="outline" aria-label="Points table">
               <Link to={`${base}/standings`}>
-                <Trophy /> Points table
+                <Trophy /> <span className="hidden sm:inline">Points table</span>
               </Link>
             </Button>
           </>
@@ -167,10 +165,10 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
               title="Who's playing?"
               text={
                 published
-                  ? "This match is published, so the lineup is locked. Unpublish it to make changes."
+                  ? "Locked — unpublish the results to edit."
                   : lineupConfirmed
-                    ? "The lineup is confirmed. You can still fix a name below and save."
-                    : "In the game, open the team list (the screen with slot numbers) and take screenshots of every page. Upload them here — or just type the names."
+                    ? "Confirmed. You can still fix a name and save."
+                    : "Upload the in-game team list screenshots (every page), or type the names."
               }
             />
             <ScreenshotUploader
@@ -180,7 +178,6 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
               readOnly={published || lineupConfirmed}
               onOpen={(index) => setLightbox({ kind: "SLOT_LIST", index })}
               title="Upload team list screenshots"
-              hint="The in-game screen with slot numbers and player names (all pages)."
             />
             <LineupStep
               m={m}
@@ -200,8 +197,10 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
               title="How did it end?"
               text={
                 lineupConfirmed
-                  ? "After the match, screenshot the final results (scroll so every rank is captured — ranks 1 and 2 repeat on each page, that's fine). Upload them, then check ranks and finishes."
-                  : "Confirm the lineup in step 1 first — results are matched to the confirmed player names."
+                  ? published
+                    ? "Published — unpublish to edit."
+                    : "Upload the final results screenshots (every page), then check ranks and finishes."
+                  : "Confirm the team list first — results are matched to its names."
               }
             />
             {lineupConfirmed ? (
@@ -213,14 +212,13 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
                     screenshots={resultShots}
                     onOpen={(index) => setLightbox({ kind: "RESULTS", index })}
                     title="Upload final results screenshots"
-                    hint="The end-of-match screen with ranks and “N finishes” (all pages)."
                   />
                 )}
                 <ResultsStep m={m} draft={results} setDraft={setResults} readOnly={published} />
               </>
             ) : (
               <Button onClick={() => setStep("lineup")}>
-                <ListChecks /> Go to step 1
+                <ListChecks /> Go to team list
               </Button>
             )}
           </section>
@@ -228,16 +226,16 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
 
         {step === "published" && (
           <section className="space-y-4">
-            <div className="relative overflow-hidden rounded-2xl border border-success/40 bg-card p-5 shadow-sm sm:p-6">
-              <div className="pointer-events-none absolute -top-16 -right-16 size-56 rounded-full bg-success/15 blur-3xl" />
-              <div className="relative flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-col gap-3 rounded-xl border border-success/40 bg-success/5 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="size-7 shrink-0 text-success" />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-success">Published</p>
-                  <h2 className="font-display text-2xl font-bold">Teams can see these results</h2>
-                  <p className="text-sm text-muted-foreground">The points table has been updated. Found a mistake? Unpublish, fix it, and publish again.</p>
+                  <h2 className="font-display text-xl font-bold">Published</h2>
+                  <p className="text-sm text-muted-foreground">Teams can see the results and points table.</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => setUnpublishing(true)} disabled={unpublish.isPending}>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => setUnpublishing(true)} disabled={unpublish.isPending} title="Fix a mistake, then publish again">
                     <EyeOff /> Unpublish to edit
                   </Button>
                   {next ? (
@@ -253,7 +251,6 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
                       </Link>
                     </Button>
                   )}
-                </div>
               </div>
             </div>
             <ScorecardList teams={scorecard} />
@@ -292,10 +289,10 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
 function StepIntro({ n, title, text }: { n: number; title: string; text: string }) {
   return (
     <div>
-      <h2 className="font-display text-2xl font-bold">
-        <span className="text-primary">Step {n} ·</span> {title}
+      <h2 className="font-display text-xl font-bold sm:text-2xl">
+        <span className="text-primary">{n}.</span> {title}
       </h2>
-      <p className="mt-1 max-w-3xl text-sm text-muted-foreground">{text}</p>
+      <p className="text-sm text-muted-foreground">{text}</p>
     </div>
   );
 }
@@ -305,12 +302,8 @@ function CenterSkeleton() {
     <div className="space-y-6">
       <Skeleton className="h-6 w-32" />
       <Skeleton className="h-12 w-72" />
-      <div className="grid gap-2 sm:grid-cols-3">
-        {Array.from({ length: 3 }, (_, i) => (
-          <Skeleton key={i} className="h-16 rounded-xl" />
-        ))}
-      </div>
-      <Skeleton className="h-36 rounded-xl" />
+      <Skeleton className="h-14 rounded-xl" />
+      <Skeleton className="h-24 rounded-xl" />
       <div className="grid gap-3 md:grid-cols-2">
         {Array.from({ length: 4 }, (_, i) => (
           <Skeleton key={i} className="h-56 rounded-xl" />

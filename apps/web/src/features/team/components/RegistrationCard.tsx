@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Clock, MessageSquareWarning } from "lucide-react";
+import { MessageSquareWarning } from "lucide-react";
 import type { TeamRegistration } from "@7xen/shared";
 import { SlotChip } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -11,14 +11,14 @@ import { useT } from "@/i18n/core";
 import { scrimUi } from "@/i18n/scrims";
 import { formatTime, useDayFormat } from "../format";
 import { useNow } from "../useNow";
-import { OrganizerBadge, PosterThumb } from "./Branding";
+import { OrganizerBadge } from "./Branding";
 import { CancelDialog } from "./ConfirmDialogs";
-import { MapChips } from "./MapChips";
+import { MapDots } from "./MapChips";
 import { TeamStatusBadge } from "./TeamStatus";
 
 /**
- * One registration as a card/row: time, scrim, organiser, status, slot (if approved),
- * rejection reason (if rejected) and a cancel action for upcoming pending/approved.
+ * One registration as a compact row: time → scrim (organiser, maps) → status or slot, plus
+ * the rejection reason (if rejected) and a cancel action for upcoming pending/approved.
  */
 export function RegistrationCard({
   reg,
@@ -48,7 +48,7 @@ export function RegistrationCard({
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-3 overflow-hidden rounded-xl border bg-card p-4 pl-5 transition-shadow hover:shadow-glow sm:flex-row sm:items-center sm:gap-5",
+        "relative grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-2 overflow-hidden rounded-xl border bg-card p-3 pl-4 transition-shadow hover:shadow-glow sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:gap-x-4 sm:p-4 sm:pl-5",
         reg.status === "APPROVED" && "border-success/40",
         reg.status === "PENDING" && "border-warning/40",
         (reg.status === "CANCELLED" || reg.status === "REJECTED") && "opacity-90",
@@ -63,47 +63,39 @@ export function RegistrationCard({
       />
 
       {/* time */}
-      <div className="flex shrink-0 items-baseline gap-2 sm:w-28 sm:flex-col sm:gap-0.5">
-        {showDate && <span className="text-xs font-semibold uppercase tracking-wider text-primary">{dayLabel(reg.date, today)}</span>}
-        <span className="font-display text-2xl leading-none font-bold tabular-nums">{formatTime(reg.scrim.startTime)}</span>
+      <div className="flex min-w-[4.5rem] flex-col sm:min-w-[5.5rem]">
+        {showDate && <span className="text-[11px] font-semibold tracking-wider whitespace-nowrap text-primary uppercase">{dayLabel(reg.date, today)}</span>}
+        <span className="font-display text-xl leading-none font-bold whitespace-nowrap tabular-nums sm:text-2xl">{formatTime(reg.scrim.startTime)}</span>
         <span className="text-[10px] font-semibold tracking-widest text-muted-foreground">IST</span>
       </div>
 
-      {!compact && <PosterThumb url={reg.scrim.posterUrl} title={reg.scrim.title} className="hidden size-16 shrink-0 sm:block" />}
-
-      {/* details */}
-      <div className="min-w-0 flex-1 space-y-1.5">
-        <p className="truncate font-display text-lg leading-tight font-bold">{reg.scrim.title}</p>
-        <p className="flex min-w-0 text-sm text-muted-foreground">
-          <OrganizerBadge manager={reg.scrim.manager} />
-        </p>
-        {!compact && <MapChips maps={reg.scrim.maps} />}
+      {/* scrim */}
+      <div className="min-w-0 space-y-0.5">
+        <p className="truncate font-display text-base leading-tight font-bold sm:text-lg">{reg.scrim.title}</p>
+        <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+          <OrganizerBadge manager={reg.scrim.manager} className="min-w-0 shrink" />
+          {!compact && reg.scrim.maps.length > 0 && <MapDots maps={reg.scrim.maps} className="hidden md:flex" />}
+        </div>
         {reg.status === "REJECTED" && reg.rejectionReason && (
-          <p className="flex items-start gap-1.5 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
-            <MessageSquareWarning className="mt-0.5 size-3.5 shrink-0" /> {reg.rejectionReason}
-          </p>
-        )}
-        {reg.status === "PENDING" && !started && (
-          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock className="size-3.5" /> {t("waiting_organiser")}
+          <p className="flex items-start gap-1.5 pt-1 text-xs text-destructive">
+            <MessageSquareWarning className="mt-0.5 size-3.5 shrink-0" /> <span className="line-clamp-2">{reg.rejectionReason}</span>
           </p>
         )}
       </div>
 
       {/* status / slot / action */}
-      <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">
+      <div className="col-start-2 flex items-center gap-2 sm:col-start-3 sm:justify-end">
         {reg.status === "APPROVED" && reg.slotNumber != null ? (
           <motion.div {...tour("reg-slot")} initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 380, damping: 16 }}>
-            <SlotChip slot={reg.slotNumber} size={compact ? "sm" : "md"} />
+            <SlotChip slot={reg.slotNumber} size="sm" />
           </motion.div>
         ) : (
           <div {...tour("reg-status")}>
             <TeamStatusBadge status={reg.status} />
           </div>
         )}
-        {reg.status === "APPROVED" && reg.slotNumber != null && !compact && <TeamStatusBadge status="APPROVED" className="hidden sm:inline-flex" />}
         {canCancel && (
-          <Button variant="ghost" size="sm" className="ml-auto text-muted-foreground hover:text-destructive sm:ml-0" onClick={() => setOpen(true)} {...tour("reg-cancel")}>
+          <Button variant="ghost" className="ml-auto h-10 px-3 text-muted-foreground hover:text-destructive sm:ml-0" onClick={() => setOpen(true)} {...tour("reg-cancel")}>
             {reg.status === "APPROVED" ? t("cancel") : t("cancel_request")}
           </Button>
         )}
@@ -125,8 +117,8 @@ export function RegistrationCard({
 
 export function RegistrationCardSkeleton() {
   return (
-    <div className="flex items-center gap-5 rounded-xl border bg-card p-4">
-      <div className="h-8 w-20 animate-pulse rounded-md bg-muted" />
+    <div className="flex items-center gap-4 rounded-xl border bg-card p-3 sm:p-4">
+      <div className="h-8 w-16 animate-pulse rounded-md bg-muted" />
       <div className="flex-1 space-y-2">
         <div className="h-5 w-1/2 animate-pulse rounded bg-muted" />
         <div className="h-4 w-1/4 animate-pulse rounded bg-muted" />

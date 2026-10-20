@@ -504,6 +504,20 @@ export class StudioMixer {
     this.drawOverlays(ctx);
   }
 
+  /**
+   * A still of what's on air for the match screenshot reader: the program scene at 1920×1080 (sharper text than the
+   * 720p stream), WITHOUT the studio's own graphics (LIVE bug, lower third, ticker) so they can't cover the scores.
+   */
+  snapshot(): Promise<Blob> {
+    const c = document.createElement("canvas");
+    c.width = 1920;
+    c.height = 1080;
+    const ctx = c.getContext("2d", { alpha: false })!;
+    ctx.setTransform(c.width / W, 0, 0, c.height / H, 0, 0);
+    this.drawScene(ctx, this.program);
+    return new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error("Couldn't take the screenshot"))), "image/png"));
+  }
+
   // ---------------------------------------------------------------- going live
 
   /** Start recording + sending the program to the show. */

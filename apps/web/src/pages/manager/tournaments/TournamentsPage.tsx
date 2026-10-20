@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, ChevronRight, Crosshair, Crown, Hourglass, Layers, Plus, Trophy } from "lucide-react";
+import { CalendarDays, ChevronRight, Crosshair, Crown, Layers, Plus, Trophy } from "lucide-react";
 import type { TournamentMode, TournamentStatus, TournamentSummary } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -41,20 +41,20 @@ const TDM_TOUR: TourStep[] = [
 const COPY: Record<TournamentMode, { title: string; description: string; create: string; newHref: string; emptyTitle: string; emptyText: string; errorTitle: string }> = {
   BR: {
     title: "Tournaments",
-    description: "Qualifiers, semi-finals and a grand final — set up once, then follow one button at a time.",
+    description: "Multi-stage cups — qualifiers to grand final.",
     create: "Create tournament",
     newHref: "/manager/tournaments/new",
     emptyTitle: "Run your first tournament",
-    emptyText: "Pick a size (16, 64, 128 teams…), choose the dates and publish. Teams register first-come-first-served and AirBattleground handles groups, schedule and who goes through.",
+    emptyText: "Pick a size and dates, then publish — groups and schedule are handled for you.",
     errorTitle: "We couldn't load your tournaments",
   },
   TDM: {
     title: "TDM battles",
-    description: "2 teams per match, winner goes through. 4 teams = two semi-finals and a final.",
+    description: "2-team knockouts — winner goes through.",
     create: "Create TDM battle",
     newHref: "/manager/tdm/new",
     emptyTitle: "Run your first TDM battle",
-    emptyText: "Pick 4, 8, 16, 32 or 64 teams, the TDM maps and a start time. Teams register, you run each round, and the champion earns BG coins.",
+    emptyText: "Pick the team count, maps and start time — the bracket builds itself.",
     errorTitle: "We couldn't load your TDM battles",
   },
 };
@@ -138,7 +138,7 @@ export function TournamentsList({ mode }: { mode: TournamentMode }) {
             <EmptyState
               icon={<Layers />}
               title={active === "draft" ? "No drafts" : active === "done" ? "Nothing finished yet" : "Nothing running right now"}
-              description={active === "draft" ? "Drafts you save in the wizard show up here." : `Publish a ${mode === "TDM" ? "TDM battle" : "tournament"} to open registration.`}
+              description={active === "draft" ? "Drafts you save show up here." : undefined}
             />
           ) : (
             <StaggerList key={active} className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -167,9 +167,8 @@ function TournamentCard({ t, tour }: { t: TournamentSummary; tour?: string }) {
         (t.status === "CANCELLED" || t.status === "DRAFT") && "bg-card/70",
       )}
     >
-      <div className="bg-grid relative border-b bg-gradient-to-br from-primary/12 to-transparent p-4">
-        <div className="pointer-events-none absolute -top-10 -right-10 size-32 rounded-full bg-primary/15 blur-2xl transition-opacity group-hover:opacity-100" />
-        <div className="relative flex items-start justify-between gap-3">
+      <div className="border-b bg-gradient-to-br from-primary/10 to-transparent p-4">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate font-display text-xl leading-tight font-bold group-hover:text-primary">{t.title}</p>
             {t.prize ? (
@@ -198,13 +197,9 @@ function TournamentCard({ t, tour }: { t: TournamentSummary; tour?: string }) {
             </span>
           )}
           <span className="flex items-center gap-1.5">
-            <CalendarDays className="size-3.5" /> {t.startsAt ? `Starts ${fmtDay(t.startsAt)}` : "Dates not set"}
+            <CalendarDays className="size-3.5" />{" "}
+            {t.status === "REGISTRATION_OPEN" && t.registrationClosesAt ? `Closes ${fmtDay(t.registrationClosesAt)}` : t.startsAt ? `Starts ${fmtDay(t.startsAt)}` : "Dates not set"}
           </span>
-          {t.status === "REGISTRATION_OPEN" && t.registrationClosesAt && (
-            <span className="flex items-center gap-1.5">
-              <Hourglass className="size-3.5" /> Closes {fmtDay(t.registrationClosesAt)}
-            </span>
-          )}
           <ChevronRight className="ml-auto size-4 transition-transform group-hover:translate-x-0.5" />
         </div>
       </div>

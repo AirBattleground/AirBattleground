@@ -10,7 +10,7 @@
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import type { Prisma, StudioShow as DbShow } from "@prisma/client";
-import type { CreateShowInput, IngestQuery, LiveBroadcastCard, ShowState, StudioShow, StudioShowRow, StudioStatus, UpdateShowInput } from "@7xen/shared";
+import type { CreateShowInput, IngestQuery, LiveBroadcastCard, ShowState, StudioOutputs, StudioShow, StudioShowRow, StudioStatus, UpdateShowInput } from "@7xen/shared";
 import { env } from "../env.js";
 import { prisma } from "../db.js";
 import { logger } from "../logger.js";
@@ -19,8 +19,8 @@ import { brandingUrl } from "../lib/serialize.js";
 import { matchContext } from "./matchContext.js";
 import { ownerInclude } from "./matches.js";
 import { internalCredentials, pathReady, showPath } from "./media.js";
-import { destinationTargets } from "./broadcast/layout.js";
-import { endMatchBroadcast, startShowBroadcast, YoutubeError, type MatchBroadcast } from "./youtube.js";
+import { destinationTargets, listDestinations } from "./broadcast/layout.js";
+import { endMatchBroadcast, getYoutubeStatus, startShowBroadcast, YoutubeError, type MatchBroadcast } from "./youtube.js";
 
 const SHOW_NOT_FOUND = "Show not found";
 /** no chunk for this long → the show ends */
@@ -59,6 +59,8 @@ async function toShow(s: DbShow): Promise<StudioShow> {
   return {
     ...(await toRow(s)),
     destinationIds: s.destinationIds,
+    publicListing: s.publicListing,
+    siteYoutube: s.siteYoutube,
     config: (s.config ?? {}) as Record<string, unknown>,
     watchPath: `/watch/s_${s.id}`,
   };
@@ -95,6 +97,8 @@ export async function updateShow(id: string, managerId: string, input: UpdateSho
       ...(input.title !== undefined ? { title: input.title } : {}),
       ...(input.matchId !== undefined ? { matchId: input.matchId } : {}),
       ...(input.destinationIds !== undefined ? { destinationIds: input.destinationIds } : {}),
+      ...(input.publicListing !== undefined ? { publicListing: input.publicListing } : {}),
+      ...(input.siteYoutube !== undefined ? { siteYoutube: input.siteYoutube } : {}),
       ...(input.config !== undefined ? { config: input.config as Prisma.InputJsonValue } : {}),
     },
   });
@@ -197,7 +201,7 @@ async function startRelays(r: Runner) {
   if (!show) return;
   const targets = await destinationTargets(r.managerId, show.destinationIds);
   for (const t of targets) r.relays.set(t.id, { id: t.id, name: t.name, target: t.target, ok: false, proc: null, retry: null });
-  try {
+  if (show.siteYoutube) try {
     const b = await startShowBroadcast({ title: show.title, matchId: show.matchId });
     r.yt = { broadcast: b, error: null };
     if (b) r.relays.set("site-youtube", { id: "site-youtube", name: "AirBattleground YouTube", target: b.target, ok: false, proc: null, retry: null });
@@ -349,7 +353,7 @@ export async function shutdownStudio() {
 /** Live Studio shows as Live-page cards (newest first). */
 export async function liveShows(): Promise<LiveBroadcastCard[]> {
   const shows = await prisma.studioShow.findMany({
-    where: { state: "LIVE", id: { in: [...runners.keys()] } },
+    where: { state: "LIVE", publicListing: true, id: { in: [...runners.keys()] } },
     include: { manager: { select: { displayName: true, orgName: true, orgLogoKey: true } } },
     orderBy: { liveSince: "desc" },
     take: 50,
@@ -376,5 +380,19 @@ export async function liveShows(): Promise<LiveBroadcastCard[]> {
   return out;
 }
 
-/** Is this show broadcasting (public HLS gate)? */
-export const showIsLive = (showId: string) => runners.has(showId);
+/** Is this show broadcasting publicly (public HLS gate)? Private test streams aren't served. */
+export async function showIsLive(showId: string): Promise<boolean> {
+  if (!runners.has(showId)) return false;
+  const s = await prisma.studioShow.findUnique({ where: { id: showId }, select: { publicListing: true } });
+  return !!s?.publicListing;
+}
+
+/** What a manager's show can go out to. */
+export async function studioOutputs(managerId: string): Promise<StudioOutputs> {
+  const yt = await getYoutubeStatus();
+  const dests = await listDestinations(managerId);
+  return {
+    siteYoutube: yt.connected && yt.autoStream && yt.channel ? { channelTitle: yt.channel.title, channelUrl: yt.channel.url } : null,
+    destinations: dests.map((d) => ({ id: d.id, name: d.name, kind: d.kind })),
+  };
+}

@@ -96,20 +96,45 @@ function run(args: string[], stdin: string | null, timeoutMs: number): Promise<R
 
 // ---------------------------------------------------------------- prompt + schema
 
-const SYSTEM_PROMPT = `You read Battlegrounds Mobile India (BGMI) custom-room screenshots for an esports scrim app and return structured data.
+const SYSTEM_PROMPT = `You read Battlegrounds Mobile India (BGMI) screenshots for an esports scrim app and return structured data.
+The image is either a phone screenshot or a frame captured from a live broadcast (the game picture may be scaled, letterboxed,
+inside a frame, or have broadcast graphics such as a "LIVE" badge, logos, a ticker, a lower-third name strip or an organiser's
+team/points panel drawn on top). Read ONLY the BGMI game screen itself; ignore every broadcast graphic, border and caption.
+First decide which BGMI screen it is and set "screen":
+- "custom_lobby": custom-room lobby / team list — a grid of team cards, each with a slot number and up to 4 player names.
+- "tdm_lobby": Team Deathmatch room / team list — two sides (e.g. left/right or blue/red), each listing its players.
+- "custom_results": custom-room results — rank blocks (rank number, up to 4 players, each with "N finishes").
+- "tdm_results": Team Deathmatch results — two teams with a final team score (one side Victory/Win, the other Defeat), and
+  each player's eliminations/kills (may also show deaths, assists, score, MVP).
+- "classic_results": a normal (non-custom) match end screen that shows only ONE team's placement (e.g. "#3/100") and its players.
+- "other": anything else (menus, loading screens, the map, spectator view without a table, etc.).
 Rules:
 - Copy player names exactly as shown, character for character: keep symbols, CJK, Devanagari, accents, separators like 乡 ・ | 《》 and letter case. Never "fix" spelling.
-- Watch lookalikes (I/l/1, O/0, rn/m). If a character is genuinely ambiguous, give your best reading and set "unsure": true.
+- Watch lookalikes (I/l/1, O/0, rn/m). Clan tags before the name are usually 2–5 letters/digits followed by a separator such as
+  "x", "×", "|", "・" or "丶" (e.g. "G1xBee", "UP70xSkull", "TFK×Nojo"); keep digits that are clearly digits. If a character is
+  genuinely ambiguous, give your best reading and set "unsure": true.
 - Only report what is fully visible. Skip cards/blocks cut off by the screen edge.
 - If a roster is given, set "roster_match" to the roster name (copied exactly from the roster) that is clearly the same player, else null. Never invent roster names.
 - "warnings": only real problems a manager must act on (image blurry, wrong screen type, a name you could not read at all), one short plain-English sentence each. Usually empty.
   Never warn about normal things: no roster given, ranks/slots not on this screenshot, cut-off blocks you skipped, rank 1 having an icon instead of a digit, or lookalike characters (use "unsure" for those).`;
 
-const SLOT_LIST_PROMPT = `This is a SLOT LIST (lobby) screenshot: a grid of dark team cards. Each card has a coloured slot number (e.g. 05, 13) and up to 4 player names (ignore "0 Eliminations" text).
-Return every visible card in reading order (row by row, left to right) with its slot number as an integer and its player names in order.`;
+const SLOT_LIST_PROMPT = `This should be a TEAM LIST (lobby) screen.
+- custom_lobby: a grid of dark team cards. Each card has a coloured slot number (e.g. 05, 13) and up to 4 player names (ignore
+  "0 Eliminations" text). Return every visible card in reading order (row by row, left to right) with its slot number as an
+  integer and its player names in order.
+- tdm_lobby: return two teams. Use the slot number shown on screen if there is one; otherwise slot 1 for the first side
+  (left/top/blue) and slot 2 for the second side (right/bottom/red). List each side's players in order.
+- Any other screen: return no teams and one warning saying it isn't a team list screen.`;
 
-const RESULTS_PROMPT = `This is a match RESULTS screenshot. The left panel shows rank 1 (wings/trophy icon, may have no digit) and rank 2. The right panel shows more rank blocks, each with a big rank number, up to 4 player names, and each player's "N finishes" (finishes = kills).
-Return every fully visible rank block (including ranks 1 and 2 on the left) with rank as an integer and each player's name and kills.`;
+const RESULTS_PROMPT = `This should be a match RESULTS screen.
+- custom_results: the left panel shows rank 1 (wings/trophy icon, may have no digit) and rank 2. The right panel shows more rank
+  blocks, each with a big rank number, up to 4 player names, and each player's "N finishes" (finishes = kills). Return every
+  fully visible rank block (including ranks 1 and 2 on the left) with rank as an integer and each player's name and kills.
+- tdm_results: return two rows — rank 1 = the winning team (Victory / higher team score), rank 2 = the other team — each with
+  its players and each player's eliminations as kills. If it's a draw, rank them in the order shown and add a warning "Draw".
+- classic_results: return one row with the placement number shown (e.g. #3 → rank 3) and that team's players and kills, plus
+  the warning "This screen shows only one team — capture the full results table if there is one".
+- Any other screen: return no rows and one warning saying it isn't a results screen.`;
 
 const playerSchema = (withKills: boolean) => ({
   type: "object",
@@ -121,6 +146,9 @@ const playerSchema = (withKills: boolean) => ({
   },
   required: ["name", "unsure", "roster_match", ...(withKills ? ["kills"] : [])],
 });
+
+/** BGMI screen families the reader tells apart (see SYSTEM_PROMPT). */
+export const SCREENS = ["custom_lobby", "tdm_lobby", "custom_results", "tdm_results", "classic_results", "other"] as const;
 
 const SCHEMAS: Record<ScreenshotKind, object> = {
   SLOT_LIST: {
@@ -134,9 +162,10 @@ const SCHEMAS: Record<ScreenshotKind, object> = {
           required: ["slot", "players"],
         },
       },
+      screen: { type: "string", enum: SCREENS },
       warnings: { type: "array", items: { type: "string" } },
     },
-    required: ["teams", "warnings"],
+    required: ["screen", "teams", "warnings"],
   },
   RESULTS: {
     type: "object",
@@ -149,9 +178,10 @@ const SCHEMAS: Record<ScreenshotKind, object> = {
           required: ["rank", "players"],
         },
       },
+      screen: { type: "string", enum: SCREENS },
       warnings: { type: "array", items: { type: "string" } },
     },
-    required: ["rows", "warnings"],
+    required: ["screen", "rows", "warnings"],
   },
 };
 
