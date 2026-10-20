@@ -26,7 +26,7 @@ import {
   Youtube,
 } from "lucide-react";
 import { toast } from "sonner";
-import { STUDIO_HEIGHT, STUDIO_WIDTH, type DeviceRow, type MatchDetail, type StudioShow } from "@7xen/shared";
+import { STUDIO_FPS, STUDIO_HEIGHT, STUDIO_WIDTH, type DeviceRow, type MatchDetail, type StudioShow } from "@7xen/shared";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@7xen/ui/components/ui/dialog";
@@ -491,10 +491,10 @@ function LiveHealth({ mix, status }: { mix: MixerStatus | null; status: import("
       <span className={cn("rounded px-2 py-1 font-semibold", mix.backlog > 3 ? "bg-warning/20 text-warning-foreground dark:text-warning" : "bg-success/15 text-success")}>
         {mix.backlog > 3 ? `Slow upload · ${mix.backlog}s behind` : `Upload ${(mix.uploadKbps / 1000).toFixed(1)} Mbps`}
       </span>
-      <span className={cn("rounded px-2 py-1 font-semibold tabular-nums", mix.fps && mix.fps < 26 ? "bg-warning/20 text-warning-foreground dark:text-warning" : "bg-muted")} title={mix.fps && mix.fps < 26 ? "This computer can't draw 30 frames a second. Close other tabs and apps, or keep this tab in front." : "Frames per second the Studio is drawing"}>
+      <span className={cn("rounded px-2 py-1 font-semibold tabular-nums", mix.fps && mix.fps < STUDIO_FPS * 0.85 ? "bg-warning/20 text-warning-foreground dark:text-warning" : "bg-muted")} title={mix.fps && mix.fps < STUDIO_FPS * 0.85 ? "This computer can't keep up with 60 frames a second. Close other tabs and apps, or keep this tab in front." : "Frames per second the Studio is drawing"}>
         {mix.fps} fps
       </span>
-      {mix.bitrateKbps < 2500 && (
+      {mix.bitrateKbps < 6000 && (
         <span className="rounded bg-muted px-2 py-1" title="Your internet upload couldn't keep up, so the Studio lowered the video quality to stay live. Close other uploads (or move the phone to mobile data) and go live again for full quality.">
           Quality lowered to keep up · {(mix.bitrateKbps / 1000).toFixed(1)} Mbps
         </span>

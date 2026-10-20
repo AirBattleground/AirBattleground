@@ -25,7 +25,7 @@ import { z } from "zod";
 
 export const STUDIO_WIDTH = 1280;
 export const STUDIO_HEIGHT = 720;
-export const STUDIO_FPS = 30;
+export const STUDIO_FPS = 60;
 /** a chunk body may not exceed this (≈ 1 s of video at the studio bitrate, with room to spare) */
 export const MAX_INGEST_CHUNK_BYTES = 8 * 1024 * 1024;
 

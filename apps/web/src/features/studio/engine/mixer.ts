@@ -1,5 +1,5 @@
 /**
- * The Studio mixer: draws the on-air scene (plus overlays) onto a 1280×720 canvas 30×/s, mixes the audio of what's on
+ * The Studio mixer: draws the on-air scene (plus overlays) onto a 1280×720 canvas 60×/s, mixes the audio of what's on
  * air with the host's mic, and — while live — records the result and sends it to the server in ~1 s chunks, in order.
  *
  * - The clock is a Web Worker timer, so the show keeps running when the tab is in the background (rAF would pause).
@@ -30,8 +30,8 @@ export interface MixerStatus {
   fps: number;
 }
 
-/** Recorder video bitrates, best first. 720p30 looks fine at 2.5 Mbps; lower steps keep a weak upload live. */
-const BITRATES = [2_500_000, 1_500_000, 900_000];
+/** Recorder video bitrates, best first. 6 Mbps keeps 720p60 game motion clean after the server re-encode; lower steps keep a weak upload live. */
+const BITRATES = [6_000_000, 4_000_000, 2_500_000];
 /**
  * Chunks (≈ seconds) waiting before we drop to a lower bitrate and jump back to live. Every restart cuts the
  * viewers' stream for a few seconds, so this is a last resort — short Wi-Fi spikes clear on their own (PARALLEL).
