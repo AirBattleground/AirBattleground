@@ -6,7 +6,7 @@ import { cn } from "@7xen/ui/lib/utils";
 import { OrganizerBadge } from "@/features/team/components/Branding";
 import { CardSegment, HudCorners } from "@/features/team/components/CardSegment";
 import { useCardTilt } from "@/features/team/useCardTilt";
-import { fmtDay } from "../../shared/format";
+import { fmtDay, fmtPrize } from "../../shared/format";
 import { useTeamTournaments } from "../api";
 
 const FEATURED_TITLE = /champion'?s?\s+festival/i;
@@ -71,7 +71,7 @@ export function FeaturedTournamentBanner({ t, className }: { t: TournamentSummar
           {t.prize && (
             <p className="mt-3 flex flex-wrap items-center gap-x-2">
               <span className="text-xs font-bold tracking-[0.25em] text-muted-foreground uppercase">Prize pool</span>
-              <span className="tc-prize font-display text-2xl font-extrabold text-warning-foreground sm:text-4xl dark:text-warning">{t.prize}</span>
+              <span className="tc-prize font-display text-2xl font-extrabold text-warning-foreground sm:text-4xl dark:text-warning">{fmtPrize(t.prize)}</span>
             </p>
           )}
           <div className="mt-3 flex">

@@ -46,10 +46,11 @@ export interface AppShellProps {
 const WEB_BRAND: ShellBrand = { name: "AirBattleground", mark: markUrl, wordmark: wordmarkUrl, wordmarkInk: wordmarkInkUrl };
 
 const LuxShell = lazy(() => import("@/skins/lux/shell/LuxShell"));
+const ArenaShell = lazy(() => import("@/skins/arena/ArenaShell"));
 
-/** Teal Battle = the sidebar shell below; Lux Battle = src/skins/lux/shell (same props). Picked by the site skin. */
+/** Teal Battle = the sidebar shell below; Lux Battle = src/skins/lux/shell; Arena = src/skins/arena (same props). */
 export function AppShell(props: AppShellProps) {
-  return <SkinSwitch teal={<TealShell {...props} />} lux={<LuxShell {...props} />} />;
+  return <SkinSwitch teal={<TealShell {...props} />} lux={<LuxShell {...props} />} arena={<ArenaShell {...props} />} />;
 }
 
 function TealShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAction, welcomeSteps, brand: brandProp, search, notifications, children }: AppShellProps) {

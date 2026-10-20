@@ -10,7 +10,7 @@ import { useCardTilt } from "@/features/team/useCardTilt";
 import { Countdown } from "../../shared/Countdown";
 import { RegistrationMeter } from "../../shared/RegistrationMeter";
 import { LiveDot, StatusPill, STAGE_STATUS_LABELS } from "../../shared/StatusPill";
-import { fmtDay, fmtWhen } from "../../shared/format";
+import { fmtDay, fmtWhen, fmtPrize } from "../../shared/format";
 
 /** Tiny stage progress: one segment per stage, current one glowing. */
 function StageDots({ count, current, live }: { count: number; current: number | null; live?: boolean }) {
@@ -114,7 +114,7 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
           {t.prize && (
             <p className="mb-1 inline-flex items-center gap-1.5">
               <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground uppercase">Prize pool</span>
-              <span className="tc-prize font-display text-xl font-extrabold text-warning-foreground dark:text-warning">{t.prize}</span>
+              <span className="tc-prize font-display text-xl font-extrabold text-warning-foreground dark:text-warning">{fmtPrize(t.prize)}</span>
             </p>
           )}
           <h3 className="line-clamp-2 font-display text-[1.75rem] leading-[1.05] font-extrabold tracking-tight uppercase transition-colors duration-300 group-hover:text-primary sm:text-3xl">

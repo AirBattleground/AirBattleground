@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ApiError,
@@ -73,17 +73,29 @@ export function useTeamDashboard(opts: { enabled?: boolean } = {}) {
   });
 }
 
+async function fetchScrims(date: string) {
+  const res = await api.get<ListResponse<TeamScrimOnDate>>("/api/team/scrims", { date });
+  for (const s of res.items) {
+    if (s.myRegistration) track(s.myRegistration.id, s.myRegistration.status, s.myRegistration.slotNumber, s.scrim.title);
+  }
+  return res.items;
+}
+
 export function useTeamScrims(date: string) {
-  return useQuery({
-    queryKey: teamKeys.scrims(date),
-    queryFn: async () => {
-      const res = await api.get<ListResponse<TeamScrimOnDate>>("/api/team/scrims", { date });
-      for (const s of res.items) {
-        if (s.myRegistration) track(s.myRegistration.id, s.myRegistration.status, s.myRegistration.slotNumber, s.scrim.title);
-      }
-      return res.items;
-    },
-    refetchInterval: POLL_MS,
+  return useQuery({ queryKey: teamKeys.scrims(date), queryFn: () => fetchScrims(date), refetchInterval: POLL_MS });
+}
+
+/** Scrims for several days at once (same cache as useTeamScrims): per-day lists + loading/error. */
+export function useTeamScrimsForDays(dates: string[]) {
+  return useQueries({
+    queries: dates.map((date) => ({ queryKey: teamKeys.scrims(date), queryFn: () => fetchScrims(date), refetchInterval: POLL_MS })),
+    combine: (results) => ({
+      byDate: new Map(dates.map((d, i) => [d, results[i]?.data])),
+      isLoading: results.some((r) => r.isLoading),
+      isError: results.every((r) => r.isError),
+      error: results.find((r) => r.error)?.error ?? null,
+      refetch: () => results.forEach((r) => void r.refetch()),
+    }),
   });
 }
 

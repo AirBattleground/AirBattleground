@@ -38,7 +38,7 @@ import { FormatIssues } from "@/features/tournaments/manager/components/FormatIs
 import { NextAction } from "@/features/tournaments/manager/components/NextAction";
 import { pointsLabel } from "@/features/tournaments/manager/components/PointsPicker";
 import { RegistrationsTab } from "@/features/tournaments/manager/components/RegistrationsTab";
-import { fmtDay, fmtRange, fmtWhen } from "@/features/tournaments/shared/format";
+import { fmtDay, fmtRange, fmtWhen, fmtPrize } from "@/features/tournaments/shared/format";
 import { RegistrationMeter } from "@/features/tournaments/shared/RegistrationMeter";
 import { StageFlow, StageFlowSkeleton } from "@/features/tournaments/shared/StageFlow";
 import { StatusPill } from "@/features/tournaments/shared/StatusPill";
@@ -80,7 +80,7 @@ function BackLink() {
 
 function shareText(t: ManagerTournamentDetail): string {
   const lines = [`🏆 ${t.title}`];
-  if (t.prize) lines.push(`💰 Prize: ${t.prize}`);
+  if (t.prize) lines.push(`💰 Prize: ${fmtPrize(t.prize)}`);
   lines.push(`👥 ${t.confirmedCount}/${t.maxTeams} teams registered${t.waitlistCount ? ` (+${t.waitlistCount} waitlist)` : ""}`);
   lines.push(`🗺️ Format: ${t.stages.map((s) => `${s.name}${s.groupCount > 1 ? ` (${s.groupCount}×${s.lobbySize})` : ""}`).join(" → ")}`);
   if (t.startsAt) lines.push(`📅 Starts ${fmtWhen(t.startsAt)} IST`);
@@ -179,7 +179,7 @@ function ControlCenter({ t }: { t: ManagerTournamentDetail }) {
                 </p>
               ) : t.prize ? (
                 <p className="flex items-center gap-2 font-display text-3xl font-bold text-warning-foreground sm:text-4xl dark:text-warning">
-                  <Trophy className="size-7 shrink-0" /> {t.prize}
+                  <Trophy className="size-7 shrink-0" /> {fmtPrize(t.prize)}
                 </p>
               ) : (
                 <p className="font-display text-2xl font-bold">{t.stages.map((s) => s.name).join(" → ")}</p>

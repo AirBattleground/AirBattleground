@@ -1,6 +1,7 @@
 @import "@7xen/ui/globals.css";
 /* Lux Battle skin — every rule scoped under [data-skin="lux"] (see src/lib/skin.tsx) */
 @import "./skins/lux/index.css";
+@import "./skins/arena/arena.css";
 @source "./";
 
 /* AirBattleground logo images follow the brand colour (SVG filter #sx-brand-ink in index.html) */

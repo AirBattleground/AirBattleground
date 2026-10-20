@@ -14,9 +14,28 @@ const STRIP_DAYS = 14;
  * Horizontal strip of day pills (today + next 13 days) with a calendar popover for
  * further dates. Scrolls with snap on phones; arrows on larger screens.
  */
-export function DateStrip({ value, today, onChange, className }: { value: string; today: string; onChange: (date: string) => void; className?: string }) {
+export function DateStrip({
+  value,
+  today,
+  onChange,
+  className,
+  counts,
+  onUpcoming,
+}: {
+  /** selected day; "" = the Upcoming pill is selected */
+  value: string;
+  today: string;
+  onChange: (date: string) => void;
+  className?: string;
+  /** scrims per day (badge on the pill); missing = unknown */
+  counts?: Map<string, number | undefined>;
+  /** shows an "Upcoming" pill first that selects the multi-day view */
+  onUpcoming?: () => void;
+}) {
   const days = useMemo(() => Array.from({ length: STRIP_DAYS }, (_, i) => addDays(today, i)), [today]);
-  const inStrip = days.includes(value);
+  const upcoming = value === "";
+  const inStrip = upcoming || days.includes(value);
+  const calValue = upcoming ? today : value;
   const scroller = useRef<HTMLDivElement>(null);
   const [calOpen, setCalOpen] = useState(false);
 
@@ -41,8 +60,25 @@ export function DateStrip({ value, today, onChange, className }: { value: string
         aria-label="Pick a day"
         className="relative -mx-1 flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth px-1 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
+        {onUpcoming && (
+          <button
+            type="button"
+            role="option"
+            aria-selected={upcoming}
+            data-date=""
+            onClick={onUpcoming}
+            className={cn(
+              "flex w-[5.5rem] shrink-0 snap-start flex-col items-center justify-center gap-0.5 rounded-2xl border px-2 py-2.5 transition-all duration-200 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+              upcoming ? "-translate-y-0.5 border-primary bg-primary text-primary-foreground shadow-glow" : "bg-card hover:border-primary/40 hover:bg-accent/50",
+            )}
+          >
+            <span className={cn("text-[10px] font-semibold tracking-wider uppercase", upcoming ? "text-primary-foreground/90" : "text-primary")}>Next 7</span>
+            <span className="font-display text-xl leading-tight font-bold">Upcoming</span>
+          </button>
+        )}
         {days.map((d, i) => {
           const selected = d === value;
+          const n = counts?.get(d);
           const weekend = isWeekend(d);
           const top = i === 0 ? "Today" : i === 1 ? "Tomorrow" : formatDate(d, "EEE");
           return (
@@ -75,7 +111,18 @@ export function DateStrip({ value, today, onChange, className }: { value: string
               <span className={cn("text-[11px] font-medium", selected ? "text-primary-foreground/85" : "text-muted-foreground")}>
                 {i < 2 ? formatDate(d, "EEE, MMM") : formatDate(d, "MMM")}
               </span>
-              {weekend && !selected && <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-primary/70" aria-hidden />}
+              {weekend && !selected && n == null && <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-primary/70" aria-hidden />}
+              {n != null && n > 0 && (
+                <span
+                  aria-label={`${n} ${n === 1 ? "scrim" : "scrims"}`}
+                  className={cn(
+                    "absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold ring-2 ring-background",
+                    selected ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground",
+                  )}
+                >
+                  {n}
+                </span>
+              )}
             </button>
           );
         })}
@@ -103,8 +150,8 @@ export function DateStrip({ value, today, onChange, className }: { value: string
         <PopoverContent align="end" className="w-auto p-0">
           <Calendar
             mode="single"
-            selected={parseISO(value)}
-            defaultMonth={parseISO(value)}
+            selected={upcoming ? undefined : parseISO(calValue)}
+            defaultMonth={parseISO(calValue)}
             disabled={{ before: parseISO(today) }}
             onSelect={(d) => {
               if (!d) return;

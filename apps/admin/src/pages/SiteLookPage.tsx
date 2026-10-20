@@ -25,6 +25,7 @@ const TOUR: TourStep[] = [
   { title: "Site look", description: "Pick how the website looks for every team and manager. Features stay exactly the same." },
   { element: '[data-tour="skin-teal"]', title: "Teal Battle", description: "The calm app look with a side menu.", side: "bottom" },
   { element: '[data-tour="skin-lux"]', title: "Lux Battle", description: "A branded esports site: top menu, tactical graphics and lots of animation.", side: "bottom" },
+  { element: '[data-tour="skin-arena"]', title: "Arena", description: "A game lobby: HUD top bar, your squad on stage and one big Find match button.", side: "bottom" },
   { element: '[data-tour="skin-preview"]', title: "Try it first", description: "Opens the website in a new tab with this look, only for you. Nothing changes for anyone else.", side: "top" },
 ];
 
@@ -48,6 +49,29 @@ function Mock({ skin }: { skin: UiSkin }) {
           </div>
           <span className="block h-6 rounded-md border bg-card" />
         </div>
+      </div>
+    );
+  }
+  if (skin === "arena") {
+    return (
+      <div aria-hidden className="relative h-32 overflow-hidden rounded-sm border bg-[oklch(0.13_0.02_205)]">
+        <div className="absolute inset-x-0 top-0 flex items-center gap-2 border-b border-[oklch(0.85_0.08_190/0.2)] px-2 py-1.5">
+          <span className="size-3.5 rounded-sm bg-[oklch(0.78_0.13_190)]" />
+          {[0, 1, 2, 3].map((i) => (
+            <span key={i} className={cn("h-1.5 w-7", i === 0 ? "bg-[oklch(0.78_0.13_190)]" : "bg-[oklch(0.85_0.08_190/0.3)]")} />
+          ))}
+          <span className="ml-auto flex items-center gap-1">
+            <span className="size-2.5 rounded-full bg-[oklch(0.83_0.16_85)]" />
+            <span className="h-1.5 w-6 bg-[oklch(0.83_0.16_85/0.6)]" />
+          </span>
+        </div>
+        <span className="absolute top-8 left-2 h-14 w-12 border border-[oklch(0.85_0.08_190/0.3)] bg-[oklch(0.17_0.03_205/0.8)]" />
+        <span className="absolute top-8 right-2 h-9 w-14 border border-[oklch(0.83_0.16_85/0.4)] bg-[oklch(0.45_0.18_25/0.6)]" />
+        <span className="absolute bottom-3 left-1/2 h-4 w-28 -translate-x-1/2 rounded-[50%] border border-[oklch(0.78_0.13_190/0.7)] shadow-[0_0_14px_oklch(0.78_0.13_190/0.6)]" />
+        {[0, 1, 2, 3].map((i) => (
+          <span key={i} className="absolute bottom-5 h-12 w-3.5 rounded-t-full bg-[oklch(0.7_0.08_190/0.55)]" style={{ left: `${40 + i * 6}%` }} />
+        ))}
+        <span className="absolute right-2 bottom-2 h-6 w-16 bg-[oklch(0.83_0.16_85)] [clip-path:polygon(0_0,100%_0,100%_65%,88%_100%,0_100%)]" />
       </div>
     );
   }
@@ -101,12 +125,12 @@ export default function SiteLookPage() {
       <PageHeader eyebrow="Website" title="Site look" description="Choose how the website looks for every team and manager. Same pages and features — only the design changes." />
 
       {current.isPending ? (
-        <div className="grid gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           <Skeleton className="h-72 rounded-xl" />
           <Skeleton className="h-72 rounded-xl" />
         </div>
       ) : (
-        <div role="radiogroup" aria-label="Site look" className="grid gap-5 md:grid-cols-2">
+        <div role="radiogroup" aria-label="Site look" className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {UI_SKINS.map((s) => {
             const isPicked = picked === s;
             const isLive = active === s;

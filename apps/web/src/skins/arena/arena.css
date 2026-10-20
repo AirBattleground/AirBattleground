@@ -1,0 +1,161 @@
+/*
+ * Arena — game-lobby skin. Imported by src/index.css for everyone, so every rule is scoped under
+ * :root[data-skin="arena"] (Teal and Lux are untouched). Selectors use `html:root[data-skin="arena"]` (0,2,1) and
+ * `html:root.dark[data-skin="arena"]` (0,3,1) to beat the brand presets in globals.css.
+ *
+ * Arena extras (use via var() / the arena-* classes below):
+ *   --arena-gold   the Find-match / coin gold        --arena-line   HUD hairline
+ *   --arena-panel  see-through glass panel           --arena-teal   HUD teal accent
+ */
+
+html:root[data-skin="arena"] {
+  --radius: 0.35rem;
+  --font-display: "Teko", "Rajdhani", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* daylight lobby */
+  --background: oklch(0.95 0.012 195);
+  --foreground: oklch(0.2 0.03 210);
+  --card: oklch(0.98 0.008 195);
+  --card-foreground: oklch(0.2 0.03 210);
+  --popover: oklch(0.99 0.006 195);
+  --popover-foreground: oklch(0.2 0.03 210);
+  --primary: oklch(0.58 0.12 195);
+  --primary-foreground: oklch(0.99 0.005 195);
+  --secondary: oklch(0.9 0.02 195);
+  --secondary-foreground: oklch(0.25 0.03 210);
+  --muted: oklch(0.91 0.015 195);
+  --muted-foreground: oklch(0.45 0.03 210);
+  --accent: oklch(0.9 0.04 190);
+  --accent-foreground: oklch(0.25 0.05 200);
+  --border: oklch(0.55 0.06 200 / 0.22);
+  --input: oklch(0.55 0.06 200 / 0.28);
+  --ring: oklch(0.58 0.12 195);
+  --warning: oklch(0.74 0.16 78);
+  --warning-foreground: oklch(0.22 0.05 75);
+  --glow: oklch(0.58 0.12 195 / 0.35);
+
+  --arena-gold: oklch(0.8 0.16 82);
+  --arena-teal: oklch(0.58 0.12 195);
+  --arena-line: oklch(0.45 0.08 200 / 0.25);
+  --arena-panel: oklch(0.99 0.006 195 / 0.78);
+}
+
+/* night lobby — the main look */
+html:root.dark[data-skin="arena"] {
+  --background: oklch(0.13 0.02 205);
+  --foreground: oklch(0.96 0.01 200);
+  --card: oklch(0.17 0.025 205);
+  --card-foreground: oklch(0.96 0.01 200);
+  --popover: oklch(0.18 0.028 205);
+  --popover-foreground: oklch(0.96 0.01 200);
+  --primary: oklch(0.78 0.13 190);
+  --primary-foreground: oklch(0.14 0.03 200);
+  --secondary: oklch(0.22 0.03 205);
+  --secondary-foreground: oklch(0.94 0.01 200);
+  --muted: oklch(0.21 0.025 205);
+  --muted-foreground: oklch(0.72 0.03 200);
+  --accent: oklch(0.26 0.05 195);
+  --accent-foreground: oklch(0.92 0.05 190);
+  --border: oklch(0.85 0.08 190 / 0.16);
+  --input: oklch(0.85 0.08 190 / 0.2);
+  --ring: oklch(0.78 0.13 190);
+  --warning: oklch(0.83 0.16 85);
+  --warning-foreground: oklch(0.2 0.04 80);
+  --sidebar: oklch(0.15 0.022 205);
+  --glow: oklch(0.78 0.13 190 / 0.45);
+  --aurora-1: oklch(0.62 0.13 195 / 0.3);
+  --aurora-2: oklch(0.55 0.12 230 / 0.25);
+
+  --arena-gold: oklch(0.83 0.16 85);
+  --arena-teal: oklch(0.78 0.13 190);
+  --arena-line: oklch(0.85 0.08 190 / 0.18);
+  --arena-panel: oklch(0.17 0.03 205 / 0.72);
+}
+
+/* ---------------------------------------------------------------- type */
+:root[data-skin="arena"] :is(h1, h2, h3, .font-display) {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+}
+:root[data-skin="arena"] :is(h1, h2) { text-transform: uppercase; }
+/* small titles inside dense UI stay in the UI face */
+:root[data-skin="arena"] :is([data-slot="card-title"], [data-slot="dialog-title"], [data-slot="alert-dialog-title"], [data-slot="sheet-title"]):not(.font-display) {
+  font-family: "Rajdhani", var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+/* ---------------------------------------------------------------- shape: sharper, game-like corners */
+:root[data-skin="arena"] :is(.rounded-xl, .rounded-2xl, .rounded-3xl) { border-radius: 0.4rem; }
+:root[data-skin="arena"] [data-slot="button"] { border-radius: 0.3rem; letter-spacing: 0.02em; }
+
+/* ---------------------------------------------------------------- arena building blocks */
+:root[data-skin="arena"] .arena-chamfer {
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+:root[data-skin="arena"] .arena-panel {
+  background: var(--arena-panel);
+  border: 1px solid var(--arena-line);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+/* HUD corner brackets (top-left + bottom-right) */
+:root[data-skin="arena"] .arena-hud { position: relative; }
+:root[data-skin="arena"] .arena-hud::before,
+:root[data-skin="arena"] .arena-hud::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--arena-teal);
+  pointer-events: none;
+  z-index: 1;
+}
+:root[data-skin="arena"] .arena-hud::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+:root[data-skin="arena"] .arena-hud::after { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+:root[data-skin="arena"] .arena-label {
+  font: 700 11px/1.2 "Rajdhani", var(--font-sans);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--arena-teal);
+}
+/* the big gold action (Find match) */
+:root[data-skin="arena"] .arena-btn-gold {
+  background: linear-gradient(180deg, color-mix(in oklch, var(--arena-gold) 80%, white), var(--arena-gold) 55%, color-mix(in oklch, var(--arena-gold) 82%, black));
+  color: oklch(0.18 0.04 75);
+  clip-path: polygon(0 0, 100% 0, 100% 68%, 94% 100%, 0 100%);
+  box-shadow: 0 0 40px color-mix(in oklch, var(--arena-gold) 45%, transparent);
+  transition: filter 0.2s, transform 0.2s;
+}
+:root[data-skin="arena"] .arena-btn-gold:hover { filter: brightness(1.06); transform: translateY(-1px); }
+:root[data-skin="arena"] .arena-btn-gold:active { transform: translateY(1px); }
+/* the active top tab underline glow */
+:root[data-skin="arena"] .arena-tab-on::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 4px;
+  height: 3px;
+  background: var(--arena-teal);
+  box-shadow: 0 0 12px var(--arena-teal);
+}
+/* the stage platform under the squad */
+:root[data-skin="arena"] .arena-ring {
+  border-radius: 50%;
+  border: 2px solid color-mix(in oklch, var(--arena-teal) 55%, transparent);
+  box-shadow: 0 0 30px color-mix(in oklch, var(--arena-teal) 50%, transparent), inset 0 0 30px color-mix(in oklch, var(--arena-teal) 25%, transparent);
+}
+:root[data-skin="arena"] .arena-grid {
+  background-image: linear-gradient(var(--arena-line) 1px, transparent 1px), linear-gradient(90deg, var(--arena-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+/* ticker scroll */
+:root[data-skin="arena"] .arena-ticker-track { animation: arena-ticker 40s linear infinite; }
+@keyframes arena-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  :root[data-skin="arena"] .arena-ticker-track { animation: none; }
+}

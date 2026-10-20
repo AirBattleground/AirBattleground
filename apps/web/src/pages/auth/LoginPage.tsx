@@ -1,9 +1,11 @@
 import { lazy, useEffect, useState, type ReactNode } from "react";
-import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { AlertCircle, ArrowRight, FlaskConical, Loader2, Mail, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowRight, FlaskConical, Loader2, Mail, Radio, ShieldCheck } from "lucide-react";
+import { cn } from "@7xen/ui/lib/utils";
+import { useLiveBroadcasts } from "@/features/broadcast/live";
 import { ApiError, devLoginSchema, type DevLoginInput, type SessionUser } from "@7xen/shared";
 import { LoginScene } from "@7xen/ui/components/brand/login-scene";
 import { ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
@@ -130,6 +132,30 @@ export function SignIn({ onSignedIn }: { onSignedIn: (p: Promise<SessionUser>) =
 
 export type OnSignedIn = (p: Promise<SessionUser>) => Promise<void>;
 
+/** Visitors can watch broadcasts without an account (/watch). Shows a live count when something is on. */
+export function WatchLiveLink({ className }: { className?: string }) {
+  const live = useLiveBroadcasts().data?.length ?? 0;
+  return (
+    <Link
+      to="/watch"
+      className={cn(
+        "group flex items-center gap-3 rounded-2xl border bg-card/60 px-4 py-3 text-sm backdrop-blur transition-colors outline-none hover:border-destructive/50 focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        className,
+      )}
+    >
+      <span className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+        <Radio className="size-4" />
+        {live > 0 && <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{live}</span>}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold">{live > 0 ? `${live} ${live === 1 ? "match" : "matches"} live now` : "Watch live matches"}</span>
+        <span className="block text-xs text-muted-foreground">No sign-in needed</span>
+      </span>
+      <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+    </Link>
+  );
+}
+
 /**
  * Everything the sign-in screen does besides drawing it (shared by both site looks): page tour, splash hand-over,
  * redirects for signed-in users and admins, and the post-sign-in navigation. `blocker` is what to render instead of the
@@ -221,6 +247,8 @@ function TealLogin({ onSignedIn }: { onSignedIn: OnSignedIn }) {
           <li className="flex items-center gap-2"><ArrowRight className="size-3.5 text-primary" /> Players go to their team</li>
           <li className="flex items-center gap-2"><ArrowRight className="size-3.5 text-primary" /> Invited organisers go to their dashboard</li>
         </ul>
+
+        <WatchLiveLink className="mt-6" />
 
         <p className="mt-8 flex items-center gap-2 border-t pt-5 text-xs text-muted-foreground">
           <ShieldCheck className="size-4 text-primary" /> Your account. Your game.

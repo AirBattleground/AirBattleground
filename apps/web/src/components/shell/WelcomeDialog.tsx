@@ -17,6 +17,10 @@ const welcomeKey = (userId: string) => `7xen.welcome.${userId}`;
 export function WelcomeDialog({ user, steps }: { user: SessionUser; steps: WelcomeStep[] }) {
   const tour = useTour();
   const [open, setOpen] = useState(() => readStorage(welcomeKey(user.id)) !== "1");
+  // seen once is enough: navigating away without closing it mustn't bring it back on every page
+  useEffect(() => {
+    if (open) writeStorage(welcomeKey(user.id), "1");
+  }, [open, user.id]);
 
   // Hold back first-visit page tours while the welcome is showing.
   const { pauseAutoRun } = tour;

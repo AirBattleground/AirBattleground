@@ -6,7 +6,7 @@ import { Pill } from "@7xen/ui/components/brand/status";
 import { cn } from "@7xen/ui/lib/utils";
 import { Countdown } from "../../shared/Countdown";
 import { RegistrationMeter } from "../../shared/RegistrationMeter";
-import { fmtWhen } from "../../shared/format";
+import { fmtWhen, fmtPrize } from "../../shared/format";
 import { useTeamTournament, useTeamTournaments } from "../api";
 import { journeyCopy, meChip } from "../journey";
 
@@ -102,7 +102,7 @@ export function TournamentsHomeCard({ mineOnly = false }: { mineOnly?: boolean }
         <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Tournament · registration open</p>
         <p className="truncate font-display text-xl leading-tight font-bold">
           {join.title}
-          {join.prize && <span className="ml-2 text-base text-warning-foreground dark:text-warning">· {join.prize}</span>}
+          {join.prize && <span className="ml-2 text-base text-warning-foreground dark:text-warning">· {fmtPrize(join.prize)}</span>}
         </p>
         <RegistrationMeter confirmed={join.confirmedCount} max={join.maxTeams} waitlist={join.waitlistCount} size="sm" className="mt-2" />
       </div>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, MotionConfig } from "framer-motion";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
-import { SignIn, type OnSignedIn } from "@/pages/auth/LoginPage";
+import { SignIn, WatchLiveLink, type OnSignedIn } from "@/pages/auth/LoginPage";
 import { WelcomeHeading } from "@/pages/auth/WelcomeHeading";
 import wordmarkUrl from "@/assets/brand/airbattleground-wordmark.webp";
 import wordmarkInkUrl from "@/assets/brand/airbattleground-wordmark-ink.webp";
@@ -109,6 +109,7 @@ export default function LuxLoginPage({ onSignedIn }: { onSignedIn: OnSignedIn })
                 <div className="lux-sc-signin mt-6">
                   <SignIn onSignedIn={onSignedIn} />
                 </div>
+                <WatchLiveLink className="mt-5" />
                 <ul className="mt-6 grid gap-2 text-xs text-muted-foreground">
                   <li className="flex items-center gap-2">
                     <ArrowRight className="size-3.5 text-primary" /> Players go to their team

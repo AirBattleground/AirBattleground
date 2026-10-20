@@ -1,6 +1,6 @@
 /**
- * Site look ("skin"): Teal Battle (teal, the sidebar app) or Lux Battle (lux, branded site with top nav + tactical
- * graphics). The admin picks it for everyone (GET /api/site/skin); pages are shared, only the chrome differs.
+ * Site look ("skin"): Teal Battle (teal, the sidebar app), Lux Battle (lux, branded site with top nav + tactical
+ * graphics) or Arena (arena, game lobby: HUD top bar + game dock, src/skins/arena). The admin picks it for everyone (GET /api/site/skin); pages are shared, only the chrome differs.
  *
  *  - <html data-skin="teal|lux"> is set before paint by the script in index.html (last-seen choice, cached in
  *    localStorage "7xen.skin"); this provider then confirms it with the API and switches if the admin changed it.
@@ -18,6 +18,8 @@ import { LuxLoader } from "@/skins/lux/LuxLoader";
 const SKIN_KEY = "7xen.skin";
 const PREVIEW_KEY = "7xen.skin.preview";
 const LUX_FONTS_ID = "sx-lux-fonts";
+const ARENA_FONTS_ID = "sx-arena-fonts";
+const ARENA_FONTS_HREF = "https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&family=Rajdhani:wght@500;600;700&display=swap";
 const LUX_FONTS_HREF = "https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Chakra+Petch:wght@400;500;600;700&family=Share+Tech+Mono&display=swap";
 
 export const skinKeys = { site: ["site", "skin"] as const };
@@ -52,6 +54,13 @@ function applySkin(skin: UiSkin) {
     l.href = LUX_FONTS_HREF;
     document.head.appendChild(l);
   }
+  if (skin === "arena" && !document.getElementById(ARENA_FONTS_ID)) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.id = ARENA_FONTS_ID;
+    l.href = ARENA_FONTS_HREF;
+    document.head.appendChild(l);
+  }
 }
 
 /** The admin's choice (public endpoint). The first fetch reuses the request index.html already started. */
@@ -75,13 +84,14 @@ export function useSiteSkin() {
 interface SkinCtx {
   skin: UiSkin;
   isLux: boolean;
+  isArena: boolean;
   /** true while `?skin=` is previewing a look in this tab */
   previewing: boolean;
   /** stop previewing and go back to the admin's choice */
   clearPreview: () => void;
 }
 
-const Ctx = createContext<SkinCtx>({ skin: DEFAULT_UI_SKIN, isLux: false, previewing: false, clearPreview: () => {} });
+const Ctx = createContext<SkinCtx>({ skin: DEFAULT_UI_SKIN, isLux: false, isArena: false, previewing: false, clearPreview: () => {} });
 
 export function SkinProvider({ children }: { children: ReactNode }) {
   const [preview, setPreview] = useState<UiSkin | null>(previewSkin);
@@ -111,7 +121,7 @@ export function SkinProvider({ children }: { children: ReactNode }) {
 
   const isLux = skin === "lux";
   return (
-    <Ctx.Provider value={{ skin, isLux, previewing: preview != null, clearPreview }}>
+    <Ctx.Provider value={{ skin, isLux, isArena: skin === "arena", previewing: preview != null, clearPreview }}>
       {isLux ? <LoaderProvider value={LuxLoader}>{children}</LoaderProvider> : children}
     </Ctx.Provider>
   );
@@ -122,11 +132,13 @@ export function useSkin() {
 }
 
 /**
- * Render `lux` (lazy-loaded, so Teal visitors never download Lux code) when the Lux skin is on, else `teal`.
+ * Render `lux` (lazy-loaded, so Teal visitors never download Lux code) when the Lux skin is on, `arena` when Arena is
+ * on (when given — Arena falls back to the Teal version otherwise), else `teal`.
  * `fallback` shows while the Lux chunk loads (defaults to the Lux loader).
  */
-export function SkinSwitch({ teal, lux, fallback }: { teal: ReactNode; lux: ReactNode; fallback?: ReactNode }) {
-  const { isLux } = useSkin();
+export function SkinSwitch({ teal, lux, arena, fallback }: { teal: ReactNode; lux: ReactNode; arena?: ReactNode; fallback?: ReactNode }) {
+  const { isLux, isArena } = useSkin();
+  if (isArena && arena) return <Suspense fallback={fallback ?? null}>{arena}</Suspense>;
   if (!isLux) return <>{teal}</>;
   return <Suspense fallback={fallback ?? <LuxLoader label="Loading…" fullscreen />}>{lux}</Suspense>;
 }

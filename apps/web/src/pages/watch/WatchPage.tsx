@@ -13,7 +13,7 @@ import { LiveOverlay } from "@/features/broadcast/LiveOverlay";
 import { HlsPlayer, type PlayerState } from "@/features/station/components/HlsPlayer";
 import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
-import { LiveCard } from "@/pages/live/LiveNowPage";
+import { LiveCard } from "@/features/broadcast/LiveCard";
 import markUrl from "@/assets/brand/airbattleground-mark.webp";
 
 /** Public link to a match's broadcast (shared from the match center). */

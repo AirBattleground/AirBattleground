@@ -14,7 +14,7 @@ export function CoinsSidebarCard({ collapsed }: SidebarSlotState) {
   const q = useCoinLeaderboard();
   const mine = q.data?.myTeam ?? null;
   const coins = mine?.coins ?? 0;
-  const line = !team ? "Join a team to earn coins" : mine ? `Rank #${mine.rank} · ${mine.wins} ${mine.wins === 1 ? "win" : "wins"}` : "Win a match to earn coins";
+  const line = !team ? "Join a team to earn" : mine ? `Rank #${mine.rank} · ${mine.wins} ${mine.wins === 1 ? "win" : "wins"}` : "Win a match to earn";
 
   if (collapsed) {
     return (

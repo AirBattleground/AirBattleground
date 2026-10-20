@@ -10,7 +10,7 @@ import { OrganizerBadge, PosterThumb } from "@/features/team/components/Branding
 import { MapChips } from "@/features/team/components/MapChips";
 import { RegistrationMeter } from "../../shared/RegistrationMeter";
 import { StatusPill } from "../../shared/StatusPill";
-import { fmtRange, plural } from "../../shared/format";
+import { fmtRange, plural, fmtPrize } from "../../shared/format";
 
 function tournamentDates(t: Pick<TeamTournamentDetail, "startsAt" | "stages">) {
   const first = t.startsAt ?? t.stages[0]?.startsAt ?? null;
@@ -62,7 +62,7 @@ export function TournamentHero({ t }: { t: TeamTournamentDetail }) {
             <h1 className="mt-2 font-display text-3xl leading-[1.05] font-bold text-balance sm:text-5xl">{t.title}</h1>
             {t.prize && (
               <p className="mt-2 inline-flex items-center gap-2 rounded-xl border border-warning/40 bg-warning/10 px-3 py-1.5 font-display text-xl font-bold text-warning-foreground sm:text-2xl dark:text-warning">
-                <Trophy className="size-5" /> {t.prize}
+                <Trophy className="size-5" /> {fmtPrize(t.prize)}
               </p>
             )}
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">

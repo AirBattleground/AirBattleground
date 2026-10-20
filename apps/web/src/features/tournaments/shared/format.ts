@@ -53,6 +53,12 @@ export function fmtRange(from: string | null | undefined, to: string | null | un
   return `${fmtShortDay(from)} – ${fmtShortDay(to)}`;
 }
 
+/** Prize as entered; a bare number ("10000") reads as rupees ("₹10,000"). */
+export function fmtPrize(prize: string): string {
+  const p = prize.trim();
+  return /^\d+$/.test(p) ? `₹${Number(p).toLocaleString("en-IN")}` : p;
+}
+
 export const slot2 = (n: number) => `#${String(n).padStart(2, "0")}`;
 
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;

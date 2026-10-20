@@ -11,7 +11,7 @@ import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
 import { useTournaments } from "@/features/tournaments/manager/api";
-import { fmtDay } from "@/features/tournaments/shared/format";
+import { fmtDay, fmtPrize } from "@/features/tournaments/shared/format";
 import { RegistrationMeter } from "@/features/tournaments/shared/RegistrationMeter";
 import { StatusPill } from "@/features/tournaments/shared/StatusPill";
 
@@ -174,7 +174,7 @@ function TournamentCard({ t, tour }: { t: TournamentSummary; tour?: string }) {
             <p className="truncate font-display text-xl leading-tight font-bold group-hover:text-primary">{t.title}</p>
             {t.prize ? (
               <p className="mt-1 flex items-center gap-1.5 truncate font-display text-base font-bold text-warning-foreground dark:text-warning">
-                <Trophy className="size-4 shrink-0" /> {t.prize}
+                <Trophy className="size-4 shrink-0" /> {fmtPrize(t.prize)}
               </p>
             ) : (
               <p className="mt-1 text-sm text-muted-foreground">{t.stagesCount} {t.stagesCount === 1 ? "stage" : "stages"}</p>

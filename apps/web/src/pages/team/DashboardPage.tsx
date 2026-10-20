@@ -23,16 +23,20 @@ import { LastResultCard } from "@/features/results/components/LastResultCard";
 import { TournamentsHomeCard } from "@/features/tournaments/team/components/TournamentsHomeCard";
 import { NextRoomCard } from "@/features/live/components/TeamRoom";
 import { CoinLeaderboard } from "@/features/coins/components/CoinLeaderboard";
+import { LiveNowStrip } from "@/features/broadcast/LiveNowStrip";
 import { TeamLiveCards } from "@/features/station/components/TeamLiveCard";
 
 /** Lux Battle only: plane + chutes over the home hero (lazy, so Teal never loads it). */
 const LuxHomeOverlay = lazy(() => import("@/skins/lux/pages/LuxHomeOverlay"));
+/** Arena only: the game-lobby hero (lazy, so other looks never load it). */
+const ArenaLobby = lazy(() => import("@/skins/arena/ArenaLobby"));
 const STEPS: TourStep[] = [
   { title: "Welcome to AirBattleground!", description: "This is your team's home. Here's a quick look around — it takes 20 seconds." },
   { element: '[data-tour="find-scrim"]', title: "Find a scrim", description: "Your main button: browse scrims by day and register your team.", side: "bottom" },
   { element: '[data-tour="next-match"]', title: "Your next match", description: "Once an organiser approves you, your slot number, time and maps show up here with a live countdown.", side: "bottom" },
   { element: '[data-tour="stats"]', title: "Your numbers", description: "Matches played, approved matches coming up and your best finish (plus requests still waiting, when you have some).", side: "top" },
   { element: '[data-tour="watch-live"]', title: "Watch live", description: "When one of your matches is being streamed, it shows up right here. Tap it to watch the game live.", side: "bottom" },
+  { element: '[data-tour="home-live"]', title: "Live now", description: "Every match being broadcast right now, from any organiser. Tap one to watch.", side: "top" },
   { element: '[data-tour="next-room"]', title: "Room ID & password", description: "Before each match the room ID and password appear here, with copy buttons. Until then it shows when they'll appear.", side: "bottom" },
   { element: '[data-tour="team-suggestions"]', title: "Asked by your team", description: "Scrims and tournaments your members want to play. Register in one tap, or dismiss.", side: "top" },
   { element: '[data-tour="home-tournaments"]', title: "Tournaments", description: "Live cups and ones open for registration. Tap a poster for the full details and to register.", side: "top" },
@@ -47,6 +51,7 @@ const START_STEPS: TourStep[] = [
   { title: "Welcome to AirBattleground!", description: "Browse scrims and tournaments right away. You only need a team when you register." },
   { element: '[data-tour="find-scrim"]', title: "Find a scrim", description: "Browse scrims by day. Tap Register when you find one — we'll help you set up a team.", side: "bottom" },
   { element: '[data-tour="team-up"]', title: "Team up", description: "Create your own team, or join your friends with their invite code.", side: "bottom" },
+  { element: '[data-tour="home-live"]', title: "Live now", description: "Every match being broadcast right now. Tap one to watch.", side: "top" },
   { element: '[data-tour="home-tournaments"]', title: "Tournaments", description: "Live cups and ones open for registration. Tap a poster for the full details.", side: "top" },
   { element: '[data-tour="home-scrims"]', title: "Scrims you can join", description: "Today's and tomorrow's scrims that still take teams.", side: "top" },
   { element: '[data-tour="coins"]', title: "BG coins", description: "Win matches to earn BG coins. See the total given out and the top 10 teams.", side: "top" },
@@ -81,6 +86,7 @@ export default function DashboardPage() {
 /** Phase 5c: a player without a team gets the normal hub (browse first) plus one slim "team up" nudge. */
 function StartHome() {
   usePageTour("team.start", START_STEPS);
+  const { isArena } = useSkin();
   const { user, player } = usePlayerSession();
   const profile = useWatchForApproval();
   const pending = profile.data?.pendingJoinRequest ?? null;
@@ -106,13 +112,20 @@ function StartHome() {
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
       <div className="flex flex-col gap-4">
-        <FeaturedHero
-          eyebrow={`${greeting()}, ${player?.ign ?? user?.displayName ?? "player"}`}
-          stats={startStats}
-          card={<NextMatchCard booked={null} open={nextOpenScrim([scrims.today.items, scrims.tomorrow.items])} today={today} loading={scrims.today.loading} />}
-        />
+        {isArena ? (
+          <Suspense fallback={<div className="h-[70vh]" />}>
+            <ArenaLobby next={null} />
+          </Suspense>
+        ) : (
+          <FeaturedHero
+            eyebrow={`${greeting()}, ${player?.ign ?? user?.displayName ?? "player"}`}
+            stats={startStats}
+            card={<NextMatchCard booked={null} open={nextOpenScrim([scrims.today.items, scrims.tomorrow.items])} today={today} loading={scrims.today.loading} />}
+          />
+        )}
         <TeamUpBanner pending={pending} />
       </div>
+      {!isArena && <LiveNowStrip />}
       <TournamentRail {...featured} />
       <ScrimShowcase data={scrims} />
       <CoinLeaderboard />
@@ -124,7 +137,7 @@ function StartHome() {
 function TeamHome() {
   usePageTour("team.dashboard", STEPS);
   const { user, isLeader } = usePlayerSession();
-  const { isLux } = useSkin();
+  const { isLux, isArena } = useSkin();
   const qc = useQueryClient();
   const q = useTeamDashboard();
   const d = q.data;
@@ -170,12 +183,18 @@ function TeamHome() {
     <div className="flex flex-col gap-8 sm:gap-10">
       <div className="flex flex-col gap-4">
         <div className="relative">
-          <FeaturedHero
-            eyebrow={`${greeting()}, ${team?.name ?? "your team"}`}
-            stats={stats}
-            card={<NextMatchCard booked={d?.nextMatch ?? null} open={nextOpenScrim([scrims.today.items, scrims.tomorrow.items])} today={today} loading={loading} />}
-            error={failed ? <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your dashboard" className="rounded-2xl border bg-card/80 py-8 backdrop-blur-xl" /> : undefined}
-          />
+          {isArena ? (
+            <Suspense fallback={<div className="h-[70vh]" />}>
+              <ArenaLobby next={d?.nextMatch ?? null} />
+            </Suspense>
+          ) : (
+            <FeaturedHero
+              eyebrow={`${greeting()}, ${team?.name ?? "your team"}`}
+              stats={stats}
+              card={<NextMatchCard booked={d?.nextMatch ?? null} open={nextOpenScrim([scrims.today.items, scrims.tomorrow.items])} today={today} loading={loading} />}
+              error={failed ? <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your dashboard" className="rounded-2xl border bg-card/80 py-8 backdrop-blur-xl" /> : undefined}
+            />
+          )}
           {isLux && (
             <Suspense fallback={null}>
               <LuxHomeOverlay />
@@ -185,6 +204,8 @@ function TeamHome() {
         <TeamLiveCards />
         <NextRoomCard />
       </div>
+
+      {!isArena && <LiveNowStrip />}
 
       {isLeader && <SuggestionsPanel />}
 
