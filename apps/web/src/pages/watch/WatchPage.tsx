@@ -153,8 +153,13 @@ function WatchOne({ matchId }: { matchId: string }) {
         <div className="min-w-0">
           <p className="text-xs font-bold tracking-[0.25em] text-destructive uppercase">{ended ? t("stream_ended") : t("live_label")}</p>
           <h1 className="flex flex-wrap items-center gap-3 font-display text-2xl font-bold sm:text-3xl">
-            <span className="min-w-0">{t("title_match", { title: shown.title, n: shown.number })}</span>
-            <MapChip map={shown.map} className="text-sm" />
+            <span className="min-w-0">{shown.number ? t("title_match", { title: shown.title, n: shown.number }) : shown.title}</span>
+            {shown.number > 0 && <MapChip map={shown.map} className="text-sm" />}
+            {shown.unlisted && (
+              <span className="rounded-full bg-warning/15 px-2.5 py-0.5 font-sans text-xs font-semibold text-warning-foreground dark:text-warning" title={t("private_hint")}>
+                {t("private_test")}
+              </span>
+            )}
           </h1>
           <p className="text-sm text-muted-foreground">
             {shown.organizer.name} · {shown.subtitle}

@@ -351,9 +351,10 @@ export async function shutdownStudio() {
 // ---------------------------------------------------------------- public live list
 
 /** Live Studio shows as Live-page cards (newest first). */
-export async function liveShows(): Promise<LiveBroadcastCard[]> {
+/** Live Studio shows: the public ones, plus `ownerId`'s private (unlisted) ones when given. */
+export async function liveShows(ownerId?: string | null): Promise<LiveBroadcastCard[]> {
   const shows = await prisma.studioShow.findMany({
-    where: { state: "LIVE", publicListing: true, id: { in: [...runners.keys()] } },
+    where: { state: "LIVE", id: { in: [...runners.keys()] }, OR: [{ publicListing: true }, ...(ownerId ? [{ managerId: ownerId }] : [])] },
     include: { manager: { select: { displayName: true, orgName: true, orgLogoKey: true } } },
     orderBy: { liveSince: "desc" },
     take: 50,
@@ -375,12 +376,16 @@ export async function liveShows(): Promise<LiveBroadcastCard[]> {
       organizer: { name: s.manager.orgName ?? s.manager.displayName, logoUrl: brandingUrl(s.manager.orgLogoKey) },
       tournamentId: m?.group?.stage.tournament.id ?? null,
       studio: true,
+      ...(s.publicListing ? {} : { unlisted: true }),
     });
   }
   return out;
 }
 
 /** Is this show broadcasting publicly (public HLS gate)? Private test streams aren't served. */
+/** The manager whose show is live right now (private shows are watchable by them only). */
+export const liveShowOwner = (showId: string): string | null => runners.get(showId)?.managerId ?? null;
+
 const listedCache = new Map<string, { at: number; listed: boolean }>();
 /** Public HLS gate (called for every playlist/segment request): the listing flag is cached for 3 s. */
 export async function showIsLive(showId: string): Promise<boolean> {

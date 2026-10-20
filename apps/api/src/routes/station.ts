@@ -91,6 +91,13 @@ function candidateTokens(req: Request): string[] {
   return out;
 }
 
+/** Signed-in user ids on this request (no DB read) — lets a manager watch their own private Studio show. */
+const sessionUserIds = (req: Request): string[] =>
+  candidateTokens(req)
+    .map(verifyToken)
+    .filter((x): x is NonNullable<typeof x> => !!x)
+    .map((x) => x.sub);
+
 /** 401 without a valid session, 403 when none of the sessions may watch, 404 when there's no stream. */
 async function requireViewer(req: Request, _res: Response, next: NextFunction) {
   const matchId = p(req.params.matchId);
@@ -172,17 +179,19 @@ export function liveRouter() {
   const r = Router();
   // phase 6c/6d/7: iPhone broadcasts (the manager pressed "Start broadcast" in the match center) are PUBLIC — anyone,
   // signed in or not, can list and watch them (web /watch). Station recordings below stay limited to their viewers.
-  r.get("/", async (_req, res) => {
+  r.get("/", async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    // phase 8: only Studio shows are broadcast (single-phone broadcasts were retired to save server CPU)
-    res.json({ items: await studio.liveShows() });
+    // phase 8: only Studio shows are broadcast (single-phone broadcasts were retired to save server CPU);
+    // a signed-in manager also gets their own private (unlisted) show so "Open viewer" works for a test stream
+    res.json({ items: await studio.liveShows(sessionUserIds(req)[0] ?? null) });
   });
   // phase 8: a live Studio show's HLS (public)
   r.get("/s/:showId/:file", async (req, res) => {
     const showId = p(req.params.showId);
     const file = p(req.params.file);
     if (!/^[A-Za-z0-9_.-]{1,80}\.(m3u8|mp4|m4s|ts)$/.test(file)) throw notFound("Not found");
-    if (!(await studio.showIsLive(showId))) throw notFound("This show isn't live");
+    const owner = studio.liveShowOwner(showId);
+    if (!(await studio.showIsLive(showId)) && !(owner && sessionUserIds(req).includes(owner))) throw notFound("This show isn't live");
     const search = req.originalUrl.includes("?") ? req.originalUrl.slice(req.originalUrl.indexOf("?")) : "";
     const upstream = await fetchHlsPath(showPath(showId), file, search);
     if (!upstream || !upstream.ok || !upstream.body) throw notFound("The stream is starting. Try again in a few seconds.");
