@@ -6,19 +6,22 @@ import { Pill } from "@7xen/ui/components/brand/status";
 import { cn } from "@7xen/ui/lib/utils";
 import { Countdown } from "../../shared/Countdown";
 import { RegistrationMeter } from "../../shared/RegistrationMeter";
-import { fmtWhen, fmtPrize } from "../../shared/format";
+import { fmtPrize, useTournamentFormat } from "../../shared/format";
 import { useTeamTournament, useTeamTournaments } from "../api";
 import { journeyCopy, meChip } from "../journey";
+import { useT } from "@/i18n/core";
+import { tJourney, tList } from "@/i18n/tournaments";
 
 const ACTIVE = new Set(["REGISTRATION_OPEN", "REGISTRATION_CLOSED", "LIVE"]);
 
 /** Poster as the card's icon tile; falls back to the trophy tile when missing/broken. */
 function Tile({ poster, title }: { poster: string | null; title: string }) {
   const [failed, setFailed] = useState(false);
+  const tl = useT(tList);
   if (poster && !failed)
     return (
       <span className="relative size-12 shrink-0 overflow-hidden rounded-2xl bg-muted ring-1 ring-border sm:size-14">
-        <img src={poster} alt={`${title} poster`} loading="lazy" decoding="async" onError={() => setFailed(true)} className="size-full object-cover" />
+        <img src={poster} alt={tl("poster_alt", { title })} loading="lazy" decoding="async" onError={() => setFailed(true)} className="size-full object-cover" />
       </span>
     );
   return (
@@ -49,33 +52,34 @@ function Shell({ to, children, highlight, t }: { to: string; children: ReactNode
 
 function MineSummary({ t }: { t: TournamentSummary }) {
   const d = useTeamTournament(t.id).data;
-  const chip = d ? meChip(d.me) : null;
+  const tl = useT(tList);
+  const tj = useT(tJourney);
+  const { fmtWhen } = useTournamentFormat();
+  const chip = d ? meChip(d.me, tj) : null;
   const nm = d?.me.nextMatch;
   return (
     <Shell to={`/team/tournaments/${t.id}`} t={t} highlight>
       <div className="relative min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-2 text-xs font-semibold tracking-[0.2em] text-primary uppercase">
-          Your tournament {chip && <Pill tone={chip.tone} className="tracking-normal normal-case">{chip.text}</Pill>}
+          {tl("your_tournament")} {chip && <Pill tone={chip.tone} className="tracking-normal normal-case">{chip.text}</Pill>}
         </p>
         <p className="truncate font-display text-xl leading-tight font-bold">{t.title}</p>
         <p className="text-sm text-muted-foreground">
           {nm ? (
-            <>
-              Next: Match {nm.number} · Group {nm.groupName} · {fmtWhen(nm.scheduledAt)}
-            </>
+            tl("next_line", { n: nm.number, group: nm.groupName, when: fmtWhen(nm.scheduledAt) })
           ) : d ? (
-            (d.me.nextGoal ?? journeyCopy(d).body)
+            (d.me.nextGoal ?? journeyCopy(d, tj).body)
           ) : (
-            "Loading your status…"
+            tl("loading_status")
           )}
         </p>
       </div>
       {nm?.scheduledAt && (
         <div className="relative col-span-2 shrink-0 text-left sm:text-right">
-          <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Starts in</p>
+          <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">{tl("starts_in")}</p>
           <p className="flex items-center gap-1 font-display text-2xl font-bold">
             <Clock className="size-4 text-primary" />
-            <Countdown to={nm.scheduledAt} doneText="Now!" />
+            <Countdown to={nm.scheduledAt} doneText={tl("now_bang")} />
           </p>
         </div>
       )}
@@ -90,6 +94,7 @@ function MineSummary({ t }: { t: TournamentSummary }) {
 export function TournamentsHomeCard({ mineOnly = false }: { mineOnly?: boolean } = {}) {
   const mine = useTeamTournaments("mine");
   const open = useTeamTournaments("open");
+  const tl = useT(tList);
   const active = (mine.data ?? []).find((t) => ACTIVE.has(t.status));
   if (active) return <MineSummary t={active} />;
   if (mineOnly) return null;
@@ -99,7 +104,7 @@ export function TournamentsHomeCard({ mineOnly = false }: { mineOnly?: boolean }
   return (
     <Shell to={`/team/tournaments/${join.id}`} t={join}>
       <div className="relative min-w-0 flex-1">
-        <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Tournament · registration open</p>
+        <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">{tl("reg_open_eyebrow")}</p>
         <p className="truncate font-display text-xl leading-tight font-bold">
           {join.title}
           {join.prize && <span className="ml-2 text-base text-warning-foreground dark:text-warning">· {fmtPrize(join.prize)}</span>}
@@ -107,7 +112,7 @@ export function TournamentsHomeCard({ mineOnly = false }: { mineOnly?: boolean }
         <RegistrationMeter confirmed={join.confirmedCount} max={join.maxTeams} waitlist={join.waitlistCount} size="sm" className="mt-2" />
       </div>
       <span className="relative col-span-2 inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-glow sm:ml-2">
-        View & register
+        {tl("view_register")}
       </span>
     </Shell>
   );

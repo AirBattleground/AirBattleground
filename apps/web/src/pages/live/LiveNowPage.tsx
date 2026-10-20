@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { Radio } from "lucide-react";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
@@ -6,24 +7,29 @@ import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useLiveBroadcasts } from "@/features/broadcast/live";
 import { LiveCard } from "@/features/broadcast/LiveCard";
 import { QueryError } from "@/features/team/components/QueryError";
-
-const TOUR: TourStep[] = [
-  { title: "Live now", description: "Every match an organiser is broadcasting right now. Anyone can watch — even without signing in." },
-  { element: '[data-tour="live-grid"]', title: "Pick a match", description: "Tap a match to watch it. You can pause and go back to anything since you started watching, then jump to Live again.", side: "top" },
-];
+import { useT } from "@/i18n/core";
+import { liveMsg } from "@/i18n/live";
 
 /** Live page for players (/team/live) and managers (/manager/live): every broadcast on right now. */
 export default function LiveNowPage() {
-  usePageTour("live.now", TOUR);
+  const t = useT(liveMsg);
+  const tour = useMemo<TourStep[]>(
+    () => [
+      { title: t("now_tour_title"), description: t("now_tour_desc") },
+      { element: '[data-tour="live-grid"]', title: t("now_tour_grid_title"), description: t("now_tour_grid_desc"), side: "top" },
+    ],
+    [t],
+  );
+  usePageTour("live.now", tour);
   const base = useLocation().pathname.startsWith("/manager") ? "/manager" : "/team";
   const q = useLiveBroadcasts();
   const items = q.data ?? [];
 
   return (
     <>
-      <PageHeader eyebrow="Streams" title={<>Live <span className="text-gradient-brand">now</span></>} description="Matches being broadcast right now. Tap one to watch." />
+      <PageHeader eyebrow={t("streams")} title={t.rich("now_heading", { g: (c) => <span className="text-gradient-brand">{c}</span> })} description={t("now_desc")} />
       {q.isError ? (
-        <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load live matches" />
+        <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_list_error")} />
       ) : q.isPending ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[0, 1, 2].map((i) => (
@@ -31,7 +37,7 @@ export default function LiveNowPage() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <EmptyState icon={<Radio />} title="Nothing live right now" description="When an organiser starts a broadcast it shows up here, and a red Live count appears in the menu." />
+        <EmptyState icon={<Radio />} title={t("nothing_live")} description={t("nothing_live_desc")} />
       ) : (
         <div data-tour="live-grid" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((b) => (

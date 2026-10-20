@@ -6,7 +6,10 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { Calendar } from "@7xen/ui/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@7xen/ui/components/ui/popover";
 import { cn } from "@7xen/ui/lib/utils";
-import { formatDate, isWeekend } from "../format";
+import { common } from "@/i18n/common";
+import { useT } from "@/i18n/core";
+import { scrimUi } from "@/i18n/scrims";
+import { isWeekend, useDayFormat } from "../format";
 
 const STRIP_DAYS = 14;
 
@@ -32,6 +35,9 @@ export function DateStrip({
   /** shows an "Upcoming" pill first that selects the multi-day view */
   onUpcoming?: () => void;
 }) {
+  const t = useT(scrimUi);
+  const tc = useT(common);
+  const { formatDate } = useDayFormat();
   const days = useMemo(() => Array.from({ length: STRIP_DAYS }, (_, i) => addDays(today, i)), [today]);
   const upcoming = value === "";
   const inStrip = upcoming || days.includes(value);
@@ -50,14 +56,14 @@ export function DateStrip({
 
   return (
     <div className={cn("flex items-stretch gap-2", className)} data-tour="date-strip">
-      <Button variant="ghost" size="icon" className="hidden h-auto shrink-0 sm:inline-flex" onClick={() => scrollBy(-1)} aria-label="Earlier days">
+      <Button variant="ghost" size="icon" className="hidden h-auto shrink-0 sm:inline-flex" onClick={() => scrollBy(-1)} aria-label={t("earlier_days")}>
         <ChevronLeft />
       </Button>
 
       <div
         ref={scroller}
         role="listbox"
-        aria-label="Pick a day"
+        aria-label={t("pick_day")}
         className="relative -mx-1 flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto scroll-smooth px-1 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {onUpcoming && (
@@ -72,15 +78,15 @@ export function DateStrip({
               upcoming ? "-translate-y-0.5 border-primary bg-primary text-primary-foreground shadow-glow" : "bg-card hover:border-primary/40 hover:bg-accent/50",
             )}
           >
-            <span className={cn("text-[10px] font-semibold tracking-wider uppercase", upcoming ? "text-primary-foreground/90" : "text-primary")}>Next 7</span>
-            <span className="font-display text-xl leading-tight font-bold">Upcoming</span>
+            <span className={cn("text-[10px] font-semibold tracking-wider uppercase", upcoming ? "text-primary-foreground/90" : "text-primary")}>{t("next7")}</span>
+            <span className="font-display text-xl leading-tight font-bold">{t("upcoming")}</span>
           </button>
         )}
         {days.map((d, i) => {
           const selected = d === value;
           const n = counts?.get(d);
           const weekend = isWeekend(d);
-          const top = i === 0 ? "Today" : i === 1 ? "Tomorrow" : formatDate(d, "EEE");
+          const top = i === 0 ? tc("today") : i === 1 ? tc("tomorrow") : formatDate(d, "EEE");
           return (
             <button
               key={d}
@@ -114,7 +120,7 @@ export function DateStrip({
               {weekend && !selected && n == null && <span className="absolute top-1.5 right-1.5 size-1.5 rounded-full bg-primary/70" aria-hidden />}
               {n != null && n > 0 && (
                 <span
-                  aria-label={`${n} ${n === 1 ? "scrim" : "scrims"}`}
+                  aria-label={t.plural("scrims", n)}
                   className={cn(
                     "absolute -top-1.5 -right-1.5 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold ring-2 ring-background",
                     selected ? "bg-primary-foreground text-primary" : "bg-primary text-primary-foreground",
@@ -128,7 +134,7 @@ export function DateStrip({
         })}
       </div>
 
-      <Button variant="ghost" size="icon" className="hidden h-auto shrink-0 sm:inline-flex" onClick={() => scrollBy(1)} aria-label="Later days">
+      <Button variant="ghost" size="icon" className="hidden h-auto shrink-0 sm:inline-flex" onClick={() => scrollBy(1)} aria-label={t("later_days")}>
         <ChevronRight />
       </Button>
 
@@ -141,10 +147,10 @@ export function DateStrip({
               "my-2 flex w-[4.5rem] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border border-dashed px-2 text-xs font-semibold transition-colors",
               !inStrip ? "border-solid border-primary bg-primary text-primary-foreground shadow-glow" : "hover:border-primary/50 hover:bg-accent/50",
             )}
-            aria-label="Pick another date"
+            aria-label={t("pick_other_date")}
           >
             <CalendarDays className="size-5" />
-            {inStrip ? "More" : formatDate(value, "d MMM")}
+            {inStrip ? t("more") : formatDate(value, "d MMM")}
           </button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-auto p-0">

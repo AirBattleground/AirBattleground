@@ -93,8 +93,15 @@ export const devLoginSchema = z.object({
 });
 export type DevLoginInput = z.infer<typeof devLoginSchema>;
 
+/** phase 7c: portal languages — English, Hindi (Devanagari), Hinglish (Hindi in Roman letters). */
+export const LANGUAGES = ["en", "hi", "hinglish"] as const;
+export type Language = (typeof LANGUAGES)[number];
+export const isLanguage = (v: unknown): v is Language => typeof v === "string" && (LANGUAGES as readonly string[]).includes(v);
+
 export const updatePlayerProfileSchema = z.object({
   ign: ignSchema.optional(),
+  /** phase 7c: the player's portal language (null = follow the device) */
+  language: z.enum(LANGUAGES).nullable().optional(),
   /** "" clears it (only allowed while not in a team) */
   bgmiId: z.union([bgmiIdSchema, z.literal("")]).optional(),
   displayName: z.string().trim().min(2).max(60).optional(),
@@ -170,6 +177,8 @@ export interface SessionPlayer {
   team: PlayerTeamSummary | null;
   /** IGN not chosen yet → web sends them to /welcome */
   needsOnboarding: boolean;
+  /** phase 7c: saved portal language (null = not chosen; the web follows the device) */
+  language?: Language | null;
 }
 
 export interface PlayerProfile extends PlayerSummary {

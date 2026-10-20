@@ -1,7 +1,6 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { format, parseISO } from "date-fns";
 import {
   Crown,
   Hash,
@@ -49,15 +48,8 @@ import { PlayerAvatar } from "@/features/player/components/PlayerAvatar";
 import { TeamLogo } from "@/features/player/components/TeamLogo";
 import { TeamLogoEditor } from "@/features/player/components/TeamLogoEditor";
 import { QueryError } from "@/features/team/components/QueryError";
-
-const STEPS: TourStep[] = [
-  { title: "My team", description: "Everything about your squad: who's in, how to invite players and who leads." },
-  { element: '[data-tour="team-logo"]', title: "Team logo", description: "Leaders can tap the logo to upload one. It shows next to your team name.", side: "bottom" },
-  { element: '[data-tour="team-invite"]', title: "Invite players", description: "Type a player's BGMI ID to invite them, or share the link on WhatsApp so they can ask to join.", side: "bottom" },
-  { element: '[data-tour="join-requests"]', title: "Join requests", description: "Approve the players you know. Reject anyone you don't.", side: "top" },
-  { element: '[data-tour="team-members"]', title: "Members", description: "Your squad with their in-game names and BGMI IDs. The crown marks the leader.", side: "top" },
-  { element: '[data-tour="team-danger"]', title: "Leave or disband", description: "Members can leave any time. The leader can hand over leadership or disband the team.", side: "top" },
-];
+import { useDateFormat, useT } from "@/i18n/core";
+import { myTeamMsg } from "@/i18n/team";
 
 const name = (p: { ign: string | null; displayName: string }) => p.ign ?? p.displayName;
 
@@ -70,6 +62,7 @@ interface ConfirmState {
 }
 
 function Confirm({ state, onClose }: { state: ConfirmState | null; onClose: () => void }) {
+  const t = useT(myTeamMsg);
   return (
     <AlertDialog open={!!state} onOpenChange={(o) => !o && onClose()}>
       <AlertDialogContent>
@@ -80,7 +73,7 @@ function Confirm({ state, onClose }: { state: ConfirmState | null; onClose: () =
               <AlertDialogDescription>{state.description}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Not now</AlertDialogCancel>
+              <AlertDialogCancel>{t("not_now")}</AlertDialogCancel>
               <AlertDialogAction variant={state.destructive ? "destructive" : "default"} onClick={state.run}>
                 {state.action}
               </AlertDialogAction>
@@ -111,6 +104,8 @@ function Section({ title, icon, count, children, className, tour, action }: { ti
 // Requests & members
 // ---------------------------------------------------------------------------
 function RequestRow({ r }: { r: TeamJoinRequestRow }) {
+  const t = useT(myTeamMsg);
+  const fmt = useDateFormat();
   const approve = useApproveJoin();
   const reject = useRejectJoin();
   const n = name(r.player);
@@ -122,17 +117,17 @@ function RequestRow({ r }: { r: TeamJoinRequestRow }) {
         <div className="min-w-0">
           <p className="truncate font-semibold">{n}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {r.player.bgmiId ? <span className="font-mono">BGMI {r.player.bgmiId}</span> : "No BGMI ID yet"} · asked {format(parseISO(r.createdAt), "d MMM, h:mm a")}
+            {r.player.bgmiId ? <span className="font-mono">BGMI {r.player.bgmiId}</span> : t("no_bgmi_yet")} · {t("asked_at", { when: fmt(r.createdAt, "d MMM, h:mm a") })}
           </p>
           {r.message && <p className="mt-1 rounded-lg bg-muted/60 px-2 py-1 text-sm">“{r.message}”</p>}
         </div>
       </div>
       <div className="flex shrink-0 gap-2">
         <Button className="flex-1 sm:flex-none" disabled={busy} onClick={() => approve.mutate({ id: r.id, name: n })}>
-          <UserCheck /> Approve
+          <UserCheck /> {t("approve")}
         </Button>
         <Button variant="outline" className="flex-1 text-muted-foreground hover:text-destructive sm:flex-none" disabled={busy} onClick={() => reject.mutate({ id: r.id, name: n })}>
-          <X /> Reject
+          <X /> {t("reject")}
         </Button>
       </div>
     </motion.li>
@@ -140,6 +135,8 @@ function RequestRow({ r }: { r: TeamJoinRequestRow }) {
 }
 
 function MemberRow({ m, me, leaderView, onAsk }: { m: TeamMemberRow; me: boolean; leaderView: boolean; onAsk: (c: ConfirmState) => void }) {
+  const t = useT(myTeamMsg);
+  const fmt = useDateFormat();
   const remove = useRemoveMember();
   const transfer = useTransferLeader();
   const n = name(m);
@@ -149,7 +146,7 @@ function MemberRow({ m, me, leaderView, onAsk }: { m: TeamMemberRow; me: boolean
       <div className="relative">
         <PlayerAvatar name={n} url={m.avatarUrl} size="md" className={cn(leader && "ring-2 ring-warning/70")} />
         {leader && (
-          <span className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-warning text-warning-foreground shadow" title="Team leader">
+          <span className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-warning text-warning-foreground shadow" title={t("team_leader")}>
             <Crown className="size-3" />
           </span>
         )}
@@ -157,8 +154,8 @@ function MemberRow({ m, me, leaderView, onAsk }: { m: TeamMemberRow; me: boolean
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 truncate font-semibold">
           <span className="truncate">{n}</span>
-          {me && <span className="rounded-md bg-primary/15 px-1.5 py-px text-[10px] font-bold tracking-wider text-primary uppercase">You</span>}
-          {leader && <span className="rounded-md bg-warning/15 px-1.5 py-px text-[10px] font-bold tracking-wider text-warning uppercase">Leader</span>}
+          {me && <span className="rounded-md bg-primary/15 px-1.5 py-px text-[10px] font-bold tracking-wider text-primary uppercase">{t("you")}</span>}
+          {leader && <span className="rounded-md bg-warning/15 px-1.5 py-px text-[10px] font-bold tracking-wider text-warning uppercase">{t("leader")}</span>}
         </p>
         <p className="truncate text-xs text-muted-foreground">
           {m.bgmiId ? (
@@ -167,15 +164,15 @@ function MemberRow({ m, me, leaderView, onAsk }: { m: TeamMemberRow; me: boolean
               {m.bgmiId}
             </span>
           ) : (
-            "No BGMI ID"
+            t("no_bgmi")
           )}{" "}
-          · joined {format(parseISO(m.joinedAt), "d MMM yyyy")}
+          · {t("joined", { when: fmt(m.joinedAt, "d MMM yyyy") })}
         </p>
       </div>
       {leaderView && !me && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label={`Actions for ${n}`} disabled={remove.isPending || transfer.isPending}>
+            <Button variant="ghost" size="icon" aria-label={t("actions_for", { name: n })} disabled={remove.isPending || transfer.isPending}>
               <MoreVertical />
             </Button>
           </DropdownMenuTrigger>
@@ -183,29 +180,29 @@ function MemberRow({ m, me, leaderView, onAsk }: { m: TeamMemberRow; me: boolean
             <DropdownMenuItem
               onSelect={() =>
                 onAsk({
-                  title: `Make ${n} the leader?`,
-                  description: "They'll register for scrims and approve new players. You stay in the team as a member.",
-                  action: "Yes, make leader",
+                  title: t("make_leader_q", { name: n }),
+                  description: t("make_leader_desc"),
+                  action: t("make_leader_yes"),
                   run: () => transfer.mutate({ userId: m.id, name: n }),
                 })
               }
             >
-              <Crown /> Make leader
+              <Crown /> {t("make_leader")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
               onSelect={() =>
                 onAsk({
-                  title: `Remove ${n}?`,
-                  description: "They leave the team straight away. They can ask to join again with your invite link.",
-                  action: "Remove from team",
+                  title: t("remove_q", { name: n }),
+                  description: t("remove_desc"),
+                  action: t("remove_from_team"),
                   destructive: true,
                   run: () => remove.mutate({ userId: m.id, name: n }),
                 })
               }
             >
-              <UserMinus /> Remove from team
+              <UserMinus /> {t("remove_from_team")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -224,19 +221,22 @@ function MyTeamSkeleton() {
   );
 }
 
-const START_STEPS: TourStep[] = [
-  { title: "Get your squad together", description: "Scrims and tournaments are played as a team. This is where you make one or join one." },
-  { element: '[data-tour="create-team"]', title: "Create your team", description: "Start your own squad. You become the leader and get an invite link to share.", side: "bottom" },
-  { element: '[data-tour="join-code"]', title: "Join with a code", description: "Got an invite from a friend? Type their code or paste the link here.", side: "top" },
-  { element: '[data-tour="how-teams-work"]', title: "How teams work", description: "The leader registers; members tap “Ask my leader”. Everyone sees the slots and results.", side: "top" },
-];
-
 /** Phase 5c: the one place with the full create / join UI for a player without a team. */
 function NoTeamView() {
-  usePageTour("team.my-team-start", START_STEPS);
+  const t = useT(myTeamMsg);
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { title: t("start_tour_title"), description: t("start_tour_desc") },
+      { element: '[data-tour="create-team"]', title: t("start_create_title"), description: t("start_create_desc"), side: "bottom" },
+      { element: '[data-tour="join-code"]', title: t("start_join_title"), description: t("start_join_desc"), side: "top" },
+      { element: '[data-tour="how-teams-work"]', title: t("start_how_title"), description: t("start_how_desc"), side: "top" },
+    ],
+    [t],
+  );
+  usePageTour("team.my-team-start", steps);
   return (
     <div className="space-y-5 sm:space-y-6">
-      <PageHeader eyebrow="My team" title="You're not in a team yet" description="Create your own squad, or join your friends with their invite code. You can browse scrims and tournaments either way." className="mb-2" />
+      <PageHeader eyebrow={t("eyebrow")} title={t("no_team_title")} description={t("no_team_desc")} className="mb-2" />
       <CreateOrJoinTeam />
     </div>
   );
@@ -250,7 +250,19 @@ export default function MyTeamPage() {
 }
 
 function MyTeamView() {
-  usePageTour("team.my-team", STEPS);
+  const tr = useT(myTeamMsg);
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { title: tr("tour_title"), description: tr("tour_desc") },
+      { element: '[data-tour="team-logo"]', title: tr("tour_logo_title"), description: tr("tour_logo_desc"), side: "bottom" },
+      { element: '[data-tour="team-invite"]', title: tr("tour_invite_title"), description: tr("tour_invite_desc"), side: "bottom" },
+      { element: '[data-tour="join-requests"]', title: tr("tour_requests_title"), description: tr("tour_requests_desc"), side: "top" },
+      { element: '[data-tour="team-members"]', title: tr("tour_members_title"), description: tr("tour_members_desc"), side: "top" },
+      { element: '[data-tour="team-danger"]', title: tr("tour_danger_title"), description: tr("tour_danger_desc"), side: "top" },
+    ],
+    [tr],
+  );
+  usePageTour("team.my-team", steps);
   const { user, hasTeam } = usePlayerSession();
   const q = usePlayerTeam({ enabled: hasTeam });
   const navigate = useNavigate();
@@ -261,7 +273,7 @@ function MyTeamView() {
   const [editOpen, setEditOpen] = useState(false);
 
   if (q.isLoading) return <MyTeamSkeleton />;
-  if (q.isError || !q.data) return <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your team" />;
+  if (q.isError || !q.data) return <QueryError error={q.error} onRetry={() => void q.refetch()} title={tr("load_fail")} />;
 
   const t = q.data;
   const leaderView = t.myRole === "LEADER";
@@ -270,16 +282,16 @@ function MyTeamView() {
 
   const askRotate = () =>
     setConfirm({
-      title: "Make a new invite code?",
-      description: "The old link and code stop working. Anyone you already sent it to will need the new one.",
-      action: "Make a new code",
+      title: tr("rotate_q"),
+      description: tr("rotate_desc"),
+      action: tr("rotate_yes"),
       run: () => rotate.mutate(),
     });
 
   return (
     <div className="space-y-5 sm:space-y-6">
       <PageHeader
-        eyebrow="My team"
+        eyebrow={tr("eyebrow")}
         title={
           <span className="flex items-center gap-3">
             {leaderView ? <TeamLogoEditor name={t.name} tag={t.tag} logoUrl={t.logoUrl} /> : <TeamLogo name={t.name} tag={t.tag} logoUrl={t.logoUrl} size="lg" className="shadow-glow" />}
@@ -291,14 +303,18 @@ function MyTeamView() {
         }
         description={
           <>
-            {t.members.length}/{t.maxMembers} players · you're the <span className="font-semibold text-foreground">{leaderView ? "leader" : "member"}</span>
-            {!leaderView && " — your leader registers for scrims; tap “Ask my leader” on any scrim."}
+            {tr.rich(
+              "players_role",
+              { b: (c) => <span className="font-semibold text-foreground">{c}</span> },
+              { count: t.members.length, max: t.maxMembers, role: leaderView ? tr("role_leader") : tr("role_member") },
+            )}
+            {!leaderView && tr("member_hint")}
           </>
         }
         actions={
           leaderView ? (
             <Button variant="outline" onClick={() => setEditOpen(true)}>
-              <Pencil /> Edit team
+              <Pencil /> {tr("edit_team")}
             </Button>
           ) : undefined
         }
@@ -308,9 +324,9 @@ function MyTeamView() {
       {leaderView && t.inviteCode && <InvitePlayersCard team={t} onRotate={askRotate} />}
 
       {leaderView && (
-        <Section title="Join requests" icon={<UserPlus />} count={t.joinRequests.length} tour="join-requests">
+        <Section title={tr("join_requests")} icon={<UserPlus />} count={t.joinRequests.length} tour="join-requests">
           {t.joinRequests.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-muted-foreground sm:px-5">No one's waiting. Share your invite link and new requests show up here.</p>
+            <p className="px-4 py-6 text-center text-sm text-muted-foreground sm:px-5">{tr("no_requests")}</p>
           ) : (
             <ul className="divide-y">
               {t.joinRequests.map((r) => (
@@ -321,26 +337,28 @@ function MyTeamView() {
         </Section>
       )}
 
-      <Section title="Members" icon={<Users />} count={t.members.length} tour="team-members">
+      <Section title={tr("members")} icon={<Users />} count={t.members.length} tour="team-members">
         <ul className="divide-y">
           {members.map((m) => (
             <MemberRow key={m.id} m={m} me={m.id === user?.id} leaderView={leaderView} onAsk={setConfirm} />
           ))}
         </ul>
         {t.members.length < 4 && (
-          <p className="border-t px-4 py-3 text-xs text-muted-foreground sm:px-5">A squad is 4 players (up to {t.maxMembers} with subs). {leaderView ? "Invite more with the link above." : "Ask your leader to invite more."}</p>
+          <p className="border-t px-4 py-3 text-xs text-muted-foreground sm:px-5">
+            {tr("squad_hint", { max: t.maxMembers })} {leaderView ? tr("invite_more_leader") : tr("invite_more_member")}
+          </p>
         )}
       </Section>
 
       <section className="flex flex-col gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:p-5" data-tour="team-danger">
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-lg font-bold">{leaderView ? "Disband team" : "Leave team"}</h2>
+          <h2 className="font-display text-lg font-bold">{leaderView ? tr("disband_team") : tr("leave_team")}</h2>
           <p className="text-sm text-muted-foreground">
             {leaderView
               ? others > 0
-                ? "Want to leave instead? Make someone else the leader first (⋮ next to their name). Disbanding removes the team for everyone."
-                : "Removes the team. You can't disband while the team has upcoming scrims or an active tournament."
-              : "You'll leave right away. You can join another team after."}
+                ? tr("disband_hint_others")
+                : tr("disband_hint_alone")
+              : tr("leave_hint")}
           </p>
         </div>
         {leaderView ? (
@@ -349,15 +367,15 @@ function MyTeamView() {
             disabled={disband.isPending}
             onClick={() =>
               setConfirm({
-                title: `Disband ${t.name}?`,
-                description: "Everyone leaves the team and the invite link stops working. This can't be undone.",
-                action: "Yes, disband",
+                title: tr("disband_q", { team: t.name }),
+                description: tr("disband_desc"),
+                action: tr("disband_yes"),
                 destructive: true,
                 run: () => disband.mutate(undefined, { onSuccess: () => navigate("/team", { replace: true }) }),
               })
             }
           >
-            <ShieldX /> Disband team
+            <ShieldX /> {tr("disband_team")}
           </Button>
         ) : (
           <Button
@@ -365,15 +383,15 @@ function MyTeamView() {
             disabled={leave.isPending}
             onClick={() =>
               setConfirm({
-                title: `Leave ${t.name}?`,
-                description: "You won't see the team's slots or results any more. You can ask to join again with an invite link.",
-                action: "Yes, leave",
+                title: tr("leave_q", { team: t.name }),
+                description: tr("leave_desc"),
+                action: tr("leave_yes"),
                 destructive: true,
                 run: () => leave.mutate(undefined, { onSuccess: () => navigate("/team", { replace: true }) }),
               })
             }
           >
-            <LogOut /> Leave team
+            <LogOut /> {tr("leave_team")}
           </Button>
         )}
       </section>

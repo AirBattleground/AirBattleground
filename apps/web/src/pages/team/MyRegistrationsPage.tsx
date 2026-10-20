@@ -12,16 +12,11 @@ import { useMyRegistrations, type RegistrationScope } from "@/features/team/api"
 import { QueryError } from "@/features/team/components/QueryError";
 import { RegistrationCard, RegistrationCardSkeleton } from "@/features/team/components/RegistrationCard";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
-import { dayLabel, formatDate } from "@/features/team/format";
+import { useDayFormat } from "@/features/team/format";
+import { useT } from "@/i18n/core";
+import { regsMsg, scrimUi } from "@/i18n/scrims";
 import { MyEntriesList } from "@/features/tournaments/team/components/MyEntriesList";
 
-const STEPS: TourStep[] = [
-  { title: "Your registrations", description: "Every scrim, tournament and TDM battle your team joined, and what the organiser decided." },
-  { element: '[data-tour="reg-tabs"]', title: "Upcoming and past", description: "Upcoming shows what's next. Past keeps your history.", side: "bottom" },
-  { element: '[data-tour="reg-status"]', title: "Status in plain words", description: "“Waiting for approval” means the organiser hasn't decided yet. This page refreshes by itself.", side: "left" },
-  { element: '[data-tour="reg-slot"]', title: "Your slot number", description: "Approved? This is your slot in the room. Remember it for the match!", side: "left" },
-  { element: '[data-tour="reg-cancel"]', title: "Can't make it?", description: "Cancel here so another team can take the spot.", side: "left" },
-];
 
 function groupByDate(items: TeamRegistration[], desc: boolean) {
   const sorted = [...items].sort((a, b) => (desc ? b.startsAt.localeCompare(a.startsAt) : a.startsAt.localeCompare(b.startsAt)));
@@ -35,11 +30,14 @@ function groupByDate(items: TeamRegistration[], desc: boolean) {
 }
 
 function RegistrationList({ scope, today }: { scope: RegistrationScope; today: string }) {
+  const t = useT(regsMsg);
+  const ts = useT(scrimUi);
+  const { dayLabel, formatDate } = useDayFormat();
   const { hasTeam } = usePlayerSession();
   const q = useMyRegistrations(scope);
   const groups = useMemo(() => groupByDate(q.data ?? [], scope === "past"), [q.data, scope]);
 
-  if (q.isError) return <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load registrations" />;
+  if (q.isError) return <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_error")} />;
   if (q.isLoading)
     return (
       <div className="space-y-3">
@@ -49,23 +47,23 @@ function RegistrationList({ scope, today }: { scope: RegistrationScope; today: s
       </div>
     );
   if (groups.length === 0 && !hasTeam)
-    return <NoTeamHint icon={scope === "upcoming" ? <CalendarClock /> : <History />}>Your team's registrations show up here.</NoTeamHint>;
+    return <NoTeamHint icon={scope === "upcoming" ? <CalendarClock /> : <History />}>{t("no_team")}</NoTeamHint>;
   if (groups.length === 0)
     return scope === "upcoming" ? (
       <EmptyState
         icon={<CalendarClock />}
-        title="No upcoming scrims"
-        description="No scrim registrations yet. Find a scrim and send a request — it only takes a tap."
+        title={t("empty_up_title")}
+        description={t("empty_up_text")}
         action={
           <Button asChild size="lg">
             <Link to="/team/scrims">
-              <Search /> Find a scrim
+              <Search /> {t("find_scrim")}
             </Link>
           </Button>
         }
       />
     ) : (
-      <EmptyState icon={<History />} title="No past scrims yet" description="Scrims you've registered for will show up here after they're played." />
+      <EmptyState icon={<History />} title={t("empty_past_title")} description={t("empty_past_text")} />
     );
 
   // mark only the first pending / approved / cancellable card for the tour
@@ -83,7 +81,7 @@ function RegistrationList({ scope, today }: { scope: RegistrationScope; today: s
                 <span className="text-sm font-medium text-muted-foreground">{formatDate(g.date)}</span>
               )}
               <span className="ml-auto text-xs font-medium text-muted-foreground">
-                {g.items.length} {g.items.length === 1 ? "scrim" : "scrims"}
+                {ts.plural("scrims", g.items.length)}
               </span>
             </h3>
             <div className="space-y-2.5">
@@ -99,7 +97,18 @@ function RegistrationList({ scope, today }: { scope: RegistrationScope; today: s
 }
 
 export default function MyRegistrationsPage() {
-  usePageTour("team.registrations", STEPS);
+  const t = useT(regsMsg);
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { title: t("tour_intro_title"), description: t("tour_intro_text") },
+      { element: '[data-tour="reg-tabs"]', title: t("tour_tabs_title"), description: t("tour_tabs_text"), side: "bottom" },
+      { element: '[data-tour="reg-status"]', title: t("tour_status_title"), description: t("tour_status_text"), side: "left" },
+      { element: '[data-tour="reg-slot"]', title: t("tour_slot_title"), description: t("tour_slot_text"), side: "left" },
+      { element: '[data-tour="reg-cancel"]', title: t("tour_cancel_title"), description: t("tour_cancel_text"), side: "left" },
+    ],
+    [t],
+  );
+  usePageTour("team.registrations", steps);
   const today = todayInAppTz();
   const [params, setParams] = useSearchParams();
   const tab: RegistrationScope = params.get("tab") === "past" ? "past" : "upcoming";
@@ -109,14 +118,14 @@ export default function MyRegistrationsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="My registrations"
-        title="Your registrations"
-        description="Scrims, tournaments and TDM battles your team is in. Approvals show up here automatically."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         className="mb-0"
         actions={
           <Button asChild variant="outline">
             <Link to="/team/scrims">
-              <Search /> Find a scrim
+              <Search /> {t("find_scrim")}
             </Link>
           </Button>
         }
@@ -132,11 +141,11 @@ export default function MyRegistrationsPage() {
       >
         <TabsList className="h-11 w-full sm:w-auto" data-tour="reg-tabs">
           <TabsTrigger value="upcoming" className="px-5 text-sm">
-            Upcoming
-            {pending > 0 && <span className="ml-1 rounded-full bg-warning/20 px-1.5 text-[11px] font-bold text-warning-foreground dark:text-warning">{pending} waiting</span>}
+            {t("tab_upcoming")}
+            {pending > 0 && <span className="ml-1 rounded-full bg-warning/20 px-1.5 text-[11px] font-bold text-warning-foreground dark:text-warning">{t("waiting", { count: pending })}</span>}
           </TabsTrigger>
           <TabsTrigger value="past" className="px-5 text-sm">
-            Past
+            {t("tab_past")}
           </TabsTrigger>
         </TabsList>
         <TabsContent value="upcoming" className="mt-5 space-y-6">

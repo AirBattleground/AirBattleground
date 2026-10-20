@@ -15,7 +15,10 @@ import type { MyTournamentStatus, StageSummary, TeamSummary, TeamTournamentDetai
 import type { Tone } from "@7xen/ui/components/brand/status";
 import type { StageFlowYou } from "../shared/StageFlow";
 import { fmtWhen, slot2 } from "../shared/format";
-import { ordinal } from "@/features/results/components/Rank";
+import { ordFor, staticT, tJourney, type Tr } from "@/i18n/tournaments";
+
+type JT = Tr<(typeof tJourney)["en"]>;
+const EN = staticT(tJourney);
 
 export const stageByOrder = (t: Pick<TournamentDetail, "stages">, order: number | null | undefined): StageSummary | undefined =>
   order == null ? undefined : t.stages.find((s) => s.order === order);
@@ -66,124 +69,132 @@ interface JourneyCopy {
   celebrate?: boolean;
 }
 
-/** State-specific copy for the "Your journey" card. */
-export function journeyCopy(t: TeamTournamentDetail): JourneyCopy {
+/** State-specific copy for the "Your journey" card. Pass `tr` (useT(tJourney)) for the player's language; English otherwise. */
+export function journeyCopy(t: TeamTournamentDetail, tr: JT = EN): JourneyCopy {
   const me = t.me;
   const stage = stageByOrder(t, me.stageOrder);
   const next = stageByOrder(t, (me.stageOrder ?? 0) + 1);
   const left = Math.max(0, t.maxTeams - t.confirmedCount);
-  const where = me.groupName ? `Group ${me.groupName}` : null;
+  const where = me.groupName ? tr("group_where", { group: me.groupName }) : null;
+  const rank = (n: number) => ordFor(tr.lang, n);
+  const eyebrow = tr("your_journey");
   switch (me.state) {
     case "NOT_REGISTERED":
       return {
         icon: UserPlus,
         tone: "neutral",
-        eyebrow: "Your journey",
-        title: "Not registered",
+        eyebrow,
+        title: tr("not_registered_title"),
         body: me.canRegister
           ? left > 0
-            ? `${left} ${left === 1 ? "spot is" : "spots are"} still open. Register below to grab one.`
-            : "All spots are taken, but you can still join the waiting list below."
-          : (me.registerBlockedReason ?? "Registration isn't open, but you can follow every match here."),
+            ? tr.plural("spots_open", left)
+            : tr("all_taken_waitlist")
+          : (me.registerBlockedReason ?? tr("reg_not_open_follow")),
       };
     case "WITHDRAWN":
       return {
         icon: LogOut,
         tone: "neutral",
-        eyebrow: "Your journey",
-        title: "You withdrew",
-        body: me.canRegister ? "Changed your mind? You can register again while registration is open." : "You're no longer in this tournament. You can still follow the action.",
+        eyebrow,
+        title: tr("withdrew_title"),
+        body: me.canRegister ? tr("withdrew_can") : tr("withdrew_cant"),
       };
     case "WAITLISTED":
       return {
         icon: Hourglass,
         tone: "warning",
-        eyebrow: "Your journey",
-        title: `Waiting list${me.entry?.waitlistPosition ? ` #${me.entry.waitlistPosition}` : ""}`,
-        body: "All spots are taken. If a team withdraws before the draw, you move up automatically — we'll show it right here.",
+        eyebrow,
+        title: me.entry?.waitlistPosition ? tr("waitlist_pos", { pos: me.entry.waitlistPosition }) : tr("waitlist_title"),
+        body: tr("waitlist_body"),
       };
     case "CONFIRMED":
       return {
         icon: BadgeCheck,
         tone: "success",
-        eyebrow: "Your journey",
-        title: "You're confirmed!",
+        eyebrow,
+        title: tr("confirmed_title"),
         body: me.groupName
-          ? `You're in Group ${me.groupName}${me.slotNumber != null ? `, slot ${slot2(me.slotNumber)}` : ""}. Get your squad ready.`
-          : "Your spot is locked in. Groups and time slots are drawn after registration closes.",
+          ? me.slotNumber != null
+            ? tr("confirmed_group_slot", { group: me.groupName, slot: slot2(me.slotNumber) })
+            : tr("confirmed_group", { group: me.groupName })
+          : tr("confirmed_locked"),
       };
     case "INVITED":
       return {
         icon: MailOpen,
         tone: "info",
-        eyebrow: "Your journey",
-        title: `Invited to the ${stage?.name ?? "next stage"}`,
-        body: `The organiser placed you straight into the ${stage?.name ?? "later stage"}. You'll be seeded once the earlier stage finishes.`,
+        eyebrow,
+        title: tr("invited_title", { stage: stage?.name ?? tr("next_stage") }),
+        body: tr("invited_body", { stage: stage?.name ?? tr("later_stage") }),
       };
-    case "PLAYING":
+    case "PLAYING": {
+      const w = where ?? tr("your_group");
       return {
         icon: Swords,
         tone: "brand",
-        eyebrow: stage ? `${stage.name} · in progress` : "In progress",
-        title: `Playing in ${where ?? "your group"}${me.slotNumber != null ? `, slot ${slot2(me.slotNumber)}` : ""}`,
-        body: me.groupRank ? `You're currently ${ordinal(me.groupRank)} in ${where ?? "your group"}.` : "Your group's points table fills in as results are published.",
+        eyebrow: stage ? tr("stage_in_progress", { stage: stage.name }) : tr("in_progress"),
+        title: me.slotNumber != null ? tr("playing_title_slot", { where: w, slot: slot2(me.slotNumber) }) : tr("playing_title", { where: w }),
+        body: me.groupRank ? tr("playing_rank", { rank: rank(me.groupRank), where: w }) : tr("playing_wait"),
       };
+    }
     case "QUALIFIED":
       return {
         icon: PartyPopper,
         tone: "success",
-        eyebrow: stage ? `${stage.name} · done` : "Stage done",
-        title: "Qualified 🎉",
-        body: next ? `You're through to the ${next.name}. Great run — now do it again.` : "You made it through. Great run!",
+        eyebrow: stage ? tr("stage_done", { stage: stage.name }) : tr("stage_done_plain"),
+        title: tr("qualified_title"),
+        body: next ? tr("qualified_next", { stage: next.name }) : tr("qualified_plain"),
         celebrate: true,
       };
-    case "ELIMINATED":
+    case "ELIMINATED": {
+      const st = stage?.name ?? tr("tournament_word");
       return {
         icon: ShieldX,
         tone: "neutral",
-        eyebrow: stage ? `${stage.name} · done` : "Your journey",
-        title: "Eliminated",
-        body: `Your run ended in the ${stage?.name ?? "tournament"}${me.groupRank && where ? ` — ${ordinal(me.groupRank)} in ${where}` : ""}. You can still follow the action.`,
+        eyebrow: stage ? tr("stage_done", { stage: stage.name }) : eyebrow,
+        title: tr("eliminated_title"),
+        body: me.groupRank && where ? tr("eliminated_body_rank", { stage: st, rank: rank(me.groupRank), where }) : tr("eliminated_body", { stage: st }),
       };
+    }
     case "DISQUALIFIED":
       return {
         icon: Ban,
         tone: "danger",
-        eyebrow: "Your journey",
-        title: "Disqualified",
-        body: "The organiser disqualified your team from this tournament. Contact them if you think this is a mistake.",
+        eyebrow,
+        title: tr("dq_title"),
+        body: tr("dq_body"),
       };
     case "CHAMPION":
       return {
         icon: Trophy,
         tone: "warning",
-        eyebrow: "Tournament complete",
-        title: "Champion 🏆",
-        body: `You won ${t.title}. Legendary.`,
+        eyebrow: tr("complete"),
+        title: tr("champion_title"),
+        body: tr("champion_body", { title: t.title }),
         celebrate: true,
       };
   }
 }
 
-/** Short chip text for list cards ("You're in — Group C"). */
-export function meChip(me: MyTournamentStatus): { text: string; tone: Tone } | null {
+/** Short chip text for list cards ("You're in — Group C"). Pass `tr` (useT(tJourney)) for the player's language. */
+export function meChip(me: MyTournamentStatus, tr: JT = EN): { text: string; tone: Tone } | null {
   switch (me.state) {
     case "CONFIRMED":
-      return { text: me.groupName ? `You're in — Group ${me.groupName}` : "You're in", tone: "success" };
+      return { text: me.groupName ? tr("chip_in_group", { group: me.groupName }) : tr("chip_in"), tone: "success" };
     case "PLAYING":
-      return { text: `Playing — Group ${me.groupName ?? "?"}${me.slotNumber != null ? ` · ${slot2(me.slotNumber)}` : ""}`, tone: "brand" };
+      return { text: `${tr("chip_playing", { group: me.groupName ?? "?" })}${me.slotNumber != null ? ` · ${slot2(me.slotNumber)}` : ""}`, tone: "brand" };
     case "WAITLISTED":
-      return { text: `Waiting list${me.entry?.waitlistPosition ? ` #${me.entry.waitlistPosition}` : ""}`, tone: "warning" };
+      return { text: me.entry?.waitlistPosition ? tr("waitlist_pos", { pos: me.entry.waitlistPosition }) : tr("waitlist_title"), tone: "warning" };
     case "INVITED":
-      return { text: "Invited", tone: "info" };
+      return { text: tr("chip_invited"), tone: "info" };
     case "QUALIFIED":
-      return { text: "Qualified 🎉", tone: "success" };
+      return { text: tr("qualified_title"), tone: "success" };
     case "ELIMINATED":
-      return { text: "Eliminated", tone: "neutral" };
+      return { text: tr("chip_eliminated"), tone: "neutral" };
     case "DISQUALIFIED":
-      return { text: "Disqualified", tone: "danger" };
+      return { text: tr("chip_dq"), tone: "danger" };
     case "CHAMPION":
-      return { text: "Champion 🏆", tone: "warning" };
+      return { text: tr("champion_title"), tone: "warning" };
     default:
       return null;
   }

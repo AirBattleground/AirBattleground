@@ -1,6 +1,5 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { format, parseISO } from "date-fns";
 import { Crosshair, Play, Plus, Swords, Trophy } from "lucide-react";
 import { addDays, todayInAppTz, type TeamRegistration } from "@7xen/shared";
 import { cn } from "@7xen/ui/lib/utils";
@@ -18,9 +17,15 @@ import { Countdown } from "@/features/tournaments/shared/Countdown";
 import { fmtPrize } from "@/features/tournaments/shared/format";
 import squadUrl from "./squad.webp";
 import mapUrl from "./erangel.webp";
+import { useDateFormat, useT } from "@/i18n/core";
+import { arenaMsg } from "@/i18n/home";
 
 const WEEK = 7;
-const when = (iso: string) => format(parseISO(iso), "EEE, h:mm a");
+/** "Sat, 8:00 PM" in the current language */
+function useWhen() {
+  const fmt = useDateFormat();
+  return (iso: string) => fmt(iso, "EEE, h:mm a");
+}
 
 /** Panel = see-through HUD glass with corner brackets and a chamfered corner. */
 function Panel({ className, children, hud = true }: { className?: string; children: React.ReactNode; hud?: boolean }) {
@@ -28,17 +33,18 @@ function Panel({ className, children, hud = true }: { className?: string; childr
 }
 
 function SquadPanel() {
+  const tr = useT(arenaMsg);
   const { team, isLeader } = usePlayerSession();
   const q = usePlayerTeam({ enabled: !!team, poll: false });
   const t = q.data;
   if (!team) {
     return (
       <Panel>
-        <p className="arena-label">My squad</p>
-        <p className="mt-1 font-display text-2xl font-semibold uppercase">No squad yet</p>
-        <p className="mt-1 text-sm text-muted-foreground">Scrims and cups are played as a team. Create yours or join your friends with a code.</p>
+        <p className="arena-label">{tr("my_squad")}</p>
+        <p className="mt-1 font-display text-2xl font-semibold uppercase">{tr("no_squad")}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{tr("no_squad_text")}</p>
         <Link to="/team/my-team" className="mt-3 flex h-10 items-center justify-center gap-1.5 border border-primary/50 bg-primary/10 text-sm font-semibold uppercase tracking-wider hover:bg-primary/20">
-          <Plus className="size-4" /> Create or join a team
+          <Plus className="size-4" /> {tr("create_join")}
         </Link>
       </Panel>
     );
@@ -49,12 +55,12 @@ function SquadPanel() {
   return (
     <Panel>
       <div className="flex items-center justify-between">
-        <span className="arena-label">My squad</span>
-        <span className="text-xs text-muted-foreground">{t ? `${members.length}/${max} players` : "…"}</span>
+        <span className="arena-label">{tr("my_squad")}</span>
+        <span className="text-xs text-muted-foreground">{t ? tr("players", { n: members.length, max }) : "…"}</span>
       </div>
       <Link to="/team/my-team" className="mt-1.5 flex items-center gap-2.5 hover:text-primary">
         <TeamLogo name={team.name} tag={team.tag} logoUrl={t?.logoUrl ?? null} size="sm" />
-        <span className="min-w-0 truncate font-display text-2xl leading-none font-semibold uppercase">
+        <span className="min-w-0 truncate font-display text-2xl leading-none font-semibold">
           {team.name} <span className="text-base text-primary">[{team.tag}]</span>
         </span>
       </Link>
@@ -63,35 +69,36 @@ function SquadPanel() {
           <div key={m.id} className="relative flex aspect-square flex-col items-center justify-center gap-1 border border-border bg-background/40 p-1" title={m.ign ?? m.displayName}>
             <PlayerAvatar name={m.ign ?? m.displayName} url={m.avatarUrl} size="sm" />
             <span className="w-full truncate text-center text-[10px] font-semibold">{m.ign ?? m.displayName}</span>
-            {m.role === "LEADER" && <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 bg-warning px-1 text-[8px] font-extrabold tracking-wider text-warning-foreground">LEAD</span>}
+            {m.role === "LEADER" && <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 bg-warning px-1 text-[8px] font-extrabold tracking-wider text-warning-foreground">{tr("lead")}</span>}
           </div>
         ))}
         {Array.from({ length: free }, (_, i) => (
-          <Link key={i} to="/team/my-team" aria-label="Invite a player" className="flex aspect-square items-center justify-center border border-dashed border-primary/50 text-primary hover:bg-primary/10">
+          <Link key={i} to="/team/my-team" aria-label={tr("invite_player")} className="flex aspect-square items-center justify-center border border-dashed border-primary/50 text-primary hover:bg-primary/10">
             <Plus className="size-6" />
           </Link>
         ))}
       </div>
-      {free > 0 && isLeader && <p className="mt-2.5 text-xs text-muted-foreground">Invite {free} more {free === 1 ? "player" : "players"} → <Link to="/team/my-team" className="text-primary hover:underline">Share invite</Link></p>}
+      {free > 0 && isLeader && <p className="mt-2.5 text-xs text-muted-foreground">{tr.plural("invite_more", free)} → <Link to="/team/my-team" className="text-primary hover:underline">{tr("share_invite")}</Link></p>}
     </Panel>
   );
 }
 
 function ModePanel({ scrims, cups, tdm }: { scrims: number | null; cups: number | null; tdm: number | null }) {
+  const tr = useT(arenaMsg);
   const modes = [
-    { to: "/team/scrims", label: "Scrim", n: scrims, icon: <Swords /> },
-    { to: "/team/tournaments", label: "Cup", n: cups, icon: <Trophy /> },
-    { to: "/team/tdm", label: "TDM", n: tdm, icon: <Crosshair /> },
+    { to: "/team/scrims", label: tr("mode_scrim"), n: scrims, icon: <Swords /> },
+    { to: "/team/tournaments", label: tr("mode_cup"), n: cups, icon: <Trophy /> },
+    { to: "/team/tdm", label: tr("mode_tdm"), n: tdm, icon: <Crosshair /> },
   ];
   return (
     <Panel>
-      <span className="arena-label">Game mode</span>
+      <span className="arena-label">{tr("game_mode")}</span>
       <div className="mt-2.5 grid grid-cols-3 gap-1.5">
         {modes.map((m) => (
           <Link key={m.label} to={m.to} className="group flex flex-col items-center gap-1 border border-border bg-background/40 py-2.5 transition-colors hover:border-primary hover:bg-primary/10 [&_svg]:size-5 [&_svg]:text-primary">
             {m.icon}
             <span className="font-display text-lg leading-none font-semibold tracking-[0.12em] uppercase">{m.label}</span>
-            <span className="text-[11px] text-muted-foreground">{m.n == null ? "…" : `${m.n} open`}</span>
+            <span className="text-[11px] text-muted-foreground">{m.n == null ? "…" : tr("n_open", { count: m.n })}</span>
           </Link>
         ))}
       </div>
@@ -99,7 +106,7 @@ function ModePanel({ scrims, cups, tdm }: { scrims: number | null; cups: number 
         <img src={mapUrl} alt="" className="h-12 w-20 border border-primary object-cover" />
         <div>
           <p className="font-display text-xl leading-none font-semibold uppercase">Erangel · Miramar · TDM</p>
-          <p className="text-xs text-muted-foreground">Every BGMI map, squads</p>
+          <p className="text-xs text-muted-foreground">{tr("every_map")}</p>
         </div>
       </div>
     </Panel>
@@ -107,6 +114,7 @@ function ModePanel({ scrims, cups, tdm }: { scrims: number | null; cups: number 
 }
 
 function CoinPanel() {
+  const tr = useT(arenaMsg);
   const lb = useCoinLeaderboard().data;
   const mine = lb?.myTeam;
   return (
@@ -114,18 +122,19 @@ function CoinPanel() {
       <BgCoin className="size-11" shine />
       <div className="min-w-0 flex-1">
         <p className="arena-label" style={{ color: "var(--arena-gold)" }}>
-          BG coins
+          {tr("bg_coins")}
         </p>
         <p className="font-display text-3xl leading-none font-semibold tabular-nums">
-          {(mine?.coins ?? 0).toLocaleString("en-IN")} {mine && <span className="text-lg text-muted-foreground">· rank #{mine.rank}</span>}
+          {(mine?.coins ?? 0).toLocaleString("en-IN")} {mine && <span className="text-lg text-muted-foreground">· {tr("rank", { rank: mine.rank })}</span>}
         </p>
       </div>
-      <span className="text-right text-xs text-muted-foreground">{mine ? `${mine.wins} ${mine.wins === 1 ? "win" : "wins"}` : "Win to earn"}</span>
+      <span className="text-right text-xs text-muted-foreground">{mine ? tr.plural("wins", mine.wins) : tr("win_to_earn")}</span>
     </Link>
   );
 }
 
 function EventCard() {
+  const tr = useT(arenaMsg);
   const featured = useFeaturedTournaments();
   const t = featured.items.find((x) => x.mode !== "TDM") ?? featured.items[0];
   if (!t) return null;
@@ -136,13 +145,13 @@ function EventCard() {
       <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
       <div className="relative p-4">
         <p className="arena-label" style={{ color: "var(--arena-gold)" }}>
-          {t.mode === "TDM" ? "TDM battle" : "Featured cup"} · {open ? "Registration open" : t.status === "LIVE" ? "Live" : "Coming up"}
+          {t.mode === "TDM" ? tr("tdm_battle") : tr("featured_cup")} · {open ? tr("reg_open") : t.status === "LIVE" ? tr("live") : tr("coming_up")}
         </p>
         <p className="mt-1 line-clamp-2 font-display text-3xl leading-[0.9] font-semibold uppercase">{t.title}</p>
-        {t.prize && <p className="mt-1.5 font-display text-2xl leading-none font-semibold text-warning drop-shadow-[0_0_14px_var(--arena-gold)]">{fmtPrize(t.prize)} prize</p>}
+        {t.prize && <p className="mt-1.5 font-display text-2xl leading-none font-semibold text-warning drop-shadow-[0_0_14px_var(--arena-gold)]">{tr("prize", { prize: fmtPrize(t.prize) })}</p>}
         {open && t.registrationClosesAt && (
           <p className="mt-2 text-xs text-muted-foreground">
-            Closes in <Countdown to={t.registrationClosesAt} className="font-display text-base font-semibold text-foreground" doneText="moments" />
+            {tr("closes_in")} <Countdown to={t.registrationClosesAt} className="font-display text-base font-semibold text-foreground" doneText={tr("moments")} />
           </p>
         )}
       </div>
@@ -151,26 +160,27 @@ function EventCard() {
 }
 
 function LivePanel() {
+  const tr = useT(arenaMsg);
   const live = useLiveBroadcasts().data ?? [];
   return (
     <Panel hud={false} className="p-0">
       <div className="flex items-center justify-between px-4 pt-3">
         <span className="arena-label" style={{ color: "var(--destructive)" }}>
-          ● Live now
+          {tr("live_now")}
         </span>
         <Link to="/team/live" className="text-xs text-muted-foreground hover:text-primary">
-          {live.length ? `${live.length} ${live.length === 1 ? "match" : "matches"}` : "All streams"}
+          {live.length ? tr.plural("live_matches", live.length) : tr("all_streams")}
         </Link>
       </div>
       {live.length === 0 ? (
-        <p className="px-4 pt-1.5 pb-4 text-sm text-muted-foreground">Nothing live right now. Broadcasts show up here the moment they start.</p>
+        <p className="px-4 pt-1.5 pb-4 text-sm text-muted-foreground">{tr("nothing_live")}</p>
       ) : (
         <ul className="space-y-1 p-2">
           {live.slice(0, 3).map((b) => (
             <li key={b.matchId}>
               <Link to={`/team/live/${b.matchId}`} className="flex items-center gap-3 p-2 hover:bg-accent/40">
                 <span className="relative flex h-12 w-20 shrink-0 items-center justify-center border border-destructive/50 bg-destructive/15">
-                  <span className="absolute top-1 left-1 bg-destructive px-1 text-[9px] font-extrabold tracking-wider text-white">LIVE</span>
+                  <span className="absolute top-1 left-1 bg-destructive px-1 text-[9px] font-extrabold tracking-wider text-white">{tr("live_badge")}</span>
                   <Play className="size-4 fill-current" />
                 </span>
                 <span className="min-w-0">
@@ -189,22 +199,24 @@ function LivePanel() {
 }
 
 function FindMatch({ next, openThisWeek }: { next: TeamRegistration | null; openThisWeek: number | null }) {
+  const tr = useT(arenaMsg);
+  const when = useWhen();
   return (
     <div data-tour="find-scrim">
       <div className="arena-panel border-b-0 px-4 py-2.5 text-sm text-muted-foreground [clip-path:polygon(14px_0,100%_0,100%_100%,0_100%,0_14px)]">
         {next ? (
           <>
-            NEXT · <b className="text-foreground">{next.scrim.title}</b> · {when(next.startsAt)}
-            {next.slotNumber != null && <b className="ml-1 text-warning">· Slot #{String(next.slotNumber).padStart(2, "0")}</b>}
+            {tr("next")} · <b className="text-foreground">{next.scrim.title}</b> · {when(next.startsAt)}
+            {next.slotNumber != null && <b className="ml-1 text-warning">· {tr("slot", { slot: String(next.slotNumber).padStart(2, "0") })}</b>}
           </>
         ) : (
-          <>{openThisWeek == null ? "Finding scrims…" : `${openThisWeek} ${openThisWeek === 1 ? "scrim" : "scrims"} open this week`}</>
+          <>{openThisWeek == null ? tr("finding") : tr.plural("open_week", openThisWeek)}</>
         )}
       </div>
       <Link to="/team/scrims" className="arena-btn-gold flex h-[5.5rem] items-center justify-between px-6 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
         <span>
-          <span className="block font-display text-xs font-semibold tracking-[0.25em]">REGISTER IN ONE TAP</span>
-          <span className="block font-display text-5xl leading-[0.85] font-bold tracking-wide">FIND MATCH</span>
+          <span className="block font-display text-xs font-semibold tracking-[0.25em]">{tr("one_tap")}</span>
+          <span className="block font-display text-5xl leading-[0.85] font-bold tracking-wide">{tr("find_match")}</span>
         </span>
         <Play className="size-9 fill-current" />
       </Link>
@@ -213,6 +225,7 @@ function FindMatch({ next, openThisWeek }: { next: TeamRegistration | null; open
 }
 
 function Ticker({ items }: { items: string[] }) {
+  const tr = useT(arenaMsg);
   if (!items.length) return null;
   const row = items.map((t, i) => (
     <span key={i} className="flex items-center gap-6">
@@ -222,7 +235,7 @@ function Ticker({ items }: { items: string[] }) {
   ));
   return (
     <div className="flex h-11 items-center overflow-hidden border-y border-border bg-background/80 font-display text-base tracking-wide text-muted-foreground">
-      <span className="z-10 flex h-full shrink-0 items-center bg-destructive px-3 text-sm font-bold tracking-[0.2em] text-white">LIVE</span>
+      <span className="z-10 flex h-full shrink-0 items-center bg-destructive px-3 text-sm font-bold tracking-[0.2em] text-white">{tr("live_badge")}</span>
       <div className="arena-ticker-track flex shrink-0 gap-6 pl-6 whitespace-nowrap">
         {row}
         {row}
@@ -236,6 +249,8 @@ function Ticker({ items }: { items: string[] }) {
  * live matches and one big Find match. All real data; the regular home sections continue below.
  */
 export default function ArenaLobby({ next }: { next: TeamRegistration | null }) {
+  const tr = useT(arenaMsg);
+  const when = useWhen();
   const { user, player } = usePlayerSession();
   const today = todayInAppTz();
   const week = useMemo(() => Array.from({ length: WEEK }, (_, i) => addDays(today, i)), [today]);
@@ -246,17 +261,17 @@ export default function ArenaLobby({ next }: { next: TeamRegistration | null }) 
   const cups = open.data ? open.data.filter((t) => t.mode !== "TDM").length : null;
   const tdm = open.data ? open.data.filter((t) => t.mode === "TDM").length : null;
   const live = useLiveBroadcasts().data ?? [];
-  const name = player?.ign ?? user?.displayName ?? "player";
+  const name = player?.ign ?? user?.displayName ?? tr("player");
 
   const ticker = [
-    ...live.map((b) => `${b.title} · Match ${b.number} is live — ${b.organizer.name}`),
-    ...(next ? [`Your next match: ${next.scrim.title} · ${when(next.startsAt)}`] : []),
-    ...(open.data ?? []).slice(0, 3).map((t) => `${t.title} — registration open${t.prize ? ` · ${fmtPrize(t.prize)}` : ""}`),
-    ...(openScrims ? [`${openScrims} scrims open this week — tap Find match`] : []),
+    ...live.map((b) => tr("tick_live", { title: b.title, n: b.number, org: b.organizer.name })),
+    ...(next ? [tr("tick_next", { title: next.scrim.title, when: when(next.startsAt) })] : []),
+    ...(open.data ?? []).slice(0, 3).map((t) => `${tr("tick_open", { title: t.title })}${t.prize ? ` · ${fmtPrize(t.prize)}` : ""}`),
+    ...(openScrims ? [tr("tick_scrims", { count: openScrims })] : []),
   ];
 
   return (
-    <section aria-label="Lobby" className="relative -mx-4 -mt-4 overflow-hidden sm:-mx-5 sm:-mt-5 lg:-mx-6 lg:-mt-6">
+    <section aria-label={tr("lobby")} className="relative -mx-4 -mt-4 overflow-hidden sm:-mx-5 sm:-mt-5 lg:-mx-6 lg:-mt-6">
       {/* stage backdrop */}
       <div aria-hidden className="absolute inset-0">
         <img src={mapUrl} alt="" className="size-full scale-110 object-cover opacity-35 saturate-50 dark:opacity-25" />
@@ -269,10 +284,10 @@ export default function ArenaLobby({ next }: { next: TeamRegistration | null }) 
       <div className="relative grid gap-4 px-4 pt-5 pb-5 sm:px-5 lg:min-h-[calc(100dvh-var(--shell-top)-2.75rem)] lg:grid-cols-[20rem_minmax(0,1fr)_22rem] lg:px-6 xl:grid-cols-[22rem_minmax(0,1fr)_24rem]">
         {/* greeting (phones: on top) */}
         <div className="lg:absolute lg:top-6 lg:left-[23rem] xl:left-[25rem] lg:z-10">
-          <p className="arena-label">AirBattleground · Lobby</p>
+          <p className="arena-label">{tr("lobby_label")}</p>
           <h1 className="font-display text-6xl leading-[0.82] font-bold uppercase sm:text-7xl xl:text-8xl">
-            Drop in,
-            <span className="block text-primary drop-shadow-[0_0_30px_var(--glow)]">{name}</span>
+            {tr("drop_in")}
+            <span className="block text-primary normal-case drop-shadow-[0_0_30px_var(--glow)]">{name}</span>
           </h1>
         </div>
 
@@ -293,7 +308,7 @@ export default function ArenaLobby({ next }: { next: TeamRegistration | null }) 
             className="relative max-h-[20rem] w-auto object-contain drop-shadow-[0_30px_60px_rgb(0_0_0/0.6)] sm:max-h-[30rem] lg:max-h-[min(44rem,calc(100dvh-var(--shell-top)-6rem))]"
           />
           <p className="absolute bottom-1 left-1/2 hidden -translate-x-1/2 font-display text-sm tracking-[0.4em] whitespace-nowrap text-primary uppercase sm:block">
-            ◆ {user?.team ? `${user.team.name} · squad ready` : "Build your squad"} ◆
+            ◆ {user?.team ? (<><span className="normal-case">{user.team.name}</span> · {tr("squad_ready")}</>) : tr("build_squad")} ◆
           </p>
         </div>
 

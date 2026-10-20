@@ -156,6 +156,7 @@ export async function updateProfile(userId: string, input: UpdatePlayerProfileIn
   const data: Prisma.UserUpdateInput = {};
   if (input.ign !== undefined) data.ign = input.ign;
   if (input.displayName !== undefined) data.displayName = input.displayName;
+  if (input.language !== undefined) data.language = input.language;
   if (input.bgmiId !== undefined) {
     if (input.bgmiId === "") {
       if (await membershipOf(userId)) {

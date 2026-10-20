@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { animate, motion, useMotionValue, useReducedMotion, useTransform } from "framer-motion";
 import { Hourglass, Users } from "lucide-react";
 import { cn } from "@7xen/ui/lib/utils";
+import { useT } from "@/i18n/core";
+import { tShared } from "@/i18n/tournaments";
 
 /** Number that counts up to `value` when it appears/changes. */
 export function CountUp({ value, className }: { value: number; className?: string }) {
@@ -36,17 +38,18 @@ export function RegistrationMeter({ confirmed, max, waitlist = 0, size = "md", h
   const full = confirmed >= max;
   const left = Math.max(0, max - confirmed);
   const sm = size === "sm";
+  const t = useT(tShared);
   return (
     <div className={cn("w-full", className)}>
       <div className="flex items-end justify-between gap-3">
         <p className="flex items-baseline gap-1.5">
           <Users className={cn("self-center text-primary", sm ? "size-3.5" : "size-4")} aria-hidden />
           <CountUp value={confirmed} className={cn("font-display font-bold", sm ? "text-lg" : "text-2xl")} />
-          <span className={cn("font-display font-semibold text-muted-foreground", sm ? "text-sm" : "text-base")}>/ {max} teams</span>
+          <span className={cn("font-display font-semibold text-muted-foreground", sm ? "text-sm" : "text-base")}>{t("meter_of_teams", { max })}</span>
         </p>
         {!hideHint && (
           <span className={cn("text-right font-medium", sm ? "text-[11px]" : "text-xs", full ? "text-warning-foreground dark:text-warning" : "text-muted-foreground")}>
-            {full ? "Full" : `${left} ${left === 1 ? "spot" : "spots"} left`}
+            {full ? t("meter_full") : t.plural("meter_left", left)}
           </span>
         )}
       </div>
@@ -56,7 +59,7 @@ export function RegistrationMeter({ confirmed, max, waitlist = 0, size = "md", h
         aria-valuemin={0}
         aria-valuemax={max}
         aria-valuenow={confirmed}
-        aria-label={`${confirmed} of ${max} teams registered`}
+        aria-label={t("meter_aria", { confirmed, max })}
       >
         <motion.div
           className={cn("absolute inset-y-0 left-0 rounded-full", full ? "bg-warning" : "bg-gradient-to-r from-primary/70 to-primary")}
@@ -76,7 +79,7 @@ export function RegistrationMeter({ confirmed, max, waitlist = 0, size = "md", h
       </div>
       {waitlist > 0 && (
         <p className={cn("mt-1.5 flex items-center gap-1 text-muted-foreground", sm ? "text-[11px]" : "text-xs")}>
-          <Hourglass className="size-3" aria-hidden /> {waitlist} on the waiting list
+          <Hourglass className="size-3" aria-hidden /> {t("meter_waitlist", { count: waitlist })}
         </p>
       )}
     </div>

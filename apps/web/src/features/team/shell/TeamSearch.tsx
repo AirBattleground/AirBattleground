@@ -2,12 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import { Search, Swords, Trophy } from "lucide-react";
-import { addDays, MAP_LABELS, TOURNAMENT_STATUS_LABELS, todayInAppTz } from "@7xen/shared";
+import { addDays, MAP_LABELS, todayInAppTz } from "@7xen/shared";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@7xen/ui/components/ui/command";
 import { Button } from "@7xen/ui/components/ui/button";
 import { useTeamScrims } from "@/features/team/api";
 import { formatTime } from "@/features/team/format";
 import { useTeamTournaments } from "@/features/tournaments/team/api";
+import { common } from "@/i18n/common";
+import { useT } from "@/i18n/core";
+import { shellMsg } from "@/i18n/home";
 
 export interface SearchPage {
   to: string;
@@ -17,29 +20,31 @@ export interface SearchPage {
 
 /** Results, mounted only while the dialog is open (so nothing loads until someone searches). */
 function Results({ pages, go }: { pages: SearchPage[]; go: (to: string) => void }) {
+  const t = useT(shellMsg);
+  const tc = useT(common);
   const today = todayInAppTz();
   const tomorrow = addDays(today, 1);
   const tournaments = useTeamTournaments().data ?? [];
   const todays = useTeamScrims(today).data ?? [];
   const tomorrows = useTeamScrims(tomorrow).data ?? [];
-  const scrims = [...todays.map((s) => ({ s, day: "Today" })), ...tomorrows.map((s) => ({ s, day: "Tomorrow" }))].filter(({ s }) => s.registrationOpen);
+  const scrims = [...todays.map((s) => ({ s, day: tc("today") })), ...tomorrows.map((s) => ({ s, day: tc("tomorrow") }))].filter(({ s }) => s.registrationOpen);
 
   return (
     <CommandList className="max-h-[min(60vh,28rem)]">
-      <CommandEmpty>Nothing found. Try a scrim, tournament or organiser name.</CommandEmpty>
+      <CommandEmpty>{t("nothing_found")}</CommandEmpty>
       {tournaments.length > 0 && (
-        <CommandGroup heading="Tournaments">
-          {tournaments.map((t) => (
-            <CommandItem key={t.id} value={`tournament ${t.title} ${t.manager.displayName} ${t.id}`} onSelect={() => go(`/team/tournaments/${t.id}`)}>
+        <CommandGroup heading={t("tournaments")}>
+          {tournaments.map((x) => (
+            <CommandItem key={x.id} value={`tournament ${x.title} ${x.manager.displayName} ${x.id}`} onSelect={() => go(`/team/tournaments/${x.id}`)}>
               <Trophy className="text-primary" />
-              <span className="min-w-0 flex-1 truncate">{t.title}</span>
-              <span className="shrink-0 text-xs text-muted-foreground">{TOURNAMENT_STATUS_LABELS[t.status]}</span>
+              <span className="min-w-0 flex-1 truncate">{x.title}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">{t(`ts_${x.status}`)}</span>
             </CommandItem>
           ))}
         </CommandGroup>
       )}
       {scrims.length > 0 && (
-        <CommandGroup heading="Scrims open for registration">
+        <CommandGroup heading={t("scrims_open")}>
           {scrims.map(({ s, day }) => (
             <CommandItem
               key={`${s.scrim.id}-${s.date}`}
@@ -55,7 +60,7 @@ function Results({ pages, go }: { pages: SearchPage[]; go: (to: string) => void 
           ))}
         </CommandGroup>
       )}
-      <CommandGroup heading="Pages">
+      <CommandGroup heading={t("pages")}>
         {pages.map((p) => (
           <CommandItem key={p.to} value={`page ${p.label}`} onSelect={() => go(p.to)}>
             <p.icon />
@@ -72,6 +77,7 @@ function Results({ pages, go }: { pages: SearchPage[]; go: (to: string) => void 
  * quick-jump over open tournaments, today's/tomorrow's scrims and the portal's pages. Ctrl/⌘ + K opens it.
  */
 export function TeamSearch({ pages }: { pages: SearchPage[] }) {
+  const t = useT(shellMsg);
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -100,14 +106,14 @@ export function TeamSearch({ pages }: { pages: SearchPage[] }) {
         className="hidden h-11 w-full max-w-[26rem] items-center gap-3 rounded-xl border bg-background/40 px-4 text-left text-sm text-muted-foreground outline-none transition-colors hover:border-primary/40 hover:bg-background/60 focus-visible:ring-[3px] focus-visible:ring-ring/50 lg:flex"
       >
         <Search className="size-[18px] shrink-0" />
-        <span className="min-w-0 flex-1 truncate">Search tournaments, scrims, pages…</span>
+        <span className="min-w-0 flex-1 truncate">{t("search_placeholder")}</span>
         <kbd className="hidden rounded border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground xl:inline">Ctrl K</kbd>
       </button>
-      <Button variant="ghost" size="icon" onClick={() => setOpen(true)} aria-label="Search" className="ml-auto size-9 text-muted-foreground lg:hidden">
+      <Button variant="ghost" size="icon" onClick={() => setOpen(true)} aria-label={t("search")} className="ml-auto size-9 text-muted-foreground lg:hidden">
         <Search className="size-5" />
       </Button>
-      <CommandDialog open={open} onOpenChange={setOpen} title="Search" description="Find tournaments, scrims and pages">
-        <CommandInput placeholder="Search tournaments, scrims, pages…" />
+      <CommandDialog open={open} onOpenChange={setOpen} title={t("search")} description={t("search_desc")}>
+        <CommandInput placeholder={t("search_placeholder")} />
         {open && <Results pages={pages} go={go} />}
       </CommandDialog>
     </>

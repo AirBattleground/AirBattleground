@@ -14,9 +14,12 @@ import markUrl from "@/assets/brand/airbattleground-mark.webp";
 import { refreshMembership, useCancelJoinRequest, usePlayerProfile } from "../api";
 import { CreateTeamDialog } from "./CreateTeamDialog";
 import { MyInvitesPanel } from "./MyInvitesPanel";
+import { useT } from "@/i18n/core";
+import { squadMsg } from "@/i18n/team";
 
 /** Type a code (or paste a whole invite link) → /join/:code. */
 export function JoinCodeForm({ className, autoFocus }: { className?: string; autoFocus?: boolean }) {
+  const t = useT(squadMsg);
   const navigate = useNavigate();
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +27,7 @@ export function JoinCodeForm({ className, autoFocus }: { className?: string; aut
     const fromLink = value.match(/\/join\/([^/?#\s]+)/i)?.[1];
     const code = normalizeInviteCode(fromLink ?? value);
     if (code.length !== INVITE_CODE_LENGTH) {
-      setError(`Invite codes are ${INVITE_CODE_LENGTH} letters/numbers — or paste the whole link.`);
+      setError(t("code_len_error", { n: INVITE_CODE_LENGTH }));
       return;
     }
     navigate(`/join/${code}`);
@@ -41,14 +44,14 @@ export function JoinCodeForm({ className, autoFocus }: { className?: string; aut
         <div className="relative min-w-0 flex-1">
           <KeyRound aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            aria-label="Invite code or link"
+            aria-label={t("code_or_link")}
             autoFocus={autoFocus}
             value={value}
             onChange={(e) => {
               setValue(e.target.value);
               setError(null);
             }}
-            placeholder="Invite code"
+            placeholder={t("code_placeholder")}
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
@@ -57,7 +60,7 @@ export function JoinCodeForm({ className, autoFocus }: { className?: string; aut
           />
         </div>
         <Button type="submit" size="lg" variant="outline" className="h-12 rounded-xl px-4">
-          Join <ArrowRight />
+          {t("join")} <ArrowRight />
         </Button>
       </div>
       {error && <p className="text-xs font-medium text-destructive">{error}</p>}
@@ -67,6 +70,7 @@ export function JoinCodeForm({ className, autoFocus }: { className?: string; aut
 
 /** "You asked to join X · waiting" with a cancel button. */
 export function PendingJoinCard({ request, className }: { request: MyJoinRequest; className?: string }) {
+  const t = useT(squadMsg);
   const cancel = useCancelJoinRequest();
   return (
     <motion.div
@@ -79,14 +83,14 @@ export function PendingJoinCard({ request, className }: { request: MyJoinRequest
         <TeamAvatar name={request.team.name} tag={request.team.tag} size="md" />
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.2em] text-warning uppercase">
-            <Hourglass className="size-3.5" /> Waiting for the leader
+            <Hourglass className="size-3.5" /> {t("waiting_leader")}
           </p>
-          <p className="truncate font-display text-lg leading-tight font-bold">You asked to join {request.team.name}</p>
-          <p className="text-xs text-muted-foreground">We'll switch you over to your team as soon as they approve.</p>
+          <p className="truncate font-display text-lg leading-tight font-bold">{t("you_asked", { team: request.team.name })}</p>
+          <p className="text-xs text-muted-foreground">{t("switch_soon")}</p>
         </div>
       </div>
       <Button variant="ghost" size="sm" className="self-start text-muted-foreground hover:text-destructive sm:self-center" disabled={cancel.isPending} onClick={() => cancel.mutate(request.id)}>
-        {cancel.isPending ? <Loader2 className="animate-spin" /> : <X />} Cancel request
+        {cancel.isPending ? <Loader2 className="animate-spin" /> : <X />} {t("cancel_request")}
       </Button>
     </motion.div>
   );
@@ -94,6 +98,7 @@ export function PendingJoinCard({ request, className }: { request: MyJoinRequest
 
 /** Polls the profile while the player has no team and flips the session over when the leader approves. */
 export function useWatchForApproval() {
+  const t = useT(squadMsg);
   const qc = useQueryClient();
   const { hasTeam } = usePlayerSession();
   const profile = usePlayerProfile({ poll: !hasTeam });
@@ -102,23 +107,24 @@ export function useWatchForApproval() {
   useEffect(() => {
     if (!team || hasTeam || announced.current) return;
     announced.current = true;
-    toast.success(`You're in ${team.name}!`, { description: "Your leader approved your request. Welcome to the squad.", duration: 8000 });
+    toast.success(t("approved_toast", { team: team.name }), { description: t("approved_desc"), duration: 8000 });
     void refreshMembership(qc);
-  }, [team, hasTeam, qc]);
+  }, [team, hasTeam, qc, t]);
   return profile;
 }
 
 const HOW = [
-  { icon: Crown, title: "Leader registers", text: "The team leader signs the team up for scrims and tournaments." },
-  { icon: Megaphone, title: "Members ask", text: "Spotted a scrim? Tap “Ask my leader” and they get it on their home screen." },
-  { icon: Ticket, title: "Everyone sees the slot", text: "Slot numbers, room IDs and results show up for the whole squad." },
-];
+  { icon: Crown, title: "how1_title", text: "how1_text" },
+  { icon: Megaphone, title: "how2_title", text: "how2_text" },
+  { icon: Ticket, title: "how3_title", text: "how3_text" },
+] as const;
 
 /**
  * The full create / join UI for a player with no team. Lives on My team only (phase 5c) — everywhere else the
  * player browses freely and is asked for a team when they register.
  */
 export function CreateOrJoinTeam() {
+  const t = useT(squadMsg);
   const profile = useWatchForApproval();
   const [createOpen, setCreateOpen] = useState(false);
   const pending = profile.data?.pendingJoinRequest ?? null;
@@ -144,18 +150,18 @@ export function CreateOrJoinTeam() {
               <span className="relative flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-glow">
                 <Shield className="size-6" />
               </span>
-              <h2 className="relative mt-3 font-display text-2xl font-bold">Create your team</h2>
-              <p className="relative mt-1 text-sm text-muted-foreground">Pick a name and tag. You'll be the leader and get an invite link for your squad.</p>
+              <h2 className="relative mt-3 font-display text-2xl font-bold">{t("create_title")}</h2>
+              <p className="relative mt-1 text-sm text-muted-foreground">{t("create_card_text")}</p>
               <Button size="lg" className="relative mt-4 h-12 w-full text-base shadow-glow" onClick={() => setCreateOpen(true)}>
-                <UserPlus /> Create a team
+                <UserPlus /> {t("create_a_team")}
               </Button>
             </div>
             <div className="relative overflow-hidden rounded-2xl border bg-background/60 p-5 backdrop-blur" data-tour="join-code">
               <span className="flex size-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
                 <Users className="size-6" />
               </span>
-              <h2 className="mt-3 font-display text-2xl font-bold">Join with a code</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Got an invite from your team leader? Open their link, or type the 8-character code here.</p>
+              <h2 className="mt-3 font-display text-2xl font-bold">{t("join_code_title")}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">{t("join_card_text", { n: INVITE_CODE_LENGTH })}</p>
               <JoinCodeForm className="mt-4" />
             </div>
           </div>
@@ -178,8 +184,8 @@ export function CreateOrJoinTeam() {
                 <span className="absolute -top-1.5 -left-1.5 flex size-5 items-center justify-center rounded-full bg-primary font-display text-xs font-bold text-primary-foreground">{i + 1}</span>
               </span>
               <span className="min-w-0">
-                <span className="block font-display text-lg leading-tight font-bold">{h.title}</span>
-                <span className="block text-sm text-muted-foreground">{h.text}</span>
+                <span className="block font-display text-lg leading-tight font-bold">{t(h.title)}</span>
+                <span className="block text-sm text-muted-foreground">{t(h.text)}</span>
               </span>
             </motion.div>
           );

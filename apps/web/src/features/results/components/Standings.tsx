@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Copy, Crosshair, ListOrdered, Trophy } from "lucide-react";
 import { toast } from "sonner";
-import { format, parseISO } from "date-fns";
 import { MAP_LABELS, type PointsSystem, type SessionStandings, type StandingsRow } from "@7xen/shared";
 import { EmptyState } from "@7xen/ui/components/brand/page";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
@@ -10,49 +9,59 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { cn } from "@7xen/ui/lib/utils";
 import { MapChip } from "@/features/team/components/MapChips";
-import { ChickenDinner, ordinal, PODIUM, RankBadge } from "./Rank";
+import { useDateFormat, useT, type T } from "@/i18n/core";
+import { resultsMsg, useOrdinal } from "@/i18n/results";
+import { ChickenDinner, PODIUM, RankBadge } from "./Rank";
+
+type RT = T<(typeof resultsMsg)["en"]>;
+type Ord = (n: number) => string;
+type Fmt = (date: string, pattern: string) => string;
 
 type Match = SessionStandings["matches"][number];
 
 const slotText = (n: number | null) => (n == null ? "" : `#${String(n).padStart(2, "0")}`);
 
 /** Plain-text points table for WhatsApp / Discord. */
-function standingsText(s: SessionStandings): string {
+function standingsText(s: SessionStandings, t: RT, ord: Ord, fmt: Fmt): string {
   const published = s.matches.filter((m) => m.status === "PUBLISHED").length;
   const lines = [
-    `🏆 ${s.scrim.title} — ${format(parseISO(s.date), "EEE, d MMM")}`,
-    `Points table · ${published}/${s.matches.length} matches`,
+    `🏆 ${s.scrim.title} — ${fmt(s.date, "EEE, d MMM")}`,
+    t("txt_header", { done: published, total: s.matches.length }),
     "",
   ];
   for (const r of s.rows) {
     const medal = r.rank === 1 ? "🥇" : r.rank === 2 ? "🥈" : r.rank === 3 ? "🥉" : `${r.rank}.`;
     const wins = r.wins ? ` · ${r.wins}🍗` : "";
-    lines.push(`${medal} ${r.team.name}${r.slotNumber != null ? ` (${slotText(r.slotNumber)})` : ""} — ${r.totalPoints} pts · ${r.kills} fin${wins}`);
+    const team = `${r.team.name}${r.slotNumber != null ? ` (${slotText(r.slotNumber)})` : ""}`;
+    lines.push(`${medal} ${t("txt_row", { team, pts: r.totalPoints, fin: r.kills })}${wins}`);
   }
-  lines.push("", `Points: ${pointsSummary(s.pointsSystem)}`);
+  lines.push("", t("txt_points", { summary: pointsSummary(s.pointsSystem, t, ord) }));
   return lines.join("\n");
 }
 
-function pointsSummary(ps: PointsSystem): string {
-  return `${ps.placement.join("/")} for 1st–${ordinal(ps.placement.length)} · ${ps.killPoints} per finish`;
+function pointsSummary(ps: PointsSystem, t: RT, ord: Ord): string {
+  const n = ps.placement.length;
+  return t("txt_summary", { list: ps.placement.join("/"), last: ord(n), n, kp: ps.killPoints });
 }
 
-async function copyStandings(s: SessionStandings) {
+async function copyStandings(s: SessionStandings, t: RT, ord: Ord, fmt: Fmt) {
   try {
-    await navigator.clipboard.writeText(standingsText(s));
-    toast.success("Points table copied", { description: "Paste it into WhatsApp or Discord." });
+    await navigator.clipboard.writeText(standingsText(s, t, ord, fmt));
+    toast.success(t("copied"), { description: t("copied_desc") });
   } catch {
-    toast.error("Couldn't copy automatically", { description: "Your browser blocked clipboard access." });
+    toast.error(t("copy_failed"), { description: t("copy_failed_desc") });
   }
 }
 
 /** Legend explaining how points are counted. */
 export function PointsLegend({ ps, action, className }: { ps: PointsSystem; action?: ReactNode; className?: string }) {
+  const t = useT(resultsMsg);
+  const ord = useOrdinal();
   return (
     <div data-tour="points-legend" className={cn("rounded-xl border bg-card p-4 shadow-sm", className)}>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 font-display text-lg font-bold">
-          <ListOrdered className="size-4 text-primary" /> How points work
+          <ListOrdered className="size-4 text-primary" /> {t("how_points")}
         </h3>
         {action}
       </div>
@@ -65,24 +74,24 @@ export function PointsLegend({ ps, action, className }: { ps: PointsSystem; acti
               PODIUM[i + 1]?.badge ?? "border-border bg-muted/40",
             )}
           >
-            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{ordinal(i + 1)}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{ord(i + 1)}</span>
             <span className="font-display text-lg font-bold leading-tight tabular-nums">{p}</span>
           </span>
         ))}
         <span className="inline-flex min-w-20 flex-col items-center rounded-lg border border-info/40 bg-info/10 px-2 py-1 text-info">
-          <span className="text-[10px] font-semibold uppercase tracking-wider opacity-80">Per finish</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider opacity-80">{t("per_finish")}</span>
           <span className="font-display text-lg font-bold leading-tight tabular-nums">+{ps.killPoints}</span>
         </span>
       </div>
       <p className="mt-3 text-xs text-muted-foreground">
-        Places after {ordinal(ps.placement.length)} get 0 placement points. Ties are broken by total points, then chicken dinners, placement points,
-        finishes, and finally the better place in the latest match.
+        {t("legend_note", { ord: ord(ps.placement.length), n: ps.placement.length })}
       </p>
     </div>
   );
 }
 
 function MatchHead({ m, href }: { m: Match; href?: string }) {
+  const t = useT(resultsMsg);
   const published = m.status === "PUBLISHED";
   const inner = (
     <span className={cn("flex flex-col items-center gap-1", !published && "opacity-60")}>
@@ -92,19 +101,20 @@ function MatchHead({ m, href }: { m: Match; href?: string }) {
   );
   if (!href) return inner;
   return (
-    <Link to={href} className="rounded-lg p-1 outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50" title={`Open match ${m.number} (${MAP_LABELS[m.map]})`}>
+    <Link to={href} className="rounded-lg p-1 outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50" title={t("open_match", { n: m.number, map: MAP_LABELS[m.map] })}>
       {inner}
     </Link>
   );
 }
 
 function MatchCell({ v }: { v: StandingsRow["perMatch"][number] | undefined }) {
+  const ord = useOrdinal();
   if (!v) return <span className="text-muted-foreground">—</span>;
   return (
     <span className="inline-flex flex-col items-center leading-tight">
       <span className="font-display text-base font-bold tabular-nums">{v.totalPoints}</span>
       <span className="whitespace-nowrap text-[11px] text-muted-foreground tabular-nums">
-        {v.placement === 1 ? <span className="font-semibold text-warning-foreground dark:text-warning">WWCD</span> : ordinal(v.placement)} · {v.kills}F
+        {v.placement === 1 ? <span className="font-semibold text-warning-foreground dark:text-warning">WWCD</span> : ord(v.placement)} · {v.kills}F
       </span>
     </span>
   );
@@ -120,17 +130,15 @@ interface StandingsBoardProps {
 
 /** Points table: desktop table with per-match columns, cards on mobile. */
 export function StandingsBoard({ standings: s, highlightTeamId, matchHref }: StandingsBoardProps) {
+  const t = useT(resultsMsg);
+  const ord = useOrdinal();
   const published = s.matches.filter((m) => m.status === "PUBLISHED").length;
   if (s.rows.length === 0)
     return (
       <EmptyState
         icon={<Trophy />}
-        title="No results yet"
-        description={
-          published === 0
-            ? "The points table fills in as soon as the first match's results are published."
-            : "None of the published matches have any teams yet."
-        }
+        title={t("empty_title")}
+        description={published === 0 ? t("standings_empty_none") : t("standings_empty_some")}
       />
     );
 
@@ -143,17 +151,17 @@ export function StandingsBoard({ standings: s, highlightTeamId, matchHref }: Sta
             <thead className="sticky top-0 z-10 bg-card/95 backdrop-blur">
               <tr className="text-xs uppercase tracking-wider text-muted-foreground">
                 <th className="border-b px-3 py-2.5 text-left font-semibold">#</th>
-                <th className="border-b px-3 py-2.5 text-left font-semibold">Team</th>
+                <th className="border-b px-3 py-2.5 text-left font-semibold">{t("col_team")}</th>
                 {s.matches.map((m) => (
                   <th key={m.id} className="border-b px-2 py-2 text-center font-semibold normal-case tracking-normal">
                     <MatchHead m={m} href={matchHref?.(m)} />
                   </th>
                 ))}
-                <th className="border-b px-2 py-2.5 text-center font-semibold" title="Chicken dinners (match wins)">Wins</th>
-                <th className="border-b px-2 py-2.5 text-center font-semibold">Finishes</th>
-                <th className="border-b px-2 py-2.5 text-center font-semibold">Place pts</th>
-                <th className="border-b px-2 py-2.5 text-center font-semibold">Finish pts</th>
-                <th className="border-b px-3 py-2.5 text-right font-semibold">Total</th>
+                <th className="border-b px-2 py-2.5 text-center font-semibold" title={t("col_wins_title")}>{t("col_wins")}</th>
+                <th className="border-b px-2 py-2.5 text-center font-semibold">{t("stat_finishes")}</th>
+                <th className="border-b px-2 py-2.5 text-center font-semibold">{t("col_place_pts")}</th>
+                <th className="border-b px-2 py-2.5 text-center font-semibold">{t("finish_pts")}</th>
+                <th className="border-b px-3 py-2.5 text-right font-semibold">{t("total")}</th>
               </tr>
             </thead>
             <tbody>
@@ -178,12 +186,12 @@ export function StandingsBoard({ standings: s, highlightTeamId, matchHref }: Sta
                         <div className="min-w-0">
                           <p className="truncate font-semibold">
                             {r.team.name}
-                            {mine && <span className="ml-1.5 rounded-full bg-primary px-1.5 py-px text-[10px] font-bold text-primary-foreground">YOU</span>}
+                            {mine && <span className="ml-1.5 rounded-full bg-primary px-1.5 py-px text-[10px] font-bold text-primary-foreground">{t("you")}</span>}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {r.slotNumber != null && <span className="font-display font-semibold text-foreground/80">Slot {slotText(r.slotNumber)}</span>}
+                            {r.slotNumber != null && <span className="font-display font-semibold text-foreground/80">{t("slot_text", { slot: slotText(r.slotNumber) })}</span>}
                             {r.slotNumber != null && " · "}
-                            {r.matchesPlayed} played
+                            {t("played_n", { n: r.matchesPlayed })}
                           </p>
                         </div>
                       </div>
@@ -225,10 +233,10 @@ export function StandingsBoard({ standings: s, highlightTeamId, matchHref }: Sta
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-semibold">
                     {r.team.name}
-                    {mine && <span className="ml-1.5 rounded-full bg-primary px-1.5 py-px text-[10px] font-bold text-primary-foreground">YOU</span>}
+                    {mine && <span className="ml-1.5 rounded-full bg-primary px-1.5 py-px text-[10px] font-bold text-primary-foreground">{t("you")}</span>}
                   </p>
                   <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                    {r.slotNumber != null && <span>Slot {slotText(r.slotNumber)}</span>}
+                    {r.slotNumber != null && <span>{t("slot_text", { slot: slotText(r.slotNumber) })}</span>}
                     <span className="inline-flex items-center gap-0.5">
                       <Crosshair className="size-3" /> {r.kills}
                     </span>
@@ -237,7 +245,7 @@ export function StandingsBoard({ standings: s, highlightTeamId, matchHref }: Sta
                 </div>
                 <div className="text-right">
                   <p className="font-display text-3xl font-bold leading-none tabular-nums">{r.totalPoints}</p>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">pts</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("pts")}</p>
                 </div>
               </div>
               {s.matches.length > 0 && (
@@ -251,7 +259,7 @@ export function StandingsBoard({ standings: s, highlightTeamId, matchHref }: Sta
                           <>
                             <span className="font-display text-sm font-bold tabular-nums">{v.totalPoints}</span>
                             <span className="text-[10px] text-muted-foreground tabular-nums">
-                              {ordinal(v.placement)} · {v.kills}F
+                              {ord(v.placement)} · {v.kills}F
                             </span>
                           </>
                         ) : (
@@ -272,29 +280,32 @@ export function StandingsBoard({ standings: s, highlightTeamId, matchHref }: Sta
 
 /** Header strip: matches published + copy button. */
 export function StandingsSummary({ standings: s, actions }: { standings: SessionStandings; actions?: ReactNode }) {
+  const t = useT(resultsMsg);
+  const ord = useOrdinal();
+  const fmt = useDateFormat();
   const published = s.matches.filter((m) => m.status === "PUBLISHED").length;
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4 shadow-sm">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Matches published</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("matches_published")}</p>
           <p className="font-display text-3xl font-bold">
             {published}
             <span className="text-lg text-muted-foreground">/{s.matches.length}</span>
           </p>
         </div>
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Teams</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("teams")}</p>
           <p className="font-display text-3xl font-bold">{s.rows.length}</p>
         </div>
         {s.updatedAt && (
-          <p className="text-xs text-muted-foreground">Last updated {format(parseISO(s.updatedAt), "d MMM, h:mm a")}</p>
+          <p className="text-xs text-muted-foreground">{t("last_updated", { when: fmt(s.updatedAt, "d MMM, h:mm a") })}</p>
         )}
       </div>
       <div className="flex flex-wrap gap-2">
         {actions}
-        <Button variant="outline" onClick={() => void copyStandings(s)} disabled={s.rows.length === 0} data-tour="standings-copy">
-          <Copy /> Copy as text
+        <Button variant="outline" onClick={() => void copyStandings(s, t, ord, fmt)} disabled={s.rows.length === 0} data-tour="standings-copy">
+          <Copy /> {t("copy_text")}
         </Button>
       </div>
     </div>

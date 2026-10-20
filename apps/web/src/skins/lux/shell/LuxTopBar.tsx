@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Compass } from "lucide-react";
 import { toast } from "sonner";
 import { ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
+import { LanguageSwitch } from "@/i18n/LanguageSwitch";
 import { Button } from "@7xen/ui/components/ui/button";
 import { useTour } from "@7xen/ui/tour";
 import { cn } from "@7xen/ui/lib/utils";
@@ -83,6 +84,7 @@ export function LuxTopBar({ nav, homeHref, brand, compact, wide, xwide, sidebarH
         {!compact && sidebarHeader && <div className={cn("lux-sh-slot lux-sh-slot-header", xwide ? "w-56" : "w-[52px]")}>{sidebarHeader(headerSlot)}</div>}
         {!compact && sidebarAction && <div className={cn("lux-sh-slot lux-sh-slot-action", wide ? "w-40" : "w-[52px]")}>{sidebarAction(actionSlot)}</div>}
         <TourButton iconOnly={compact || !wide} />
+        <LanguageSwitch />
         <ThemeToggle />
         <div className={cn("lux-sh-user", !xwide && "lux-sh-user-compact")}>
           <UserMenu />

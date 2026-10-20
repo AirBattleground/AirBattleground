@@ -8,7 +8,9 @@ import { cn } from "@7xen/ui/lib/utils";
 import { MapChip } from "@/features/team/components/MapChips";
 import { readStorage, writeStorage } from "@/lib/storage";
 import { Countdown } from "../../shared/Countdown";
-import { fmtWhen } from "../../shared/format";
+import { useTournamentFormat } from "../../shared/format";
+import { useT } from "@/i18n/core";
+import { tJourney } from "@/i18n/tournaments";
 import { journeyCopy, slotLabel, stageByOrder } from "../journey";
 import { Confetti } from "./Confetti";
 import { MatchRoom } from "@/features/live/components/TeamRoom";
@@ -33,7 +35,9 @@ const BORDER_TONE: Record<Tone, string> = {
 /** "Your journey": where your team is, the next goal, next match with countdown, assigned time slot. */
 export function JourneyCard({ t, className }: { t: TeamTournamentDetail; className?: string }) {
   const me = t.me;
-  const c = journeyCopy(t);
+  const tj = useT(tJourney);
+  const { fmtWhen } = useTournamentFormat();
+  const c = journeyCopy(t, tj);
   const Icon = c.icon;
   const nm = me.nextMatch;
   const stage = stageByOrder(t, me.stageOrder);
@@ -83,7 +87,7 @@ export function JourneyCard({ t, className }: { t: TeamTournamentDetail; classNa
             <div className="flex items-start gap-3 rounded-xl border border-primary/25 bg-primary/5 p-3.5 sm:col-span-2" data-tour="next-goal">
               <Target className="mt-0.5 size-5 shrink-0 text-primary" />
               <div>
-                <p className="text-[11px] font-semibold tracking-wider text-primary uppercase">Next goal</p>
+                <p className="text-[11px] font-semibold tracking-wider text-primary uppercase">{tj("next_goal")}</p>
                 <p className="font-display text-lg leading-snug font-bold">{goal}</p>
               </div>
             </div>
@@ -93,9 +97,9 @@ export function JourneyCard({ t, className }: { t: TeamTournamentDetail; classNa
               <div className="flex items-start gap-3">
                 <Flag className="mt-0.5 size-5 shrink-0 text-primary" />
                 <div className="min-w-0">
-                  <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Next match</p>
+                  <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">{tj("next_match")}</p>
                   <p className="font-display text-lg leading-snug font-bold">
-                    Match {nm.number} · Group {nm.groupName}
+                    {tj("match_group", { n: nm.number, group: nm.groupName })}
                   </p>
                   <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                     <MapChip map={nm.map} className="px-1.5 py-0.5 text-[11px]" />
@@ -105,11 +109,11 @@ export function JourneyCard({ t, className }: { t: TeamTournamentDetail; classNa
                   </p>
                 </div>
               </div>
-              {nm.scheduledAt && <Countdown to={nm.scheduledAt} variant="blocks" doneText="Match time!" label="Time until your next match" />}
+              {nm.scheduledAt && <Countdown to={nm.scheduledAt} variant="blocks" doneText={tj("match_time")} label={tj("time_until_next")} />}
               <MatchRoom matchId={nm.matchId} className="sm:grid-cols-1" />
               {stage && (
                 <Link to={`/team/tournaments/${t.id}/stages/${stage.id}`} className="text-xs font-semibold text-primary underline-offset-4 hover:underline">
-                  See your group →
+                  {tj("see_your_group")}
                 </Link>
               )}
             </div>
@@ -118,9 +122,9 @@ export function JourneyCard({ t, className }: { t: TeamTournamentDetail; classNa
             <div className="flex items-start gap-3 rounded-xl border bg-background/60 p-3.5">
               <CalendarClock className="mt-0.5 size-5 shrink-0 text-primary" />
               <div>
-                <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Your time slot</p>
+                <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">{tj("your_time_slot")}</p>
                 <p className="font-display text-lg leading-snug font-bold">{assigned}</p>
-                <p className="text-xs text-muted-foreground">Placed by the draw{me.entry?.timePreferences.length ? " using your preferences" : ""}.</p>
+                <p className="text-xs text-muted-foreground">{me.entry?.timePreferences.length ? tj("placed_by_draw_prefs") : tj("placed_by_draw")}</p>
               </div>
             </div>
           )}
@@ -132,7 +136,7 @@ export function JourneyCard({ t, className }: { t: TeamTournamentDetail; classNa
           <p>
             {me.rosterWarning}{" "}
             <Link to="/team/profile" className="font-semibold text-primary underline-offset-4 hover:underline">
-              Update roster
+              {tj("update_roster")}
             </Link>
           </p>
         </div>

@@ -1,4 +1,4 @@
-import { lazy, useEffect, useState, type ReactNode } from "react";
+import { lazy, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,15 +20,15 @@ import { useAuthConfig } from "@/features/player/api";
 import { GoogleSignInButton } from "@/features/player/components/GoogleSignInButton";
 import { SkinSwitch } from "@/lib/skin";
 import { WelcomeHeading } from "./WelcomeHeading";
+import { LanguageChips } from "@/i18n/LanguageSwitch";
+import { useT } from "@/i18n/core";
+import { common } from "@/i18n/common";
+import { authMsg } from "@/i18n/onboarding";
 import wordmarkUrl from "@/assets/brand/airbattleground-wordmark.webp";
 import markUrl from "@/assets/brand/airbattleground-mark.webp";
 
 const LuxLoginPage = lazy(() => import("@/skins/lux/pages/LuxLoginPage"));
 
-const STEPS: TourStep[] = [
-  { title: "Sign in", description: "Everyone signs in with Google — players, organisers and admins. No password to remember." },
-  { element: '[data-tour="signin"]', title: "Continue with Google", description: "Tap the button and pick your Google account. New players get an account and choose an in-game name; invited organisers land on their dashboard.", side: "bottom" },
-];
 
 /** The admin console is a separate app; the API set its cookie on the sign-in response. */
 const ADMIN_CONSOLE = "/admin-ui/";
@@ -83,6 +83,8 @@ export function DevSignIn({ onDone }: { onDone: (input: DevLoginInput) => Promis
 
 /** Google for everyone (plus the dev email sign-in when the API allows it). */
 export function SignIn({ onSignedIn }: { onSignedIn: (p: Promise<SessionUser>) => Promise<void> }) {
+  const t = useT(authMsg);
+  const tc = useT(common);
   const config = useAuthConfig();
   const { loginWithGoogle, devLogin } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -95,7 +97,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (p: Promise<SessionUser>) =
     try {
       await onSignedIn(loginWithGoogle(credential));
     } catch (e) {
-      setError(errorText(e));
+      setError(e instanceof ApiError ? e.message : tc("something_wrong"));
       setBusy(false);
     }
   };
@@ -113,9 +115,9 @@ export function SignIn({ onSignedIn }: { onSignedIn: (p: Promise<SessionUser>) =
             <ShieldCheck className="size-5" />
           </span>
           <p>
-            <span className="block font-semibold">Sign-in isn't set up yet</span>
+            <span className="block font-semibold">{t("not_setup_title")}</span>
             <span className="text-muted-foreground">
-              {config.isError ? "We couldn't reach the server. Refresh the page in a moment." : "It opens very soon. Please check back a little later."}
+              {config.isError ? t("not_setup_offline") : t("not_setup_soon")}
             </span>
           </p>
         </div>
@@ -123,7 +125,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: (p: Promise<SessionUser>) =
       {c?.devLogin && <DevSignIn onDone={(v) => onSignedIn(devLogin(v)).then(() => undefined)} />}
       {c?.googleClientId && (
         <p className="text-center text-xs leading-relaxed text-muted-foreground">
-          New player? Just continue — we'll create your account. <span className="text-foreground">No passwords.</span>
+          {t.rich("new_player", { b: (c) => <span className="text-foreground">{c}</span> })}
         </p>
       )}
     </div>
@@ -134,6 +136,7 @@ export type OnSignedIn = (p: Promise<SessionUser>) => Promise<void>;
 
 /** Visitors can watch broadcasts without an account (/watch). Shows a live count when something is on. */
 export function WatchLiveLink({ className }: { className?: string }) {
+  const t = useT(authMsg);
   const live = useLiveBroadcasts().data?.length ?? 0;
   return (
     <Link
@@ -148,8 +151,8 @@ export function WatchLiveLink({ className }: { className?: string }) {
         {live > 0 && <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">{live}</span>}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-semibold">{live > 0 ? `${live} ${live === 1 ? "match" : "matches"} live now` : "Watch live matches"}</span>
-        <span className="block text-xs text-muted-foreground">No sign-in needed</span>
+        <span className="block font-semibold">{live > 0 ? t.plural("live_now", live) : t("watch_live")}</span>
+        <span className="block text-xs text-muted-foreground">{t("no_signin_needed")}</span>
       </span>
       <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
     </Link>
@@ -162,7 +165,15 @@ export function WatchLiveLink({ className }: { className?: string }) {
  * form (a redirect or the admin hand-off loader), else null.
  */
 export function useLoginFlow(): { onSignedIn: OnSignedIn; blocker: ReactNode | null } {
-  usePageTour("auth.login", STEPS);
+  const t = useT(authMsg);
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { title: t("tour_signin_title"), description: t("tour_signin_desc") },
+      { element: '[data-tour="signin"]', title: t("tour_google_title"), description: t("tour_google_desc"), side: "bottom" },
+    ],
+    [t],
+  );
+  usePageTour("auth.login", steps);
   const { user, isLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -210,6 +221,7 @@ export default function LoginPage() {
 
 /** Teal Battle sign-in screen. */
 function TealLogin({ onSignedIn }: { onSignedIn: OnSignedIn }) {
+  const t = useT(authMsg);
   return (
     <div className="bg-background">
       <LoginScene
@@ -226,32 +238,33 @@ function TealLogin({ onSignedIn }: { onSignedIn: OnSignedIn }) {
         footer={
           <>
             <span>© {new Date().getFullYear()} AirBattleground</span>
-            <span>Made for the game. Built for the players.</span>
+            <span>{t("footer_tagline")}</span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full bg-primary shadow-glow" /> Scrims · Tournaments
+              <span className="size-1.5 rounded-full bg-primary shadow-glow" /> {t("footer_modes")}
             </span>
           </>
         }
       >
+        <LanguageChips className="mb-5" />
         <p className="mb-4 flex items-center gap-2.5 text-[11px] font-semibold tracking-[0.25em] text-primary uppercase">
-          <span className="h-px w-6 bg-primary" /> Sign in
+          <span className="h-px w-6 bg-primary" /> {t("eyebrow_signin")}
         </p>
         <WelcomeHeading />
-        <p className="mt-3 text-sm text-muted-foreground">Players, organisers and admins — one sign-in.</p>
+        <p className="mt-3 text-sm text-muted-foreground">{t("one_signin")}</p>
 
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className="mt-8">
           <SignIn onSignedIn={onSignedIn} />
         </motion.div>
 
         <ul className="mt-7 grid gap-2 text-xs text-muted-foreground">
-          <li className="flex items-center gap-2"><ArrowRight className="size-3.5 text-primary" /> Players go to their team</li>
-          <li className="flex items-center gap-2"><ArrowRight className="size-3.5 text-primary" /> Invited organisers go to their dashboard</li>
+          <li className="flex items-center gap-2"><ArrowRight className="size-3.5 text-primary" /> {t("goes_players")}</li>
+          <li className="flex items-center gap-2"><ArrowRight className="size-3.5 text-primary" /> {t("goes_organisers")}</li>
         </ul>
 
         <WatchLiveLink className="mt-6" />
 
         <p className="mt-8 flex items-center gap-2 border-t pt-5 text-xs text-muted-foreground">
-          <ShieldCheck className="size-4 text-primary" /> Your account. Your game.
+          <ShieldCheck className="size-4 text-primary" /> {t("your_account")}
         </p>
       </LoginScene>
     </div>

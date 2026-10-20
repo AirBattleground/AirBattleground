@@ -17,17 +17,8 @@ import { JourneyCard } from "@/features/tournaments/team/components/JourneyCard"
 import { RegistrationPanel } from "@/features/tournaments/team/components/RegistrationPanel";
 import { youFromMe } from "@/features/tournaments/team/journey";
 import { TeamLiveCards } from "@/features/station/components/TeamLiveCard";
-
-const STEPS: TourStep[] = [
-  { element: '[data-tour="hero"]', title: "The tournament", description: "Prize, dates, organiser and how many teams have registered so far.", side: "bottom" },
-  { element: '[data-tour="watch-live"]', title: "Watch live", description: "When your match in this tournament is being streamed, tap here to watch it live.", side: "bottom" },
-  { element: '[data-tour="journey"]', title: "Your journey", description: "Where your team stands right now, your next goal and a countdown to your next match.", side: "bottom" },
-  { element: '[data-tour="room-details"]', title: "Room details", description: "The room ID and password for your next match show up here before it starts — tap to copy.", side: "bottom" },
-  { element: '[data-tour="stage-flow"]', title: "The road to the trophy", description: "Every stage from registration to the final. The glowing stage is happening now and the YOU marker shows where your team is. Tap a stage for groups, schedule and live standings.", side: "bottom" },
-  { element: '[data-tour="register"]', title: "Register", description: "First come, first served. Pick the time slots you can play (or “Any time works”) and register. When registration is closed, you'll see why here.", side: "left" },
-  { element: '[data-tour="on-fire"]', title: "Who's on fire", description: "The teams scoring the most points per match and the players with the most finishes.", side: "top" },
-  { element: '[data-tour="format"]', title: "Format", description: "How many teams play each stage, how many go through, and which maps are played. Tap a stage for more.", side: "top" },
-];
+import { useT } from "@/i18n/core";
+import { tHub } from "@/i18n/tournamentsHub";
 
 function HubSkeleton() {
   return (
@@ -50,7 +41,21 @@ function featuredStage(t: TeamTournamentDetail) {
 }
 
 export default function TournamentHubPage() {
-  usePageTour("team.tournament", STEPS);
+  const th = useT(tHub);
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { element: '[data-tour="hero"]', title: th("tour_hero_title"), description: th("tour_hero_desc"), side: "bottom" },
+      { element: '[data-tour="watch-live"]', title: th("tour_watch_title"), description: th("tour_watch_desc"), side: "bottom" },
+      { element: '[data-tour="journey"]', title: th("tour_journey_title"), description: th("tour_journey_desc"), side: "bottom" },
+      { element: '[data-tour="room-details"]', title: th("tour_room_title"), description: th("tour_room_desc"), side: "bottom" },
+      { element: '[data-tour="stage-flow"]', title: th("tour_flow_title"), description: th("tour_flow_desc"), side: "bottom" },
+      { element: '[data-tour="register"]', title: th("tour_register_title"), description: th("tour_register_desc"), side: "left" },
+      { element: '[data-tour="on-fire"]', title: th("tour_fire_title"), description: th("tour_fire_desc"), side: "top" },
+      { element: '[data-tour="format"]', title: th("tour_format_title"), description: th("tour_format_desc"), side: "top" },
+    ],
+    [th],
+  );
+  usePageTour("team.tournament", steps);
   const { id = "" } = useParams();
   const { user } = useAuth();
   const q = useTeamTournament(id);
@@ -62,7 +67,7 @@ export default function TournamentHubPage() {
   const back = (
     <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground">
       <Link to="/team/tournaments">
-        <ArrowLeft /> All tournaments
+        <ArrowLeft /> {th("back_all")}
       </Link>
     </Button>
   );
@@ -74,16 +79,16 @@ export default function TournamentHubPage() {
         {q.error instanceof ApiError && (q.error.status === 404 || q.error.status === 403) ? (
           <EmptyState
             icon={<SearchX />}
-            title="Tournament not found"
-            description="It may have been removed or isn't published yet."
+            title={th("not_found")}
+            description={th("not_found_desc")}
             action={
               <Button asChild>
-                <Link to="/team/tournaments">See all tournaments</Link>
+                <Link to="/team/tournaments">{th("see_all")}</Link>
               </Button>
             }
           />
         ) : (
-          <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load this tournament" />
+          <QueryError error={q.error} onRetry={() => void q.refetch()} title={th("load_err")} />
         )}
       </>
     );
@@ -113,9 +118,9 @@ export default function TournamentHubPage() {
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <Route className="size-5 text-primary" />
             <h2 id="flow-title" className="font-display text-xl font-bold">
-              Road to the trophy
+              {th("road")}
             </h2>
-            <span className="text-xs text-muted-foreground">Tap a stage for groups, schedule and standings</span>
+            <span className="text-xs text-muted-foreground">{th("road_hint")}</span>
           </div>
           <StageFlow
             stages={t.stages}

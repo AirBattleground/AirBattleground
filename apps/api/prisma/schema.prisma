@@ -157,6 +157,8 @@ model User {
   ign          String?
   /// BGMI character id, digits only (required before creating/joining a team)
   bgmiId       String?   @unique
+  /// phase 7c: player's portal language — "en" | "hi" | "hinglish" (null = follow the device)
+  language     String?
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
   /// MANAGER: organisation logo shown to teams on scrims/tournaments (storage key under branding/)

@@ -9,6 +9,8 @@ import { usePlayerSession } from "@/lib/auth";
 import { AskLeaderButton } from "@/features/player/components/AskLeader";
 import { NeedTeamDialog } from "@/features/player/components/NeedTeamDialog";
 import { useCancelRegistration, useRegister } from "../api";
+import { useT } from "@/i18n/core";
+import { scrimUi } from "@/i18n/scrims";
 import { formatTime } from "../format";
 import { useNow } from "../useNow";
 import { useCardTilt } from "../useCardTilt";
@@ -20,6 +22,7 @@ import { TeamStatusBadge } from "./TeamStatus";
 
 /** Big poster bleeding off the card's top-left corner, feathered on its inner edges so it melts into the card. Click to enlarge. */
 function PosterBleed({ url, title }: { url: string | null; title: string }) {
+  const t = useT(scrimUi);
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const box = "sc-bleed absolute top-0 left-0 size-[9.5rem] sm:size-44";
@@ -34,7 +37,7 @@ function PosterBleed({ url, title }: { url: string | null; title: string }) {
   }
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={cn(box, "group/poster z-0 cursor-zoom-in overflow-hidden outline-none")} aria-label={`View ${title} poster`}>
+      <button type="button" onClick={() => setOpen(true)} className={cn(box, "group/poster z-0 cursor-zoom-in overflow-hidden outline-none")} aria-label={t("view_poster", { title })}>
         <img
           src={url}
           alt=""
@@ -69,6 +72,7 @@ function Ambient({ url }: { url: string | null }) {
 
 /** "12/16 slots · 4 left" with a slim bar. */
 function SlotMeter({ approved, total, className }: { approved: number; total: number; className?: string }) {
+  const t = useT(scrimUi);
   const filled = Math.min(approved, total);
   const left = Math.max(0, total - filled);
   const full = left === 0;
@@ -81,7 +85,7 @@ function SlotMeter({ approved, total, className }: { approved: number; total: nu
       </span>
       <span className="font-medium whitespace-nowrap text-muted-foreground">
         <span className="font-semibold text-foreground tabular-nums">{filled}/{total}</span> ·{" "}
-        <span className={cn("font-semibold", full ? "text-destructive" : almost ? "text-warning-foreground dark:text-warning" : "text-success")}>{full ? "Full" : `${left} left`}</span>
+        <span className={cn("font-semibold", full ? "text-destructive" : almost ? "text-warning-foreground dark:text-warning" : "text-success")}>{full ? t("full") : t("left", { count: left })}</span>
       </span>
     </span>
   );
@@ -89,6 +93,7 @@ function SlotMeter({ approved, total, className }: { approved: number; total: nu
 
 export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item: TeamScrimOnDate; rejectionReason?: string | null; tourAnchor?: boolean }) {
   const { scrim, date, startsAt, counts, myRegistration: my } = item;
+  const t = useT(scrimUi);
   const now = useNow(15_000);
   const started = now >= new Date(startsAt).getTime();
   const open = item.registrationOpen && !started;
@@ -116,12 +121,12 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
       {open ? <Timer className="size-3.5 text-primary" /> : <Lock className="size-3.5" />}
       {open ? (
         <span>
-          Closes in <Countdown to={startsAt} className="font-semibold text-foreground" />
+          {t("closes_in")} <Countdown to={startsAt} className="font-semibold text-foreground" />
         </span>
       ) : started ? (
-        "Started"
+        t("started")
       ) : (
-        "Closed"
+        t("closed")
       )}
     </span>
   );
@@ -186,14 +191,14 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
                     {my?.slotNumber != null ? <SlotChip slot={my.slotNumber} /> : <CheckCircle2 className="size-10 text-success" />}
                   </motion.div>
                   <div>
-                    <p className="font-display text-xl font-bold text-success">You're in!</p>
-                    <p className="text-xs text-muted-foreground">{started ? "Match in progress — good luck!" : "Be ready on time"}</p>
+                    <p className="font-display text-xl font-bold text-success">{t("youre_in")}</p>
+                    <p className="text-xs text-muted-foreground">{started ? t("in_progress") : t("be_ready")}</p>
                   </div>
                 </div>
               )}
               {status === "APPROVED" && !started && isLeader && (
                 <Button variant="ghost" size="sm" className="self-start text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>
-                  Cancel
+                  {t("cancel")}
                 </Button>
               )}
 
@@ -203,11 +208,11 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
                     <TeamStatusBadge status="PENDING" className="px-3 py-1 text-sm" />
                   </div>
                   <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                    <Hourglass className="mt-0.5 size-3.5 shrink-0" /> Waiting for the organiser · updates live
+                    <Hourglass className="mt-0.5 size-3.5 shrink-0" /> {t("waiting_live")}
                   </p>
                   {!started && isLeader && (
                     <Button variant="ghost" size="sm" className="self-start text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>
-                      Cancel request
+                      {t("cancel_request")}
                     </Button>
                   )}
                 </>
@@ -216,11 +221,11 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
               {status === "REJECTED" && (
                 <>
                   <TeamStatusBadge status="REJECTED" className="self-start px-3 py-1 text-sm" />
-                  {rejectionReason && <p className="text-xs text-muted-foreground">Reason: “{rejectionReason}”</p>}
+                  {rejectionReason && <p className="text-xs text-muted-foreground">{t("reason", { reason: rejectionReason })}</p>}
                   {open &&
                     (isLeader ? (
                       <Button variant="outline" onClick={() => setRegOpen(true)} disabled={register.isPending}>
-                        <RotateCw /> Request again
+                        <RotateCw /> {t("request_again")}
                       </Button>
                     ) : (
                       ask
@@ -233,23 +238,23 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
                   {!hasTeam ? (
                     // phase 5c: no team yet → "You need a team to register" (create → straight back to this registration)
                     <Button size="lg" className="h-11 w-full text-base font-semibold shadow-glow" onClick={() => setNeedTeamOpen(true)}>
-                      Register for this scrim
+                      {t("register_scrim")}
                     </Button>
                   ) : isLeader ? (
                     <Button size="lg" className="h-11 w-full text-base font-semibold shadow-glow" onClick={() => setRegOpen(true)} disabled={register.isPending}>
                       {register.isPending ? <Loader2 className="animate-spin" /> : null}
-                      Register my team
+                      {t("register_team")}
                     </Button>
                   ) : (
                     ask
                   )}
-                  {full && <p className="text-center text-xs font-medium text-warning-foreground dark:text-warning">All slots filled · you'll join the waiting list</p>}
+                  {full && <p className="text-center text-xs font-medium text-warning-foreground dark:text-warning">{t("full_waitlist")}</p>}
                 </>
               )}
 
               {status === null && !open && (
                 <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed py-2.5 text-sm font-semibold text-muted-foreground">
-                  <Lock className="size-4" /> Registration closed
+                  <Lock className="size-4" /> {t("reg_closed")}
                 </div>
               )}
             </motion.div>
@@ -257,7 +262,7 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
         </div>
       </div>
 
-      <NeedTeamDialog open={needTeamOpen} onOpenChange={setNeedTeamOpen} what="this scrim" onTeamCreated={() => setRegOpen(true)} />
+      <NeedTeamDialog open={needTeamOpen} onOpenChange={setNeedTeamOpen} what={t("this_scrim")} onTeamCreated={() => setRegOpen(true)} />
       <RegisterDialog open={regOpen} onOpenChange={setRegOpen} summary={summary} full={full} again={status === "REJECTED"} onConfirm={doRegister} />
       <CancelDialog
         open={cancelOpen}

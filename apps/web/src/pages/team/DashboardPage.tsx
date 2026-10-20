@@ -25,44 +25,52 @@ import { NextRoomCard } from "@/features/live/components/TeamRoom";
 import { CoinLeaderboard } from "@/features/coins/components/CoinLeaderboard";
 import { LiveNowStrip } from "@/features/broadcast/LiveNowStrip";
 import { TeamLiveCards } from "@/features/station/components/TeamLiveCard";
+import { useT, type T } from "@/i18n/core";
+import { dashMsg } from "@/i18n/home";
 
 /** Lux Battle only: plane + chutes over the home hero (lazy, so Teal never loads it). */
 const LuxHomeOverlay = lazy(() => import("@/skins/lux/pages/LuxHomeOverlay"));
 /** Arena only: the game-lobby hero (lazy, so other looks never load it). */
 const ArenaLobby = lazy(() => import("@/skins/arena/ArenaLobby"));
-const STEPS: TourStep[] = [
-  { title: "Welcome to AirBattleground!", description: "This is your team's home. Here's a quick look around — it takes 20 seconds." },
-  { element: '[data-tour="find-scrim"]', title: "Find a scrim", description: "Your main button: browse scrims by day and register your team.", side: "bottom" },
-  { element: '[data-tour="next-match"]', title: "Your next match", description: "Once an organiser approves you, your slot number, time and maps show up here with a live countdown.", side: "bottom" },
-  { element: '[data-tour="stats"]', title: "Your numbers", description: "Matches played, approved matches coming up and your best finish (plus requests still waiting, when you have some).", side: "top" },
-  { element: '[data-tour="watch-live"]', title: "Watch live", description: "When one of your matches is being streamed, it shows up right here. Tap it to watch the game live.", side: "bottom" },
-  { element: '[data-tour="home-live"]', title: "Live now", description: "Every match being broadcast right now, from any organiser. Tap one to watch.", side: "top" },
-  { element: '[data-tour="next-room"]', title: "Room ID & password", description: "Before each match the room ID and password appear here, with copy buttons. Until then it shows when they'll appear.", side: "bottom" },
-  { element: '[data-tour="team-suggestions"]', title: "Asked by your team", description: "Scrims and tournaments your members want to play. Register in one tap, or dismiss.", side: "top" },
-  { element: '[data-tour="home-tournaments"]', title: "Tournaments", description: "Live cups and ones open for registration. Tap a poster for the full details and to register.", side: "top" },
-  { element: '[data-tour="home-scrims"]', title: "Scrims you can join", description: "Today's and tomorrow's scrims that still take teams. Register right from here.", side: "top" },
-  { element: '[data-tour="upcoming"]', title: "Everything coming up", description: "All your upcoming scrims with their status — waiting or approved with a slot.", side: "top" },
-  { element: '[data-tour="last-result"]', title: "Your last result", description: "Your rank and points from the latest published scrim. Tap it for the full points table.", side: "top" },
-  { element: '[data-tour="coins"]', title: "BG coins", description: "Every match winner earns BG coins for their team's leader. See the total given out and the top 10 teams.", side: "top" },
-  { element: '[data-tour="organisers"]', title: "Organisers", description: "The organisers running scrims and tournaments you can play.", side: "top" },
-];
+type DashT = T<(typeof dashMsg)["en"]>;
 
-const START_STEPS: TourStep[] = [
-  { title: "Welcome to AirBattleground!", description: "Browse scrims and tournaments right away. You only need a team when you register." },
-  { element: '[data-tour="find-scrim"]', title: "Find a scrim", description: "Browse scrims by day. Tap Register when you find one — we'll help you set up a team.", side: "bottom" },
-  { element: '[data-tour="team-up"]', title: "Team up", description: "Create your own team, or join your friends with their invite code.", side: "bottom" },
-  { element: '[data-tour="home-live"]', title: "Live now", description: "Every match being broadcast right now. Tap one to watch.", side: "top" },
-  { element: '[data-tour="home-tournaments"]', title: "Tournaments", description: "Live cups and ones open for registration. Tap a poster for the full details.", side: "top" },
-  { element: '[data-tour="home-scrims"]', title: "Scrims you can join", description: "Today's and tomorrow's scrims that still take teams.", side: "top" },
-  { element: '[data-tour="coins"]', title: "BG coins", description: "Win matches to earn BG coins. See the total given out and the top 10 teams.", side: "top" },
-  { element: '[data-tour="organisers"]', title: "Organisers", description: "The organisers running scrims and tournaments you can play.", side: "top" },
-];
+function teamSteps(t: DashT): TourStep[] {
+  return [
+    { title: t("tour_welcome_title"), description: t("tour_welcome_text") },
+    { element: '[data-tour="find-scrim"]', title: t("tour_find_title"), description: t("tour_find_text"), side: "bottom" },
+    { element: '[data-tour="next-match"]', title: t("tour_next_title"), description: t("tour_next_text"), side: "bottom" },
+    { element: '[data-tour="stats"]', title: t("tour_stats_title"), description: t("tour_stats_text"), side: "top" },
+    { element: '[data-tour="watch-live"]', title: t("tour_watch_title"), description: t("tour_watch_text"), side: "bottom" },
+    { element: '[data-tour="home-live"]', title: t("tour_live_title"), description: t("tour_live_text"), side: "top" },
+    { element: '[data-tour="next-room"]', title: t("tour_room_title"), description: t("tour_room_text"), side: "bottom" },
+    { element: '[data-tour="team-suggestions"]', title: t("tour_sugg_title"), description: t("tour_sugg_text"), side: "top" },
+    { element: '[data-tour="home-tournaments"]', title: t("tour_cups_title"), description: t("tour_cups_text"), side: "top" },
+    { element: '[data-tour="home-scrims"]', title: t("tour_scrims_title"), description: t("tour_scrims_text"), side: "top" },
+    { element: '[data-tour="upcoming"]', title: t("tour_upcoming_title"), description: t("tour_upcoming_text"), side: "top" },
+    { element: '[data-tour="last-result"]', title: t("tour_last_title"), description: t("tour_last_text"), side: "top" },
+    { element: '[data-tour="coins"]', title: t("tour_coins_title"), description: t("tour_coins_text"), side: "top" },
+    { element: '[data-tour="organisers"]', title: t("tour_org_title"), description: t("tour_org_text"), side: "top" },
+  ];
+}
 
-function greeting() {
+function startSteps(t: DashT): TourStep[] {
+  return [
+    { title: t("tour_welcome_title"), description: t("start_welcome_text") },
+    { element: '[data-tour="find-scrim"]', title: t("tour_find_title"), description: t("start_find_text"), side: "bottom" },
+    { element: '[data-tour="team-up"]', title: t("start_teamup_title"), description: t("start_teamup_text"), side: "bottom" },
+    { element: '[data-tour="home-live"]', title: t("tour_live_title"), description: t("start_live_text"), side: "top" },
+    { element: '[data-tour="home-tournaments"]', title: t("tour_cups_title"), description: t("start_cups_text"), side: "top" },
+    { element: '[data-tour="home-scrims"]', title: t("tour_scrims_title"), description: t("start_scrims_text"), side: "top" },
+    { element: '[data-tour="coins"]', title: t("tour_coins_title"), description: t("start_coins_text"), side: "top" },
+    { element: '[data-tour="organisers"]', title: t("tour_org_title"), description: t("tour_org_text"), side: "top" },
+  ];
+}
+
+function greeting(t: DashT) {
   const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hourCycle: "h23", timeZone: "Asia/Kolkata" }).format(new Date()));
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
+  if (h < 12) return t("good_morning");
+  if (h < 17) return t("good_afternoon");
+  return t("good_evening");
 }
 
 /** The next scrim (today, then tomorrow) the team can still register for. */
@@ -85,7 +93,9 @@ export default function DashboardPage() {
 
 /** Phase 5c: a player without a team gets the normal hub (browse first) plus one slim "team up" nudge. */
 function StartHome() {
-  usePageTour("team.start", START_STEPS);
+  const t = useT(dashMsg);
+  const steps = useMemo(() => startSteps(t), [t]);
+  usePageTour("team.start", steps);
   const { isArena } = useSkin();
   const { user, player } = usePlayerSession();
   const profile = useWatchForApproval();
@@ -104,9 +114,9 @@ function StartHome() {
     return tallyOrganisers(fromScrims, featured.items.map((t) => t.manager));
   }, [featured.items, scrims.today.items, scrims.tomorrow.items]);
   const startStats: HeroStatItem[] = [
-    { icon: <Swords />, value: scrims.today.loading ? pulse : scrims.today.items.filter((s) => s.registrationOpen).length, label: "Scrims open today" },
-    { icon: <Trophy />, value: featured.loading ? pulse : featured.items.length, label: "Tournaments on" },
-    { icon: <Users />, value: organisers.length, label: "Organisers" },
+    { icon: <Swords />, value: scrims.today.loading ? pulse : scrims.today.items.filter((s) => s.registrationOpen).length, label: t("stat_scrims_today") },
+    { icon: <Trophy />, value: featured.loading ? pulse : featured.items.length, label: t("stat_cups_on") },
+    { icon: <Users />, value: organisers.length, label: t("stat_organisers") },
   ];
 
   return (
@@ -118,7 +128,7 @@ function StartHome() {
           </Suspense>
         ) : (
           <FeaturedHero
-            eyebrow={`${greeting()}, ${player?.ign ?? user?.displayName ?? "player"}`}
+            eyebrow={<>{greeting(t)}, <span className="tracking-normal normal-case">{player?.ign ?? user?.displayName ?? t("player")}</span></>}
             stats={startStats}
             card={<NextMatchCard booked={null} open={nextOpenScrim([scrims.today.items, scrims.tomorrow.items])} today={today} loading={scrims.today.loading} />}
           />
@@ -135,7 +145,9 @@ function StartHome() {
 }
 
 function TeamHome() {
-  usePageTour("team.dashboard", STEPS);
+  const t = useT(dashMsg);
+  const steps = useMemo(() => teamSteps(t), [t]);
+  usePageTour("team.dashboard", steps);
   const { user, isLeader } = usePlayerSession();
   const { isLux, isArena } = useSkin();
   const qc = useQueryClient();
@@ -173,10 +185,10 @@ function TeamHome() {
   const showUpcoming = loading || booked || upcoming.length > 0;
   const best = d?.results?.bestRank;
   const stats: HeroStatItem[] = [
-    { icon: <Gamepad2 />, value: d ? d.counts.totalPlayed : pulse, label: "Matches played" },
-    { icon: <CalendarCheck />, value: d ? d.counts.approvedUpcoming : pulse, label: "Upcoming matches" },
-    { icon: <Trophy />, value: d ? (best != null ? `#${best}` : "—") : pulse, label: "Best finish" },
-    ...(d && d.counts.pending > 0 ? [{ icon: <Hourglass />, value: d.counts.pending, label: "Waiting for approval" }] : []),
+    { icon: <Gamepad2 />, value: d ? d.counts.totalPlayed : pulse, label: t("stat_played") },
+    { icon: <CalendarCheck />, value: d ? d.counts.approvedUpcoming : pulse, label: t("stat_upcoming") },
+    { icon: <Trophy />, value: d ? (best != null ? `#${best}` : "—") : pulse, label: t("stat_best") },
+    ...(d && d.counts.pending > 0 ? [{ icon: <Hourglass />, value: d.counts.pending, label: t("stat_waiting") }] : []),
   ];
 
   return (
@@ -189,10 +201,10 @@ function TeamHome() {
             </Suspense>
           ) : (
             <FeaturedHero
-              eyebrow={`${greeting()}, ${team?.name ?? "your team"}`}
+              eyebrow={<>{greeting(t)}, <span className="tracking-normal normal-case">{team?.name ?? t("your_team")}</span></>}
               stats={stats}
               card={<NextMatchCard booked={d?.nextMatch ?? null} open={nextOpenScrim([scrims.today.items, scrims.tomorrow.items])} today={today} loading={loading} />}
-              error={failed ? <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your dashboard" className="rounded-2xl border bg-card/80 py-8 backdrop-blur-xl" /> : undefined}
+              error={failed ? <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_error")} className="rounded-2xl border bg-card/80 py-8 backdrop-blur-xl" /> : undefined}
             />
           )}
           {isLux && (
@@ -220,7 +232,7 @@ function TeamHome() {
         <div className={cn("grid gap-8 sm:gap-10", showUpcoming && "lg:grid-cols-[1.15fr_1fr] lg:gap-6")}>
           {showUpcoming && (
             <section className="space-y-4" data-tour="upcoming">
-              <SectionHeader eyebrow="Your schedule" title="Coming up" icon={<Ticket />} to={upcoming.length > 0 ? "/team/registrations" : undefined} />
+              <SectionHeader eyebrow={t("sched_eyebrow")} title={t("sched_title")} icon={<Ticket />} to={upcoming.length > 0 ? "/team/registrations" : undefined} />
               {loading ? (
                 <div className="space-y-3">
                   <RegistrationCardSkeleton />
@@ -229,7 +241,7 @@ function TeamHome() {
               ) : upcoming.length === 0 ? (
                 <p className="flex items-center gap-3 rounded-2xl border border-dashed px-5 py-4 text-sm text-muted-foreground">
                   <CalendarCheck className="size-5 shrink-0 text-primary" />
-                  Nothing else booked yet. Use <span className="font-medium text-foreground">Find a scrim</span> to fill up your week.
+                  <span>{t.rich("nothing_booked", { b: (c) => <span className="font-medium text-foreground">{c}</span> })}</span>
                 </p>
               ) : (
                 <StaggerList className="space-y-3">
@@ -244,7 +256,7 @@ function TeamHome() {
           )}
 
           <section className="space-y-4">
-            <SectionHeader eyebrow="Results" title="Your form" icon={<Medal />} />
+            <SectionHeader eyebrow={t("results_eyebrow")} title={t("results_title")} icon={<Medal />} />
             <div className={cn("grid gap-4", !showUpcoming && "lg:grid-cols-2")}>
               <LastResultCard results={d?.results ?? null} loading={loading} />
               <SeasonCard results={d?.results ?? null} loading={loading} />

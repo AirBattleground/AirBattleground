@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useMemo, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, CalendarDays, Crosshair, Drumstick, Medal, Search, Swords, Trophy } from "lucide-react";
 import { EmptyState, PageHeader, StatCard } from "@7xen/ui/components/brand/page";
@@ -8,23 +8,30 @@ import { usePlayerSession } from "@/lib/auth";
 import { NoTeamHint } from "@/features/player/components/NoTeamHint";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useTeamDashboard } from "@/features/team/api";
-import { formatDate } from "@/features/team/format";
+import { useDayFormat } from "@/features/team/format";
 import { QueryError } from "@/features/team/components/QueryError";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
 import { useTeamResults } from "@/features/results/api";
-import { ordinal, RankBadge } from "@/features/results/components/Rank";
-
-const STEPS: TourStep[] = [
-  { title: "Your results", description: "Every scrim you've played, with your rank and points — filled in when the organiser publishes results." },
-  { element: '[data-tour="results-stats"]', title: "Your numbers", description: "Sessions, matches, finishes, chicken dinners and your best finish, all time." },
-  { element: '[data-tour="results-list"]', title: "Sessions", description: "Tap a session to see the full points table and every match's scorecard." },
-];
+import { RankBadge } from "@/features/results/components/Rank";
+import { useT } from "@/i18n/core";
+import { resultsMsg, useOrdinal } from "@/i18n/results";
 
 const Num = ({ v }: { v: ReactNode | undefined }) =>
   v === undefined ? <span className="inline-block h-9 w-10 animate-pulse rounded bg-muted" /> : <>{v}</>;
 
 export default function ResultsPage() {
-  usePageTour("team.results", STEPS);
+  const t = useT(resultsMsg);
+  const ord = useOrdinal();
+  const { formatDate } = useDayFormat();
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { title: t("tour_title"), description: t("tour_desc") },
+      { element: '[data-tour="results-stats"]', title: t("tour_stats_title"), description: t("tour_stats_desc") },
+      { element: '[data-tour="results-list"]', title: t("tour_list_title"), description: t("tour_list_desc") },
+    ],
+    [t],
+  );
+  usePageTour("team.results", steps);
   const { hasTeam } = usePlayerSession();
   const dash = useTeamDashboard({ enabled: hasTeam });
   const q = useTeamResults();
@@ -33,16 +40,16 @@ export default function ResultsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader eyebrow="Results" title="Your results" description="Points tables and scorecards from every scrim you've played." />
+      <PageHeader eyebrow={t("eyebrow")} title={t("title")} description={t("description")} />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5" data-tour="results-stats">
-        <StatCard label="Sessions" value={<Num v={sum === undefined ? undefined : (sum?.sessionsPlayed ?? 0)} />} icon={<CalendarDays />} tone="info" />
-        <StatCard label="Matches" value={<Num v={sum === undefined ? undefined : (sum?.matchesPlayed ?? 0)} />} icon={<Swords />} tone="brand" />
-        <StatCard label="Finishes" value={<Num v={sum === undefined ? undefined : (sum?.totalKills ?? 0)} />} icon={<Crosshair />} tone="brand" />
-        <StatCard label="Chicken dinners" value={<Num v={sum === undefined ? undefined : (sum?.wins ?? 0)} />} icon={<Drumstick />} tone="warning" />
+        <StatCard label={t("stat_sessions")} value={<Num v={sum === undefined ? undefined : (sum?.sessionsPlayed ?? 0)} />} icon={<CalendarDays />} tone="info" />
+        <StatCard label={t("stat_matches")} value={<Num v={sum === undefined ? undefined : (sum?.matchesPlayed ?? 0)} />} icon={<Swords />} tone="brand" />
+        <StatCard label={t("stat_finishes")} value={<Num v={sum === undefined ? undefined : (sum?.totalKills ?? 0)} />} icon={<Crosshair />} tone="brand" />
+        <StatCard label={t("stat_wins")} value={<Num v={sum === undefined ? undefined : (sum?.wins ?? 0)} />} icon={<Drumstick />} tone="warning" />
         <StatCard
-          label="Best rank"
-          value={<Num v={sum === undefined ? undefined : sum?.bestRank != null ? ordinal(sum.bestRank) : "—"} />}
+          label={t("stat_best")}
+          value={<Num v={sum === undefined ? undefined : sum?.bestRank != null ? ord(sum.bestRank) : "—"} />}
           icon={<Medal />}
           tone="success"
           className="col-span-2 lg:col-span-1"
@@ -50,9 +57,9 @@ export default function ResultsPage() {
       </div>
 
       <section className="space-y-3" data-tour="results-list">
-        <h2 className="font-display text-2xl font-bold">Sessions played</h2>
+        <h2 className="font-display text-2xl font-bold">{t("sessions_played")}</h2>
         {q.isError ? (
-          <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your results" />
+          <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_error")} />
         ) : !q.data ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }, (_, i) => (
@@ -60,16 +67,16 @@ export default function ResultsPage() {
             ))}
           </div>
         ) : q.data.length === 0 && !hasTeam ? (
-          <NoTeamHint icon={<Trophy />}>Your team's results show up here after you play.</NoTeamHint>
+          <NoTeamHint icon={<Trophy />}>{t("no_team")}</NoTeamHint>
         ) : q.data.length === 0 ? (
           <EmptyState
             icon={<Trophy />}
-            title="No results yet"
-            description="Once you play a scrim and the organiser publishes the results, your rank and points show up here."
+            title={t("empty_title")}
+            description={t("empty_desc")}
             action={
               <Button asChild>
                 <Link to="/team/scrims">
-                  <Search /> Find a scrim
+                  <Search /> {t("find_scrim")}
                 </Link>
               </Button>
             }
@@ -86,15 +93,13 @@ export default function ResultsPage() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-lg font-bold">{r.scrim.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {formatDate(r.date)} · {ordinal(r.rank)} of {r.teamsCount}
-                      {r.slotNumber != null && ` · Slot #${String(r.slotNumber).padStart(2, "0")}`}
+                      {formatDate(r.date)} · {t("rank_of", { rank: ord(r.rank), total: r.teamsCount })}
+                      {r.slotNumber != null && ` · ${t("slot_n", { n: String(r.slotNumber).padStart(2, "0") })}`}
                     </p>
                     <p className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-                      <span>
-                        {r.matchesPublished}/{r.matchesTotal} matches
-                      </span>
+                      <span>{t("matches_of", { done: r.matchesPublished, total: r.matchesTotal })}</span>
                       <span className="inline-flex items-center gap-1">
-                        <Crosshair className="size-3" /> {r.kills} finishes
+                        <Crosshair className="size-3" /> {t.plural("finishes", r.kills)}
                       </span>
                       {r.wins > 0 && (
                         <span className="inline-flex items-center gap-1 font-semibold text-warning-foreground dark:text-warning">
@@ -105,7 +110,7 @@ export default function ResultsPage() {
                   </div>
                   <div className="text-right">
                     <p className="font-display text-3xl font-bold leading-none tabular-nums">{r.totalPoints}</p>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">points</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("points")}</p>
                   </div>
                   <ArrowRight className="hidden size-5 text-muted-foreground transition-transform group-hover:translate-x-0.5 sm:block" />
                 </Link>

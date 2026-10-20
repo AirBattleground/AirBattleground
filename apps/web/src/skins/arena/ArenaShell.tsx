@@ -17,6 +17,7 @@ import { WelcomeDialog } from "@/components/shell/WelcomeDialog";
 import { useSessionExpiryToast } from "@/components/shell/useSessionExpiryToast";
 import { BgCoin } from "@/features/coins/components/BgCoin";
 import { useCoinLeaderboard } from "@/features/coins/components/CoinLeaderboard";
+import { LanguageSwitch } from "@/i18n/LanguageSwitch";
 import markUrl from "@/assets/brand/airbattleground-mark.webp";
 import wordmarkUrl from "@/assets/brand/airbattleground-wordmark.webp";
 import wordmarkInkUrl from "@/assets/brand/airbattleground-wordmark-ink.webp";
@@ -134,6 +135,7 @@ export default function ArenaShell({ nav, homeHref, mobileAction, welcomeSteps, 
                   <TooltipContent>Take a tour</TooltipContent>
                 </Tooltip>
               )}
+              <LanguageSwitch />
               <ThemeToggle />
               <UserMenu />
             </div>

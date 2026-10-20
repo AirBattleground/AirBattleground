@@ -4,13 +4,17 @@ import { CalendarDays, Crosshair, Search } from "lucide-react";
 import type { TeamRegistration } from "@7xen/shared";
 import { SlotChip } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
-import { whenLabel } from "../format";
+import { useT } from "@/i18n/core";
+import { scrimUi } from "@/i18n/scrims";
+import { useDayFormat } from "../format";
 import { OrganizerBadge } from "./Branding";
 import { CountdownBlocks } from "./Countdown";
 import { MapChips } from "./MapChips";
 
 /** Hero card for the team's next approved match (or an inviting empty state). */
 export function NextMatchCard({ match, today }: { match: TeamRegistration | null; today: string }) {
+  const t = useT(scrimUi);
+  const { whenLabel } = useDayFormat();
   if (!match) {
     return (
       <div className="relative overflow-hidden rounded-2xl border border-primary/25 bg-card p-5 shadow-sm sm:p-6" data-tour="next-match">
@@ -22,14 +26,14 @@ export function NextMatchCard({ match, today }: { match: TeamRegistration | null
               <Crosshair className="size-6" />
             </div>
             <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Next match</p>
-              <h2 className="mt-1 font-display text-2xl leading-tight font-bold sm:text-3xl">No match booked yet</h2>
-              <p className="mt-1.5 max-w-md text-sm text-muted-foreground">Pick a day, register for a scrim, and your slot will show up right here once the organiser approves.</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">{t("next_match")}</p>
+              <h2 className="mt-1 font-display text-2xl leading-tight font-bold sm:text-3xl">{t("no_match_title")}</h2>
+              <p className="mt-1.5 max-w-md text-sm text-muted-foreground">{t("no_match_text")}</p>
             </div>
           </div>
           <Button asChild size="lg" className="h-12 w-full shrink-0 px-6 text-base shadow-glow sm:w-auto" data-tour="find-scrim">
             <Link to="/team/scrims">
-              <Search /> Find a scrim
+              <Search /> {t("find_scrim")}
             </Link>
           </Button>
         </div>
@@ -53,13 +57,13 @@ export function NextMatchCard({ match, today }: { match: TeamRegistration | null
             <SlotChip slot={match.slotNumber} size="lg" className="h-24 min-w-32 text-5xl" />
           ) : (
             <span className="inline-flex h-24 min-w-32 items-center justify-center rounded-xl border border-primary/40 bg-primary/10 font-display text-xl font-bold text-primary">
-              Approved
+              {t("approved")}
             </span>
           )}
         </motion.div>
 
         <div className="min-w-0 space-y-2.5">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Next match</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">{t("next_match")}</p>
           <h2 className="font-display text-3xl leading-tight font-bold sm:text-4xl">{match.scrim.title}</h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
             <span className="flex items-center gap-1.5 font-semibold">
@@ -71,7 +75,7 @@ export function NextMatchCard({ match, today }: { match: TeamRegistration | null
         </div>
 
         <div className="flex flex-col gap-1.5 md:items-end">
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Starts in</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("starts_in")}</span>
           <CountdownBlocks to={match.startsAt} />
         </div>
       </div>

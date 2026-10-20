@@ -15,6 +15,8 @@ import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 import { LiveCard } from "@/features/broadcast/LiveCard";
 import markUrl from "@/assets/brand/airbattleground-mark.webp";
+import { useT } from "@/i18n/core";
+import { liveMsg } from "@/i18n/live";
 
 /** Public link to a match's broadcast (shared from the match center). */
 export const watchUrl = (matchId: string) => `${window.location.origin}/watch/${matchId}`;
@@ -22,6 +24,7 @@ export const watchUrl = (matchId: string) => `${window.location.origin}/watch/${
 /** Public shell: brand, theme, and a way into the portal. No sign-in needed. */
 function PublicShell({ children }: { children: ReactNode }) {
   const { user } = useAuth();
+  const t = useT(liveMsg);
   return (
     <div className="min-h-dvh bg-background">
       <header className="sticky top-0 z-30 border-b bg-background/85 backdrop-blur-xl">
@@ -30,13 +33,13 @@ function PublicShell({ children }: { children: ReactNode }) {
             <img src={markUrl} alt="" className="size-8" />
             AirBattleground
             <span className="ml-1 hidden items-center gap-1 rounded-full bg-destructive/15 px-2 py-0.5 text-xs font-bold text-destructive sm:inline-flex">
-              <Radio className="size-3" /> Live
+              <Radio className="size-3" /> {t("live_label")}
             </span>
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <ThemeToggle />
             <Button asChild size="sm" variant={user ? "outline" : "default"}>
-              <Link to={user ? "/" : "/login"}>{user ? "Open my portal" : <><LogIn /> Log in</>}</Link>
+              <Link to={user ? "/" : "/login"}>{user ? t("open_portal") : <><LogIn /> {t("log_in")}</>}</Link>
             </Button>
           </div>
         </div>
@@ -53,17 +56,18 @@ export default function WatchPage() {
 }
 
 function WatchList() {
+  const t = useT(liveMsg);
   const q = useLiveBroadcasts();
   const items = q.data ?? [];
   return (
     <>
       <div className="mb-6">
-        <p className="text-xs font-bold tracking-[0.25em] text-destructive uppercase">Live now</p>
-        <h1 className="font-display text-3xl font-bold sm:text-4xl">Watch BGMI matches live</h1>
-        <p className="mt-1 text-muted-foreground">Scrims and tournaments being broadcast by organisers right now. Tap one to watch — no sign-in needed.</p>
+        <p className="text-xs font-bold tracking-[0.25em] text-destructive uppercase">{t("live_now")}</p>
+        <h1 className="font-display text-3xl font-bold sm:text-4xl">{t("watch_title")}</h1>
+        <p className="mt-1 text-muted-foreground">{t("watch_desc")}</p>
       </div>
       {q.isError ? (
-        <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load live matches" />
+        <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_list_error")} />
       ) : q.isPending ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[0, 1, 2].map((i) => (
@@ -71,7 +75,7 @@ function WatchList() {
           ))}
         </div>
       ) : items.length === 0 ? (
-        <EmptyState icon={<Radio />} title="Nothing live right now" description="When an organiser starts a broadcast, the match shows up here. This page refreshes by itself." />
+        <EmptyState icon={<Radio />} title={t("nothing_live")} description={t("watch_empty_desc")} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((b) => (
@@ -84,6 +88,7 @@ function WatchList() {
 }
 
 function WatchOne({ matchId }: { matchId: string }) {
+  const t = useT(liveMsg);
   const q = useLiveBroadcasts();
   const card = q.data?.find((c) => c.matchId === matchId);
   // keep title/map on screen after the match drops out of the live list
@@ -96,7 +101,7 @@ function WatchOne({ matchId }: { matchId: string }) {
   const back = (
     <Button asChild variant="ghost" size="sm" className="mb-3 -ml-2 text-muted-foreground">
       <Link to="/watch">
-        <ArrowLeft /> All live matches
+        <ArrowLeft /> {t("all_live")}
       </Link>
     </Button>
   );
@@ -105,7 +110,7 @@ function WatchOne({ matchId }: { matchId: string }) {
     return (
       <>
         {back}
-        <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load the stream" />
+        <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_one_error")} />
       </>
     );
   if (q.isPending)
@@ -122,12 +127,12 @@ function WatchOne({ matchId }: { matchId: string }) {
         {back}
         <EmptyState
           icon={<MonitorOff />}
-          title="This match isn't live right now"
-          description="The broadcast may not have started yet, or it has ended."
+          title={t("not_live_title")}
+          description={t("watch_not_live_desc")}
           action={
             <Button asChild>
               <Link to="/watch">
-                <Radio /> See what's live
+                <Radio /> {t("see_live")}
               </Link>
             </Button>
           }
@@ -137,8 +142,8 @@ function WatchOne({ matchId }: { matchId: string }) {
 
   const copy = () =>
     void navigator.clipboard.writeText(watchUrl(shown.matchId)).then(
-      () => toast.success("Link copied", { description: "Share it — anyone can watch." }),
-      () => toast.error("Couldn't copy the link"),
+      () => toast.success(t("link_copied"), { description: t("link_copied_desc") }),
+      () => toast.error(t("link_copy_failed")),
     );
 
   return (
@@ -146,11 +151,9 @@ function WatchOne({ matchId }: { matchId: string }) {
       {back}
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-bold tracking-[0.25em] text-destructive uppercase">{ended ? "Stream ended" : "Live"}</p>
+          <p className="text-xs font-bold tracking-[0.25em] text-destructive uppercase">{ended ? t("stream_ended") : t("live_label")}</p>
           <h1 className="flex flex-wrap items-center gap-3 font-display text-2xl font-bold sm:text-3xl">
-            <span className="min-w-0">
-              {shown.title} · Match {shown.number}
-            </span>
+            <span className="min-w-0">{t("title_match", { title: shown.title, n: shown.number })}</span>
             <MapChip map={shown.map} className="text-sm" />
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -158,7 +161,7 @@ function WatchOne({ matchId }: { matchId: string }) {
           </p>
         </div>
         <Button variant="outline" onClick={copy}>
-          <Copy /> Share link
+          <Copy /> {t("share_link")}
         </Button>
       </div>
       <div className="-mx-4 sm:mx-0">
@@ -173,9 +176,9 @@ function WatchOne({ matchId }: { matchId: string }) {
           endedSlot={
             <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
               <MonitorOff className="mx-auto size-7 text-muted-foreground" />
-              <p className="text-sm font-medium">The broadcast has ended.</p>
+              <p className="text-sm font-medium">{t("broadcast_ended")}</p>
               <Button asChild>
-                <Link to="/watch">See what's live</Link>
+                <Link to="/watch">{t("see_live")}</Link>
               </Button>
             </div>
           }
@@ -183,7 +186,7 @@ function WatchOne({ matchId }: { matchId: string }) {
           {shown.overlayUrl && !ended && <LiveOverlay url={shown.overlayUrl} />}
         </HlsPlayer>
       </div>
-      <p className="mt-3 text-xs text-muted-foreground">The stream runs about 5–10 seconds behind the game.</p>
+      <p className="mt-3 text-xs text-muted-foreground">{t("delay_note")}</p>
     </>
   );
 }

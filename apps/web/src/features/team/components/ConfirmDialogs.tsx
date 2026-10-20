@@ -11,7 +11,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@7xen/ui/components/ui/alert-dialog";
-import { formatDate, formatTime } from "../format";
+import { useT } from "@/i18n/core";
+import { scrimUi } from "@/i18n/scrims";
+import { formatTime, useDayFormat } from "../format";
 import { MapChips } from "./MapChips";
 
 export interface ScrimSummary {
@@ -23,13 +25,15 @@ export interface ScrimSummary {
 }
 
 function SummaryBox({ s }: { s: ScrimSummary }) {
+  const t = useT(scrimUi);
+  const { formatDate } = useDayFormat();
   return (
     <div className="space-y-3 rounded-xl border bg-muted/40 p-4 text-left">
       <p className="font-display text-xl leading-tight font-bold">{s.title}</p>
       <div className="grid gap-1.5 text-sm">
         <Row icon={<CalendarDays />}>{formatDate(s.date, "EEEE, d MMMM")}</Row>
         <Row icon={<Clock />}>{formatTime(s.startTime)} IST</Row>
-        <Row icon={<User />}>Organised by {s.organiser}</Row>
+        <Row icon={<User />}>{t("organised_by", { name: s.organiser })}</Row>
       </div>
       {s.maps.length > 0 && <MapChips maps={s.maps} />}
     </div>
@@ -60,31 +64,30 @@ export function RegisterDialog({
   again?: boolean;
   onConfirm: () => void;
 }) {
+  const t = useT(scrimUi);
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="font-display text-2xl">{again ? "Request again?" : "Register your team?"}</AlertDialogTitle>
-          <AlertDialogDescription>Check the details below, then confirm.</AlertDialogDescription>
+          <AlertDialogTitle className="font-display text-2xl">{again ? t("reg_again_title") : t("reg_title")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("reg_check")}</AlertDialogDescription>
         </AlertDialogHeader>
         <SummaryBox s={summary} />
         {full ? (
           <div className="flex gap-3 rounded-xl border border-warning/40 bg-warning/15 p-3 text-sm text-warning-foreground dark:text-warning">
             <AlertTriangle className="mt-0.5 size-5 shrink-0" />
-            <p>All slots are filled — you'll be on the waiting list until a slot frees up.</p>
+            <p>{t("reg_full")}</p>
           </div>
         ) : (
           <div className="flex gap-3 rounded-xl border border-info/30 bg-info/10 p-3 text-sm text-info">
             <ShieldCheck className="mt-0.5 size-5 shrink-0" />
-            <p>
-              The organiser must <strong>approve</strong> your request. Once approved you'll get your slot number here.
-            </p>
+            <p>{t.rich("reg_approve", { b: (c) => <strong>{c}</strong> })}</p>
           </div>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel>Not now</AlertDialogCancel>
+          <AlertDialogCancel>{t("not_now")}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} size="lg">
-            {again ? "Send request again" : "Yes, register"}
+            {again ? t("send_again") : t("yes_register")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -107,22 +110,23 @@ export function CancelDialog({
   slot?: number | null;
   onConfirm: () => void;
 }) {
+  const t = useT(scrimUi);
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="font-display text-2xl">{approved ? "Give up your slot?" : "Cancel your request?"}</AlertDialogTitle>
+          <AlertDialogTitle className="font-display text-2xl">{approved ? t("cancel_slot_title") : t("cancel_req_title")}</AlertDialogTitle>
           <AlertDialogDescription>
             {approved
-              ? `Your slot${slot != null ? ` #${String(slot).padStart(2, "0")}` : ""} will be released and another team can take it. You may not get it back.`
-              : "Your request will be withdrawn. You can register again while registration is open."}
+              ? t("cancel_slot_text", { slot: slot != null ? ` #${String(slot).padStart(2, "0")}` : "" })
+              : t("cancel_req_text")}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <SummaryBox s={summary} />
         <AlertDialogFooter>
-          <AlertDialogCancel>Keep it</AlertDialogCancel>
+          <AlertDialogCancel>{t("keep_it")}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" onClick={onConfirm}>
-            {approved ? "Yes, release my slot" : "Yes, cancel request"}
+            {approved ? t("yes_release") : t("yes_cancel_req")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

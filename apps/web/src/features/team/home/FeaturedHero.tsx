@@ -9,7 +9,9 @@ import { usePlayerSession } from "@/lib/auth";
 import { Countdown } from "@/features/tournaments/shared/Countdown";
 import { useRegister } from "../api";
 import { RegisterDialog } from "../components/ConfirmDialogs";
-import { whenLabel } from "../format";
+import { useDayFormat } from "../format";
+import { useT } from "@/i18n/core";
+import { homeMsg } from "@/i18n/home";
 import { heroBackground } from "./StageArt";
 
 /**
@@ -102,13 +104,15 @@ function Poster({ url, title, left, right }: { url: string | null; title: string
 }
 
 const pill = "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold";
-const maps = (m: TeamRegistration["scrim"]["maps"]) => (m.length ? m.map((x) => MAP_LABELS[x]).join(" • ") : "Maps TBA");
+const maps = (m: TeamRegistration["scrim"]["maps"], tba: string) => (m.length ? m.map((x) => MAP_LABELS[x]).join(" • ") : tba);
 
 /**
  * "Next Match": the team's next approved match (slot + countdown) or, when nothing is booked,
  * the next scrim still taking teams with a one-tap "Register now".
  */
 export function NextMatchCard({ booked, open, today, loading }: { booked: TeamRegistration | null; open: TeamScrimOnDate | null; today: string; loading: boolean }) {
+  const t = useT(homeMsg);
+  const { whenLabel } = useDayFormat();
   const { isLeader, hasTeam } = usePlayerSession();
   const register = useRegister();
   const [regOpen, setRegOpen] = useState(false);
@@ -116,9 +120,9 @@ export function NextMatchCard({ booked, open, today, loading }: { booked: TeamRe
 
   const header = (to: string) => (
     <div className="mb-3 flex items-center justify-between gap-3">
-      <h2 className="text-xl font-bold">Next Match</h2>
+      <h2 className="text-xl font-bold">{t("next_match")}</h2>
       <Link to={to} className="rounded text-sm font-semibold text-primary outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
-        View all
+        {t("view_all")}
       </Link>
     </div>
   );
@@ -145,30 +149,30 @@ export function NextMatchCard({ booked, open, today, loading }: { booked: TeamRe
         <Poster
           url={s.posterUrl}
           title={s.title}
-          left={<span className={cn(pill, "bg-primary/15 text-primary uppercase")}>Scrim</span>}
+          left={<span className={cn(pill, "bg-primary/15 text-primary uppercase")}>{t("scrim")}</span>}
           right={
             <span className={cn(pill, "bg-success/15 text-success")}>
-              <span className="size-1.5 rounded-full bg-success" /> You're in
+              <span className="size-1.5 rounded-full bg-success" /> {t("youre_in")}
             </span>
           }
         />
         <ul className="mt-2 divide-y">
           <Row icon={<CalendarDays />}>{whenLabel(booked.date, s.startTime, today)}</Row>
-          <Row icon={<MapIcon />}>{maps(s.maps)}</Row>
+          <Row icon={<MapIcon />}>{maps(s.maps, t("maps_tba"))}</Row>
           <Row icon={<Timer />}>
-            Starts in <Countdown to={booked.startsAt} className="font-semibold" doneText="now" />
+            {t("starts_in")} <Countdown to={booked.startsAt} className="font-semibold" doneText={t("now")} />
           </Row>
         </ul>
         <div className="mt-3 flex items-center gap-3" data-tour="next-slot">
           {booked.slotNumber != null && (
             <div className="flex flex-col items-center">
               <SlotChip slot={booked.slotNumber} size="md" />
-              <span className="mt-0.5 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">Slot</span>
+              <span className="mt-0.5 text-[10px] font-semibold tracking-widest text-muted-foreground uppercase">{t("slot")}</span>
             </div>
           )}
           <Button asChild size="lg" className="h-12 flex-1 text-base font-semibold shadow-glow">
             <Link to="/team/registrations">
-              My slots <ArrowRight />
+              {t("my_slots")} <ArrowRight />
             </Link>
           </Button>
         </div>
@@ -185,31 +189,31 @@ export function NextMatchCard({ booked, open, today, loading }: { booked: TeamRe
         <Poster
           url={s.posterUrl}
           title={s.title}
-          left={<span className={cn(pill, "bg-primary/15 text-primary uppercase")}>Scrim</span>}
+          left={<span className={cn(pill, "bg-primary/15 text-primary uppercase")}>{t("scrim")}</span>}
           right={
             <span className={cn(pill, "bg-success/15 text-success")}>
-              <span className="size-1.5 rounded-full bg-success" /> Registration open
+              <span className="size-1.5 rounded-full bg-success" /> {t("reg_open")}
             </span>
           }
         />
         <ul className="mt-2 divide-y">
           <Row icon={<CalendarDays />}>{whenLabel(open.date, s.startTime, today)}</Row>
-          <Row icon={<MapIcon />}>{maps(s.maps)}</Row>
+          <Row icon={<MapIcon />}>{maps(s.maps, t("maps_tba"))}</Row>
           <Row icon={<Users />}>
             <span className="font-semibold">
               {open.counts.approved} / {s.slotCount}
             </span>{" "}
-            Teams registered
+            {t("teams_registered")}
           </Row>
         </ul>
         {canRegister ? (
           <Button size="lg" className="mt-3 h-12 w-full text-base font-semibold shadow-glow" onClick={() => setRegOpen(true)} disabled={register.isPending}>
-            Register now <ArrowRight />
+            {t("register_now")} <ArrowRight />
           </Button>
         ) : (
           <Button asChild size="lg" className="mt-3 h-12 w-full text-base font-semibold shadow-glow">
             <Link to={open.date === today ? "/team/scrims" : `/team/scrims?date=${open.date}`}>
-              View scrim <ArrowRight />
+              {t("view_scrim")} <ArrowRight />
             </Link>
           </Button>
         )}
@@ -231,12 +235,12 @@ export function NextMatchCard({ booked, open, today, loading }: { booked: TeamRe
         <span className="flex size-12 items-center justify-center rounded-full bg-primary/12 text-primary ring-1 ring-primary/20">
           <Gamepad2 className="size-6" />
         </span>
-        <p className="mt-3 font-semibold">No match booked yet</p>
-        <p className="mt-1 text-sm text-muted-foreground">Find a scrim and register. Your slot and countdown show up here once you're approved.</p>
+        <p className="mt-3 font-semibold">{t("no_match_title")}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("no_match_text")}</p>
       </div>
       <Button asChild size="lg" className="mt-3 h-12 w-full text-base font-semibold shadow-glow">
         <Link to="/team/scrims">
-          Find a scrim <ArrowRight />
+          {t("find_scrim")} <ArrowRight />
         </Link>
       </Button>
     </div>
@@ -249,6 +253,7 @@ export function NextMatchCard({ booked, open, today, loading }: { booked: TeamRe
  * sidebar, topbar and right edge (offsets mirror the shell's px-4/5/6 + pt-4/5).
  */
 export function FeaturedHero({ eyebrow, stats, card, error }: { eyebrow: ReactNode; stats: HeroStatItem[]; card: ReactNode; error?: ReactNode }) {
+  const t = useT(homeMsg);
   return (
     <section className="relative isolate -mx-4 -mt-4 px-4 sm:-mx-5 sm:-mt-5 sm:px-5 lg:-mx-6 lg:px-6" data-tour="home-hero">
       <HeroBackdrop />
@@ -256,21 +261,21 @@ export function FeaturedHero({ eyebrow, stats, card, error }: { eyebrow: ReactNo
         <div className="min-w-0 animate-rise">
           <p className="text-xs font-semibold tracking-[0.3em] text-muted-foreground uppercase sm:text-sm">{eyebrow}</p>
           <h1 className="font-hero mt-3 text-[2.6rem] leading-[0.92] font-extrabold tracking-tight uppercase drop-shadow-[0_2px_24px_var(--background)] sm:text-6xl xl:text-[4.25rem] 2xl:text-[4.75rem]">
-            <span className="block">Drop in. Team up.</span>
-            <span className="block text-primary">Take the crown.</span>
+            <span className="block">{t("hero_line1")}</span>
+            <span className="block text-primary">{t("hero_line2")}</span>
           </h1>
           <p className="mt-4 max-w-md text-[15px] leading-relaxed text-foreground/85 sm:text-[17px]">
-            Find BGMI scrims and tournaments, register your squad, compete with top teams and climb the rankings.
+            {t("hero_text")}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Button asChild size="lg" className="h-12 px-6 text-base font-semibold shadow-[0_0_28px_-6px_var(--primary)]" data-tour="find-scrim">
               <Link to="/team/scrims">
-                <Gamepad2 /> Find a scrim <ArrowRight />
+                <Gamepad2 /> {t("find_scrim")} <ArrowRight />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="h-12 border-foreground/40 bg-transparent px-6 text-base font-semibold hover:bg-foreground/5 dark:bg-transparent">
               <Link to="/team/tournaments">
-                <Trophy /> View tournaments
+                <Trophy /> {t("view_cups")}
               </Link>
             </Button>
           </div>

@@ -10,6 +10,7 @@ import { queryClient } from "@/lib/query";
 import { AuthProvider } from "@/lib/auth";
 import { SkinProvider } from "@/lib/skin";
 import { router } from "@/router";
+import { LocaleProvider } from "@/i18n/core";
 import { installChunkReload } from "@/lib/chunkReload";
 import { splashFailsafe } from "@/lib/splash";
 import "./index.css";
@@ -21,10 +22,12 @@ createRoot(document.getElementById("root")!).render(
         <SkinProvider>
         <TourProvider>
           <AuthProvider>
-            <TooltipProvider delayDuration={200}>
-              <RouterProvider router={router} />
-              <Toaster richColors closeButton position="top-right" />
-            </TooltipProvider>
+            <LocaleProvider>
+              <TooltipProvider delayDuration={200}>
+                <RouterProvider router={router} />
+                <Toaster richColors closeButton position="top-right" />
+              </TooltipProvider>
+            </LocaleProvider>
           </AuthProvider>
         </TourProvider>
         </SkinProvider>

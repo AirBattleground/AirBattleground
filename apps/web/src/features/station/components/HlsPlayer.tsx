@@ -3,19 +3,22 @@ import type Hls from "hls.js";
 import { Loader2, Maximize, Minimize, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { cn } from "@7xen/ui/lib/utils";
 import { fmtDuration } from "@/features/live/format";
+import { useT } from "@/i18n/core";
+import { liveMsg } from "@/i18n/live";
 
 export type PlayerState = "connecting" | "playing" | "ended";
 
 /** Pulsing red "LIVE" badge, optionally with the elapsed time since `startedAt`. */
 export function LiveBadge({ startedAt, className }: { startedAt?: string | null; className?: string }) {
   const elapsed = useElapsed(startedAt);
+  const t = useT(liveMsg);
   return (
     <span className={cn("inline-flex items-center gap-1.5 rounded-md bg-destructive px-2 py-0.5 font-display text-xs font-bold tracking-wider text-destructive-foreground uppercase shadow-sm", className)}>
       <span className="relative flex size-2">
         <span className="absolute inline-flex size-full animate-ping rounded-full bg-destructive-foreground opacity-70" />
         <span className="relative inline-flex size-2 rounded-full bg-destructive-foreground" />
       </span>
-      Live
+      {t("live_label")}
       {elapsed != null && <span className="font-sans font-semibold tabular-nums normal-case opacity-90">{fmtDuration(elapsed)}</span>}
     </span>
   );
@@ -55,7 +58,7 @@ export function HlsPlayer({
   hud,
   className,
   frameClassName,
-  label = "Live match stream",
+  label,
   showLiveBadge = true,
   dvr = false,
 }: {
@@ -79,6 +82,7 @@ export function HlsPlayer({
    */
   dvr?: boolean;
 }) {
+  const t = useT(liveMsg);
   const ownRef = useRef<HTMLVideoElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [state, setState] = useState<PlayerState>("connecting");
@@ -262,7 +266,7 @@ export function HlsPlayer({
           autoPlay
           playsInline
           disablePictureInPicture
-          aria-label={label}
+          aria-label={label ?? t("stream_label")}
           className={cn("absolute inset-0 size-full object-contain transition-opacity", showEnded && "opacity-30")}
         />
 
@@ -270,8 +274,8 @@ export function HlsPlayer({
           <div className="pointer-events-none absolute inset-0 grid place-items-center">
             <div className="flex flex-col items-center gap-2 rounded-xl bg-background/80 px-4 py-3 text-center shadow-sm backdrop-blur-sm">
               <Loader2 className="size-6 animate-spin text-primary" />
-              <p className="text-sm font-medium">{attempts > 1 ? "Waiting for the stream…" : "Connecting to the live stream…"}</p>
-              {attempts > 1 && <p className="max-w-56 text-xs text-muted-foreground">It starts a few seconds after the station goes live.</p>}
+              <p className="text-sm font-medium">{attempts > 1 ? t("waiting_stream") : t("connecting")}</p>
+              {attempts > 1 && <p className="max-w-56 text-xs text-muted-foreground">{t("starts_soon")}</p>}
             </div>
           </div>
         )}
@@ -291,8 +295,8 @@ export function HlsPlayer({
                 type="button"
                 onClick={() => setMuted((m) => !m)}
                 className="flex size-8 items-center justify-center rounded-md bg-background/75 text-foreground shadow-sm backdrop-blur-sm transition-colors outline-none hover:bg-background focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                aria-label={muted ? "Unmute" : "Mute"}
-                title={muted ? "Unmute" : "Mute"}
+                aria-label={muted ? t("unmute") : t("mute")}
+                title={muted ? t("unmute") : t("mute")}
               >
                 {muted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
               </button>
@@ -300,8 +304,8 @@ export function HlsPlayer({
                 type="button"
                 onClick={toggleFullscreen}
                 className="flex size-8 items-center justify-center rounded-md bg-background/75 text-foreground shadow-sm backdrop-blur-sm transition-colors outline-none hover:bg-background focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                aria-label={fullscreen ? "Exit full screen" : "Full screen"}
-                title={fullscreen ? "Exit full screen" : "Full screen"}
+                aria-label={fullscreen ? t("exit_fullscreen") : t("fullscreen")}
+                title={fullscreen ? t("exit_fullscreen") : t("fullscreen")}
               >
                 {fullscreen ? <Minimize className="size-4" /> : <Maximize className="size-4" />}
               </button>
@@ -325,6 +329,7 @@ const fmtClock = (sec: number) => {
 function DvrBar({ video: ref }: { video: RefObject<HTMLVideoElement | null> }) {
   const [, tick] = useState(0);
   const [drag, setDrag] = useState<number | null>(null);
+  const t = useT(liveMsg);
 
   useEffect(() => {
     const v = ref.current;
@@ -360,10 +365,10 @@ function DvrBar({ video: ref }: { video: RefObject<HTMLVideoElement | null> }) {
 
   return (
     <div className="absolute inset-x-0 bottom-0 z-10 flex items-center gap-2 bg-gradient-to-t from-black/70 to-transparent p-2 pt-6 sm:p-3 sm:pt-8">
-      <button type="button" className={btn} onClick={() => (v.paused ? void v.play().catch(() => undefined) : v.pause())} aria-label={v.paused ? "Play" : "Pause"}>
+      <button type="button" className={btn} onClick={() => (v.paused ? void v.play().catch(() => undefined) : v.pause())} aria-label={v.paused ? t("play") : t("pause")}>
         {v.paused ? <Play className="size-4" /> : <Pause className="size-4" />}
       </button>
-      <button type="button" className={btn} onClick={() => seek(v.currentTime - 10)} aria-label="Back 10 seconds" title="Back 10 seconds">
+      <button type="button" className={btn} onClick={() => seek(v.currentTime - 10)} aria-label={t("back10")} title={t("back10")}>
         <RotateCcw className="size-4" />
       </button>
       <input
@@ -381,10 +386,10 @@ function DvrBar({ video: ref }: { video: RefObject<HTMLVideoElement | null> }) {
           if (drag != null) seek(drag);
           setDrag(null);
         }}
-        aria-label="Seek"
+        aria-label={t("seek")}
         className="h-1.5 min-w-0 flex-1 cursor-pointer accent-primary"
       />
-      <span className="w-14 shrink-0 text-right font-mono text-xs text-white tabular-nums">{behind < 2 ? "LIVE" : `−${fmtClock(behind)}`}</span>
+      <span className="w-14 shrink-0 text-right font-mono text-xs text-white tabular-nums">{behind < 2 ? t("live_caps") : `−${fmtClock(behind)}`}</span>
       <button
         type="button"
         onClick={() => seek(edge - 1.5)}
@@ -392,10 +397,10 @@ function DvrBar({ video: ref }: { video: RefObject<HTMLVideoElement | null> }) {
           "flex h-8 shrink-0 items-center gap-1.5 rounded-md px-2.5 font-display text-xs font-bold tracking-wider uppercase shadow-sm transition-colors",
           atLive ? "bg-destructive text-destructive-foreground" : "bg-background/85 text-foreground hover:bg-background",
         )}
-        aria-label="Go live"
+        aria-label={t("go_live")}
       >
         <span className={cn("size-2 rounded-full", atLive ? "bg-destructive-foreground" : "bg-destructive")} />
-        {atLive ? "Live" : "Go live"}
+        {atLive ? t("live_label") : t("go_live")}
       </button>
     </div>
   );

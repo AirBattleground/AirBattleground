@@ -1,30 +1,34 @@
 import { cn } from "@7xen/ui/lib/utils";
 import { pad2, remaining, shortCountdown } from "../format";
 import { useNow } from "../useNow";
+import { useT } from "@/i18n/core";
+import { scrimUi } from "@/i18n/scrims";
 
 /** Inline live countdown text, e.g. "3h 12m". Shows `doneText` once reached. */
-export function Countdown({ to, doneText = "Now", className }: { to: string; doneText?: string; className?: string }) {
+export function Countdown({ to, doneText, className }: { to: string; doneText?: string; className?: string }) {
+  const t = useT(scrimUi);
   const now = useNow(1000);
   const r = remaining(to, now);
-  return <span className={cn("tabular-nums", className)}>{r.totalMs <= 0 ? doneText : shortCountdown(r)}</span>;
+  return <span className={cn("tabular-nums", className)}>{r.totalMs <= 0 ? (doneText ?? t("now")) : shortCountdown(r)}</span>;
 }
 
 /** Big segmented countdown for hero cards: 02 : 14 : 33 (with days when far away). */
 export function CountdownBlocks({ to, className }: { to: string; className?: string }) {
+  const t = useT(scrimUi);
   const now = useNow(1000);
   const r = remaining(to, now);
   if (r.totalMs <= 0) {
     return (
       <div className={cn("inline-flex items-center gap-2 rounded-xl bg-success/15 px-4 py-2 font-display text-lg font-bold text-success", className)}>
-        <span className="size-2 animate-pulse rounded-full bg-success" /> Match time!
+        <span className="size-2 animate-pulse rounded-full bg-success" /> {t("match_time")}
       </div>
     );
   }
   const parts: [string, number][] = r.days > 0
-    ? [["days", r.days], ["hrs", r.hours], ["min", r.minutes]]
-    : [["hrs", r.hours], ["min", r.minutes], ["sec", r.seconds]];
+    ? [[t("cd_days"), r.days], [t("cd_hrs"), r.hours], [t("cd_min"), r.minutes]]
+    : [[t("cd_hrs"), r.hours], [t("cd_min"), r.minutes], [t("cd_sec"), r.seconds]];
   return (
-    <div className={cn("flex items-end gap-1.5", className)} aria-label="Time until match">
+    <div className={cn("flex items-end gap-1.5", className)} aria-label={t("time_until_match")}>
       {parts.map(([label, v], i) => (
         <div key={label} className="flex items-end gap-1.5">
           {i > 0 && <span className="pb-5 font-display text-2xl font-bold text-muted-foreground">:</span>}

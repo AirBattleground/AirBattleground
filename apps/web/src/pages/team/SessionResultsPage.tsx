@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Lock } from "lucide-react";
 import { ApiError } from "@7xen/shared";
@@ -6,22 +7,28 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
-import { formatDate, formatTime } from "@/features/team/format";
+import { formatTime, useDayFormat } from "@/features/team/format";
+import { useT } from "@/i18n/core";
+import { resultsMsg } from "@/i18n/results";
 import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 import { useTeamStandings } from "@/features/results/api";
 import { MatchStatusPill } from "@/features/matches/components/MatchStatusPill";
 import { PointsLegend, StandingsBoard, StandingsSkeleton, StandingsSummary } from "@/features/results/components/Standings";
 
-const STEPS: TourStep[] = [
-  { title: "Session points table", description: "How every team did in this session. Your team is highlighted." },
-  { element: '[data-tour="standings-table"]', title: "Rankings", description: "Points per match, chicken dinners, finishes and total points." },
-  { element: '[data-tour="session-matches"]', title: "Match scorecards", description: "Open any published match to see every team's rank, players and finishes." },
-  { element: '[data-tour="standings-copy"]', title: "Share it", description: "Copy the table and paste it into your team chat." },
-];
-
 export default function SessionResultsPage() {
-  usePageTour("team.sessionResults", STEPS);
+  const t = useT(resultsMsg);
+  const { formatDate } = useDayFormat();
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { title: t("st_tour_title"), description: t("st_tour_desc") },
+      { element: '[data-tour="standings-table"]', title: t("st_tour_table_title"), description: t("st_tour_table_desc") },
+      { element: '[data-tour="session-matches"]', title: t("st_tour_matches_title"), description: t("st_tour_matches_desc") },
+      { element: '[data-tour="standings-copy"]', title: t("st_tour_copy_title"), description: t("st_tour_copy_desc") },
+    ],
+    [t],
+  );
+  usePageTour("team.sessionResults", steps);
   const { scrimId = "", date = "" } = useParams();
   const { user } = useAuth();
   const q = useTeamStandings(scrimId, date);
@@ -31,27 +38,27 @@ export default function SessionResultsPage() {
     <>
       <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground">
         <Link to="/team/results">
-          <ArrowLeft /> All results
+          <ArrowLeft /> {t("all_results")}
         </Link>
       </Button>
       <PageHeader
-        eyebrow={s ? `${formatDate(s.date)} · ${formatTime(s.scrim.startTime)} IST` : "Points table"}
-        title={s?.scrim.title ?? "Points table"}
+        eyebrow={s ? `${formatDate(s.date)} · ${formatTime(s.scrim.startTime)} IST` : t("points_table")}
+        title={s?.scrim.title ?? t("points_table")}
       />
       {q.isError ? (
         q.error instanceof ApiError && (q.error.status === 403 || q.error.status === 404) ? (
           <EmptyState
             icon={<Lock />}
-            title="This points table isn't available"
-            description="You can only see results for sessions your team played in."
+            title={t("st_unavailable_title")}
+            description={t("st_unavailable_desc")}
             action={
               <Button asChild>
-                <Link to="/team/results">Back to your results</Link>
+                <Link to="/team/results">{t("back_to_results")}</Link>
               </Button>
             }
           />
         ) : (
-          <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load the points table" />
+          <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("st_load_error")} />
         )
       ) : !s ? (
         <StandingsSkeleton />
@@ -64,14 +71,14 @@ export default function SessionResultsPage() {
             matchHref={(m) => (m.status === "PUBLISHED" ? `/team/results/${scrimId}/${date}/matches/${m.id}` : undefined)}
           />
           <section data-tour="session-matches" className="space-y-2">
-            <h2 className="font-display text-xl font-bold">Match scorecards</h2>
+            <h2 className="font-display text-xl font-bold">{t("match_scorecards")}</h2>
             <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
               {s.matches.map((m) => {
                 const open = m.status === "PUBLISHED";
                 const inner = (
                   <>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-display text-xl font-bold">Match {m.number}</span>
+                      <span className="font-display text-xl font-bold">{t("match_n", { n: m.number })}</span>
                       {open ? <ArrowRight className="size-4 text-primary" /> : <MatchStatusPill status={m.status} className="text-[10px]" />}
                     </div>
                     <MapChip map={m.map} className="self-start" />
@@ -87,7 +94,7 @@ export default function SessionResultsPage() {
                         {inner}
                       </Link>
                     ) : (
-                      <div className={cn("flex h-full flex-col gap-2 rounded-xl border border-dashed p-3 opacity-70")} title="Results not published yet">
+                      <div className={cn("flex h-full flex-col gap-2 rounded-xl border border-dashed p-3 opacity-70")} title={t("not_published")}>
                         {inner}
                       </div>
                     )}

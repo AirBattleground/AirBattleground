@@ -8,6 +8,9 @@ import { useTeamScrims } from "../api";
 import { ScrimCard, ScrimCardSkeleton } from "../components/ScrimCard";
 import { StaggerItem, StaggerList } from "../components/Stagger";
 import { SectionHeader } from "./SectionHeader";
+import { common } from "@/i18n/common";
+import { useT } from "@/i18n/core";
+import { homeMsg } from "@/i18n/home";
 
 const GRID = "grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,21rem),1fr))]";
 const SHOW = 3;
@@ -31,6 +34,8 @@ export function useHomeScrims(today: string) {
 }
 
 export function ScrimShowcase({ data }: { data: ReturnType<typeof useHomeScrims> }) {
+  const t = useT(homeMsg);
+  const tc = useT(common);
   const [picked, setPicked] = useState<"today" | "tomorrow" | null>(null);
   // default to today, unless today has nothing left and tomorrow does
   const auto = !data.today.loading && data.today.items.length === 0 && data.tomorrow.items.length > 0 ? "tomorrow" : "today";
@@ -42,9 +47,9 @@ export function ScrimShowcase({ data }: { data: ReturnType<typeof useHomeScrims>
 
   return (
     <section className="space-y-4" data-tour="home-scrims">
-      <SectionHeader eyebrow="Open for registration" title="Scrims you can join" icon={<Swords />} to={browse} linkLabel={more > 0 ? `See all ${day.items.length}` : "Browse scrims"} />
+      <SectionHeader eyebrow={t("sc_eyebrow")} title={t("sc_title")} icon={<Swords />} to={browse} linkLabel={more > 0 ? t("sc_see_all", { count: day.items.length }) : t("sc_browse")} />
 
-      <div role="tablist" aria-label="Which day" className="inline-flex rounded-full border bg-card/70 p-1 shadow-sm backdrop-blur">
+      <div role="tablist" aria-label={t("which_day")} className="inline-flex rounded-full border bg-card/70 p-1 shadow-sm backdrop-blur">
         {(["today", "tomorrow"] as const).map((k) => (
           <button
             key={k}
@@ -57,7 +62,7 @@ export function ScrimShowcase({ data }: { data: ReturnType<typeof useHomeScrims>
               tab === k ? "bg-primary text-primary-foreground shadow-glow" : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {k === "today" ? "Today" : "Tomorrow"}
+            {k === "today" ? tc("today") : tc("tomorrow")}
             {!data[k].loading && (
               <span className={cn("rounded-full px-1.5 text-[11px] tabular-nums", tab === k ? "bg-primary-foreground/20" : "bg-muted")}>{data[k].items.length}</span>
             )}
@@ -78,11 +83,11 @@ export function ScrimShowcase({ data }: { data: ReturnType<typeof useHomeScrims>
             <CalendarSearch className="size-6" />
           </span>
           <div className="relative min-w-0 flex-1">
-            <p className="font-display text-xl font-bold">No open scrims {tab === "today" ? "today" : "tomorrow"}</p>
-            <p className="text-sm text-muted-foreground">Pick another day to see what's coming up — organisers add new scrims all the time.</p>
+            <p className="font-display text-xl font-bold">{tab === "today" ? t("no_open_today") : t("no_open_tomorrow")}</p>
+            <p className="text-sm text-muted-foreground">{t("no_open_text")}</p>
           </div>
           <Button asChild variant="outline" className="relative">
-            <Link to={`/team/scrims?date=${addDays(day.date, 1)}`}>Look at other days</Link>
+            <Link to={`/team/scrims?date=${addDays(day.date, 1)}`}>{t("other_days")}</Link>
           </Button>
         </div>
       ) : (

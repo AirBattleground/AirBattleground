@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import { Ban, CheckCircle2, CircleDashed, Clock, Crown, FileEdit, Flag, Lock, Shuffle, Sparkles, TrendingUp, UserPlus, XCircle } from "lucide-react";
 import {
-  TOURNAMENT_STATUS_LABELS,
   type AdvancedVia,
   type GroupTeamStatus,
   type StageStatus,
@@ -9,6 +8,8 @@ import {
 } from "@7xen/shared";
 import { Pill, type Tone } from "@7xen/ui/components/brand/status";
 import { cn } from "@7xen/ui/lib/utils";
+import { useT } from "@/i18n/core";
+import { tShared } from "@/i18n/tournaments";
 
 /** Small pulsing dot used for anything live. */
 export function LiveDot({ className }: { className?: string }) {
@@ -43,14 +44,24 @@ const STAGE_META: Record<StageStatus, { tone: Tone; icon: ReactNode }> = {
   COMPLETED: { tone: "success", icon: <CheckCircle2 className="size-3.5" /> },
 };
 
+/** Tournament / stage status words in the current language (managers: English). */
+export function useStatusLabels() {
+  const t = useT(tShared);
+  return {
+    tournament: (s: TournamentStatus) => t(`ts_${s}`),
+    stage: (s: StageStatus) => t(`ss_${s}`),
+  };
+}
+
 export type StatusPillProps =
   | { kind?: "tournament"; status: TournamentStatus; className?: string; label?: string }
   | { kind: "stage"; status: StageStatus; className?: string; label?: string };
 
 /** Plain-words status for a tournament (default) or a stage (`kind="stage"`). Live statuses pulse. */
 export function StatusPill(props: StatusPillProps) {
+  const labels = useStatusLabels();
   const meta = props.kind === "stage" ? STAGE_META[props.status] : TOURNAMENT_META[props.status];
-  const label = props.label ?? (props.kind === "stage" ? STAGE_STATUS_LABELS[props.status] : TOURNAMENT_STATUS_LABELS[props.status]);
+  const label = props.label ?? (props.kind === "stage" ? labels.stage(props.status) : labels.tournament(props.status));
   return (
     <Pill tone={meta.tone} icon={meta.icon} className={props.className}>
       {label}
@@ -72,40 +83,41 @@ export function TeamStageBadge({
   showActive?: boolean;
   className?: string;
 }) {
+  const t = useT(tShared);
   const base = "px-2 py-px text-[10px] tracking-wider uppercase";
   if (champion)
     return (
       <Pill tone="warning" icon={<Crown className="size-3" />} className={cn(base, className)}>
-        Champion
+        {t("badge_champion")}
       </Pill>
     );
   switch (status) {
     case "ADVANCED":
       return via === "WILDCARD" ? (
         <Pill tone="info" icon={<Sparkles className="size-3" />} className={cn(base, className)}>
-          Wildcard
+          {t("badge_wildcard")}
         </Pill>
       ) : (
         <Pill tone="success" icon={<TrendingUp className="size-3" />} className={cn(base, className)}>
-          Advanced
+          {t("badge_advanced")}
         </Pill>
       );
     case "ELIMINATED":
       return (
         <Pill tone="neutral" icon={<XCircle className="size-3" />} className={cn(base, "opacity-80", className)}>
-          Out
+          {t("badge_out")}
         </Pill>
       );
     case "DISQUALIFIED":
       return (
         <Pill tone="danger" icon={<Ban className="size-3" />} className={cn(base, className)}>
-          DQ
+          {t("badge_dq")}
         </Pill>
       );
     default:
       return showActive ? (
         <Pill tone="neutral" icon={<Clock className="size-3" />} className={cn(base, className)}>
-          Playing
+          {t("badge_playing")}
         </Pill>
       ) : null;
   }

@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { useSkin } from "@/lib/skin";
 import { cn } from "@7xen/ui/lib/utils";
+import { useT } from "@/i18n/core";
+import { authMsg } from "@/i18n/onboarding";
 
 /** The slice of Google Identity Services we use (https://developers.google.com/identity/gsi/web/reference/js-reference). */
 interface GsiId {
   initialize(cfg: { client_id: string; callback: (r: { credential?: string }) => void; ux_mode?: "popup"; auto_select?: boolean; itp_support?: boolean; context?: "signin" | "signup" | "use" }): void;
   renderButton(
     el: HTMLElement,
-    opts: { type?: "standard"; theme?: "outline" | "filled_blue" | "filled_black"; size?: "large" | "medium"; text?: "continue_with" | "signin_with"; shape?: "pill" | "rectangular"; width?: number; logo_alignment?: "left" | "center" },
+    opts: { type?: "standard"; theme?: "outline" | "filled_blue" | "filled_black"; size?: "large" | "medium"; text?: "continue_with" | "signin_with"; shape?: "pill" | "rectangular"; width?: number; logo_alignment?: "left" | "center"; locale?: string },
   ): void;
 }
 declare global {
@@ -46,8 +48,10 @@ export function GoogleSignInButton({ clientId, onCredential, busy, className }: 
   const host = useRef<HTMLDivElement>(null);
   const cb = useRef(onCredential);
   cb.current = onCredential;
+  const t = useT(authMsg);
+  // Google draws its own button text: Hindi pages get Hindi (Google has no Hinglish → English)
+  const locale = t.lang === "hi" ? "hi" : "en";
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
-  const [error, setError] = useState<string | null>(null);
   // Lux Battle is angular: Google's square-cornered button instead of the pill
   const shape = useSkin().isLux ? "rectangular" : "pill";
 
@@ -58,35 +62,34 @@ export function GoogleSignInButton({ clientId, onCredential, busy, className }: 
         if (!live || !host.current) return;
         gsi.initialize({ client_id: clientId, ux_mode: "popup", auto_select: false, itp_support: true, context: "signin", callback: (r) => r.credential && cb.current(r.credential) });
         const width = Math.min(400, Math.max(220, Math.round(host.current.getBoundingClientRect().width)));
-        gsi.renderButton(host.current, { type: "standard", theme: "filled_black", size: "large", text: "continue_with", shape, width, logo_alignment: "left" });
+        gsi.renderButton(host.current, { type: "standard", theme: "filled_black", size: "large", text: "continue_with", shape, width, logo_alignment: "left", locale });
         setState("ready");
       })
-      .catch((e: unknown) => {
+      .catch(() => {
         if (!live) return;
         setState("error");
-        setError(e instanceof Error ? e.message : "Google sign-in is unavailable right now.");
       });
     return () => {
       live = false;
     };
-  }, [clientId, shape]);
+  }, [clientId, shape, locale]);
 
   return (
     <div className={cn("relative", className)} data-tour="google-signin">
       <div ref={host} className={cn("flex min-h-11 w-full justify-center [&_iframe]:!mx-auto [color-scheme:light] [&_iframe]:[color-scheme:light]", (state !== "ready" || busy) && "pointer-events-none", busy && "opacity-60")} />
       {state === "loading" && (
         <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-full border bg-card/80 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" /> Loading Google sign-in…
+          <Loader2 className="size-4 animate-spin" /> {t("gsi_loading")}
         </div>
       )}
       {busy && (
         <div className="absolute inset-0 flex items-center justify-center gap-2 rounded-full bg-background/40 text-sm font-semibold">
-          <Loader2 className="size-4 animate-spin" /> Signing you in…
+          <Loader2 className="size-4 animate-spin" /> {t("gsi_signing")}
         </div>
       )}
       {state === "error" && (
         <p role="alert" className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
-          <AlertCircle className="size-4 shrink-0" /> {error}
+          <AlertCircle className="size-4 shrink-0" /> {t("gsi_error")}
         </p>
       )}
     </div>

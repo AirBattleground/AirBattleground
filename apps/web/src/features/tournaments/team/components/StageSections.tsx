@@ -1,11 +1,16 @@
 import { Link } from "react-router-dom";
 import { CalendarDays, CheckCircle2, ChevronRight, Clock, MonitorPlay } from "lucide-react";
-import { MATCH_STATUS_LABELS, type GameMap, type GroupDetail, type MatchStatus, type StageDetail } from "@7xen/shared";
+import { todayInAppTz, type GameMap, type GroupDetail, type MatchStatus, type StageDetail } from "@7xen/shared";
 import { EmptyState } from "@7xen/ui/components/brand/page";
 import { cn } from "@7xen/ui/lib/utils";
 import { MapChip } from "@/features/team/components/MapChips";
 import { LiveDot } from "../../shared/StatusPill";
-import { fmtDay, fmtTime, groupLetter, istDateKey, relDay } from "../../shared/format";
+import { fmtTime, groupLetter, istDateKey, useTournamentFormat } from "../../shared/format";
+import { useT } from "@/i18n/core";
+import { tShared } from "@/i18n/tournaments";
+import { tStage } from "@/i18n/tournamentsHub";
+
+const MATCH_STATUSES = new Set<string>(["SCHEDULED", "LINEUP_REVIEW", "LIVE", "RESULTS_REVIEW", "PUBLISHED"]);
 
 interface Block {
   key: string;
@@ -46,27 +51,32 @@ function blocksOf(d: StageDetail): Block[] {
 export const matchHref = (tournamentId: string, stageId: string, matchId: string) => `/team/tournaments/${tournamentId}/matches/${matchId}?stage=${stageId}`;
 
 function MatchStatusChip({ status, publishedAt }: { status?: string; publishedAt?: string | null }) {
+  const ts = useT(tStage);
   if (!status) return null;
   if (publishedAt || status === "PUBLISHED")
     return (
       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-success">
-        <CheckCircle2 className="size-3" /> Results
+        <CheckCircle2 className="size-3" /> {ts("results")}
       </span>
     );
   if (status === "LIVE" || status === "LINEUP_REVIEW" || status === "RESULTS_REVIEW")
     return (
       <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-destructive">
-        <LiveDot className="size-1.5 [&>span]:size-1.5" /> {status === "RESULTS_REVIEW" ? "Checking results" : "Playing"}
+        <LiveDot className="size-1.5 [&>span]:size-1.5" /> {status === "RESULTS_REVIEW" ? ts("checking_results") : ts("playing")}
       </span>
     );
-  return <span className="text-[11px] text-muted-foreground">{MATCH_STATUS_LABELS[status as MatchStatus] ?? status}</span>;
+  return <span className="text-[11px] text-muted-foreground">{MATCH_STATUSES.has(status) ? ts(`ms_${status as MatchStatus}`) : status}</span>;
 }
 
 /** Schedule by day, one block per group (time range, lobby, matches). */
 export function StageSchedule({ d, myGroupName }: { d: StageDetail; myGroupName?: string | null }) {
+  const ts = useT(tStage);
+  const tsh = useT(tShared);
+  const { fmtDay, relDay } = useTournamentFormat();
+  const today = todayInAppTz();
   const blocks = blocksOf(d).sort((a, b) => a.start.localeCompare(b.start));
   if (blocks.length === 0)
-    return <EmptyState icon={<CalendarDays />} title="Schedule coming soon" description="The organiser hasn't published the schedule for this stage yet." />;
+    return <EmptyState icon={<CalendarDays />} title={ts("schedule_soon")} description={ts("schedule_soon_desc")} />;
   const days = new Map<string, Block[]>();
   for (const b of blocks) {
     const k = istDateKey(b.start);
@@ -77,10 +87,10 @@ export function StageSchedule({ d, myGroupName }: { d: StageDetail; myGroupName?
       {[...days.entries()].map(([day, list]) => (
         <section key={day}>
           <h3 className="mb-2 flex items-baseline gap-2 font-display text-lg font-bold">
-            <span className={cn(relDay(list[0]!.start) === "Today" && "text-primary")}>{relDay(list[0]!.start)}</span>
+            <span className={cn(day === today && "text-primary")}>{relDay(list[0]!.start)}</span>
             {relDay(list[0]!.start) !== fmtDay(list[0]!.start) && <span className="text-sm font-medium text-muted-foreground">{fmtDay(list[0]!.start)}</span>}
             <span className="ml-auto text-xs font-medium text-muted-foreground">
-              {list.length} {list.length === 1 ? "group" : "groups"}
+              {ts.plural("groups", list.length)}
             </span>
           </h3>
           <ol className="relative space-y-2 border-l-2 border-border pl-4">
@@ -93,12 +103,12 @@ export function StageSchedule({ d, myGroupName }: { d: StageDetail; myGroupName?
                   <div className={cn("rounded-xl border bg-card p-3 shadow-sm", mine && "border-primary/50 bg-primary/5 shadow-glow")}>
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                       <span className="font-display text-xl font-bold tabular-nums">{fmtTime(b.start)}</span>
-                      {last && last !== b.start && <span className="text-xs text-muted-foreground">last match {fmtTime(last)}</span>}
-                      <span className="font-display text-base font-bold">Group {b.groupName}</span>
-                      {mine && <span className="rounded-full bg-primary px-1.5 py-px text-[10px] font-black text-primary-foreground">YOU</span>}
+                      {last && last !== b.start && <span className="text-xs text-muted-foreground">{ts("last_match", { time: fmtTime(last) })}</span>}
+                      <span className="font-display text-base font-bold">{tsh("group_name", { name: b.groupName })}</span>
+                      {mine && <span className="rounded-full bg-primary px-1.5 py-px text-[10px] font-black text-primary-foreground">{tsh("you_tag")}</span>}
                       {b.lobbyIndex != null && (
                         <span className="ml-auto inline-flex items-center gap-1 text-xs text-muted-foreground">
-                          <MonitorPlay className="size-3" /> Lobby {b.lobbyIndex + 1}
+                          <MonitorPlay className="size-3" /> {tsh("lobby_n", { n: b.lobbyIndex + 1 })}
                         </span>
                       )}
                     </div>
@@ -140,16 +150,19 @@ export function StageSchedule({ d, myGroupName }: { d: StageDetail; myGroupName?
 
 /** Every match of the stage by group; published ones open the scorecard. */
 export function StageMatches({ d, myGroupName }: { d: StageDetail; myGroupName?: string | null }) {
+  const ts = useT(tStage);
+  const tsh = useT(tShared);
+  const { relDay } = useTournamentFormat();
   const groups: GroupDetail[] = [...d.groups].sort((a, b) => (a.name === myGroupName ? -1 : b.name === myGroupName ? 1 : a.index - b.index));
   if (groups.length === 0 || groups.every((g) => g.matches.length === 0))
-    return <EmptyState icon={<Clock />} title="No matches yet" description="Matches appear here once the groups are drawn." />;
+    return <EmptyState icon={<Clock />} title={ts("no_matches")} description={ts("no_matches_desc")} />;
   return (
     <div className="grid gap-4 md:grid-cols-2" data-tour="match-list">
       {groups.map((g) => (
         <section key={g.id} className={cn("rounded-2xl border bg-card p-3.5 shadow-sm", g.name === myGroupName && "border-primary/50")}>
           <h3 className="mb-2 flex items-center gap-2 font-display text-lg font-bold">
-            Group {g.name}
-            {g.name === myGroupName && <span className="rounded-full bg-primary px-1.5 py-px text-[10px] font-black text-primary-foreground">YOUR GROUP</span>}
+            {tsh("group_name", { name: g.name })}
+            {g.name === myGroupName && <span className="rounded-full bg-primary px-1.5 py-px text-[10px] font-black text-primary-foreground">{tsh("your_group_tag")}</span>}
           </h3>
           <ol className="divide-y">
             {[...g.matches]
@@ -161,7 +174,7 @@ export function StageMatches({ d, myGroupName }: { d: StageDetail; myGroupName?:
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted font-display text-sm font-bold">M{m.number}</span>
                     <span className="min-w-0 flex-1">
                       <MapChip map={m.map} className="px-1.5 py-0.5 text-[11px]" />
-                      <span className="mt-0.5 block text-xs text-muted-foreground">{m.scheduledAt ? `${relDay(m.scheduledAt)} · ${fmtTime(m.scheduledAt)}` : "Time TBA"}</span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">{m.scheduledAt ? `${relDay(m.scheduledAt)} · ${fmtTime(m.scheduledAt)}` : ts("time_tba")}</span>
                     </span>
                     <MatchStatusChip status={m.status} publishedAt={m.publishedAt} />
                     {published && <ChevronRight className="size-4 text-muted-foreground" />}

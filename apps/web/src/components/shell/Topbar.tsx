@@ -11,6 +11,9 @@ import { cn } from "@7xen/ui/lib/utils";
 import { EASE } from "./Sidebar";
 import type { ShellBrand } from "./types";
 import { UserMenu } from "./UserMenu";
+import { LanguageSwitch } from "@/i18n/LanguageSwitch";
+import { common } from "@/i18n/common";
+import { useT } from "@/i18n/core";
 
 /** Logo block: on desktop it spans the sidebar column (wordmark ↔ mark as the sidebar collapses). */
 function Brand({ brand, homeHref, compact, collapsed, width }: { brand?: ShellBrand; homeHref: string; compact: boolean; collapsed: boolean; width?: number }) {
@@ -65,9 +68,10 @@ export function Topbar({
   notifications?: ReactNode;
 }) {
   const tour = useTour();
+  const t = useT(common);
   const startTour = () => {
     if (tour.hasTour()) tour.start();
-    else toast.info("There's no tour for this page yet.");
+    else toast.info(t("no_tour"));
   };
 
   return (
@@ -84,12 +88,13 @@ export function Topbar({
           {notifications}
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={startTour} data-tour="tour-btn" aria-label="Take a tour" className="size-9 text-muted-foreground hover:text-primary">
+              <Button variant="ghost" size="icon" onClick={startTour} data-tour="tour-btn" aria-label={t("take_tour")} className="size-9 text-muted-foreground hover:text-primary">
                 <Compass className="size-5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Take a tour</TooltipContent>
+            <TooltipContent>{t("take_tour")}</TooltipContent>
           </Tooltip>
+          <LanguageSwitch />
           <ThemeToggle />
           <span aria-hidden className="mx-1.5 hidden h-8 w-px bg-border sm:block" />
           <UserMenu />

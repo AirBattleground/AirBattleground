@@ -8,6 +8,8 @@ import { MapChip } from "@/features/team/components/MapChips";
 import { useTeamRooms } from "../api";
 import { fmtClock } from "../format";
 import { CopyButton } from "./CopyButton";
+import { useT } from "@/i18n/core";
+import { liveMsg } from "@/i18n/live";
 
 const PAST_MS = 90 * 60_000;
 
@@ -40,6 +42,7 @@ function useRooms() {
 
 /** Room ID + password with copy buttons once revealed, otherwise when they'll appear. */
 function TeamRoomBox({ card, className }: { card: TeamRoomCard; className?: string }) {
+  const t = useT(liveMsg);
   if (card.room) {
     return (
       <motion.div
@@ -50,16 +53,16 @@ function TeamRoomBox({ card, className }: { card: TeamRoomCard; className?: stri
       >
         {(
           [
-            ["Room ID", card.room.roomId],
-            ["Password", card.room.password],
+            [t("room_id"), card.room.roomId, t("copy_room_id")],
+            [t("password"), card.room.password, t("copy_password")],
           ] as const
-        ).map(([label, value]) => (
+        ).map(([label, value, copyLabel]) => (
           <div key={label} className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 p-2.5 pl-3">
             <div className="min-w-0 flex-1">
               <div className="text-[11px] font-semibold tracking-wider text-primary uppercase">{label}</div>
               <div className="truncate font-display text-2xl leading-tight font-bold tracking-wider select-all">{value}</div>
             </div>
-            <CopyButton value={value} label={`Copy ${label.toLowerCase()}`} />
+            <CopyButton value={value} label={copyLabel} />
           </div>
         ))}
       </motion.div>
@@ -70,11 +73,9 @@ function TeamRoomBox({ card, className }: { card: TeamRoomCard; className?: stri
       <Lock className="size-4 shrink-0 text-muted-foreground" />
       <span className="text-muted-foreground">
         {card.revealAt ? (
-          <>
-            Room details appear at <span className="font-semibold text-foreground">{fmtClock(card.revealAt)}</span>
-          </>
+          t.rich("room_at", { b: (c) => <span className="font-semibold text-foreground">{c}</span> }, { time: fmtClock(card.revealAt) })
         ) : (
-          "Room ID and password show up here once the organiser creates the room."
+          t("room_later")
         )}
       </span>
     </div>
@@ -91,6 +92,7 @@ export function MatchRoom({ matchId, className }: { matchId: string; className?:
 
 /** Team dashboard: the next match's room (ID / password or when they'll appear). Hidden when nothing is coming up. */
 export function NextRoomCard() {
+  const t = useT(liveMsg);
   const q = useRooms();
   const list = upcoming(q.data);
   const next = list[0];
@@ -108,9 +110,9 @@ export function NextRoomCard() {
           <DoorOpen className="size-6" />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">{next.room ? "Room is ready" : "Your next room"}</p>
+          <p className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">{next.room ? t("room_ready") : t("next_room")}</p>
           <h2 id="next-room-title" className="truncate font-display text-xl leading-tight font-bold sm:text-2xl">
-            {next.subtitle ? next.title : `${next.title} · Match ${next.number}`}
+            {next.subtitle ? next.title : t("title_match", { title: next.title, n: next.number })}
           </h2>
           <p className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
             <MapChip map={next.map} className="px-1.5 py-0.5 text-[11px]" />
@@ -130,15 +132,15 @@ export function NextRoomCard() {
           {more.map((c) => (
             <li key={c.matchId} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2">
               <span className="min-w-0 flex-1 truncate font-medium">
-                {c.title} · Match {c.number}
+                {t("title_match", { title: c.title, n: c.number })}
               </span>
-              <span className="text-muted-foreground">{c.startsAt ? fmtClock(c.startsAt) : "Time TBA"}</span>
+              <span className="text-muted-foreground">{c.startsAt ? fmtClock(c.startsAt) : t("time_tba")}</span>
               {c.room ? (
                 <span className="font-display font-bold tracking-wider">
                   {c.room.roomId} / {c.room.password}
                 </span>
               ) : (
-                <span className="text-xs text-muted-foreground">{c.revealAt ? `Room at ${fmtClock(c.revealAt)}` : "Room not shared yet"}</span>
+                <span className="text-xs text-muted-foreground">{c.revealAt ? t("room_at_short", { time: fmtClock(c.revealAt) }) : t("room_not_shared")}</span>
               )}
             </li>
           ))}

@@ -3,6 +3,8 @@ import { Building2 } from "lucide-react";
 import type { OrganizerRef } from "@7xen/shared";
 import { cn } from "@7xen/ui/lib/utils";
 import { SectionHeader } from "./SectionHeader";
+import { useT } from "@/i18n/core";
+import { homeMsg } from "@/i18n/home";
 
 export interface OrganiserTally {
   manager: OrganizerRef;
@@ -50,13 +52,14 @@ function Logo({ m }: { m: OrganizerRef }) {
 }
 
 function Tile({ t, dup }: { t: OrganiserTally; dup?: boolean }) {
-  const bits = [t.scrims && `${t.scrims} scrim${t.scrims === 1 ? "" : "s"}`, t.tournaments && `${t.tournaments} tournament${t.tournaments === 1 ? "" : "s"}`].filter(Boolean);
+  const tr = useT(homeMsg);
+  const bits = [t.scrims && tr.plural("org_scrims", t.scrims), t.tournaments && tr.plural("org_cups", t.tournaments)].filter(Boolean);
   return (
     <li aria-hidden={dup || undefined} className="group flex w-56 shrink-0 items-center gap-3 rounded-2xl border bg-card/80 p-3 shadow-sm backdrop-blur transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-glow">
       <Logo m={t.manager} />
       <span className="min-w-0">
         <span className="block truncate font-display text-base leading-tight font-bold">{t.manager.displayName}</span>
-        <span className="mt-0.5 block truncate text-xs text-muted-foreground">{bits.join(" · ") || "Organiser"}</span>
+        <span className="mt-0.5 block truncate text-xs text-muted-foreground">{bits.join(" · ") || tr("organiser")}</span>
       </span>
     </li>
   );
@@ -64,11 +67,12 @@ function Tile({ t, dup }: { t: OrganiserTally; dup?: boolean }) {
 
 /** "Hosted by" wall of organiser logos; scrolls on its own when there are enough to fill the row. */
 export function OrganiserStrip({ items }: { items: OrganiserTally[] }) {
+  const tr = useT(homeMsg);
   if (items.length === 0) return null;
   const marquee = items.length >= 5;
   return (
     <section className="space-y-4" data-tour="organisers">
-      <SectionHeader eyebrow="Hosted by" title="Organisers on AirBattleground" icon={<Building2 />} />
+      <SectionHeader eyebrow={tr("org_eyebrow")} title={tr("org_title")} icon={<Building2 />} />
       <div className={cn("relative", marquee && "home-marquee-mask overflow-hidden")}>
         <ul className={cn("flex gap-3", marquee ? "home-marquee w-max" : "home-rail -mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0")}>
           {items.map((t) => (

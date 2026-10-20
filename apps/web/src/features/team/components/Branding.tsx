@@ -3,6 +3,8 @@ import { Maximize2, User } from "lucide-react";
 import type { OrganizerRef } from "@7xen/shared";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@7xen/ui/components/ui/dialog";
 import { cn } from "@7xen/ui/lib/utils";
+import { useT } from "@/i18n/core";
+import { scrimUi } from "@/i18n/scrims";
 
 /**
  * Organiser logos can be dark-on-transparent, so the tile is light in both themes
@@ -65,12 +67,13 @@ export function PosterImage({
   className?: string;
   onFail?: () => void;
 }) {
+  const t = useT(scrimUi);
   const [failed, setFailed] = useState(false);
   if (!url || failed) return null;
   return (
     <img
       src={url}
-      alt={`${title} poster`}
+      alt={t("poster_alt", { title })}
       loading="lazy"
       decoding="async"
       className={className}
@@ -84,12 +87,13 @@ export function PosterImage({
 
 /** Full-size poster viewer. */
 export function PosterDialog({ url, title, open, onOpenChange }: { url: string; title: string; open: boolean; onOpenChange: (o: boolean) => void }) {
+  const t = useT(scrimUi);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-auto max-w-[calc(100%-2rem)] gap-3 p-3 sm:max-w-[min(56rem,calc(100%-2rem))] sm:p-4">
         <DialogTitle className="pr-8 font-display text-lg leading-tight">{title}</DialogTitle>
-        <DialogDescription className="sr-only">Poster for {title}</DialogDescription>
-        <img src={url} alt={`${title} poster`} className="mx-auto max-h-[78vh] w-auto max-w-full rounded-lg object-contain sm:max-h-[85vh]" />
+        <DialogDescription className="sr-only">{t("poster_for", { title })}</DialogDescription>
+        <img src={url} alt={t("poster_alt", { title })} className="mx-auto max-h-[78vh] w-auto max-w-full rounded-lg object-contain sm:max-h-[85vh]" />
       </DialogContent>
     </Dialog>
   );
@@ -101,6 +105,7 @@ export function PosterDialog({ url, title, open, onOpenChange }: { url: string; 
  * Don't place inside a <Link>/<a> — use PosterImage there instead.
  */
 export function PosterThumb({ url, title, className }: { url?: string | null; title: string; className?: string }) {
+  const t = useT(scrimUi);
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
   if (!url || failed) return null;
@@ -109,7 +114,7 @@ export function PosterThumb({ url, title, className }: { url?: string | null; ti
       <button
         type="button"
         onClick={() => setOpen(true)}
-        aria-label={`View poster for ${title}`}
+        aria-label={t("view_poster", { title })}
         className={cn(
           "group/poster relative size-20 shrink-0 cursor-zoom-in overflow-hidden rounded-xl bg-muted ring-1 ring-border outline-none transition-shadow hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50",
           className,
@@ -117,7 +122,7 @@ export function PosterThumb({ url, title, className }: { url?: string | null; ti
       >
         <img
           src={url}
-          alt={`${title} poster`}
+          alt={t("poster_alt", { title })}
           loading="lazy"
           decoding="async"
           className="size-full object-cover transition-transform duration-300 group-hover/poster:scale-105"

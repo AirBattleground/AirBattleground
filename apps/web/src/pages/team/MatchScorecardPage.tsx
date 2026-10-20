@@ -1,27 +1,34 @@
+import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Lock } from "lucide-react";
-import { format, parseISO } from "date-fns";
 import { ApiError } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
-import { formatDate } from "@/features/team/format";
+import { useDayFormat } from "@/features/team/format";
+import { useDateFormat, useT } from "@/i18n/core";
+import { resultsMsg, useOrdinal } from "@/i18n/results";
 import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 import { useTeamScorecard } from "@/features/results/api";
-import { ordinal } from "@/features/results/components/Rank";
 import { ScorecardList } from "@/features/results/components/Scorecard";
 
-const STEPS: TourStep[] = [
-  { title: "Match scorecard", description: "Every team's result in this match. Your team is highlighted." },
-  { element: '[data-tour="scorecard-mine"]', title: "Your match", description: "Your rank, finishes and the points you earned." },
-  { element: '[data-tour="scorecard-list"]', title: "All teams", description: "Rank, slot, players with their finishes, and points (placement + finishes)." },
-];
-
 export default function MatchScorecardPage() {
-  usePageTour("team.scorecard", STEPS);
+  const t = useT(resultsMsg);
+  const ord = useOrdinal();
+  const fmt = useDateFormat();
+  const { formatDate } = useDayFormat();
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { title: t("sc_tour_title"), description: t("sc_tour_desc") },
+      { element: '[data-tour="scorecard-mine"]', title: t("sc_tour_mine_title"), description: t("sc_tour_mine_desc") },
+      { element: '[data-tour="scorecard-list"]', title: t("sc_tour_list_title"), description: t("sc_tour_list_desc") },
+    ],
+    [t],
+  );
+  usePageTour("team.scorecard", steps);
   const { scrimId = "", date = "", matchId } = useParams();
   const { user } = useAuth();
   const q = useTeamScorecard(matchId);
@@ -32,31 +39,31 @@ export default function MatchScorecardPage() {
     <>
       <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground">
         <Link to={`/team/results/${scrimId}/${date}`}>
-          <ArrowLeft /> Points table
+          <ArrowLeft /> {t("points_table")}
         </Link>
       </Button>
       <PageHeader
-        eyebrow={s ? `${s.scrim.title} · ${formatDate(s.date)}` : "Scorecard"}
+        eyebrow={s ? `${s.scrim.title} · ${formatDate(s.date)}` : t("scorecard")}
         title={
           s ? (
             <span className="flex flex-wrap items-center gap-3">
-              Match {s.match.number} <MapChip map={s.match.map} className="text-sm" />
+              {t("match_n", { n: s.match.number })} <MapChip map={s.match.map} className="text-sm" />
             </span>
           ) : (
-            "Scorecard"
+            t("scorecard")
           )
         }
-        description={s ? `Published ${format(parseISO(s.match.publishedAt), "d MMM, h:mm a")}` : undefined}
+        description={s ? t("published_at", { when: fmt(s.match.publishedAt, "d MMM, h:mm a") }) : undefined}
       />
       {q.isError ? (
         q.error instanceof ApiError && (q.error.status === 403 || q.error.status === 404) ? (
           <EmptyState
             icon={<Lock />}
-            title="This scorecard isn't available"
-            description="It may have been unpublished by the organiser while they fix something. Check back soon."
+            title={t("sc_unavailable_title")}
+            description={t("sc_unavailable_desc")}
           />
         ) : (
-          <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load the scorecard" />
+          <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("sc_load_error")} />
         )
       ) : !s ? (
         <div className="space-y-2">
@@ -71,15 +78,15 @@ export default function MatchScorecardPage() {
               <div className="pointer-events-none absolute inset-0 bg-grid opacity-50" />
               <div className="relative flex flex-wrap items-center gap-x-8 gap-y-3">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Your team</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">{t("your_team")}</p>
                   <p className="font-display text-4xl font-bold">
-                    {mine.rank === 1 ? "Winner winner!" : `${ordinal(mine.rank)} place`}
+                    {mine.rank === 1 ? t("winner") : t("place_n", { ord: ord(mine.rank) })}
                   </p>
                 </div>
-                <Stat label="Finishes" value={mine.kills} />
-                <Stat label="Placement pts" value={mine.placementPoints} />
-                <Stat label="Finish pts" value={mine.killPoints} />
-                <Stat label="Total" value={mine.totalPoints} big />
+                <Stat label={t("stat_finishes")} value={mine.kills} />
+                <Stat label={t("placement_pts")} value={mine.placementPoints} />
+                <Stat label={t("finish_pts")} value={mine.killPoints} />
+                <Stat label={t("total")} value={mine.totalPoints} big />
               </div>
             </div>
           )}

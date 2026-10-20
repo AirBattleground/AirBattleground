@@ -22,6 +22,10 @@ import {
 import { api } from "@/lib/api";
 import { ME_KEY } from "@/lib/auth";
 import { uploadImage } from "@/features/manager/branding";
+import { translateNow } from "@/i18n/core";
+import { playerToasts } from "@/i18n/playerToasts";
+
+const tr = (key: Parameters<typeof translateNow<typeof playerToasts.en>>[1], vars?: Record<string, string | number>) => translateNow(playerToasts, key, vars);
 
 export const playerKeys = {
   all: ["player"] as const,
@@ -135,39 +139,39 @@ export function useUpdateTeam() {
     mutationFn: (input: UpdatePlayerTeamInput) => api.patch<PlayerTeam>("/api/player/team", input),
     onSuccess: async (team) => {
       qc.setQueryData(playerKeys.team, team);
-      toast.success("Team details saved");
+      toast.success(tr("team_saved"));
       await refreshMembership(qc);
     },
   });
 }
 
-export const useDisbandTeam = () => useTeamMutation<void>(() => api.del("/api/player/team"), "Team disbanded", "Couldn't disband the team");
+export const useDisbandTeam = () => useTeamMutation<void>(() => api.del("/api/player/team"), () => tr("disbanded"), tr("disband_fail"));
 export const useRotateInvite = () =>
-  useTeamMutation<void>(() => api.post<PlayerTeam>("/api/player/team/invite-code"), "New invite code ready — old links stop working", "Couldn't make a new code");
-export const useLeaveTeam = () => useTeamMutation<void>(() => api.post<void>("/api/player/team/leave"), "You left the team", "Couldn't leave the team");
+  useTeamMutation<void>(() => api.post<PlayerTeam>("/api/player/team/invite-code"), () => tr("code_new"), tr("code_fail"));
+export const useLeaveTeam = () => useTeamMutation<void>(() => api.post<void>("/api/player/team/leave"), () => tr("left"), tr("leave_fail"));
 export const useRemoveMember = () =>
   useTeamMutation(
     (v: { userId: string; name: string }) => api.del<PlayerTeam>(`/api/player/team/members/${v.userId}`),
-    (v) => `${v.name} was removed from the team`,
-    "Couldn't remove this player",
+    (v) => tr("removed", { name: v.name }),
+    tr("remove_fail"),
   );
 export const useTransferLeader = () =>
   useTeamMutation(
     (v: { userId: string; name: string }) => api.post<PlayerTeam>("/api/player/team/transfer", { userId: v.userId }),
-    (v) => `${v.name} is now the team leader`,
-    "Couldn't change the leader",
+    (v) => tr("leader_now", { name: v.name }),
+    tr("leader_fail"),
   );
 export const useApproveJoin = () =>
   useTeamMutation(
     (v: { id: string; name: string }) => api.post<PlayerTeam>(`/api/player/team/join-requests/${v.id}/approve`),
-    (v) => `${v.name} joined your team`,
-    "Couldn't approve",
+    (v) => tr("joined", { name: v.name }),
+    tr("approve_fail"),
   );
 export const useRejectJoin = () =>
   useTeamMutation(
     (v: { id: string; name: string }) => api.post<PlayerTeam>(`/api/player/team/join-requests/${v.id}/reject`),
-    (v) => `Request from ${v.name} declined`,
-    "Couldn't decline",
+    (v) => tr("declined_req", { name: v.name }),
+    tr("decline_fail"),
   );
 
 // ---------------------------------------------------------------------------
@@ -195,10 +199,10 @@ export function useCancelJoinRequest() {
   return useMutation({
     mutationFn: (id: string) => api.del(`/api/player/join-requests/${id}`),
     onSuccess: () => {
-      toast.success("Join request cancelled");
+      toast.success(tr("req_cancelled"));
       void qc.invalidateQueries({ queryKey: playerKeys.all });
     },
-    onError: failToast("Couldn't cancel the request"),
+    onError: failToast(tr("req_cancel_fail")),
   });
 }
 
@@ -227,11 +231,11 @@ export function useCreateSuggestion() {
     mutationFn: (input: CreateSuggestionInput) => api.post<TeamSuggestionRow>("/api/player/team/suggestions", input),
     onSuccess: (row) => {
       qc.setQueryData<TeamSuggestionRow[]>(playerKeys.suggestions("OPEN"), (list) => (list ? [row, ...list.filter((r) => r.id !== row.id)] : [row]));
-      toast.success("Sent to your leader", { description: "They'll see it on their home screen and can register in one tap." });
+      toast.success(tr("asked"), { description: tr("asked_text") });
       void qc.invalidateQueries({ queryKey: playerKeys.suggestionsAll });
       void qc.invalidateQueries({ queryKey: ["team", "scrims"] });
     },
-    onError: failToast("Couldn't ask your leader"),
+    onError: failToast(tr("ask_fail")),
   });
 }
 
@@ -248,9 +252,9 @@ export function useDismissSuggestion() {
     },
     onError: (err, _id, ctx) => {
       if (ctx) qc.setQueryData(ctx.key, ctx.prev);
-      failToast("Couldn't dismiss")(err);
+      failToast(tr("dismiss_fail"))(err);
     },
-    onSuccess: () => toast.success("Dismissed"),
+    onSuccess: () => toast.success(tr("dismissed")),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: playerKeys.suggestionsAll });
       void qc.invalidateQueries({ queryKey: playerKeys.team });
@@ -276,13 +280,13 @@ export function useTeamLogo() {
   };
   const upload = useMutation({
     mutationFn: (file: File) => uploadImage("/api/player/team/logo", file),
-    onSuccess: (res) => settle(res, "Team logo updated"),
-    onError: failToast("Couldn't upload the logo"),
+    onSuccess: (res) => settle(res, tr("logo_updated")),
+    onError: failToast(tr("logo_fail")),
   });
   const remove = useMutation({
     mutationFn: () => api.del<ImageUrlResponse>("/api/player/team/logo"),
-    onSuccess: (res) => settle(res ?? { url: null }, "Team logo removed"),
-    onError: failToast("Couldn't remove the logo"),
+    onSuccess: (res) => settle(res ?? { url: null }, tr("logo_removed")),
+    onError: failToast(tr("logo_remove_fail")),
   });
   return { upload, remove, pending: upload.isPending || remove.isPending };
 }
@@ -297,13 +301,13 @@ export function useInviteByBgmi() {
     mutationFn: (input: InviteByBgmiInput) => api.post<PlayerTeam>("/api/player/team/invites", input),
     onSuccess: (team) => {
       qc.setQueryData(playerKeys.team, team);
-      toast.success("Invite sent", { description: "They'll see it on their My team page and can accept it." });
+      toast.success(tr("invite_sent"), { description: tr("invite_sent_text") });
     },
   });
 }
 
 export const useRevokeInvite = () =>
-  useTeamMutation((v: { id: string; name: string }) => api.del<PlayerTeam>(`/api/player/team/invites/${v.id}`), (v) => `Invite to ${v.name} taken back`, "Couldn't take the invite back");
+  useTeamMutation((v: { id: string; name: string }) => api.del<PlayerTeam>(`/api/player/team/invites/${v.id}`), (v) => tr("invite_back", { name: v.name }), tr("invite_back_fail"));
 
 /** The invitations waiting for me (a player without a team). */
 export function useMyTeamInvites(opts: { enabled?: boolean } = {}) {
@@ -321,11 +325,11 @@ export function useAcceptTeamInvite() {
     mutationFn: (v: { id: string; team: string }) => api.post<PlayerTeam>(`/api/player/team-invites/${v.id}/accept`),
     onSuccess: async (team, v) => {
       qc.setQueryData(playerKeys.team, team);
-      toast.success(`You're in ${v.team}!`, { description: "Welcome to the squad." });
+      toast.success(tr("in_team", { team: v.team }), { description: tr("in_team_text") });
       await refreshMembership(qc);
     },
     onError: async (err) => {
-      failToast("Couldn't accept the invite")(err);
+      failToast(tr("accept_fail"))(err);
       void qc.invalidateQueries({ queryKey: playerKeys.teamInvites });
     },
   });
@@ -336,9 +340,9 @@ export function useDeclineTeamInvite() {
   return useMutation({
     mutationFn: (v: { id: string; team: string }) => api.post<void>(`/api/player/team-invites/${v.id}/decline`),
     onSuccess: (_r, v) => {
-      toast.success(`Invite from ${v.team} declined`);
+      toast.success(tr("invite_declined", { team: v.team }));
       void qc.invalidateQueries({ queryKey: playerKeys.teamInvites });
     },
-    onError: failToast("Couldn't decline the invite"),
+    onError: failToast(tr("invite_decline_fail")),
   });
 }

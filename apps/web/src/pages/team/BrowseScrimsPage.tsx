@@ -12,25 +12,33 @@ import { DateStrip } from "@/features/team/components/DateStrip";
 import { QueryError } from "@/features/team/components/QueryError";
 import { ScrimCard, ScrimCardSkeleton } from "@/features/team/components/ScrimCard";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
-import { dayLabel, formatDate } from "@/features/team/format";
+import { useDayFormat } from "@/features/team/format";
+import { useT } from "@/i18n/core";
+import { browseMsg, scrimUi } from "@/i18n/scrims";
 
 /** As many columns as fit with each card ≥ 21rem (its content is ~340px; wider cards were mostly empty space). auto-fill keeps a lone card from stretching. */
 /** "Upcoming" shows this many days (today first). */
 const UPCOMING_DAYS = 7;
 const SCRIM_GRID = "grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,21rem),1fr))]";
 
-const STEPS: TourStep[] = [
-  { title: "Find your next scrim", description: "Every scrim in the next 7 days, in one list. Register your team in one tap." },
-  { element: '[data-tour="date-strip"]', title: "1. Upcoming or one day", description: "Upcoming shows the whole week; the number on each day is how many scrims it has. Tap a day to see only that day, or More for later dates.", side: "bottom" },
-  { element: '[data-tour="scrim-card"]', title: "2. Check the details", description: "Start time, organiser, maps for each match, and how many slots are still free.", side: "top" },
-  { element: '[data-tour="scrim-action"]', title: "3. Register your team", description: "Tap the button to send a request. The organiser approves it and you get your slot number here.", side: "left" },
-  { element: '[data-tour="scrim-search"]', title: "Looking for one scrim?", description: "Search by scrim name or organiser.", side: "bottom" },
-];
 
 type Sort = "time-asc" | "time-desc" | "slots";
 
 export default function BrowseScrimsPage() {
-  usePageTour("team.scrims", STEPS);
+  const t = useT(browseMsg);
+  const ts = useT(scrimUi);
+  const { dayLabel, formatDate } = useDayFormat();
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { title: t("tour_intro_title"), description: t("tour_intro_text") },
+      { element: '[data-tour="date-strip"]', title: t("tour_strip_title"), description: t("tour_strip_text"), side: "bottom" },
+      { element: '[data-tour="scrim-card"]', title: t("tour_card_title"), description: t("tour_card_text"), side: "top" },
+      { element: '[data-tour="scrim-action"]', title: t("tour_action_title"), description: t("tour_action_text"), side: "left" },
+      { element: '[data-tour="scrim-search"]', title: t("tour_search_title"), description: t("tour_search_text"), side: "bottom" },
+    ],
+    [t],
+  );
+  usePageTour("team.scrims", steps);
   const today = todayInAppTz();
   const [params, setParams] = useSearchParams();
   const raw = params.get("date");
@@ -83,9 +91,9 @@ export default function BrowseScrimsPage() {
   return (
     <div className="space-y-5">
       <PageHeader
-        eyebrow="Browse scrims"
-        title="Find a scrim, join in one tap"
-        description="Register your team — the organiser approves and you get a slot number."
+        eyebrow={t("eyebrow")}
+        title={t("title")}
+        description={t("description")}
         className="mb-0"
       />
 
@@ -94,33 +102,33 @@ export default function BrowseScrimsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-2xl font-bold">
-            {date ? dayLabel(date, today) : "Next 7 days"}
+            {date ? dayLabel(date, today) : t("next7")}
             {date && (date === today || date === addDays(today, 1)) && <span className="ml-2 text-base font-semibold text-muted-foreground">{formatDate(date)}</span>}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {q.isLoading ? "Loading scrims…" : `${total} ${total === 1 ? "scrim" : "scrims"}${mine ? ` · you're in ${mine}` : ""}`}
+            {q.isLoading ? t("loading") : `${ts.plural("scrims", total)}${mine ? t("youre_in", { count: mine }) : ""}`}
           </p>
         </div>
         {total > 0 && (
           <div className="flex gap-2">
             <div className="relative flex-1 sm:w-64 sm:flex-none" data-tour="scrim-search">
               <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search scrim or organiser" className="h-10 pr-8 pl-9" aria-label="Search scrims" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("search_placeholder")} className="h-10 pr-8 pl-9" aria-label={t("search_label")} />
               {search && (
-                <button type="button" onClick={() => setSearch("")} className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground" aria-label="Clear search">
+                <button type="button" onClick={() => setSearch("")} className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground" aria-label={t("clear_search")}>
                   <X className="size-4" />
                 </button>
               )}
             </div>
             <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
-              <SelectTrigger className="h-10 w-auto gap-2" aria-label="Sort">
+              <SelectTrigger className="h-10 w-auto gap-2" aria-label={t("sort")}>
                 <ArrowDownUp className="size-4 text-muted-foreground" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent align="end">
-                <SelectItem value="time-asc">Earliest first</SelectItem>
-                <SelectItem value="time-desc">Latest first</SelectItem>
-                <SelectItem value="slots">Most slots left</SelectItem>
+                <SelectItem value="time-asc">{t("sort_asc")}</SelectItem>
+                <SelectItem value="time-desc">{t("sort_desc")}</SelectItem>
+                <SelectItem value="slots">{t("sort_slots")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -128,7 +136,7 @@ export default function BrowseScrimsPage() {
       </div>
 
       {q.isError ? (
-        <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load scrims" />
+        <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_error")} />
       ) : q.isLoading ? (
         <div className={SCRIM_GRID}>
           <ScrimCardSkeleton />
@@ -140,11 +148,11 @@ export default function BrowseScrimsPage() {
         date ? (
           <EmptyState
             icon={<CalendarX2 />}
-            title="No scrims on this day"
-            description="Try another date — organisers add new scrims all the time."
+            title={t("empty_day_title")}
+            description={t("empty_day_text")}
             action={
               <div className="flex flex-wrap justify-center gap-2">
-                <Button onClick={() => setDate(null)}>See all upcoming</Button>
+                <Button onClick={() => setDate(null)}>{t("see_upcoming")}</Button>
                 {[1, 2].map((n) => {
                   const d = addDays(date, n);
                   return (
@@ -159,18 +167,18 @@ export default function BrowseScrimsPage() {
         ) : (
           <EmptyState
             icon={<CalendarX2 />}
-            title="No scrims in the next 7 days"
-            description="Organisers add new scrims all the time — check back soon, or pick a later date with More."
+            title={t("empty_week_title")}
+            description={t("empty_week_text")}
           />
         )
       ) : items.length === 0 ? (
         <EmptyState
           icon={<Search />}
-          title="No matches for your search"
-          description={`Nothing ${date ? `on ${dayLabel(date, today)}` : "in the next 7 days"} matches “${search}”.`}
+          title={t("no_results_title")}
+          description={date ? t("no_results_day", { day: dayLabel(date, today), q: search }) : t("no_results_week", { q: search })}
           action={
             <Button variant="outline" onClick={() => setSearch("")}>
-              Clear search
+              {t("clear_search")}
             </Button>
           }
         />
@@ -190,7 +198,7 @@ export default function BrowseScrimsPage() {
                 <span className={g.date === today ? "text-primary" : undefined}>{dayLabel(g.date, today)}</span>
                 {dayLabel(g.date, today) !== formatDate(g.date) && <span className="text-sm font-medium text-muted-foreground">{formatDate(g.date)}</span>}
                 <span className="ml-auto text-xs font-medium text-muted-foreground">
-                  {g.items.length} {g.items.length === 1 ? "scrim" : "scrims"}
+                  {ts.plural("scrims", g.items.length)}
                 </span>
               </h3>
               <StaggerList className={SCRIM_GRID}>

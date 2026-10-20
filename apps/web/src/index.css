@@ -169,3 +169,8 @@
 @media (prefers-reduced-motion: reduce) {
   .home-drift, .home-marquee, .home-hero-bg { animation: none !important; }
 }
+
+/* ---------------------------------------------------------------- Hindi (Devanagari)
+ * Wide letter-spacing pulls Devanagari letters and their joined vowel signs apart ("सु प्र भा त"), so Hindi pages drop it. */
+html[lang="hi"] [class*="tracking-"] { letter-spacing: normal !important; }
+html[lang="hi"] .arena-label { letter-spacing: normal; }

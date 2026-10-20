@@ -5,6 +5,8 @@ import { cn } from "@7xen/ui/lib/utils";
 import type { MyJoinRequest } from "@7xen/shared";
 import { NeedTeamDialog } from "./NeedTeamDialog";
 import { PendingJoinCard } from "./NoTeamHome";
+import { useT } from "@/i18n/core";
+import { squadMsg } from "@/i18n/team";
 
 /**
  * Phase 5c: one slim nudge on home for a player without a team. Opens the create / join dialog.
@@ -17,6 +19,7 @@ export function TeamUpBanner({
   pending?: MyJoinRequest | null;
   className?: string;
 }) {
+  const t = useT(squadMsg);
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -37,10 +40,10 @@ export function TeamUpBanner({
           </span>
           <span className="min-w-0 flex-1">
             <span className="block font-display text-lg leading-tight font-bold">
-              Play in scrims with your squad
+              {t("banner_title")}
             </span>
             <span className="block text-sm text-muted-foreground">
-              Create a team or join with a code.
+              {t("banner_text")}
             </span>
           </span>
           <Button
@@ -50,7 +53,7 @@ export function TeamUpBanner({
             className="hidden shrink-0 border-primary/40 sm:inline-flex"
           >
             <span>
-              Team up <ArrowRight />
+              {t("team_up")} <ArrowRight />
             </span>
           </Button>
           <ArrowRight className="size-5 shrink-0 text-primary sm:hidden" />
@@ -59,8 +62,8 @@ export function TeamUpBanner({
       <NeedTeamDialog
         open={open}
         onOpenChange={setOpen}
-        title="Team up"
-        what="any scrim or tournament"
+        title={t("team_up")}
+        what={t("what_any")}
       />
     </>
   );

@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@7xen/ui/lib/utils";
+import { useT } from "@/i18n/core";
+import { homeMsg } from "@/i18n/home";
 
 /** Home section title: small brand eyebrow, big display title, optional "See all" link on the right. */
 export function SectionHeader({
@@ -9,7 +11,7 @@ export function SectionHeader({
   title,
   icon,
   to,
-  linkLabel = "See all",
+  linkLabel,
   description,
   className,
 }: {
@@ -22,6 +24,7 @@ export function SectionHeader({
   description?: ReactNode;
   className?: string;
 }) {
+  const t = useT(homeMsg);
   return (
     <div className={cn("flex items-end justify-between gap-3", className)}>
       <div className="min-w-0">
@@ -40,7 +43,7 @@ export function SectionHeader({
           to={to}
           className="group inline-flex shrink-0 items-center gap-1 rounded-full border bg-card/70 px-3 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur transition-colors outline-none hover:border-primary/50 hover:text-primary focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:text-sm"
         >
-          {linkLabel} <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+          {linkLabel ?? t("see_all")} <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
         </Link>
       )}
     </div>

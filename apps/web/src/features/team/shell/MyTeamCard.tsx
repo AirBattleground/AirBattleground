@@ -7,6 +7,8 @@ import { usePlayerSession } from "@/lib/auth";
 import { usePlayerTeam } from "@/features/player/api";
 import { PlayerAvatar } from "@/features/player/components/PlayerAvatar";
 import type { SidebarSlotState } from "@/components/shell/types";
+import { useT } from "@/i18n/core";
+import { shellMsg } from "@/i18n/home";
 
 const SHOW = 4;
 
@@ -20,6 +22,7 @@ function TeamLogo({ name, tag, url, className }: { name: string; tag: string; ur
 
 /** Sidebar "My Team" card (below the nav): logo, name, member count + faces, and the one team action. */
 export function MyTeamCard({ collapsed }: SidebarSlotState) {
+  const tr = useT(shellMsg);
   const { team, isLeader } = usePlayerSession();
   const q = usePlayerTeam({ enabled: !!team, poll: false });
   const t = q.data;
@@ -32,7 +35,7 @@ export function MyTeamCard({ collapsed }: SidebarSlotState) {
           <Link
             to="/team/my-team"
             data-tour="team-card"
-            aria-label={team ? `${team.name} — my team` : "Create or join a team"}
+            aria-label={team ? tr("my_team_label", { name: team.name }) : tr("create_join")}
             className="ml-1 flex size-[44px] items-center justify-center rounded-xl outline-none focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50"
           >
             {team ? (
@@ -45,7 +48,7 @@ export function MyTeamCard({ collapsed }: SidebarSlotState) {
           </Link>
         </TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
-          {team ? `${team.name} · ${team.tag}` : "Create or join a team"}
+          {team ? `${team.name} · ${team.tag}` : tr("create_join")}
         </TooltipContent>
       </Tooltip>
     );
@@ -55,12 +58,12 @@ export function MyTeamCard({ collapsed }: SidebarSlotState) {
   const extra = members.length - SHOW;
 
   return (
-    <section className="overflow-hidden rounded-xl border bg-card/70 shadow-lg shadow-background/40 backdrop-blur-md" data-tour="team-card" aria-label="My team">
+    <section className="overflow-hidden rounded-xl border bg-card/70 shadow-lg shadow-background/40 backdrop-blur-md" data-tour="team-card" aria-label={tr("my_team")}>
       <Link
         to="/team/my-team"
         className="group flex items-center justify-between border-b px-4 py-3 outline-none transition-colors hover:bg-sidebar-accent/50 focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50 focus-visible:ring-inset"
       >
-        <span className="text-[15px] font-semibold">My Team</span>
+        <span className="text-[15px] font-semibold">{tr("my_team_title")}</span>
         <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
       </Link>
 
@@ -71,7 +74,7 @@ export function MyTeamCard({ collapsed }: SidebarSlotState) {
               <TeamLogo name={team.name} tag={team.tag} url={t?.logoUrl ?? null} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold tracking-wide uppercase">{team.name}</p>
-                <p className="text-xs text-muted-foreground">{t ? `${members.length}/${t.maxMembers} Members` : <span className="inline-block h-3 w-16 animate-pulse rounded bg-muted align-middle" />}</p>
+                <p className="text-xs text-muted-foreground">{t ? tr("members", { n: members.length, max: t.maxMembers }) : <span className="inline-block h-3 w-16 animate-pulse rounded bg-muted align-middle" />}</p>
               </div>
             </div>
             {members.length > 0 && (
@@ -88,17 +91,17 @@ export function MyTeamCard({ collapsed }: SidebarSlotState) {
               to="/team/my-team"
               className="mt-4 flex h-9 items-center justify-center rounded-lg border border-primary/40 bg-primary/10 text-[13px] font-semibold outline-none transition-colors hover:bg-primary/20 focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
-              {isLeader ? "Manage team" : "View team"}
+              {isLeader ? tr("manage_team") : tr("view_team")}
             </Link>
           </>
         ) : (
           <>
-            <p className="text-sm text-muted-foreground">You're not in a team yet. Create one or join your friends.</p>
+            <p className="text-sm text-muted-foreground">{tr("no_team")}</p>
             <Link
               to="/team/my-team"
               className="mt-3 flex h-9 items-center justify-center gap-1.5 rounded-lg border border-primary/40 bg-primary/10 text-[13px] font-semibold outline-none transition-colors hover:bg-primary/20 focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
-              <Plus className="size-4" /> Create or join a team
+              <Plus className="size-4" /> {tr("create_join")}
             </Link>
           </>
         )}

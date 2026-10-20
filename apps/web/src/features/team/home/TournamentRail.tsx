@@ -7,14 +7,19 @@ import { useTeamTournament, useTeamTournaments } from "@/features/tournaments/te
 import { meChip } from "@/features/tournaments/team/journey";
 import { StaggerItem, StaggerList } from "../components/Stagger";
 import { SectionHeader } from "./SectionHeader";
+import { useT } from "@/i18n/core";
+import { homeMsg } from "@/i18n/home";
+import { tJourney } from "@/i18n/tournaments";
 
 const ACTIVE = new Set(["REGISTRATION_OPEN", "REGISTRATION_CLOSED", "LIVE"]);
 const ORDER: Record<string, number> = { LIVE: 0, REGISTRATION_OPEN: 1, REGISTRATION_CLOSED: 2, COMPLETED: 3 };
 const RAIL_ITEM = "w-[min(20rem,82vw)] shrink-0 snap-start sm:w-[21rem] xl:w-[calc((100%-2rem)/3)] 2xl:w-[calc((100%-3rem)/4)] min-[1920px]:w-[calc((100%-4rem)/5)]";
 
 function MineCard({ t }: { t: TournamentSummary }) {
+  const tr = useT(homeMsg);
+  const tj = useT(tJourney);
   const d = useTeamTournament(t.id).data;
-  return <TournamentCard t={t} chip={d ? meChip(d.me) : { text: "Your team", tone: "brand" }} />;
+  return <TournamentCard t={t} chip={d ? meChip(d.me, tj) : { text: tr("your_team"), tone: "brand" }} />;
 }
 
 /**
@@ -35,9 +40,10 @@ export function useFeaturedTournaments() {
 }
 
 export function TournamentRail({ items, mineIds, loading }: ReturnType<typeof useFeaturedTournaments>) {
+  const tr = useT(homeMsg);
   return (
     <section className="space-y-4" data-tour="home-tournaments">
-      <SectionHeader eyebrow="Featured" title="Tournaments" description="Join a cup, climb the stages, win the prize." icon={<Trophy />} to="/team/tournaments" />
+      <SectionHeader eyebrow={tr("cups_eyebrow")} title={tr("cups_title")} description={tr("cups_text")} icon={<Trophy />} to="/team/tournaments" />
       {loading ? (
         <div className="home-rail -mx-4 flex gap-4 overflow-hidden px-4 sm:mx-0 sm:px-0">
           {[0, 1, 2].map((i) => (
@@ -50,9 +56,15 @@ export function TournamentRail({ items, mineIds, loading }: ReturnType<typeof us
         <div className="relative overflow-hidden rounded-2xl border border-dashed bg-card/60 p-6 text-center backdrop-blur-md">
           <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
           <Trophy className="relative mx-auto size-10 text-primary/70" />
-          <p className="relative mt-2 font-display text-xl font-bold">No tournaments open right now</p>
+          <p className="relative mt-2 font-display text-xl font-bold">{tr("no_cups_title")}</p>
           <p className="relative mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-            Organisers announce new cups all the time. Check the <Link to="/team/tournaments" className="font-semibold text-primary hover:underline">tournaments page</Link> later, or play scrims meanwhile.
+            {tr.rich("no_cups_text", {
+              link: (c) => (
+                <Link to="/team/tournaments" className="font-semibold text-primary hover:underline">
+                  {c}
+                </Link>
+              ),
+            })}
           </p>
         </div>
       ) : (

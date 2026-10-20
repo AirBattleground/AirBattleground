@@ -6,8 +6,12 @@ import type { StageStatus } from "@7xen/shared";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { cn } from "@7xen/ui/lib/utils";
 import { useMediaQuery } from "@/lib/use-media-query";
-import { fmtShortDay } from "./format";
-import { LiveDot, STAGE_STATUS_LABELS } from "./StatusPill";
+import { useTournamentFormat } from "./format";
+import { LiveDot } from "./StatusPill";
+import { useT, type T } from "@/i18n/core";
+import { tShared } from "@/i18n/tournaments";
+
+type TS = T<(typeof tShared)["en"]>;
 
 /** The subset of a stage the flow needs (StageSummary satisfies it). */
 export interface StageFlowStage {
@@ -78,13 +82,13 @@ export function currentStageOrder(stages: StageFlowStage[]): number | null {
   return pending ? pending.order : null;
 }
 
-function advanceText(s: StageFlowStage) {
+function advanceText(s: StageFlowStage, t: TS) {
   if (s.advancePerGroup <= 0) return null;
-  const wc = s.wildcardCount > 0 ? ` + ${s.wildcardCount} WC` : "";
-  return s.groupCount > 1 ? `Top ${s.advancePerGroup}/group${wc}` : `Top ${s.advancePerGroup}${wc}`;
+  const wc = s.wildcardCount > 0 ? t("flow_wc", { count: s.wildcardCount }) : "";
+  return (s.groupCount > 1 ? t("flow_top_group", { n: s.advancePerGroup }) : t("flow_top", { n: s.advancePerGroup })) + wc;
 }
 
-function buildNodes(p: StageFlowProps): { nodes: FlowNode[]; links: { label: string | null; state: NodeState }[] } {
+function buildNodes(p: StageFlowProps, t: TS, fmtShortDay: (iso: string | null | undefined) => string): { nodes: FlowNode[]; links: { label: string | null; state: NodeState }[] } {
   const stages = [...p.stages].sort((a, b) => a.order - b.order);
   const allDone = stages.length > 0 && stages.every((s) => s.status === "COMPLETED");
   const regOpen = !!p.registration?.open;
@@ -97,14 +101,14 @@ function buildNodes(p: StageFlowProps): { nodes: FlowNode[]; links: { label: str
       key: "registration",
       kind: "registration",
       icon: regOpen ? ClipboardList : Lock,
-      title: "Registration",
+      title: t("flow_registration"),
       state: regOpen ? "current" : "done",
       lines: [
         <span key="c" className="font-display text-base font-bold text-foreground tabular-nums">
           {r.confirmed}
           <span className="text-muted-foreground">/{r.max}</span>
         </span>,
-        regOpen ? "Open now" : "Closed",
+        regOpen ? t("flow_open_now") : t("flow_closed"),
       ],
       youHere: p.you?.at === "registration" ? p.you : undefined,
     });
@@ -113,7 +117,7 @@ function buildNodes(p: StageFlowProps): { nodes: FlowNode[]; links: { label: str
   stages.forEach((s, i) => {
     const last = i === stages.length - 1;
     const state: NodeState = s.status === "COMPLETED" ? "done" : s.order === cur ? "current" : "upcoming";
-    const groups = s.groupCount > 1 ? `${s.groupCount} groups × ${s.lobbySize}` : "1 lobby";
+    const groups = s.groupCount > 1 ? t("flow_groups", { groups: s.groupCount, size: s.lobbySize }) : t("flow_lobby_one");
     nodes.push({
       key: s.id,
       kind: "stage",
@@ -122,7 +126,7 @@ function buildNodes(p: StageFlowProps): { nodes: FlowNode[]; links: { label: str
       state,
       live: s.status === "LIVE",
       stage: s,
-      lines: [`${s.teamsIn} teams · ${groups}`, `${s.matchesPerGroup} ${s.matchesPerGroup === 1 ? "match" : "matches"}${s.startsAt ? ` · ${fmtShortDay(s.startsAt)}` : ""}`],
+      lines: [`${t.plural("teams", s.teamsIn)} · ${groups}`, `${t.plural("matches", s.matchesPerGroup)}${s.startsAt ? ` · ${fmtShortDay(s.startsAt)}` : ""}`],
       badge: (
         <span
           className={cn(
@@ -134,7 +138,7 @@ function buildNodes(p: StageFlowProps): { nodes: FlowNode[]; links: { label: str
           )}
         >
           {s.status === "LIVE" && <LiveDot className="size-1.5 [&>span]:size-1.5" />}
-          {STAGE_STATUS_LABELS[s.status]}
+          {t(`ss_${s.status}`)}
         </span>
       ),
       youHere: p.you?.at === s.order ? p.you : undefined,
@@ -146,16 +150,16 @@ function buildNodes(p: StageFlowProps): { nodes: FlowNode[]; links: { label: str
     key: "trophy",
     kind: "trophy",
     icon: Trophy,
-    title: "Champion",
+    title: t("flow_champion"),
     state: allDone || p.champion ? "done" : "upcoming",
-    lines: [p.champion ? <span key="c" className="font-semibold text-foreground">{p.champion.name}</span> : "1 team lifts the trophy"],
+    lines: [p.champion ? <span key="c" className="font-semibold text-foreground">{p.champion.name}</span> : t("flow_trophy")],
     youHere: p.you?.at === "champion" ? p.you : undefined,
   });
 
   const links = nodes.slice(1).map((n, i) => {
     const from = nodes[i]!;
     const label =
-      from.kind === "registration" ? (n.stage ? `${n.stage.teamsIn} slots` : null) : from.stage ? advanceText(from.stage) ?? (n.kind === "trophy" ? "Winner" : null) : null;
+      from.kind === "registration" ? (n.stage ? t("flow_slots", { count: n.stage.teamsIn }) : null) : from.stage ? advanceText(from.stage, t) ?? (n.kind === "trophy" ? t("flow_winner") : null) : null;
     const state: NodeState = from.state === "done" && n.state !== "upcoming" ? "done" : from.state === "done" ? "current" : "upcoming";
     return { label, state };
   });
@@ -218,6 +222,7 @@ const YOU_TONE: Record<StageFlowYouState, string> = {
 
 function YouMarker({ you, orientation }: { you: StageFlowYou; orientation: "horizontal" | "vertical" }) {
   const reduce = useReducedMotion();
+  const t = useT(tShared);
   const out = you.state === "eliminated";
   return (
     <motion.span
@@ -227,7 +232,7 @@ function YouMarker({ you, orientation }: { you: StageFlowYou; orientation: "hori
       transition={{ delay: 0.6, type: "spring", stiffness: 380, damping: 20 }}
       aria-hidden
     >
-      <span className={cn("rounded-full px-1.5 py-px text-[9px] font-black tracking-[0.18em]", YOU_TONE[you.state])}>{out ? "OUT" : "YOU"}</span>
+      <span className={cn("rounded-full px-1.5 py-px text-[9px] font-black tracking-[0.18em]", YOU_TONE[you.state])}>{out ? t("out_tag") : t("you_tag")}</span>
       <motion.span
         className="relative"
         animate={reduce || out ? undefined : { y: [0, -3, 0] }}
@@ -244,17 +249,18 @@ function YouMarker({ you, orientation }: { you: StageFlowYou; orientation: "hori
   );
 }
 
-function youSr(you: StageFlowYou) {
-  return { registered: "Your team is registered", waitlisted: "Your team is on the waiting list", playing: "Your team is here", qualified: "Your team qualified from here", eliminated: "Your team was eliminated here", champion: "Your team is the champion" }[you.state];
+function youSr(you: StageFlowYou, t: TS) {
+  return t(`you_${you.state}`);
 }
 
 function NodeShell({ node, className, children }: { node: FlowNode; className?: string; children: ReactNode }) {
-  const label = `${node.title}${node.stage ? ` — ${STAGE_STATUS_LABELS[node.stage.status]}` : ""}${node.youHere ? `. ${youSr(node.youHere)}` : ""}`;
+  const t = useT(tShared);
+  const label = `${node.title}${node.stage ? ` — ${t(`ss_${node.stage.status}`)}` : ""}${node.youHere ? `. ${youSr(node.youHere, t)}` : ""}`;
   if (node.href)
     return (
       <Link
         to={node.href}
-        aria-label={`${label}. Open stage`}
+        aria-label={`${label}. ${t("flow_open_stage")}`}
         aria-current={node.state === "current" ? "step" : undefined}
         className={cn("group/node rounded-2xl outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50", className)}
       >
@@ -424,9 +430,11 @@ function Vertical({ nodes, links, selectedStageId }: { nodes: FlowNode[]; links:
 export function StageFlow(props: StageFlowProps) {
   const isMd = useMediaQuery("(min-width: 768px)");
   const o = props.orientation === "horizontal" || props.orientation === "vertical" ? props.orientation : isMd ? "horizontal" : "vertical";
-  const { nodes, links } = buildNodes(props);
+  const t = useT(tShared);
+  const { fmtShortDay } = useTournamentFormat();
+  const { nodes, links } = buildNodes(props, t, fmtShortDay);
   return (
-    <nav aria-label="Tournament stages" className={cn("w-full", props.className)}>
+    <nav aria-label={t("flow_nav")} className={cn("w-full", props.className)}>
       {o === "horizontal" ? <Horizontal nodes={nodes} links={links} selectedStageId={props.selectedStageId} /> : <Vertical nodes={nodes} links={links} selectedStageId={props.selectedStageId} />}
     </nav>
   );

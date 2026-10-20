@@ -14,32 +14,21 @@ import { useTeamTournament, useTeamTournaments, type TournamentScope } from "@/f
 import { FeaturedTournamentBanner, FeaturedTournamentSkeleton, useFeaturedTournament } from "@/features/tournaments/team/components/FeaturedTournamentBanner";
 import { TournamentCard, TournamentCardSkeleton } from "@/features/tournaments/team/components/TournamentCard";
 import { meChip } from "@/features/tournaments/team/journey";
+import { useT } from "@/i18n/core";
+import { tJourney, tList } from "@/i18n/tournaments";
 
-const STEPS: TourStep[] = [
-  { title: "Tournaments", description: "Multi-stage events: qualifiers, semi-finals and a grand final. Register, play your group, and climb to the trophy." },
-  { element: '[data-tour="t-featured"]', title: "Featured tournament", description: "The big one. Tap to see the prize, stages and register your team.", side: "bottom" },
-  { element: '[data-tour="t-tabs"]', title: "Find the right one", description: "Open = taking teams now. Live = being played. My tournaments = the ones you're in. Completed = past champions.", side: "bottom" },
-  { element: '[data-tour="t-card"]', title: "Tap a tournament", description: "See the prize, how many teams registered, and which stage it's at. Tap for the full flow chart and to register.", side: "bottom" },
+const TABS: { key: TournamentScope; label: "tab_open" | "tab_live" | "tab_mine" | "tab_completed"; icon: typeof Trophy }[] = [
+  { key: "open", label: "tab_open", icon: Ticket },
+  { key: "live", label: "tab_live", icon: Radio },
+  { key: "mine", label: "tab_mine", icon: Trophy },
+  { key: "completed", label: "tab_completed", icon: Flag },
 ];
-
-const TABS: { key: TournamentScope; label: string; icon: typeof Trophy }[] = [
-  { key: "open", label: "Open", icon: Ticket },
-  { key: "live", label: "Live", icon: Radio },
-  { key: "mine", label: "My tournaments", icon: Trophy },
-  { key: "completed", label: "Completed", icon: Flag },
-];
-
-const EMPTY: Record<TournamentScope, { title: string; description: string }> = {
-  open: { title: "No open tournaments right now", description: "When an organiser opens registration for a tournament, it shows up here. Check back soon!" },
-  live: { title: "Nothing live at the moment", description: "Tournaments being played right now appear here, with live standings." },
-  mine: { title: "You haven't joined a tournament yet", description: "Pick an open tournament and register your team — it takes a few taps." },
-  completed: { title: "No completed tournaments yet", description: "Finished tournaments and their champions will be listed here." },
-};
 
 /** "Mine" cards fetch their detail (shared cache with the hub) to show "You're in — Group C". */
 function MineCard({ t, tour }: { t: TournamentSummary; tour?: boolean }) {
   const d = useTeamTournament(t.id);
-  const chip = d.data ? meChip(d.data.me) : { text: "You're in", tone: "success" as const };
+  const tj = useT(tJourney);
+  const chip = d.data ? meChip(d.data.me, tj) : { text: tj("chip_in"), tone: "success" as const };
   return (
     <div data-tour={tour ? "t-card" : undefined} className="h-full">
       <TournamentCard t={t} chip={chip} />
@@ -47,20 +36,15 @@ function MineCard({ t, tour }: { t: TournamentSummary; tour?: boolean }) {
   );
 }
 
-const TDM_EMPTY: Record<TournamentScope, { title: string; description: string }> = {
-  open: { title: "No open TDM battles right now", description: "When an organiser opens a TDM battle, it shows up here. Check back soon!" },
-  live: { title: "No TDM battle live at the moment", description: "Battles being played right now appear here." },
-  mine: { title: "You haven't joined a TDM battle yet", description: "Pick an open battle and register your team — it takes a few taps." },
-  completed: { title: "No finished TDM battles yet", description: "Finished battles and their champions will be listed here." },
-};
-
 function TournamentGrid({ scope, mineIds, mode }: { scope: TournamentScope; mineIds: Set<string>; mode: TournamentMode }) {
   const { hasTeam } = usePlayerSession();
+  const tl = useT(tList);
   const raw = useTeamTournaments(scope);
   const q = { ...raw, data: raw.data?.filter((t) => (t.mode ?? "BR") === mode) };
-  const empty = (mode === "TDM" ? TDM_EMPTY : EMPTY)[scope];
+  const ep = mode === "TDM" ? "tdm_empty_" : "empty_";
+  const empty = { title: tl(`${ep}${scope}_title` as `empty_${TournamentScope}_title`), description: tl(`${ep}${scope}_desc` as `empty_${TournamentScope}_desc`) };
   const base = mode === "TDM" ? "/team/tdm" : "/team/tournaments";
-  if (q.isError) return <QueryError error={q.error} onRetry={() => void q.refetch()} title={mode === "TDM" ? "Couldn't load TDM battles" : "Couldn't load tournaments"} />;
+  if (q.isError) return <QueryError error={q.error} onRetry={() => void q.refetch()} title={mode === "TDM" ? tl("err_tdm") : tl("err_tournaments")} />;
   if (q.isLoading || !q.data)
     return (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -70,7 +54,7 @@ function TournamentGrid({ scope, mineIds, mode }: { scope: TournamentScope; mine
       </div>
     );
   if (q.data.length === 0 && scope === "mine" && !hasTeam)
-    return <NoTeamHint icon={<Trophy />}>{mode === "TDM" ? "TDM battles" : "Tournaments"} your team joins show up here.</NoTeamHint>;
+    return <NoTeamHint icon={<Trophy />}>{mode === "TDM" ? tl("noteam_tdm") : tl("noteam_tournaments")}</NoTeamHint>;
   if (q.data.length === 0)
     return (
       <EmptyState
@@ -81,7 +65,7 @@ function TournamentGrid({ scope, mineIds, mode }: { scope: TournamentScope; mine
           scope === "mine" ? (
             <Button asChild size="lg">
               <Link to={`${base}?tab=open`}>
-                <Search /> {mode === "TDM" ? "See open TDM battles" : "See open tournaments"}
+                <Search /> {mode === "TDM" ? tl("see_open_tdm") : tl("see_open_tournaments")}
               </Link>
             </Button>
           ) : undefined
@@ -105,19 +89,30 @@ function TournamentGrid({ scope, mineIds, mode }: { scope: TournamentScope; mine
   );
 }
 
-const TDM_STEPS: TourStep[] = [
-  { title: "TDM battles", description: "Team Deathmatch knockouts: 2 teams per match, the winner goes through, until one champion is left." },
-  { element: '[data-tour="t-tabs"]', title: "Find the right one", description: "Open = taking teams now. Live = being played. My battles = the ones you're in. Completed = past champions.", side: "bottom" },
-  { element: '[data-tour="t-card"]', title: "Tap a battle", description: "See the bracket, the BG coins for the champion, and register your team.", side: "bottom" },
-];
-
 export default function TournamentsPage() {
   return <TournamentsList mode="BR" />;
 }
 
 /** Player list of tournaments of one mode (BR tournaments or TDM battles). */
 export function TournamentsList({ mode }: { mode: TournamentMode }) {
-  usePageTour(mode === "TDM" ? "team.tdm" : "team.tournaments", mode === "TDM" ? TDM_STEPS : STEPS);
+  const tl = useT(tList);
+  const steps = useMemo<TourStep[]>(
+    () =>
+      mode === "TDM"
+        ? [
+            { title: tl("tdm_tour_title"), description: tl("tdm_tour_desc") },
+            { element: '[data-tour="t-tabs"]', title: tl("tour_tabs_title"), description: tl("tdm_tour_tabs_desc"), side: "bottom" },
+            { element: '[data-tour="t-card"]', title: tl("tdm_tour_card_title"), description: tl("tdm_tour_card_desc"), side: "bottom" },
+          ]
+        : [
+            { title: tl("tour_title"), description: tl("tour_desc") },
+            { element: '[data-tour="t-featured"]', title: tl("tour_featured_title"), description: tl("tour_featured_desc"), side: "bottom" },
+            { element: '[data-tour="t-tabs"]', title: tl("tour_tabs_title"), description: tl("tour_tabs_desc"), side: "bottom" },
+            { element: '[data-tour="t-card"]', title: tl("tour_card_title"), description: tl("tour_card_desc"), side: "bottom" },
+          ],
+    [mode, tl],
+  );
+  usePageTour(mode === "TDM" ? "team.tdm" : "team.tournaments", steps);
   const [params, setParams] = useSearchParams();
   const tab = (TABS.find((t) => t.key === params.get("tab"))?.key ?? "open") as TournamentScope;
   const mine = useTeamTournaments("mine");
@@ -129,13 +124,9 @@ export function TournamentsList({ mode }: { mode: TournamentMode }) {
   return (
     <>
       <PageHeader
-        eyebrow="Compete"
-        title={mode === "TDM" ? "TDM battles" : "Tournaments"}
-        description={
-          mode === "TDM"
-            ? "2 teams per match — win and you go through. The champion earns BG coins."
-            : "Fight through the stages for the trophy. Spots are first come, first served."
-        }
+        eyebrow={tl("eyebrow")}
+        title={mode === "TDM" ? tl("title_tdm") : tl("title_br")}
+        description={mode === "TDM" ? tl("desc_tdm") : tl("desc_br")}
       />
       {mode === "BR" && (featured.loading ? <FeaturedTournamentSkeleton className="mb-6" /> : featured.t && featured.t.mode !== "TDM" && <FeaturedTournamentBanner t={featured.t} className="mb-6" />)}
       <Tabs value={tab} onValueChange={(v) => setParams(v === "open" ? {} : { tab: v }, { replace: true })} className="gap-4">
@@ -144,7 +135,7 @@ export function TournamentsList({ mode }: { mode: TournamentMode }) {
             {TABS.map(({ key, label, icon: Icon }) => (
               <TabsTrigger key={key} value={key} className="gap-1.5 px-3">
                 <Icon className="size-4" />
-                {label}
+                {tl(label)}
                 {key === "mine" && liveMine > 0 && (
                   <span className="ml-0.5 rounded-full bg-primary px-1.5 text-[10px] leading-4 font-bold text-primary-foreground">{liveMine}</span>
                 )}

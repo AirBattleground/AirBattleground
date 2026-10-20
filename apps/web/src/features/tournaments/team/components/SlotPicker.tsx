@@ -3,8 +3,10 @@ import { AnimatePresence, motion, Reorder, useDragControls } from "framer-motion
 import { ArrowDown, ArrowUp, Check, Clock, GripVertical, Plus, Sparkles, X } from "lucide-react";
 import type { TimeSlotOption } from "@7xen/shared";
 import { cn } from "@7xen/ui/lib/utils";
-import { ordinal } from "@/features/results/components/Rank";
-import { fmtDay, fmtTime } from "../../shared/format";
+import { fmtTime, useTournamentFormat } from "../../shared/format";
+import { useT } from "@/i18n/core";
+import { ordFor } from "@/i18n/tournaments";
+import { tHub } from "@/i18n/tournamentsHub";
 
 type SlotOptionWithTaken = TimeSlotOption & { taken: number };
 
@@ -24,6 +26,8 @@ function RankedRow({
   onRemove: () => void;
 }) {
   const controls = useDragControls();
+  const th = useT(tHub);
+  const { fmtDay } = useTournamentFormat();
   return (
     <Reorder.Item
       value={opt.id}
@@ -40,13 +44,13 @@ function RankedRow({
         disabled={disabled}
         onPointerDown={(e) => !disabled && controls.start(e)}
         className="flex size-8 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted-foreground hover:bg-accent active:cursor-grabbing disabled:opacity-40"
-        aria-label={`Drag to reorder ${opt.label}`}
+        aria-label={th("sp_drag", { label: opt.label })}
         tabIndex={-1}
       >
         <GripVertical className="size-4" />
       </button>
       <span className="flex h-8 min-w-10 shrink-0 items-center justify-center rounded-lg bg-primary px-1.5 font-display text-sm font-bold text-primary-foreground">
-        {ordinal(index + 1)}
+        {ordFor(th.lang, index + 1)}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate font-display text-base leading-tight font-bold">{fmtTime(opt.id)}</span>
@@ -58,7 +62,7 @@ function RankedRow({
           disabled={disabled || index === 0}
           onClick={() => onMove(-1)}
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-30"
-          aria-label={`Move ${opt.label} up`}
+          aria-label={th("sp_up", { label: opt.label })}
         >
           <ArrowUp className="size-4" />
         </button>
@@ -67,7 +71,7 @@ function RankedRow({
           disabled={disabled || index === count - 1}
           onClick={() => onMove(1)}
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-accent hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-30"
-          aria-label={`Move ${opt.label} down`}
+          aria-label={th("sp_down", { label: opt.label })}
         >
           <ArrowDown className="size-4" />
         </button>
@@ -76,7 +80,7 @@ function RankedRow({
           disabled={disabled}
           onClick={onRemove}
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground outline-none hover:bg-destructive/10 hover:text-destructive focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-30"
-          aria-label={`Remove ${opt.label}`}
+          aria-label={th("sp_remove", { label: opt.label })}
         >
           <X className="size-4" />
         </button>
@@ -95,6 +99,8 @@ interface SlotPickerProps {
 
 /** Rank the time slots you can play: tap to add in order, drag or use arrows to reorder, or pick "Any time works". */
 export function SlotPicker({ options, value, onChange, disabled }: SlotPickerProps) {
+  const th = useT(tHub);
+  const { fmtDay } = useTournamentFormat();
   const byId = useMemo(() => new Map(options.map((o) => [o.id, o])), [options]);
   const ranked = value.filter((id) => byId.has(id));
   const anyTime = ranked.length === 0;
@@ -133,15 +139,15 @@ export function SlotPicker({ options, value, onChange, disabled }: SlotPickerPro
           {anyTime ? <Check className="size-5" /> : <Sparkles className="size-5" />}
         </span>
         <span className="min-w-0">
-          <span className="block font-semibold">Any time works</span>
-          <span className="block text-xs text-muted-foreground">We'll put you wherever there's space.</span>
+          <span className="block font-semibold">{th("sp_any")}</span>
+          <span className="block text-xs text-muted-foreground">{th("sp_any_hint")}</span>
         </span>
       </button>
 
       <AnimatePresence initial={false}>
         {ranked.length > 0 && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <p className="mb-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Your order</p>
+            <p className="mb-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">{th("sp_order")}</p>
             <Reorder.Group axis="y" values={ranked} onReorder={onChange} className="space-y-1.5">
               <AnimatePresence initial={false}>
                 {ranked.map((id, i) => (
@@ -163,7 +169,7 @@ export function SlotPicker({ options, value, onChange, disabled }: SlotPickerPro
 
       <div className="space-y-2.5">
         <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-          {ranked.length ? "Tap more slots you can play" : "Or tap the slots you can play, best first"}
+          {ranked.length ? th("sp_tap_more") : th("sp_tap_first")}
         </p>
         {days.map(([date, opts]) => (
           <div key={date}>
@@ -181,7 +187,7 @@ export function SlotPicker({ options, value, onChange, disabled }: SlotPickerPro
                     disabled={disabled}
                     onClick={() => toggle(o.id)}
                     aria-pressed={picked}
-                    aria-label={`${o.label}${picked ? `, your ${ordinal(pos + 1)} choice` : ""}${full ? ", popular — may be full" : `, ${left} spots`}`}
+                    aria-label={`${o.label}${picked ? th("sp_aria_choice", { rank: ordFor(th.lang, pos + 1) }) : ""}${full ? th("sp_aria_popular") : th.plural("sp_aria_spots", left)}`}
                     className={cn(
                       "relative flex flex-col items-start rounded-xl border px-3 py-2 text-left outline-none transition-all focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.97] disabled:opacity-60",
                       picked ? "border-primary bg-primary/10 shadow-glow" : "bg-card hover:border-primary/40",
@@ -192,13 +198,13 @@ export function SlotPicker({ options, value, onChange, disabled }: SlotPickerPro
                         <Clock className="size-3.5 text-primary" /> {fmtTime(o.id)}
                       </span>
                       {picked ? (
-                        <span className="rounded-full bg-primary px-1.5 font-display text-xs font-bold text-primary-foreground">{ordinal(pos + 1)}</span>
+                        <span className="rounded-full bg-primary px-1.5 font-display text-xs font-bold text-primary-foreground">{ordFor(th.lang, pos + 1)}</span>
                       ) : (
                         <Plus className="size-3.5 text-muted-foreground" />
                       )}
                     </span>
                     <span className={cn("text-[11px]", full ? "text-warning-foreground dark:text-warning" : "text-muted-foreground")}>
-                      {full ? "Popular — may be full" : `${left} of ${o.capacity} spots`}
+                      {full ? th("sp_popular") : th("sp_spots_of", { left, cap: o.capacity })}
                     </span>
                   </button>
                 );

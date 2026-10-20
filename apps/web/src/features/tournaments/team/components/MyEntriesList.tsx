@@ -7,13 +7,18 @@ import { cn } from "@7xen/ui/lib/utils";
 import { useTeamTournament, useTeamTournaments } from "../api";
 import { meChip } from "../journey";
 import { StatusPill } from "../../shared/StatusPill";
-import { fmtDay } from "../../shared/format";
+import { useTournamentFormat } from "../../shared/format";
+import { useT } from "@/i18n/core";
+import { tJourney, tList } from "@/i18n/tournaments";
 
 const FINISHED = new Set<TournamentSummary["status"]>(["COMPLETED", "CANCELLED"]);
 
 function EntryRow({ t }: { t: TournamentSummary }) {
   const d = useTeamTournament(t.id);
-  const chip = d.data ? meChip(d.data.me) : null;
+  const tl = useT(tList);
+  const tj = useT(tJourney);
+  const { fmtDay } = useTournamentFormat();
+  const chip = d.data ? meChip(d.data.me, tj) : null;
   const tdm = t.mode === "TDM";
   return (
     <Link
@@ -26,7 +31,7 @@ function EntryRow({ t }: { t: TournamentSummary }) {
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2">
           <span className="truncate font-display text-lg leading-tight font-bold group-hover:text-primary">{t.title}</span>
-          <span className="shrink-0 rounded-md border px-1.5 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">{tdm ? "TDM" : "Tournament"}</span>
+          <span className="shrink-0 rounded-md border px-1.5 text-[10px] font-bold tracking-wider text-muted-foreground uppercase">{tdm ? "TDM" : tl("kind_tournament")}</span>
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <StatusPill status={t.status} />
@@ -50,13 +55,14 @@ function EntryRow({ t }: { t: TournamentSummary }) {
 /** My registrations: the team's tournament + TDM battle entries (upcoming = not finished; past = finished). */
 export function MyEntriesList({ scope }: { scope: "upcoming" | "past" }) {
   const q = useTeamTournaments("mine");
+  const tl = useT(tList);
   if (q.isLoading) return <Skeleton className="h-20 rounded-xl" />;
   const items = (q.data ?? []).filter((t) => FINISHED.has(t.status) === (scope === "past"));
   if (!items.length) return null;
   return (
     <section className="space-y-2.5">
       <h3 className="flex items-baseline gap-2 font-display text-lg font-bold">
-        Tournaments &amp; TDM battles
+        {tl("entries_heading")}
         <span className="ml-auto text-xs font-medium text-muted-foreground">{items.length}</span>
       </h3>
       <div className="space-y-2.5">

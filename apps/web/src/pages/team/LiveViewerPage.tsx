@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowLeft, Home, MonitorOff, Trophy } from "lucide-react";
 import type { TeamLiveCard } from "@7xen/shared";
@@ -12,14 +12,9 @@ import { liveHlsUrl, useTeamLive } from "@/features/station/api";
 import { HlsPlayer, type PlayerState } from "@/features/station/components/HlsPlayer";
 import { LiveOverlay } from "@/features/broadcast/LiveOverlay";
 import { useLiveBroadcasts } from "@/features/broadcast/live";
-
-const STEPS: TourStep[] = [
-  { title: "Watching live", description: "This is your match, streamed live by the organiser." },
-  { element: '[data-tour="live-player"]', title: "The live picture", description: "It runs about 5–10 seconds behind the game. Pause or drag the bar to watch anything again since you opened it, then tap Go live. Tap the speaker for sound, or the corner button for full screen.", side: "bottom" },
-  { element: '[data-tour="live-note"]', title: "After the match", description: "When the stream ends, the results show up in Results once the organiser publishes them.", side: "top" },
-];
-
-const ENDED = "The match stream has ended — results will appear once the organiser publishes them.";
+import { useT } from "@/i18n/core";
+import { liveMsg } from "@/i18n/live";
+import { common } from "@/i18n/common";
 
 /** Players watch under /team, managers under /manager (same page). */
 function useArea() {
@@ -28,10 +23,11 @@ function useArea() {
 
 function Back() {
   const area = useArea();
+  const t = useT(liveMsg);
   return (
     <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground">
       <Link to={`/${area}/live`}>
-        <ArrowLeft /> Live now
+        <ArrowLeft /> {t("live_now")}
       </Link>
     </Button>
   );
@@ -39,18 +35,20 @@ function Back() {
 
 function EndedActions() {
   const area = useArea();
+  const t = useT(liveMsg);
+  const c = useT(common);
   return (
     <div className="flex flex-wrap justify-center gap-2">
       {area === "team" && (
         <Button asChild>
           <Link to="/team/results">
-            <Trophy /> Go to results
+            <Trophy /> {t("go_results")}
           </Link>
         </Button>
       )}
       <Button asChild variant="outline">
         <Link to={`/${area}`}>
-          <Home /> Home
+          <Home /> {c("nav_home")}
         </Link>
       </Button>
     </div>
@@ -58,7 +56,16 @@ function EndedActions() {
 }
 
 export default function LiveViewerPage() {
-  usePageTour("team.live", STEPS);
+  const t = useT(liveMsg);
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { title: t("v_tour_title"), description: t("v_tour_desc") },
+      { element: '[data-tour="live-player"]', title: t("v_tour_player_title"), description: t("v_tour_player_desc"), side: "bottom" },
+      { element: '[data-tour="live-note"]', title: t("v_tour_note_title"), description: t("v_tour_note_desc"), side: "top" },
+    ],
+    [t],
+  );
+  usePageTour("team.live", steps);
   const { matchId = "" } = useParams();
   const area = useArea();
   // the player's own matches (station or iPhone) + every iPhone broadcast (open to anyone signed in)
@@ -89,7 +96,7 @@ export default function LiveViewerPage() {
     return (
       <>
         <Back />
-        <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load the live stream" />
+        <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_stream_error")} />
       </>
     );
 
@@ -108,8 +115,8 @@ export default function LiveViewerPage() {
         <Back />
         <EmptyState
           icon={<MonitorOff />}
-          title="This match isn't live right now"
-          description="The stream may not have started yet, or it has already ended — results appear once the organiser publishes them. Live matches show up on your home screen."
+          title={t("not_live_title")}
+          description={t("not_live_desc")}
           action={<EndedActions />}
         />
       </>
@@ -119,12 +126,10 @@ export default function LiveViewerPage() {
     <>
       <Back />
       <PageHeader
-        eyebrow={ended ? "Stream ended" : "Watching live"}
+        eyebrow={ended ? t("stream_ended") : t("watching_live")}
         title={
           <span className="flex flex-wrap items-center gap-3">
-            <span className="min-w-0">
-              {shown.title} · Match {shown.number}
-            </span>
+            <span className="min-w-0">{t("title_match", { title: shown.title, n: shown.number })}</span>
             <MapChip map={shown.map} className="text-sm" />
           </span>
         }
@@ -143,7 +148,7 @@ export default function LiveViewerPage() {
             endedSlot={
               <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
                 <MonitorOff className="mx-auto size-7 text-muted-foreground" />
-                <p className="text-sm font-medium">{ENDED}</p>
+                <p className="text-sm font-medium">{t("ended_long")}</p>
                 <EndedActions />
               </div>
             }
@@ -152,7 +157,7 @@ export default function LiveViewerPage() {
           </HlsPlayer>
         </div>
         <p data-tour="live-note" className="text-xs text-muted-foreground">
-          {ended ? "Results show up in Results once the organiser publishes them." : "The stream runs about 5–10 seconds behind the game. Results appear in Results once the organiser publishes them."}
+          {ended ? t("note_ended") : t("note_live")}
         </p>
       </div>
     </>

@@ -9,11 +9,23 @@ import { Input } from "@7xen/ui/components/ui/input";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
 import { useCreateJoinRequest, useInvitePreview, usePlayerProfile, useUpdateProfile } from "../api";
-import { BGMI_HINT, Field } from "../forms";
+import { Field, useBgmiHint } from "../forms";
+import { useT } from "@/i18n/core";
+import { common } from "@/i18n/common";
+import { playerFormMsg } from "@/i18n/onboarding";
+import { squadMsg } from "@/i18n/team";
 import { CreateTeamDialog } from "./CreateTeamDialog";
 import { PendingJoinCard } from "./NoTeamHome";
 
 type Step = "choose" | "join" | "sent";
+
+/** English `what` values callers pass today → their translations (anything else is shown as given). */
+const WHAT_KEYS = {
+  "this scrim": "what_scrim",
+  "this tournament": "what_tournament",
+  "any scrim or tournament": "what_any",
+} as const;
+const isWhatKey = (w: string): w is keyof typeof WHAT_KEYS => w in WHAT_KEYS;
 
 /**
  * Phase 5c: a player without a team tapped Register (or the home "team up" banner).
@@ -25,7 +37,7 @@ export function NeedTeamDialog({
   onOpenChange,
   what,
   onTeamCreated,
-  title = "You need a team to register",
+  title,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -34,6 +46,8 @@ export function NeedTeamDialog({
   onTeamCreated?: (team: PlayerTeam) => void;
   title?: string;
 }) {
+  const t = useT(squadMsg);
+  const tc = useT(common);
   const [step, setStep] = useState<Step>("choose");
   const [createOpen, setCreateOpen] = useState(false);
   const profile = usePlayerProfile({ enabled: open });
@@ -43,7 +57,7 @@ export function NeedTeamDialog({
     if (open) setStep("choose");
   }, [open]);
 
-  const target = what ?? "scrims and tournaments";
+  const target = what ? (isWhatKey(what) ? t(WHAT_KEYS[what]) : what) : t("what_default");
 
   return (
     <>
@@ -54,36 +68,36 @@ export function NeedTeamDialog({
           ) : step === "join" ? (
             <>
               <DialogHeader>
-                <DialogTitle className="font-display text-2xl">Join with a code</DialogTitle>
-                <DialogDescription>Type the 8-character code from your team leader, or paste their invite link.</DialogDescription>
+                <DialogTitle className="font-display text-2xl">{t("join_code_title")}</DialogTitle>
+                <DialogDescription>{t("join_code_desc", { n: INVITE_CODE_LENGTH })}</DialogDescription>
               </DialogHeader>
               {pending ? (
                 <div className="space-y-3">
                   <PendingJoinCard request={pending} />
                   <p className="text-sm text-muted-foreground">
-                    You can have one request at a time. Once the leader approves, tap <span className="font-semibold text-foreground">“Ask my leader”</span> on {target} and they register the team.
+                    {t.rich("one_request", { b: (c) => <span className="font-semibold text-foreground">{c}</span> }, { what: target })}
                   </p>
                 </div>
               ) : (
                 <InlineJoin onSent={() => setStep("sent")} />
               )}
               <Button variant="ghost" className="self-start text-muted-foreground" onClick={() => setStep("choose")}>
-                <ArrowLeft /> Back
+                <ArrowLeft /> {tc("back")}
               </Button>
             </>
           ) : (
             <>
               <DialogHeader>
-                <DialogTitle className="font-display text-2xl">{title}</DialogTitle>
-                <DialogDescription>Scrims and tournaments are played as a team. Make your own in a few seconds, or join your friends'.</DialogDescription>
+                <DialogTitle className="font-display text-2xl">{title ?? t("need_title")}</DialogTitle>
+                <DialogDescription>{t("choose_desc")}</DialogDescription>
               </DialogHeader>
               {pending && <PendingJoinCard request={pending} />}
               <div className="grid gap-3">
                 <Choice
                   icon={<Shield />}
                   primary
-                  title="Create a team"
-                  text={onTeamCreated ? "You'll be the leader, and we'll take you straight back to registering." : "You'll be the leader and get an invite link for your squad."}
+                  title={t("create_a_team")}
+                  text={onTeamCreated ? t("create_choice_reg") : t("create_choice")}
                   onClick={() => {
                     onOpenChange(false);
                     setCreateOpen(true);
@@ -92,8 +106,8 @@ export function NeedTeamDialog({
                 />
                 <Choice
                   icon={<Users />}
-                  title="Join with a code"
-                  text={pending ? `You already asked to join ${pending.team.name}.` : "Got an invite from a friend? Ask to join their team."}
+                  title={t("join_code_title")}
+                  text={pending ? t("join_choice_pending", { team: pending.team.name }) : t("join_choice")}
                   onClick={() => setStep("join")}
                   tour="need-team-join"
                 />
@@ -106,7 +120,7 @@ export function NeedTeamDialog({
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={onTeamCreated}
-        description={onTeamCreated ? `You'll be the team leader. Right after this you can register for ${target}.` : undefined}
+        description={onTeamCreated ? t("create_desc_reg", { what: target }) : undefined}
       />
     </>
   );
@@ -135,6 +149,9 @@ function Choice({ icon, title, text, onClick, primary, tour }: { icon: React.Rea
 
 /** Code (or pasted link) → team preview → "Send join request" (asks the BGMI ID first if missing). */
 function InlineJoin({ onSent }: { onSent: () => void }) {
+  const tr = useT(squadMsg);
+  const tf = useT(playerFormMsg);
+  const bgmiHint = useBgmiHint();
   const { player } = usePlayerSession();
   const [value, setValue] = useState("");
   const [code, setCode] = useState<string | null>(null);
@@ -150,7 +167,7 @@ function InlineJoin({ onSent }: { onSent: () => void }) {
   const lookUp = () => {
     const fromLink = value.match(/\/join\/([^/?#\s]+)/i)?.[1];
     const c = normalizeInviteCode(fromLink ?? value);
-    if (c.length !== INVITE_CODE_LENGTH) return setCodeError(`Invite codes are ${INVITE_CODE_LENGTH} letters/numbers — or paste the whole link.`);
+    if (c.length !== INVITE_CODE_LENGTH) return setCodeError(tr("code_len_error", { n: INVITE_CODE_LENGTH }));
     setCode(c);
   };
 
@@ -159,7 +176,7 @@ function InlineJoin({ onSent }: { onSent: () => void }) {
     try {
       if (needsBgmi) {
         const parsed = bgmiIdSchema.safeParse(bgmi);
-        if (!parsed.success) return setBgmiError(bgmi ? (parsed.error.issues[0]?.message ?? "Check your BGMI ID") : "Add your BGMI ID first — teams need it for results.");
+        if (!parsed.success) return setBgmiError(bgmi ? (parsed.error.issues[0]?.message ?? tr("check_bgmi")) : tf("bgmi_first"));
         await update.mutateAsync({ bgmiId: parsed.data });
       }
       await join.mutateAsync({ code });
@@ -167,7 +184,7 @@ function InlineJoin({ onSent }: { onSent: () => void }) {
     } catch (e) {
       if (e instanceof ApiError && e.fields?.bgmiId) return setBgmiError(e.fields.bgmiId);
       if (e instanceof ApiError && e.code === "BGMI_ID_TAKEN") return setBgmiError(e.message);
-      toast.error("Couldn't send your request", { description: e instanceof ApiError ? e.message : "Please try again." });
+      toast.error(tr("send_fail"), { description: e instanceof ApiError ? e.message : tr("try_again") });
       void invite.refetch();
     }
   };
@@ -188,7 +205,7 @@ function InlineJoin({ onSent }: { onSent: () => void }) {
           <div className="relative min-w-0 flex-1">
             <KeyRound aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              aria-label="Invite code or link"
+              aria-label={tr("code_or_link")}
               autoFocus
               value={value}
               onChange={(e) => {
@@ -196,7 +213,7 @@ function InlineJoin({ onSent }: { onSent: () => void }) {
                 setCodeError(null);
                 setCode(null);
               }}
-              placeholder="Invite code"
+              placeholder={tr("code_placeholder")}
               autoCapitalize="characters"
               autoCorrect="off"
               spellCheck={false}
@@ -205,11 +222,11 @@ function InlineJoin({ onSent }: { onSent: () => void }) {
             />
           </div>
           <Button type="submit" variant="outline" className="h-11 rounded-xl px-4" disabled={invite.isFetching}>
-            {invite.isFetching ? <Loader2 className="animate-spin" /> : "Find team"}
+            {invite.isFetching ? <Loader2 className="animate-spin" /> : tr("find_team")}
           </Button>
         </div>
         {codeError && <p className="text-xs font-medium text-destructive">{codeError}</p>}
-        {invalid && <p className="text-xs font-medium text-destructive">That code doesn't work. Ask your leader for their latest invite link.</p>}
+        {invalid && <p className="text-xs font-medium text-destructive">{tr("code_invalid")}</p>}
       </form>
 
       {t && (
@@ -219,16 +236,16 @@ function InlineJoin({ onSent }: { onSent: () => void }) {
             <div className="min-w-0 flex-1">
               <p className="truncate font-display text-lg leading-tight font-bold uppercase">{t.team.name}</p>
               <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Crown className="size-3 text-warning" /> {t.leader.ign ?? t.leader.displayName} · {t.memberCount}/{t.maxMembers} players
+                <Crown className="size-3 text-warning" /> {t.leader.ign ?? t.leader.displayName} · {tr("players_count", { count: t.memberCount, max: t.maxMembers })}
               </p>
             </div>
           </div>
           {t.full ? (
-            <p className="text-sm font-medium text-warning">This team is full. Ask the leader to make room, or create your own team.</p>
+            <p className="text-sm font-medium text-warning">{tr("team_full_long")}</p>
           ) : (
             <>
               {needsBgmi && (
-                <Field id="join-bgmi" label="Your BGMI ID" error={bgmiError ?? undefined} hint={BGMI_HINT}>
+                <Field id="join-bgmi" label={tf("your_bgmi_id")} error={bgmiError ?? undefined} hint={bgmiHint}>
                   <div className="relative">
                     <Hash aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -247,7 +264,7 @@ function InlineJoin({ onSent }: { onSent: () => void }) {
                 </Field>
               )}
               <Button size="lg" className="h-11 w-full text-base shadow-glow" disabled={busy} onClick={() => void send()}>
-                {busy ? <Loader2 className="animate-spin" /> : <ArrowRight />} Ask to join {t.team.name}
+                {busy ? <Loader2 className="animate-spin" /> : <ArrowRight />} {tr("ask_to_join", { team: t.team.name })}
               </Button>
             </>
           )}
@@ -258,20 +275,21 @@ function InlineJoin({ onSent }: { onSent: () => void }) {
 }
 
 function SentView({ what, onDone }: { what: string; onDone: () => void }) {
+  const t = useT(squadMsg);
   return (
     <>
       <DialogHeader>
         <span className="flex size-12 items-center justify-center rounded-xl bg-warning/15 text-warning">
           <Hourglass className="size-6" />
         </span>
-        <DialogTitle className="font-display text-2xl">Request sent</DialogTitle>
-        <DialogDescription>The team leader has to approve you first. We'll switch you over to your team as soon as they do.</DialogDescription>
+        <DialogTitle className="font-display text-2xl">{t("sent_title")}</DialogTitle>
+        <DialogDescription>{t("sent_desc")}</DialogDescription>
       </DialogHeader>
       <ol className="space-y-2 text-sm">
         {[
-          { icon: <Crown />, text: "Your leader approves your request." },
-          { icon: <Megaphone />, text: `Tap “Ask my leader” on ${what}.` },
-          { icon: <Shield />, text: "Your leader registers the team in one tap." },
+          { icon: <Crown />, text: t("step_approve") },
+          { icon: <Megaphone />, text: t("step_ask", { what }) },
+          { icon: <Shield />, text: t("step_register") },
         ].map((s, i) => (
           <li key={i} className="flex items-center gap-3 rounded-xl border bg-muted/40 px-3 py-2.5">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary [&_svg]:size-4">{s.icon}</span>
@@ -280,7 +298,7 @@ function SentView({ what, onDone }: { what: string; onDone: () => void }) {
         ))}
       </ol>
       <Button size="lg" className="w-full" onClick={onDone}>
-        Got it
+        {t("got_it")}
       </Button>
     </>
   );

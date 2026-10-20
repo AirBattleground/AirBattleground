@@ -4,15 +4,19 @@ import { toast } from "sonner";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { copyText } from "../format";
+import { useT } from "@/i18n/core";
+import { liveMsg } from "@/i18n/live";
 
 /** Copies `value` and briefly shows a tick. Icon-only unless `children` are given. */
 export function CopyButton({
   value,
-  label = "Copy",
+  label: labelProp,
   toastText,
   children,
   ...rest
 }: { value: string; label?: string; toastText?: string; children?: ReactNode } & Omit<ComponentProps<typeof Button>, "value" | "onClick" | "children">) {
+  const t = useT(liveMsg);
+  const label = labelProp ?? t("copy");
   const [done, setDone] = useState(false);
   useEffect(() => {
     if (!done) return;
@@ -31,18 +35,18 @@ export function CopyButton({
         if (await copyText(value)) {
           setDone(true);
           if (toastText) toast.success(toastText);
-        } else toast.error("Couldn't copy", { description: "Select the text and copy it manually." });
+        } else toast.error(t("copy_failed"), { description: t("copy_failed_desc") });
       }}
       {...rest}
     >
-      {children ? (done ? <><Check className="text-success" /> Copied!</> : children) : icon}
+      {children ? (done ? <><Check className="text-success" /> {t("copied")}</> : children) : icon}
     </Button>
   );
   if (children) return btn;
   return (
     <Tooltip>
       <TooltipTrigger asChild>{btn}</TooltipTrigger>
-      <TooltipContent>{done ? "Copied!" : label}</TooltipContent>
+      <TooltipContent>{done ? t("copied") : label}</TooltipContent>
     </Tooltip>
   );
 }

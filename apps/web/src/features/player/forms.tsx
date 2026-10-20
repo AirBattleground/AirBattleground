@@ -3,13 +3,21 @@ import type { FieldValues, Path, UseFormSetError } from "react-hook-form";
 import { ApiError } from "@7xen/shared";
 import { Label } from "@7xen/ui/components/ui/label";
 import { cn } from "@7xen/ui/lib/utils";
+import { useT } from "@/i18n/core";
+import { playerFormMsg } from "@/i18n/onboarding";
 
 /**
  * Puts an ApiError onto the form: `fields` go to their inputs, BGMI ID errors to `bgmiId`, team-name clashes to `name`.
  * Returns a message for anything that didn't land on an input (show it as a toast / banner), or null.
  */
-export function applyApiError<T extends FieldValues>(err: unknown, setError: UseFormSetError<T>, fields: readonly Path<T>[]): string | null {
-  if (!(err instanceof ApiError)) return "Something went wrong. Please try again.";
+export function applyApiError<T extends FieldValues>(
+  err: unknown,
+  setError: UseFormSetError<T>,
+  fields: readonly Path<T>[],
+  /** message for non-API errors (pass the translated common "something_wrong") */
+  fallback = "Something went wrong. Please try again.",
+): string | null {
+  if (!(err instanceof ApiError)) return fallback;
   let placed = false;
   const has = (k: string): k is Path<T> => (fields as readonly string[]).includes(k);
   for (const [k, message] of Object.entries(err.fields ?? {})) {
@@ -57,4 +65,10 @@ export function Field({
   );
 }
 
+/** English only — components should use `useBgmiHint()` so it follows the player's language. */
 export const BGMI_HINT = "Open BGMI → tap your profile picture → the number under your name (Character ID).";
+
+/** "Where do I find my BGMI ID?" hint in the current language. */
+export function useBgmiHint(): string {
+  return useT(playerFormMsg)("bgmi_hint");
+}

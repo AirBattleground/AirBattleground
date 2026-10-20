@@ -4,6 +4,8 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
 import { useCreateSuggestion, useTeamSuggestions } from "../api";
+import { useT } from "@/i18n/core";
+import { squadMsg } from "@/i18n/team";
 
 export const scrimTarget = (scrimId: string, date: string) => `S:${scrimId}:${date}`;
 export const tournamentTarget = (id: string) => `T:${id}`;
@@ -22,12 +24,16 @@ export function useAskedTargets() {
 
 /** "Asked · waiting for your leader" */
 export function AskedPill({ by, className }: { by?: string | null; className?: string }) {
+  const t = useT(squadMsg);
   return (
     <div className={cn("flex items-center gap-2.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 text-sm", className)}>
       <CheckCircle2 className="size-5 shrink-0 text-primary" />
       <span className="min-w-0 leading-tight">
-        <span className="block font-semibold">Asked · waiting for your leader</span>
-        <span className="block text-xs text-muted-foreground">{by ? `${by} asked. ` : ""}Your leader can register in one tap.</span>
+        <span className="block font-semibold">{t("asked_title")}</span>
+        <span className="block text-xs text-muted-foreground">
+          {by ? t("asked_by", { name: by }) : ""}
+          {t("leader_one_tap")}
+        </span>
       </span>
     </div>
   );
@@ -50,6 +56,7 @@ export function AskLeaderButton({
   className?: string;
   size?: "lg" | "default";
 }) {
+  const t = useT(squadMsg);
   const ask = useCreateSuggestion();
   const targets = useAskedTargets();
   const key = input.kind === "SCRIM" ? scrimTarget(input.scrimId, input.date) : tournamentTarget(input.tournamentId);
@@ -64,20 +71,21 @@ export function AskLeaderButton({
         onClick={() => ask.mutate(input)}
         data-tour="ask-leader"
       >
-        {ask.isPending ? <Loader2 className="animate-spin" /> : <Megaphone />} Ask my leader
+        {ask.isPending ? <Loader2 className="animate-spin" /> : <Megaphone />} {t("ask_leader")}
       </Button>
       <p className="flex items-center justify-center gap-1 text-center text-[11px] text-muted-foreground">
-        <Crown className="size-3 text-warning" /> Only your team leader can register
+        <Crown className="size-3 text-warning" /> {t("only_leader_register")}
       </p>
     </div>
   );
 }
 
 /** Small note for members where a leader-only action (cancel, withdraw, edit) would be. */
-export function LeaderOnlyNote({ children = "Only your team leader can change this.", className }: { children?: React.ReactNode; className?: string }) {
+export function LeaderOnlyNote({ children, className }: { children?: React.ReactNode; className?: string }) {
+  const t = useT(squadMsg);
   return (
     <p className={cn("flex items-center gap-1.5 text-xs text-muted-foreground", className)}>
-      <Crown className="size-3.5 shrink-0 text-warning" /> {children}
+      <Crown className="size-3.5 shrink-0 text-warning" /> {children ?? t("only_leader_change")}
     </p>
   );
 }

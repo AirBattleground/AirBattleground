@@ -1,10 +1,16 @@
+import { useMemo } from "react";
 import { addDays, APP_TIMEZONE, todayInAppTz } from "@7xen/shared";
+import { useT } from "@/i18n/core";
+import { common } from "@/i18n/common";
+import { tShared } from "@/i18n/tournaments";
 
 /** Tournament times are ISO instants; always display them in IST (the app timezone). */
 const dayKeyFmt = new Intl.DateTimeFormat("en-CA", { timeZone: APP_TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" });
 const timeFmt = new Intl.DateTimeFormat("en-US", { timeZone: APP_TIMEZONE, hour: "numeric", minute: "2-digit" });
 const dayFmt = new Intl.DateTimeFormat("en-GB", { timeZone: APP_TIMEZONE, weekday: "short", day: "numeric", month: "short" });
 const shortDayFmt = new Intl.DateTimeFormat("en-GB", { timeZone: APP_TIMEZONE, day: "numeric", month: "short" });
+const hiDayFmt = new Intl.DateTimeFormat("hi-IN", { timeZone: APP_TIMEZONE, weekday: "short", day: "numeric", month: "short" });
+const hiShortDayFmt = new Intl.DateTimeFormat("hi-IN", { timeZone: APP_TIMEZONE, day: "numeric", month: "short" });
 
 const valid = (iso: string | null | undefined): iso is string => !!iso && !Number.isNaN(new Date(iso).getTime());
 
@@ -72,4 +78,39 @@ export function groupLetter(index: number): string {
     n = Math.floor(n / 26) - 1;
   } while (n >= 0);
   return s;
+}
+
+/**
+ * The word-producing helpers above in the current portal language (Hindi day/month names, "आज"/"Kal", "TBA" …).
+ * Managers always get English. The plain functions stay English for existing callers.
+ */
+export function useTournamentFormat() {
+  const t = useT(tShared);
+  const c = useT(common);
+  return useMemo(() => {
+    const hi = t.lang === "hi";
+    const day = (iso: string | null | undefined) => {
+      if (!valid(iso)) return t("tba");
+      if (!hi) return fmtDay(iso);
+      const parts = Object.fromEntries(hiDayFmt.formatToParts(new Date(iso)).map((p) => [p.type, p.value]));
+      return `${parts.weekday}, ${parts.day} ${parts.month}`;
+    };
+    const shortDay = (iso: string | null | undefined) => (!valid(iso) ? t("tba") : hi ? hiShortDayFmt.format(new Date(iso)) : fmtShortDay(iso));
+    const rel = (iso: string | null | undefined) => {
+      if (!valid(iso)) return t("tba");
+      const key = istDateKey(iso);
+      const today = todayInAppTz();
+      if (key === today) return c("today");
+      if (key === addDays(today, 1)) return c("tomorrow");
+      if (key === addDays(today, -1)) return t("yesterday");
+      return day(iso);
+    };
+    const when = (iso: string | null | undefined) => (valid(iso) ? `${rel(iso)} · ${fmtTime(iso)}` : t("time_tba"));
+    const range = (from: string | null | undefined, to: string | null | undefined) => {
+      if (!valid(from)) return t("dates_tba");
+      if (!valid(to) || istDateKey(from) === istDateKey(to)) return day(from);
+      return `${shortDay(from)} – ${shortDay(to)}`;
+    };
+    return { fmtTime, fmtDay: day, fmtShortDay: shortDay, relDay: rel, fmtWhen: when, fmtRange: range };
+  }, [t, c]);
 }

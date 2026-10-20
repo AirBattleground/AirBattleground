@@ -4,9 +4,12 @@ import type { LiveBroadcastCard } from "@7xen/shared";
 import { Button } from "@7xen/ui/components/ui/button";
 import { LiveBadge } from "@/features/station/components/HlsPlayer";
 import { MapChip } from "@/features/team/components/MapChips";
+import { useT } from "@/i18n/core";
+import { liveMsg } from "@/i18n/live";
 
 /** One live broadcast: organiser art, LIVE timer, title, map and a Watch button. */
 export function LiveCard({ b, to }: { b: LiveBroadcastCard; to: string }) {
+  const t = useT(liveMsg);
   return (
     <Link to={to} className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all outline-none hover:-translate-y-0.5 hover:border-destructive/50 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50">
       <div className="relative aspect-video overflow-hidden bg-[radial-gradient(ellipse_at_30%_20%,#3d2a2a_0%,#1d1414_45%,#0b0808_100%)]">
@@ -28,7 +31,7 @@ export function LiveCard({ b, to }: { b: LiveBroadcastCard; to: string }) {
       <div className="flex items-start gap-3 p-4">
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-display text-lg leading-tight font-bold">
-            {b.title} · Match {b.number}
+            {t("title_match", { title: b.title, n: b.number })}
           </h3>
           <p className="truncate text-sm text-muted-foreground">
             {b.organizer.name} · {b.subtitle}
@@ -39,7 +42,7 @@ export function LiveCard({ b, to }: { b: LiveBroadcastCard; to: string }) {
       <div className="px-4 pb-4">
         <Button asChild className="w-full" tabIndex={-1}>
           <span>
-            <Play /> Watch live
+            <Play /> {t("watch_live")}
           </span>
         </Button>
       </div>

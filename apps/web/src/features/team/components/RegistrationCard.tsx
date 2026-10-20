@@ -7,7 +7,9 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
 import { useCancelRegistration } from "../api";
-import { dayLabel, formatTime } from "../format";
+import { useT } from "@/i18n/core";
+import { scrimUi } from "@/i18n/scrims";
+import { formatTime, useDayFormat } from "../format";
 import { useNow } from "../useNow";
 import { OrganizerBadge, PosterThumb } from "./Branding";
 import { CancelDialog } from "./ConfirmDialogs";
@@ -33,6 +35,8 @@ export function RegistrationCard({
   compact?: boolean;
   tourAnchor?: boolean;
 }) {
+  const t = useT(scrimUi);
+  const { dayLabel } = useDayFormat();
   const now = useNow(30_000);
   const cancel = useCancelRegistration();
   const [open, setOpen] = useState(false);
@@ -81,7 +85,7 @@ export function RegistrationCard({
         )}
         {reg.status === "PENDING" && !started && (
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Clock className="size-3.5" /> Waiting for the organiser to approve.
+            <Clock className="size-3.5" /> {t("waiting_organiser")}
           </p>
         )}
       </div>
@@ -100,7 +104,7 @@ export function RegistrationCard({
         {reg.status === "APPROVED" && reg.slotNumber != null && !compact && <TeamStatusBadge status="APPROVED" className="hidden sm:inline-flex" />}
         {canCancel && (
           <Button variant="ghost" size="sm" className="ml-auto text-muted-foreground hover:text-destructive sm:ml-0" onClick={() => setOpen(true)} {...tour("reg-cancel")}>
-            {reg.status === "APPROVED" ? "Cancel" : "Cancel request"}
+            {reg.status === "APPROVED" ? t("cancel") : t("cancel_request")}
           </Button>
         )}
       </div>

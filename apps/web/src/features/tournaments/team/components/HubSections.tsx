@@ -10,9 +10,12 @@ import { OrganizerBadge, PosterThumb } from "@/features/team/components/Branding
 import { MapChips } from "@/features/team/components/MapChips";
 import { RegistrationMeter } from "../../shared/RegistrationMeter";
 import { StatusPill } from "../../shared/StatusPill";
-import { fmtRange, plural, fmtPrize } from "../../shared/format";
+import { fmtPrize, useTournamentFormat } from "../../shared/format";
+import { useT } from "@/i18n/core";
+import { tShared } from "@/i18n/tournaments";
+import { tHub } from "@/i18n/tournamentsHub";
 
-function tournamentDates(t: Pick<TeamTournamentDetail, "startsAt" | "stages">) {
+function tournamentDates(t: Pick<TeamTournamentDetail, "startsAt" | "stages">, fmtRange: (a: string | null, b: string | null) => string) {
   const first = t.startsAt ?? t.stages[0]?.startsAt ?? null;
   const last = [...t.stages].reverse().find((s) => s.endsAt)?.endsAt ?? null;
   return fmtRange(first, last);
@@ -37,6 +40,9 @@ function PosterWash({ url }: { url: string | null }) {
 /** Hero: poster, title, prize, organiser, dates, status (+ registration meter while open). */
 export function TournamentHero({ t }: { t: TeamTournamentDetail }) {
   const showMeter = t.status === "REGISTRATION_OPEN" || t.status === "REGISTRATION_CLOSED";
+  const th = useT(tHub);
+  const tsh = useT(tShared);
+  const { fmtRange } = useTournamentFormat();
   return (
     <section data-tour="hero" className="relative overflow-hidden rounded-2xl border bg-card shadow-sm">
       <PosterWash url={t.posterUrl} />
@@ -57,7 +63,7 @@ export function TournamentHero({ t }: { t: TeamTournamentDetail }) {
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <StatusPill status={t.status} />
-              <span className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">Tournament</span>
+              <span className="text-xs font-semibold tracking-[0.2em] text-primary uppercase">{th("tournament")}</span>
             </div>
             <h1 className="mt-2 font-display text-3xl leading-[1.05] font-bold text-balance sm:text-5xl">{t.title}</h1>
             {t.prize && (
@@ -67,20 +73,20 @@ export function TournamentHero({ t }: { t: TeamTournamentDetail }) {
             )}
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
               <span className="inline-flex items-center gap-1.5">
-                <CalendarDays className="size-4 text-primary" /> {tournamentDates(t)}
+                <CalendarDays className="size-4 text-primary" /> {tournamentDates(t, fmtRange)}
               </span>
               <OrganizerBadge
                 manager={t.manager}
-                prefix="by"
+                prefix={th("by")}
                 iconClassName="size-4 text-primary"
                 logoClassName="size-6"
                 nameClassName="font-semibold text-foreground"
               />
               <span className="inline-flex items-center gap-1.5">
-                <UsersRound className="size-4 text-primary" /> {t.teamSize}-player squads
+                <UsersRound className="size-4 text-primary" /> {th("squads", { n: t.teamSize })}
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Users className="size-4 text-primary" /> {t.maxTeams} teams
+                <Users className="size-4 text-primary" /> {tsh.plural("teams", t.maxTeams)}
               </span>
             </div>
             {t.description && <p className="mt-3 max-w-2xl text-sm whitespace-pre-line text-foreground/80">{t.description}</p>}
@@ -88,7 +94,7 @@ export function TournamentHero({ t }: { t: TeamTournamentDetail }) {
         </div>
         {showMeter && (
           <div className="rounded-xl border bg-background/70 p-4 backdrop-blur">
-            <p className="mb-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">Registered so far</p>
+            <p className="mb-2 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">{th("registered_so_far")}</p>
             <RegistrationMeter confirmed={t.confirmedCount} max={t.maxTeams} waitlist={t.waitlistCount} />
           </div>
         )}
@@ -159,6 +165,10 @@ function Fact({ label, value }: { label: string; value: ReactNode }) {
 
 function StageFormatRow({ s, last }: { s: StageSummary; last: boolean }) {
   const [open, setOpen] = useState(false);
+  const th = useT(tHub);
+  const tsh = useT(tShared);
+  const { fmtRange } = useTournamentFormat();
+  const adv = `${s.groupCount > 1 ? th("adv_top_group", { n: s.advancePerGroup }) : th("adv_top", { n: s.advancePerGroup })}${s.wildcardCount ? th("adv_wc", { count: s.wildcardCount }) : ""}`;
   return (
     <li className="rounded-xl border bg-background/40">
       <button
@@ -174,8 +184,8 @@ function StageFormatRow({ s, last }: { s: StageSummary; last: boolean }) {
             <StatusPill kind="stage" status={s.status} className="px-2 py-px text-[10px]" />
           </span>
           <span className="block text-xs text-muted-foreground">
-            {s.teamsIn} teams · {s.groupCount > 1 ? `${s.groupCount} groups of ~${s.lobbySize}` : "1 lobby"} · {plural(s.matchesPerGroup, "match", "matches")}
-            {!last && ` · top ${s.advancePerGroup}${s.groupCount > 1 ? "/group" : ""}${s.wildcardCount ? ` + ${s.wildcardCount} wildcards` : ""} → ${s.teamsOut}`}
+            {tsh.plural("teams", s.teamsIn)} · {s.groupCount > 1 ? th("groups_of", { groups: s.groupCount, size: s.lobbySize }) : tsh("flow_lobby_one")} · {tsh.plural("matches", s.matchesPerGroup)}
+            {!last && ` · ${adv} → ${s.teamsOut}`}
           </span>
         </span>
         <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />
@@ -185,21 +195,24 @@ function StageFormatRow({ s, last }: { s: StageSummary; last: boolean }) {
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             <div className="space-y-3 px-3 pb-3">
               <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
-                <Fact label="Teams in" value={s.teamsIn} />
-                <Fact label="Groups" value={`${s.groupCount} × ${s.lobbySize}`} />
-                <Fact label={last ? "Winner" : "Advance"} value={last ? "1 champion" : `Top ${s.advancePerGroup}${s.groupCount > 1 ? "/grp" : ""}`} />
-                <Fact label={last ? "Matches" : "Wildcards"} value={last ? s.matchesPerGroup : s.wildcardCount || "None"} />
+                <Fact label={th("teams_in")} value={s.teamsIn} />
+                <Fact label={th("groups")} value={`${s.groupCount} × ${s.lobbySize}`} />
+                <Fact
+                  label={last ? th("winner") : th("advance")}
+                  value={last ? th("one_champion") : s.groupCount > 1 ? th("top_grp", { n: s.advancePerGroup }) : th("top_n", { n: s.advancePerGroup })}
+                />
+                <Fact label={last ? th("matches") : th("wildcards")} value={last ? s.matchesPerGroup : s.wildcardCount || th("none")} />
               </div>
               {s.invitedSlots > 0 && (
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Sparkles className="size-3.5 text-info" /> {plural(s.invitedSlots, "invited team")} join directly at this stage.
+                  <Sparkles className="size-3.5 text-info" /> {th.plural("invited_join", s.invitedSlots)}
                 </p>
               )}
               {s.wildcardCount > 0 && !last && (
-                <p className="text-xs text-muted-foreground">Wildcards go to the best teams that missed the top {s.advancePerGroup}, ranked by points per match across all groups.</p>
+                <p className="text-xs text-muted-foreground">{th("wildcard_explain", { n: s.advancePerGroup })}</p>
               )}
               <div>
-                <p className="mb-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Maps, in order</p>
+                <p className="mb-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">{th("maps_in_order")}</p>
                 <MapChips maps={s.maps} />
               </div>
               {(s.startsAt || s.endsAt) && (
@@ -217,8 +230,9 @@ function StageFormatRow({ s, last }: { s: StageSummary; last: boolean }) {
 
 /** Stages, groups, top N, wildcards, matches & maps. Each stage expands for more. */
 export function FormatSummary({ t }: { t: TeamTournamentDetail }) {
+  const th = useT(tHub);
   return (
-    <Section icon={<Layers />} title="Format" tour="format">
+    <Section icon={<Layers />} title={th("format")} tour="format">
       <ol className="space-y-2">
         {t.stages.map((s, i) => (
           <StageFormatRow key={s.id} s={s} last={i === t.stages.length - 1} />
@@ -229,8 +243,9 @@ export function FormatSummary({ t }: { t: TeamTournamentDetail }) {
 }
 
 export function RulesSection({ rules }: { rules: string }) {
+  const th = useT(tHub);
   return (
-    <Section icon={<ScrollText />} title="Rules" defaultOpen={false} tour="rules">
+    <Section icon={<ScrollText />} title={th("rules")} defaultOpen={false} tour="rules">
       <div className="max-h-96 overflow-y-auto pr-1 text-sm leading-relaxed whitespace-pre-line text-foreground/85">{rules}</div>
     </Section>
   );
@@ -238,6 +253,8 @@ export function RulesSection({ rules }: { rules: string }) {
 
 /** "Who's on fire" — top teams by points per match + top fraggers for a stage. */
 export function OnFire({ stage, limit = 5, href, compact }: { stage: StageDetail; limit?: number; href?: string; compact?: boolean }) {
+  const th = useT(tHub);
+  const tsh = useT(tShared);
   const teams = stage.topTeams.slice(0, limit);
   const fraggers = stage.topFraggers.slice(0, limit);
   const maxPpm = Math.max(1, ...teams.map((t) => t.pointsPerMatch));
@@ -247,11 +264,11 @@ export function OnFire({ stage, limit = 5, href, compact }: { stage: StageDetail
     <section data-tour="on-fire" className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
       <div className="mb-3 flex items-center gap-2">
         <Flame className="size-5 text-primary" />
-        <h2 className="font-display text-xl font-bold">Who's on fire</h2>
+        <h2 className="font-display text-xl font-bold">{th("on_fire")}</h2>
         <span className="text-xs text-muted-foreground">· {stage.stage.name}</span>
         {href && (
           <Link to={href} className="ml-auto text-xs font-semibold text-primary underline-offset-4 hover:underline">
-            Full stage →
+            {th("full_stage")}
           </Link>
         )}
       </div>
@@ -259,7 +276,7 @@ export function OnFire({ stage, limit = 5, href, compact }: { stage: StageDetail
         {teams.length > 0 && (
           <div>
             <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-              <Gamepad2 className="size-3.5" /> Points per match
+              <Gamepad2 className="size-3.5" /> {th("ppm")}
             </p>
             <ol className="space-y-1.5">
               {teams.map((r, i) => (
@@ -280,7 +297,7 @@ export function OnFire({ stage, limit = 5, href, compact }: { stage: StageDetail
                       />
                     </div>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      Group {r.groupName} · {r.totalPoints} pts in {plural(r.matchesPlayed, "match", "matches")} · {r.kills} finishes
+                      {th("fire_line", { group: r.groupName, pts: r.totalPoints, matches: tsh.plural("matches", r.matchesPlayed), kills: r.kills })}
                     </p>
                   </div>
                 </li>
@@ -291,7 +308,7 @@ export function OnFire({ stage, limit = 5, href, compact }: { stage: StageDetail
         {fraggers.length > 0 && (
           <div>
             <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
-              <Crosshair className="size-3.5" /> Top fraggers
+              <Crosshair className="size-3.5" /> {th("top_fraggers")}
             </p>
             <ol className="space-y-1.5">
               {fraggers.map((f, i) => (

@@ -10,6 +10,8 @@ import { api } from "@/lib/api";
 import { TeamLogo } from "@/features/player/components/TeamLogo";
 import { SectionHeader } from "@/features/team/home/SectionHeader";
 import { QueryError } from "@/features/team/components/QueryError";
+import { useT } from "@/i18n/core";
+import { coinsMsg } from "@/i18n/coins";
 
 export const coinKeys = { leaderboard: ["team", "coins", "leaderboard"] as const };
 
@@ -30,6 +32,7 @@ const RANK_TONE: Record<number, string> = {
 };
 
 function Row({ r, mine }: { r: CoinLeaderboardRow; mine: boolean }) {
+  const t = useT(coinsMsg);
   return (
     <li
       className={cn(
@@ -43,16 +46,16 @@ function Row({ r, mine }: { r: CoinLeaderboardRow; mine: boolean }) {
           RANK_TONE[r.rank] ?? "text-muted-foreground",
         )}
       >
-        {r.rank === 1 ? <Crown className="size-4" aria-label="1st" /> : r.rank}
+        {r.rank === 1 ? <Crown className="size-4" aria-label={t("first")} /> : r.rank}
       </span>
       <TeamLogo name={r.team.name} tag={r.team.tag} logoUrl={r.team.logoUrl} size="sm" />
       <div className="min-w-0 flex-1">
         <p className="truncate font-semibold">
           {r.team.name}
-          {mine && <span className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground uppercase">You</span>}
+          {mine && <span className="ml-2 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground uppercase">{t("you")}</span>}
         </p>
         <p className="truncate text-xs text-muted-foreground">
-          Leader {r.leader.ign ?? r.leader.displayName} · {r.wins} {r.wins === 1 ? "win" : "wins"}
+          {t.plural("leader_wins", r.wins, { name: r.leader.ign ?? r.leader.displayName })}
         </p>
       </div>
       <p className="flex shrink-0 items-center gap-1.5 font-display text-lg font-bold tabular-nums">
@@ -64,6 +67,7 @@ function Row({ r, mine }: { r: CoinLeaderboardRow; mine: boolean }) {
 
 /** Home: total BG coins distributed and the top 10 teams by coins earned. */
 export function CoinLeaderboard() {
+  const t = useT(coinsMsg);
   const q = useCoinLeaderboard();
   const d = q.data;
   const myId = d?.myTeam?.team.id;
@@ -77,9 +81,9 @@ export function CoinLeaderboard() {
 
   return (
     <section ref={ref} id="coins" className="scroll-mt-24 space-y-4" data-tour="coins">
-      <SectionHeader eyebrow="BG coins" title="Top 10 teams" icon={<Coins />} description="Win a match to earn BG coins. They're credited to your team's leader." />
+      <SectionHeader eyebrow={t("lb_eyebrow")} title={t("lb_title")} icon={<Coins />} description={t("lb_text")} />
       {q.isError && !d ? (
-        <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load the BG coins board" className="rounded-2xl border bg-card py-8" />
+        <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("lb_error")} className="rounded-2xl border bg-card py-8" />
       ) : (
         <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
           <div className="relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
@@ -87,7 +91,7 @@ export function CoinLeaderboard() {
             <div className="pointer-events-none absolute inset-0 bg-grid opacity-30" />
             <div className="relative">
               <BgCoin className="size-12" shine />
-              <p className="mt-4 text-xs font-semibold tracking-wider text-muted-foreground uppercase">Total coins distributed</p>
+              <p className="mt-4 text-xs font-semibold tracking-wider text-muted-foreground uppercase">{t("total_distributed")}</p>
               {d ? (
                 <p className="mt-1 font-display text-4xl leading-none font-bold tabular-nums sm:text-5xl">{fmt(d.totalDistributed)}</p>
               ) : (
@@ -95,11 +99,11 @@ export function CoinLeaderboard() {
               )}
               <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Drumstick className="size-4 text-primary" />
-                {d ? `${fmt(d.totalWins)} ${d.totalWins === 1 ? "match" : "matches"} won` : "…"}
+                {d ? t.plural("matches_won", d.totalWins, { count: fmt(d.totalWins) }) : "…"}
               </p>
               {d?.myTeam && (
                 <p className="mt-4 rounded-xl border bg-background/60 px-3 py-2 text-sm">
-                  Your team: <span className="font-display font-bold">{fmt(d.myTeam.coins)}</span> coins · rank #{d.myTeam.rank}
+                  {t.rich("your_team_line", { b: (c) => <span className="font-display font-bold">{c}</span> }, { coins: fmt(d.myTeam.coins), rank: d.myTeam.rank })}
                 </p>
               )}
             </div>
@@ -115,8 +119,8 @@ export function CoinLeaderboard() {
             ) : d.top.length === 0 ? (
               <div className="flex h-full min-h-40 flex-col items-center justify-center gap-2 p-6 text-center">
                 <BgCoin className="size-10 opacity-60 grayscale" />
-                <p className="font-semibold">No coins awarded yet</p>
-                <p className="max-w-sm text-sm text-muted-foreground">Win a match in a scrim or tournament that pays BG coins, and your team shows up here.</p>
+                <p className="font-semibold">{t("none_title")}</p>
+                <p className="max-w-sm text-sm text-muted-foreground">{t("none_text")}</p>
               </div>
             ) : (
               <ol className="space-y-1">

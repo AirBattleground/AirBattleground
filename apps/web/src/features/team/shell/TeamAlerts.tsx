@@ -7,6 +7,8 @@ import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
 import { useLiveBroadcasts } from "@/features/broadcast/live";
 import { usePlayerTeam } from "@/features/player/api";
+import { useT } from "@/i18n/core";
+import { shellMsg } from "@/i18n/home";
 
 interface Alert {
   key: string;
@@ -22,6 +24,7 @@ interface Alert {
  * requests and "Ask my leader" suggestions. Each row links to where it's handled.
  */
 export function TeamAlerts() {
+  const t = useT(shellMsg);
   const [open, setOpen] = useState(false);
   const { hasTeam, isLeader } = usePlayerSession();
   const live = useLiveBroadcasts().data ?? [];
@@ -36,14 +39,14 @@ export function TeamAlerts() {
       to: `/team/live/${b.matchId}`,
       icon: <Radio />,
       tone: "bg-destructive/12 text-destructive",
-      title: `Live now: ${b.title}`,
-      text: `${b.subtitle} · by ${b.organizer.name}`,
+      title: t("live_now", { title: b.title }),
+      text: t("by_org", { subtitle: b.subtitle, org: b.organizer.name }),
     })),
     ...(requests > 0
-      ? [{ key: "requests", to: "/team/my-team", icon: <UserPlus />, tone: "bg-primary/12 text-primary", title: `${requests} ${requests === 1 ? "player wants" : "players want"} to join`, text: "Accept or decline on My team." }]
+      ? [{ key: "requests", to: "/team/my-team", icon: <UserPlus />, tone: "bg-primary/12 text-primary", title: t.plural("join_req", requests), text: t("join_req_text") }]
       : []),
     ...(suggestions > 0
-      ? [{ key: "suggestions", to: "/team", icon: <Lightbulb />, tone: "bg-warning/15 text-warning-foreground dark:text-warning", title: `${suggestions} ${suggestions === 1 ? "match" : "matches"} asked by your team`, text: "Register in one tap, or dismiss." }]
+      ? [{ key: "suggestions", to: "/team", icon: <Lightbulb />, tone: "bg-warning/15 text-warning-foreground dark:text-warning", title: t.plural("sugg", suggestions), text: t("sugg_text") }]
       : []),
   ];
   const count = alerts.length;
@@ -51,7 +54,7 @@ export function TeamAlerts() {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={count ? `Alerts (${count})` : "Alerts"} data-tour="alerts" className="relative size-9 text-muted-foreground hover:text-foreground">
+        <Button variant="ghost" size="icon" aria-label={count ? t("alerts_n", { count }) : t("alerts")} data-tour="alerts" className="relative size-9 text-muted-foreground hover:text-foreground">
           <Bell className="size-5" />
           {count > 0 && (
             <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] leading-none font-bold text-white ring-2 ring-background">
@@ -61,12 +64,12 @@ export function TeamAlerts() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" sideOffset={10} className="w-80 p-0">
-        <p className="border-b px-4 py-3 text-sm font-semibold">Alerts</p>
+        <p className="border-b px-4 py-3 text-sm font-semibold">{t("alerts")}</p>
         {count === 0 ? (
           <div className="flex flex-col items-center px-6 py-8 text-center">
             <BellOff className="size-8 text-muted-foreground/60" />
-            <p className="mt-2 text-sm font-medium">You're all caught up</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">Live matches and team requests show up here.</p>
+            <p className="mt-2 text-sm font-medium">{t("caught_up")}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{t("caught_up_text")}</p>
           </div>
         ) : (
           <ul className="max-h-80 divide-y overflow-y-auto">

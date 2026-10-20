@@ -9,8 +9,10 @@ import { CardSegment, HudCorners } from "@/features/team/components/CardSegment"
 import { useCardTilt } from "@/features/team/useCardTilt";
 import { Countdown } from "../../shared/Countdown";
 import { RegistrationMeter } from "../../shared/RegistrationMeter";
-import { LiveDot, StatusPill, STAGE_STATUS_LABELS } from "../../shared/StatusPill";
-import { fmtDay, fmtWhen, fmtPrize } from "../../shared/format";
+import { LiveDot, StatusPill, useStatusLabels } from "../../shared/StatusPill";
+import { fmtPrize, useTournamentFormat } from "../../shared/format";
+import { useT } from "@/i18n/core";
+import { tList } from "@/i18n/tournaments";
 
 /** Tiny stage progress: one segment per stage, current one glowing. */
 function StageDots({ count, current, live }: { count: number; current: number | null; live?: boolean }) {
@@ -73,6 +75,9 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
   const open = t.status === "REGISTRATION_OPEN";
   const live = t.status === "LIVE";
   const tilt = useCardTilt<HTMLAnchorElement>();
+  const tl = useT(tList);
+  const labels = useStatusLabels();
+  const { fmtDay, fmtWhen } = useTournamentFormat();
   return (
     <Link
       ref={tilt.ref}
@@ -113,7 +118,7 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
         <div className="drop-shadow-[0_1px_8px_var(--card)]">
           {t.prize && (
             <p className="mb-1 inline-flex items-center gap-1.5">
-              <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground uppercase">Prize pool</span>
+              <span className="text-[10px] font-bold tracking-[0.2em] text-muted-foreground uppercase">{tl("prize_pool")}</span>
               <span className="tc-prize font-display text-xl font-extrabold text-warning-foreground dark:text-warning">{fmtPrize(t.prize)}</span>
             </p>
           )}
@@ -125,9 +130,9 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
 
       {/* segmented specs */}
       <div className="relative z-10 mx-4 mt-4 grid grid-cols-3 divide-x overflow-hidden rounded-xl border bg-background/70 backdrop-blur-md sm:mx-5">
-        <CardSegment icon={CalendarDays} label="Starts" value={t.startsAt ? fmtDay(t.startsAt) : "TBA"} delay={80} />
-        <CardSegment icon={Layers} label="Stages" value={t.stagesCount} delay={160} />
-        <CardSegment icon={Users} label="Teams" value={`${t.confirmedCount}/${t.maxTeams}`} delay={240} />
+        <CardSegment icon={CalendarDays} label={tl("starts")} value={fmtDay(t.startsAt)} delay={80} />
+        <CardSegment icon={Layers} label={tl("stages")} value={t.stagesCount} delay={160} />
+        <CardSegment icon={Users} label={tl("teams")} value={`${t.confirmedCount}/${t.maxTeams}`} delay={240} />
       </div>
 
       {/* state */}
@@ -138,7 +143,7 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
               <RegistrationMeter confirmed={t.confirmedCount} max={t.maxTeams} waitlist={t.waitlistCount} size="sm" />
               {open && t.registrationClosesAt && (
                 <p className="mt-1.5 text-[11px] text-muted-foreground">
-                  Closes in <Countdown to={t.registrationClosesAt} className="font-semibold text-foreground" doneText="moments" /> · {fmtWhen(t.registrationClosesAt)}
+                  {tl("closes_in")} <Countdown to={t.registrationClosesAt} className="font-semibold text-foreground" doneText={tl("moments")} /> · {fmtWhen(t.registrationClosesAt)}
                 </p>
               )}
             </>
@@ -147,7 +152,7 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
               <span className="pointer-events-none absolute inset-0 animate-shine bg-[linear-gradient(110deg,transparent_40%,color-mix(in_oklch,var(--warning)_25%,transparent)_50%,transparent_60%)] bg-[length:200%_100%]" />
               <TeamAvatar name={t.champion.name} tag={t.champion.tag} size="sm" />
               <div className="relative min-w-0 flex-1">
-                <p className="text-[10px] font-semibold tracking-wider text-warning-foreground uppercase dark:text-warning">Champion</p>
+                <p className="text-[10px] font-semibold tracking-wider text-warning-foreground uppercase dark:text-warning">{tl("champion")}</p>
                 <p className="truncate font-semibold">{t.champion.name}</p>
               </div>
               <Crown className="relative size-5 animate-float text-warning-foreground dark:text-warning" />
@@ -155,11 +160,11 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
           ) : t.currentStage ? (
             <div className="flex items-center justify-between gap-3 rounded-xl border bg-background/60 px-3 py-2">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Now</p>
+                <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">{tl("now")}</p>
                 <p className="flex items-center gap-1.5 truncate font-display text-base font-bold">
                   {t.currentStage.status === "LIVE" && <LiveDot className="text-destructive" />}
                   {t.currentStage.name}
-                  <span className="text-xs font-medium text-muted-foreground">· {STAGE_STATUS_LABELS[t.currentStage.status]}</span>
+                  <span className="text-xs font-medium text-muted-foreground">· {labels.stage(t.currentStage.status)}</span>
                 </p>
               </div>
               <StageDots count={t.stagesCount} current={t.currentStage.order} live={t.currentStage.status === "LIVE"} />
@@ -176,7 +181,7 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
         )}
       >
         <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary-foreground/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
-        <span className="relative">{open && !chip ? "View & register" : "Open tournament"}</span>
+        <span className="relative">{open && !chip ? tl("view_register") : tl("open_tournament")}</span>
         <span className="tc-chev relative flex -space-x-2" aria-hidden>
           <ChevronRight className="size-4" />
           <ChevronRight className="size-4" />

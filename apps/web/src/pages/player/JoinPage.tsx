@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,15 +16,12 @@ import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
 import { loginWithNext } from "@/lib/guards";
 import { useCancelJoinRequest, useCreateJoinRequest, useInvitePreview, usePlayerProfile, useUpdateProfile } from "@/features/player/api";
-import { applyApiError, BGMI_HINT, Field } from "@/features/player/forms";
+import { applyApiError, Field, useBgmiHint } from "@/features/player/forms";
 import { PlayerAvatar } from "@/features/player/components/PlayerAvatar";
 import { PlayerScene, SceneEyebrow } from "@/features/player/components/PlayerScene";
-
-const STEPS: TourStep[] = [
-  { title: "Team invite", description: "Someone invited you to their team. Check it's the right squad, then ask to join." },
-  { element: '[data-tour="invite-team"]', title: "The team", description: "Team name, tag, leader and how many players are already in.", side: "bottom" },
-  { element: '[data-tour="invite-action"]', title: "Request to join", description: "The team leader gets your request and approves it. You'll see the team as soon as they do.", side: "top" },
-];
+import { useT } from "@/i18n/core";
+import { common } from "@/i18n/common";
+import { joinMsg, playerFormMsg } from "@/i18n/onboarding";
 
 const schema = z.object({ bgmiId: z.union([bgmiIdSchema, z.literal("")]), message: z.string().trim().max(200) });
 type Values = z.infer<typeof schema>;
@@ -48,6 +45,7 @@ function StateCard({ icon, tone = "primary", title, children, action }: { icon: 
 }
 
 function TeamPreview({ invite }: { invite: TeamInvitePreview }) {
+  const t = useT(joinMsg);
   const { team, leader, memberCount, maxMembers } = invite;
   return (
     <div className="relative overflow-hidden rounded-2xl border border-primary/30 bg-card/80 p-5 shadow-glow backdrop-blur" data-tour="invite-team">
@@ -65,7 +63,7 @@ function TeamPreview({ invite }: { invite: TeamInvitePreview }) {
           <PlayerAvatar name={leader.ign ?? leader.displayName} url={leader.avatarUrl} size="sm" />
           <div className="min-w-0">
             <p className="flex items-center gap-1 text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-              <Crown className="size-3 text-warning" /> Leader
+              <Crown className="size-3 text-warning" /> {t("leader")}
             </p>
             <p className="truncate font-semibold">{leader.ign ?? leader.displayName}</p>
           </div>
@@ -75,7 +73,7 @@ function TeamPreview({ invite }: { invite: TeamInvitePreview }) {
             <Users className="size-4" />
           </span>
           <div>
-            <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Players</p>
+            <p className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">{t("players")}</p>
             <p className="font-display text-lg leading-none font-bold tabular-nums">
               {memberCount}
               <span className="text-sm text-muted-foreground">/{maxMembers}</span>
@@ -88,7 +86,19 @@ function TeamPreview({ invite }: { invite: TeamInvitePreview }) {
 }
 
 export default function JoinPage() {
-  usePageTour("player.join", STEPS);
+  const t = useT(joinMsg);
+  const tf = useT(playerFormMsg);
+  const tc = useT(common);
+  const bgmiHint = useBgmiHint();
+  const steps = useMemo<TourStep[]>(
+    () => [
+      { title: t("tour_title"), description: t("tour_desc") },
+      { element: '[data-tour="invite-team"]', title: t("tour_team_title"), description: t("tour_team_desc"), side: "bottom" },
+      { element: '[data-tour="invite-action"]', title: t("tour_action_title"), description: t("tour_action_desc"), side: "top" },
+    ],
+    [t],
+  );
+  usePageTour("player.join", steps);
   const { code: raw = "" } = useParams();
   const code = normalizeInviteCode(raw);
   const { user, isLoading } = useAuth();
@@ -115,47 +125,47 @@ export default function JoinPage() {
     try {
       if (needsBgmi) {
         if (!v.bgmiId) {
-          setError("bgmiId", { message: "Add your BGMI ID first — teams need it for results." });
+          setError("bgmiId", { message: tf("bgmi_first") });
           return;
         }
         await update.mutateAsync({ bgmiId: v.bgmiId });
       }
       await join.mutateAsync({ code, message: v.message || undefined });
       setSent(true);
-      toast.success("Request sent!", { description: "The team leader will approve it soon." });
+      toast.success(t("toast_sent"), { description: t("toast_sent_desc") });
     } catch (e) {
-      const left = applyApiError(e, setError, ["bgmiId", "message"]);
+      const left = applyApiError(e, setError, ["bgmiId", "message"], tc("something_wrong"));
       if (left) {
         if (e instanceof ApiError && ["ALREADY_IN_TEAM", "JOIN_REQUEST_PENDING", "TEAM_FULL", "INVITE_INVALID"].includes(e.code)) {
           void invite.refetch();
           void profile.refetch();
         }
-        toast.error("Couldn't send your request", { description: left });
+        toast.error(t("toast_fail"), { description: left });
       }
     }
   });
 
   let body: ReactNode;
   if (!code) {
-    body = <StateCard icon={<Link2Off />} tone="destructive" title="This link is incomplete" action={<Button asChild><Link to="/">Go home</Link></Button>}>Ask the team leader to send the invite link again.</StateCard>;
+    body = <StateCard icon={<Link2Off />} tone="destructive" title={t("incomplete_title")} action={<Button asChild><Link to="/">{t("go_home")}</Link></Button>}>{t("incomplete_text")}</StateCard>;
   } else if (!user) {
     body = (
       <StateCard
         icon={<LogIn />}
-        title="Sign in to join the team"
+        title={t("signin_title")}
         action={
           <Button size="lg" className="h-12 w-full rounded-xl text-base shadow-glow" onClick={() => navigate(loginWithNext(here))}>
-            <LogIn /> Sign in to continue
+            <LogIn /> {t("signin_btn")}
           </Button>
         }
       >
-        You've been invited with code <span className="font-mono font-semibold text-foreground">{code}</span>. Sign in with Google — we'll bring you right back here.
+        {t.rich("signin_text", { code: (c) => <span className="font-mono font-semibold text-foreground">{c}</span> }, { code })}
       </StateCard>
     );
   } else if (user.role !== "PLAYER") {
     body = (
-      <StateCard icon={<ShieldAlert />} tone="warning" title="This link is for players" action={<Button asChild variant="outline"><Link to="/">Back to my dashboard</Link></Button>}>
-        You're signed in as an organiser. Sign out and continue with Google as a player to join a team.
+      <StateCard icon={<ShieldAlert />} tone="warning" title={t("players_only_title")} action={<Button asChild variant="outline"><Link to="/">{t("back_dashboard")}</Link></Button>}>
+        {t("players_only_text")}
       </StateCard>
     );
   } else if (invite.isLoading || profile.isLoading) {
@@ -171,46 +181,46 @@ export default function JoinPage() {
       <StateCard
         icon={<Link2Off />}
         tone="destructive"
-        title={invalid ? "This invite doesn't work any more" : "Couldn't open this invite"}
+        title={invalid ? t("invalid_title") : t("open_fail_title")}
         action={
           <>
-            {!invalid && <Button variant="outline" onClick={() => void invite.refetch()}>Try again</Button>}
+            {!invalid && <Button variant="outline" onClick={() => void invite.refetch()}>{tc("retry")}</Button>}
             <Button asChild>
-              <Link to="/team">Go to my home</Link>
+              <Link to="/team">{t("go_my_home")}</Link>
             </Button>
           </>
         }
       >
-        {invalid ? "The code may be mistyped, or the leader made a new one. Ask them for the latest link." : invite.error instanceof Error ? invite.error.message : null}
+        {invalid ? t("invalid_text") : invite.error instanceof Error ? invite.error.message : null}
       </StateCard>
     );
   } else if (invite.data) {
-    const t = invite.data;
+    const iv = invite.data;
     const myTeam = profile.data?.team ?? player?.team ?? null;
     const pending = profile.data?.pendingJoinRequest ?? null;
     let action: ReactNode;
-    if (myTeam && myTeam.id === t.team.id) {
+    if (myTeam && myTeam.id === iv.team.id) {
       action = (
-        <StateCard icon={<CheckCircle2 />} tone="success" title={`You're in ${t.team.name}`} action={<Button asChild><Link to="/team/my-team">Open my team <ArrowRight /></Link></Button>}>
-          Nothing to do here — you're already on this team.
+        <StateCard icon={<CheckCircle2 />} tone="success" title={t("in_team_title", { team: iv.team.name })} action={<Button asChild><Link to="/team/my-team">{t("open_my_team")} <ArrowRight /></Link></Button>}>
+          {t("in_team_text")}
         </StateCard>
       );
     } else if (myTeam) {
       action = (
-        <StateCard icon={<Ban />} tone="warning" title={`You're already in ${myTeam.name}`} action={<Button asChild variant="outline"><Link to="/team/my-team">Go to my team</Link></Button>}>
-          A player can be in one team at a time. Leave {myTeam.name} first if you want to join {t.team.name}.
+        <StateCard icon={<Ban />} tone="warning" title={t("other_team_title", { team: myTeam.name })} action={<Button asChild variant="outline"><Link to="/team/my-team">{t("go_my_team")}</Link></Button>}>
+          {t("other_team_text", { mine: myTeam.name, team: iv.team.name })}
         </StateCard>
       );
-    } else if (sent || (pending && pending.team.id === t.team.id)) {
+    } else if (sent || (pending && pending.team.id === iv.team.id)) {
       action = (
         <StateCard
           icon={<Hourglass />}
           tone="warning"
-          title="Request sent · waiting for the leader"
+          title={t("sent_title")}
           action={
             <>
               <Button asChild>
-                <Link to="/team">Go to my home</Link>
+                <Link to="/team">{t("go_my_home")}</Link>
               </Button>
               {pending && (
                 <Button
@@ -219,13 +229,13 @@ export default function JoinPage() {
                   disabled={cancel.isPending}
                   onClick={() => cancel.mutate(pending.id, { onSuccess: () => setSent(false) })}
                 >
-                  <X /> Cancel request
+                  <X /> {t("cancel_request")}
                 </Button>
               )}
             </>
           }
         >
-          {t.leader.ign ?? t.leader.displayName} will see your request. Once they approve, the team shows up on your home screen — then tap “Ask my leader” on any scrim or tournament and your leader registers the team.
+          {t("sent_text", { leader: iv.leader.ign ?? iv.leader.displayName })}
         </StateCard>
       );
     } else if (pending) {
@@ -233,54 +243,54 @@ export default function JoinPage() {
         <StateCard
           icon={<Hourglass />}
           tone="warning"
-          title={`You already asked to join ${pending.team.name}`}
+          title={t("pending_title", { team: pending.team.name })}
           action={
             <Button variant="outline" disabled={cancel.isPending} onClick={() => cancel.mutate(pending.id)}>
-              {cancel.isPending ? <Loader2 className="animate-spin" /> : <X />} Cancel that request
+              {cancel.isPending ? <Loader2 className="animate-spin" /> : <X />} {t("cancel_that")}
             </Button>
           }
         >
-          You can only have one request at a time. Cancel it to ask {t.team.name} instead.
+          {t("pending_text", { team: iv.team.name })}
         </StateCard>
       );
-    } else if (t.full) {
+    } else if (iv.full) {
       action = (
-        <StateCard icon={<Users />} tone="warning" title="This team is full" action={<Button asChild variant="outline"><Link to="/team">Go to my home</Link></Button>}>
-          {t.team.name} already has {t.maxMembers} players. Ask the leader to make room, or create your own team.
+        <StateCard icon={<Users />} tone="warning" title={t("full_title")} action={<Button asChild variant="outline"><Link to="/team">{t("go_my_home")}</Link></Button>}>
+          {t("full_text", { team: iv.team.name, max: iv.maxMembers })}
         </StateCard>
       );
     } else {
       action = (
         <form onSubmit={onSubmit} noValidate className="space-y-4 rounded-2xl border bg-card/80 p-5 backdrop-blur" data-tour="invite-action">
           {needsBgmi && (
-            <Field id="bgmiId" label="Your BGMI ID" error={formState.errors.bgmiId?.message} hint={`Teams need it for results. ${BGMI_HINT}`}>
+            <Field id="bgmiId" label={tf("your_bgmi_id")} error={formState.errors.bgmiId?.message} hint={`${t("bgmi_needed")} ${bgmiHint}`}>
               <div className="relative">
                 <Hash aria-hidden className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input id="bgmiId" inputMode="numeric" autoFocus placeholder="5123456789" className="h-12 rounded-xl bg-background/60 pl-10 font-mono tracking-wider" aria-invalid={!!formState.errors.bgmiId} {...register("bgmiId")} />
               </div>
             </Field>
           )}
-          <Field id="message" label={<>Message to the leader <span className="font-normal text-muted-foreground">(optional)</span></>} error={formState.errors.message?.message}>
-            <Textarea id="message" rows={2} maxLength={200} placeholder="Hi! I play IGL / assaulter…" className="rounded-xl bg-background/60" {...register("message")} />
+          <Field id="message" label={<>{t("message_label")} <span className="font-normal text-muted-foreground">{tf("optional")}</span></>} error={formState.errors.message?.message}>
+            <Textarea id="message" rows={2} maxLength={200} placeholder={t("message_placeholder")} className="rounded-xl bg-background/60" {...register("message")} />
           </Field>
           <Button type="submit" size="lg" disabled={formState.isSubmitting} className="group h-12 w-full justify-between rounded-xl px-5 text-base font-semibold shadow-glow">
             {formState.isSubmitting ? (
               <span className="inline-flex items-center gap-2">
-                <Loader2 className="size-4 animate-spin" /> Sending…
+                <Loader2 className="size-4 animate-spin" /> {tf("sending")}
               </span>
             ) : (
               <>
-                Request to join <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
+                {t("request_join")} <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
               </>
             )}
           </Button>
-          <p className="text-center text-xs text-muted-foreground">The leader approves every new player.</p>
+          <p className="text-center text-xs text-muted-foreground">{t("leader_approves")}</p>
         </form>
       );
     }
     body = (
       <div className="space-y-4">
-        <TeamPreview invite={t} />
+        <TeamPreview invite={iv} />
         {action}
       </div>
     );
@@ -288,9 +298,9 @@ export default function JoinPage() {
 
   return (
     <PlayerScene>
-      <SceneEyebrow>Team invite</SceneEyebrow>
-      <h1 className="font-display text-4xl leading-none font-bold tracking-tight sm:text-5xl">You're invited.</h1>
-      <p className="mt-3 mb-7 text-sm text-muted-foreground">Join a squad on AirBattleground and play scrims and tournaments together.</p>
+      <SceneEyebrow>{t("eyebrow")}</SceneEyebrow>
+      <h1 className="font-display text-4xl leading-none font-bold tracking-tight sm:text-5xl">{t("title")}</h1>
+      <p className="mt-3 mb-7 text-sm text-muted-foreground">{t("intro")}</p>
       {body}
     </PlayerScene>
   );

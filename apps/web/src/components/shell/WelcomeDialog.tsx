@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useTour } from "@7xen/ui/tour";
 import { readStorage, writeStorage } from "@/lib/storage";
 import type { WelcomeStep } from "./types";
+import { common } from "@/i18n/common";
+import { useT } from "@/i18n/core";
 
 const welcomeKey = (userId: string) => `7xen.welcome.${userId}`;
 
@@ -16,6 +18,7 @@ const welcomeKey = (userId: string) => `7xen.welcome.${userId}`;
  */
 export function WelcomeDialog({ user, steps }: { user: SessionUser; steps: WelcomeStep[] }) {
   const tour = useTour();
+  const t = useT(common);
   const [open, setOpen] = useState(() => readStorage(welcomeKey(user.id)) !== "1");
   // seen once is enough: navigating away without closing it mustn't bring it back on every page
   useEffect(() => {
@@ -45,12 +48,12 @@ export function WelcomeDialog({ user, steps }: { user: SessionUser; steps: Welco
           <div aria-hidden className="absolute inset-0 bg-grid opacity-60 [mask-image:linear-gradient(to_bottom,black,transparent)]" />
           <DialogHeader className="relative text-left">
             <span className="mb-1 inline-flex w-fit items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-              <Sparkles className="size-3.5" /> First drop
+              <Sparkles className="size-3.5" /> {t("welcome_first_drop")}
             </span>
             <DialogTitle className="font-display text-3xl font-bold leading-tight">
-              Welcome to <span className="text-gradient-brand">AirBattleground</span>, {name}!
+              {t.rich("welcome_title", { b: (c) => <span className="text-gradient-brand">{c}</span> }, { brand: "AirBattleground", name })}
             </DialogTitle>
-            <DialogDescription>Here's how it works — three simple steps.</DialogDescription>
+            <DialogDescription>{t("welcome_how")}</DialogDescription>
           </DialogHeader>
         </div>
 
@@ -82,11 +85,11 @@ export function WelcomeDialog({ user, steps }: { user: SessionUser; steps: Welco
 
         <DialogFooter className="gap-2 border-t bg-muted/40 px-6 py-4 sm:justify-between">
           <Button variant="ghost" onClick={() => dismiss(false)}>
-            I'll explore myself
+            {t("welcome_explore")}
           </Button>
           <Button onClick={() => dismiss(true)} className="shadow-glow" autoFocus>
             <Compass />
-            Take the tour
+            {t("welcome_tour")}
           </Button>
         </DialogFooter>
       </DialogContent>

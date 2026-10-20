@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, CalendarDays, Megaphone, Swords, Trophy, UserPlus, X } from "lucide-react";
 import { formatDistanceToNowStrict, parseISO } from "date-fns";
+import { hi as dfHi } from "date-fns/locale";
 import type { TeamSuggestionRow } from "@7xen/shared";
 import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
@@ -12,6 +13,8 @@ import { formatDate, formatTime } from "@/features/team/format";
 import { SectionHeader } from "@/features/team/home/SectionHeader";
 import { useDismissSuggestion, useTeamSuggestions } from "../api";
 import { PlayerAvatar } from "./PlayerAvatar";
+import { useT } from "@/i18n/core";
+import { squadMsg } from "@/i18n/team";
 
 function Poster({ url, kind }: { url: string | null; kind: TeamSuggestionRow["kind"] }) {
   const [failed, setFailed] = useState(false);
@@ -26,12 +29,13 @@ function Poster({ url, kind }: { url: string | null; kind: TeamSuggestionRow["ki
 }
 
 function SuggestionCard({ s }: { s: TeamSuggestionRow }) {
+  const t = useT(squadMsg);
   const dismiss = useDismissSuggestion();
   const register = useRegister();
   const [confirm, setConfirm] = useState(false);
   const who = s.from.ign ?? s.from.displayName;
-  const ago = formatDistanceToNowStrict(parseISO(s.createdAt), { addSuffix: true });
-  const title = s.scrim?.title ?? s.tournament?.name ?? "Unknown";
+  const ago = formatDistanceToNowStrict(parseISO(s.createdAt), { addSuffix: true, ...(t.lang === "hi" ? { locale: dfHi } : {}) });
+  const title = s.scrim?.title ?? s.tournament?.name ?? t("unknown");
   const organiser = s.scrim?.organiser ?? s.tournament?.organiser ?? "";
   const poster = s.scrim?.posterUrl ?? s.tournament?.posterUrl ?? null;
 
@@ -42,19 +46,19 @@ function SuggestionCard({ s }: { s: TeamSuggestionRow }) {
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-[0.2em] text-primary uppercase">
             {s.kind === "SCRIM" ? <Swords className="size-3.5" /> : <Trophy className="size-3.5" />}
-            {s.kind === "SCRIM" ? "Scrim" : "Tournament"}
+            {s.kind === "SCRIM" ? t("scrim") : t("tournament")}
             {organiser && <span className="truncate font-semibold tracking-normal text-muted-foreground normal-case">· {organiser}</span>}
           </p>
           <h3 className="mt-0.5 line-clamp-2 font-display text-xl leading-tight font-bold uppercase">{title}</h3>
           {s.scrim && (
             <p className="mt-0.5 flex items-center gap-1.5 text-sm font-semibold">
-              <CalendarDays className="size-4 text-primary" /> {formatDate(s.scrim.date, "EEE, d MMM")} · {formatTime(s.scrim.startTime)} IST
+              <CalendarDays className="size-4 text-primary" /> {formatDate(s.scrim.date, "EEE, d MMM", t.lang)} · {formatTime(s.scrim.startTime)} IST
             </p>
           )}
           <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
             <PlayerAvatar name={who} url={s.from.avatarUrl} size="sm" className="size-5 rounded-md text-[8px]" />
             <span className="truncate">
-              <span className="font-semibold text-foreground">{who}</span> asked {ago}
+              {t.rich("asked_ago", { b: (c) => <span className="font-semibold text-foreground">{c}</span> }, { who, ago })}
               {s.note ? ` · “${s.note}”` : ""}
             </span>
           </p>
@@ -63,17 +67,17 @@ function SuggestionCard({ s }: { s: TeamSuggestionRow }) {
       <div className="flex shrink-0 gap-2 sm:flex-col">
         {s.kind === "SCRIM" && s.scrim ? (
           <Button className="flex-1 shadow-glow" onClick={() => setConfirm(true)} disabled={register.isPending}>
-            <UserPlus /> Register
+            <UserPlus /> {t("register")}
           </Button>
         ) : s.tournament ? (
           <Button asChild className="flex-1 shadow-glow">
             <Link to={`/team/tournaments/${s.tournament.id}`}>
-              Register <ArrowRight />
+              {t("register")} <ArrowRight />
             </Link>
           </Button>
         ) : null}
         <Button variant="ghost" className="text-muted-foreground" onClick={() => dismiss.mutate(s.id)} disabled={dismiss.isPending}>
-          <X /> Dismiss
+          <X /> {t("dismiss")}
         </Button>
       </div>
       {s.scrim && (
@@ -91,6 +95,7 @@ function SuggestionCard({ s }: { s: TeamSuggestionRow }) {
 
 /** Leader's home: what the squad asked to play, with one-tap Register / Dismiss. Hidden when there's nothing. */
 export function SuggestionsPanel({ className }: { className?: string }) {
+  const t = useT(squadMsg);
   const q = useTeamSuggestions("OPEN");
   const items = q.data ?? [];
   if (q.isLoading) {
@@ -105,10 +110,10 @@ export function SuggestionsPanel({ className }: { className?: string }) {
   return (
     <section className={cn("space-y-4", className)} data-tour="team-suggestions">
       <SectionHeader
-        eyebrow="Your squad wants to play"
+        eyebrow={t("sugg_eyebrow")}
         title={
           <>
-            Asked by your team
+            {t("sugg_title")}
             <span className="ml-1 flex h-7 min-w-7 items-center justify-center rounded-full bg-primary px-2 font-display text-base leading-none text-primary-foreground shadow-glow">{items.length}</span>
           </>
         }

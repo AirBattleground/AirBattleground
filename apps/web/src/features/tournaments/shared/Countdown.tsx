@@ -1,6 +1,8 @@
 import { cn } from "@7xen/ui/lib/utils";
 import { pad2, remaining, shortCountdown } from "@/features/team/format";
 import { useNow } from "@/features/team/useNow";
+import { useT } from "@/i18n/core";
+import { tShared } from "@/i18n/tournaments";
 
 export interface CountdownProps {
   /** ISO instant to count down to */
@@ -15,7 +17,10 @@ export interface CountdownProps {
 }
 
 /** Live countdown. Inline text by default, or big segmented blocks (`variant="blocks"`). */
-export function Countdown({ to, variant = "inline", doneText = "Now", label = "Time remaining", className }: CountdownProps) {
+export function Countdown({ to, variant = "inline", doneText: doneTextProp, label: labelProp, className }: CountdownProps) {
+  const t = useT(tShared);
+  const doneText = doneTextProp ?? t("cd_now");
+  const label = labelProp ?? t("cd_label");
   const now = useNow(1000);
   const r = remaining(to, now);
   if (variant === "inline") return <span className={cn("tabular-nums", className)}>{r.totalMs <= 0 ? doneText : shortCountdown(r)}</span>;
@@ -29,14 +34,14 @@ export function Countdown({ to, variant = "inline", doneText = "Now", label = "T
   const parts: [string, number][] =
     r.days > 0
       ? [
-          ["days", r.days],
-          ["hrs", r.hours],
-          ["min", r.minutes],
+          [t("cd_days"), r.days],
+          [t("cd_hrs"), r.hours],
+          [t("cd_min"), r.minutes],
         ]
       : [
-          ["hrs", r.hours],
-          ["min", r.minutes],
-          ["sec", r.seconds],
+          [t("cd_hrs"), r.hours],
+          [t("cd_min"), r.minutes],
+          [t("cd_sec"), r.seconds],
         ];
   return (
     <div className={cn("flex items-end gap-1", className)} role="timer" aria-label={`${label}: ${shortCountdown(r)}`}>

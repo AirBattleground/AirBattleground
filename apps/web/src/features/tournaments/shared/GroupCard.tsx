@@ -6,7 +6,9 @@ import type { AdvancedVia, GroupTeamStatus, TeamSummary } from "@7xen/shared";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { cn } from "@7xen/ui/lib/utils";
 import { PODIUM } from "@/features/results/components/Rank";
-import { fmtTime, relDay, slot2 } from "./format";
+import { slot2, useTournamentFormat } from "./format";
+import { useT } from "@/i18n/core";
+import { tShared } from "@/i18n/tournaments";
 import { LiveDot, TeamStageBadge } from "./StatusPill";
 
 /** The subset of a group row the card needs (GroupStandingRow satisfies it). */
@@ -51,6 +53,8 @@ export interface GroupCardProps {
 /** One group/lobby: name, time, lobby, teams with slot numbers + standings and ADVANCED/WILDCARD/OUT/DQ badges. */
 export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows, sortBy, href, footer, className }: GroupCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const t = useT(tShared);
+  const { fmtTime, relDay } = useTournamentFormat();
   const published = group.matches?.filter((m) => !!m.publishedAt || m.status === "PUBLISHED").length ?? 0;
   const total = group.matches?.length ?? 0;
   const played = published > 0 || group.teams.some((t) => t.matchesPlayed > 0);
@@ -77,8 +81,8 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
       </span>
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 font-display text-lg leading-tight font-bold">
-          Group {group.name}
-          {mine && <span className="rounded-full bg-primary px-1.5 py-px text-[10px] font-black tracking-wider text-primary-foreground">YOUR GROUP</span>}
+          {t("group_name", { name: group.name })}
+          {mine && <span className="rounded-full bg-primary px-1.5 py-px text-[10px] font-black tracking-wider text-primary-foreground">{t("your_group_tag")}</span>}
         </p>
         <p className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs text-muted-foreground">
           {group.startsAt && (
@@ -88,10 +92,10 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
           )}
           {group.lobbyIndex != null && (
             <span className="inline-flex items-center gap-1">
-              <MonitorPlay className="size-3" /> Lobby {group.lobbyIndex + 1}
+              <MonitorPlay className="size-3" /> {t("lobby_n", { n: group.lobbyIndex + 1 })}
             </span>
           )}
-          <span>{group.teams.length} teams</span>
+          <span>{t.plural("teams", group.teams.length)}</span>
         </p>
       </div>
       {total > 0 && (
@@ -126,9 +130,9 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
       )}
 
       {rows.length === 0 ? (
-        <p className="mt-3 rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">Teams appear here after the draw.</p>
+        <p className="mt-3 rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">{t("gc_after_draw")}</p>
       ) : (
-        <ol className="mt-3 space-y-1" aria-label={`Group ${group.name} ${order === "rank" ? "standings" : "teams"}`}>
+        <ol className="mt-3 space-y-1" aria-label={t(order === "rank" ? "gc_aria_standings" : "gc_aria_teams", { name: group.name })}>
           <AnimatePresence initial={false}>
             {visible.map((r, i) => {
               const isMine = r.team.id === highlightTeamId;
@@ -166,12 +170,12 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
                     <TeamAvatar name={r.team.name} tag={r.team.tag} size="sm" className="size-6 rounded-md text-[8px]" />
                     <span className="flex min-w-0 flex-1 items-center gap-1.5">
                       <span className="truncate font-medium">{r.team.name}</span>
-                      {isMine && <span className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[9px] font-black text-primary-foreground">YOU</span>}
+                      {isMine && <span className="shrink-0 rounded-full bg-primary px-1.5 py-px text-[9px] font-black text-primary-foreground">{t("you_tag")}</span>}
                     </span>
                     <TeamStageBadge status={r.status} via={r.advancedVia} className="hidden sm:inline-flex" />
                     {played && (
                       <>
-                        <span className="hidden w-8 shrink-0 items-center justify-end gap-0.5 text-xs text-muted-foreground tabular-nums sm:flex" title="Finishes">
+                        <span className="hidden w-8 shrink-0 items-center justify-end gap-0.5 text-xs text-muted-foreground tabular-nums sm:flex" title={t("gc_finishes")}>
                           <Crosshair className="size-3" />
                           {r.kills}
                         </span>
@@ -181,8 +185,8 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
                     <TeamStageBadge status={r.status} via={r.advancedVia} className="sm:hidden" />
                   </div>
                   {showCut && (
-                    <div className="my-1 flex items-center gap-2 text-[9px] font-bold tracking-[0.2em] text-success uppercase" aria-label="Qualification line">
-                      <span className="h-px flex-1 border-t border-dashed border-success/50" /> Qualify ▲<span className="h-px flex-1 border-t border-dashed border-success/50" />
+                    <div className="my-1 flex items-center gap-2 text-[9px] font-bold tracking-[0.2em] text-success uppercase" aria-label={t("gc_qual_line")}>
+                      <span className="h-px flex-1 border-t border-dashed border-success/50" /> {t("gc_qualify")}<span className="h-px flex-1 border-t border-dashed border-success/50" />
                     </div>
                   )}
                 </motion.li>
@@ -199,7 +203,7 @@ export function GroupCard({ group, highlightTeamId, advancePerGroup = 0, maxRows
           aria-expanded={expanded}
           className="mt-2 inline-flex items-center justify-center gap-1 self-center rounded-full px-3 py-1 text-xs font-semibold text-muted-foreground outline-none transition-colors hover:bg-accent hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >
-          {expanded ? "Show less" : `Show all ${rows.length}`}
+          {expanded ? t("show_less") : t("show_all", { count: rows.length })}
           <ChevronDown className={cn("size-3.5 transition-transform", expanded && "rotate-180")} />
         </button>
       )}

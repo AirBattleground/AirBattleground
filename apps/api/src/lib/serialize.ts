@@ -2,6 +2,7 @@ import type { Prisma } from "@prisma/client";
 import {
   API_PREFIX,
   DEFAULT_POINTS_SYSTEM,
+  isLanguage,
   pointsSystemSchema,
   type PointsSystem,
 } from "@7xen/shared";
@@ -86,6 +87,7 @@ export function toSessionUser(u: UserWithTeam): SessionUser {
             email: u.email,
             team: m ? { ...toTeamSummary(m.team), role: m.role } : null,
             needsOnboarding: !u.ign,
+            language: isLanguage(u.language) ? u.language : null,
           }
         : null,
   };

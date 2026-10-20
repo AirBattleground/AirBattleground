@@ -1,5 +1,7 @@
 import { Drumstick } from "lucide-react";
 import { cn } from "@7xen/ui/lib/utils";
+import { useT } from "@/i18n/core";
+import { resultsMsg } from "@/i18n/results";
 
 /** Gold / silver / bronze styling for the top three (tokens only so light + dark both work). */
 export const PODIUM: Record<number, { badge: string; row: string; label: string }> = {
@@ -10,11 +12,12 @@ export const PODIUM: Record<number, { badge: string; row: string; label: string 
 
 /** Big rank number; top three get podium colours. */
 export function RankBadge({ rank, size = "md", className }: { rank: number; size?: "sm" | "md" | "lg"; className?: string }) {
+  const t = useT(resultsMsg);
   const p = PODIUM[rank];
   const s = { sm: "size-8 text-sm rounded-lg", md: "size-10 text-lg rounded-xl", lg: "size-14 text-2xl rounded-2xl" }[size];
   return (
     <span
-      aria-label={`Rank ${rank}`}
+      aria-label={t("rank_n", { n: rank })}
       className={cn(
         "inline-flex shrink-0 items-center justify-center border font-display font-bold tabular-nums",
         p ? p.badge : "border-border bg-muted/60 text-muted-foreground",
@@ -29,11 +32,12 @@ export function RankBadge({ rank, size = "md", className }: { rank: number; size
 
 /** Chicken dinner (match win) marker. */
 export function ChickenDinner({ count, className, showZero = false }: { count: number; className?: string; showZero?: boolean }) {
+  const t = useT(resultsMsg);
   if (!count && !showZero) return <span className={cn("text-muted-foreground", className)}>—</span>;
   return (
     <span
       className={cn("inline-flex items-center gap-1 font-display font-bold tabular-nums", count ? "text-warning-foreground dark:text-warning" : "text-muted-foreground", className)}
-      title={`${count} chicken dinner${count === 1 ? "" : "s"}`}
+      title={t.plural("dinners", count)}
     >
       <Drumstick className="size-4" aria-hidden />
       {count}

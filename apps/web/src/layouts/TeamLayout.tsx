@@ -13,6 +13,8 @@ import { MyTeamCard } from "@/features/team/shell/MyTeamCard";
 import { CoinsSidebarCard } from "@/features/coins/components/CoinsSidebarCard";
 import { TeamAlerts } from "@/features/team/shell/TeamAlerts";
 import { TeamSearch, type SearchPage } from "@/features/team/shell/TeamSearch";
+import { common } from "@/i18n/common";
+import { useT } from "@/i18n/core";
 
 const MY_TEAM_NAV: NavItem = { key: "my-team", to: "/team/my-team", label: "My team", short: "Team", icon: Users };
 
@@ -32,12 +34,6 @@ const NAV: NavItem[] = [
   MY_TEAM_NAV,
 ];
 
-const WELCOME_STEPS: WelcomeStep[] = [
-  { icon: CalendarSearch, title: "Find a scrim", text: "Pick a day and browse the scrims running that day." },
-  { icon: Megaphone, title: "Register", text: "Your team leader registers in one tap — members tap “Ask my leader”." },
-  { icon: Trophy, title: "Get your slot", text: "Once the manager approves, your slot number shows up right here." },
-];
-
 const SEGMENT_LABELS: Record<string, string> = { matches: "Match", standings: "Points table", "my-team": "My team", coins: "BG coins", tdm: "TDM battles" };
 
 const teamCard: SidebarSlot = (s) => (
@@ -46,9 +42,9 @@ const teamCard: SidebarSlot = (s) => (
     <CoinsSidebarCard {...s} />
   </div>
 );
-const SEARCH_PAGES: SearchPage[] = [...NAV.filter((n) => n.key !== "live"), { key: "profile", to: "/team/profile", label: "My profile", icon: Users }];
-const search = <TeamSearch pages={SEARCH_PAGES} />;
 const alerts = <TeamAlerts />;
+/** NAV key → common.ts message key */
+const NAV_MSG: Record<string, string> = { home: "home", scrims: "scrims", tournaments: "tournaments", tdm: "tdm", registrations: "registrations", results: "results", live: "live", "my-team": "my_team" };
 
 const BRAND: ShellBrand = { name: "AirBattleground", wordmark: wordmarkUrl, wordmarkInk: wordmarkInkUrl, mark: markUrl };
 
@@ -60,18 +56,34 @@ export default function TeamLayout() {
   const suggestions = myTeam.data?.openSuggestions ?? 0;
   const joinRequests = myTeam.data?.joinRequests.length ?? 0;
   const liveCount = useLiveBroadcasts().data?.length ?? 0;
+  const t = useT(common);
   const nav = useMemo(
     () =>
-      NAV.map((n) =>
-        n.key === "home"
-          ? { ...n, badge: isLeader ? suggestions : 0 }
+      NAV.map((n) => {
+        const k = NAV_MSG[n.key];
+        const label = k ? { label: t(`nav_${k}` as Parameters<typeof t>[0]), short: t(`nav_${k}_short` as Parameters<typeof t>[0]) } : {};
+        const item = { ...n, ...label };
+        return n.key === "home"
+          ? { ...item, badge: isLeader ? suggestions : 0 }
           : n.key === "my-team"
-            ? { ...n, badge: isLeader ? joinRequests : 0 }
+            ? { ...item, badge: isLeader ? joinRequests : 0 }
             : n.key === "live"
-              ? { ...n, badge: liveCount }
-              : n,
-      ),
-    [isLeader, suggestions, joinRequests, liveCount],
+              ? { ...item, badge: liveCount }
+              : item;
+      }),
+    [isLeader, suggestions, joinRequests, liveCount, t],
+  );
+  const welcomeSteps = useMemo<WelcomeStep[]>(
+    () => [
+      { icon: CalendarSearch, title: t("welcome_find_title"), text: t("welcome_find_text") },
+      { icon: Megaphone, title: t("welcome_register_title"), text: t("welcome_register_text") },
+      { icon: Trophy, title: t("welcome_slot_title"), text: t("welcome_slot_text") },
+    ],
+    [t],
+  );
+  const search = useMemo(
+    () => <TeamSearch pages={[...nav.filter((n) => n.key !== "live"), { key: "profile", to: "/team/profile", label: t("nav_profile"), icon: Users }] satisfies SearchPage[]} />,
+    [nav, t],
   );
   return (
     <AppShell
@@ -81,7 +93,7 @@ export default function TeamLayout() {
       search={search}
       notifications={alerts}
       segmentLabels={tournamentLabels ?? SEGMENT_LABELS}
-      welcomeSteps={WELCOME_STEPS}
+      welcomeSteps={welcomeSteps}
       brand={BRAND}
     >
       {/* phase 5c: every page is open without a team; only registering asks for one */}
