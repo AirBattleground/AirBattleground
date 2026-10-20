@@ -42,6 +42,8 @@ import { useAuth } from "@/lib/auth";
 import { useDevices } from "@/features/devices/api";
 import { useStreamLayout, useUpcomingMatches } from "@/features/broadcast/api";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
+import { useDeleteDestination } from "@/features/broadcast/output";
+import { StreamKeyDialog } from "@/features/studio/components/StreamKeyDialog";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { useMatch } from "@/features/matches/api";
 import { useShow, useShowStatus, useStudioOutputs, useUpdateShow } from "@/features/studio/api";
@@ -840,10 +842,14 @@ function Panel({ title, icon, children }: { title: string; icon: React.ReactNode
 /** Where the show goes: public Live page, the site YouTube channel (if connected), own stream-key channels. */
 function OutputsPanel({ show, live }: { show: StudioShow; live: boolean }) {
   const outputs = useStudioOutputs();
+  const qcOutputs = () => outputs.refetch();
   const update = useUpdateShow(show.id);
   const [pub, setPub] = useState(show.publicListing);
   const [yt, setYt] = useState(show.siteYoutube);
   const [dests, setDests] = useState<string[]>(show.destinationIds);
+  const [adding, setAdding] = useState(false);
+  const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
+  const del = useDeleteDestination();
   const o = outputs.data;
   const save = (patch: { publicListing?: boolean; siteYoutube?: boolean; destinationIds?: string[] }) => update.mutate(patch);
   return (
@@ -868,21 +874,64 @@ function OutputsPanel({ show, live }: { show: StudioShow; live: boolean }) {
           </p>
         )}
         {(o?.destinations ?? []).map((d) => (
-          <Row
-            key={d.id}
-            label={d.name}
-            checked={dests.includes(d.id)}
-            disabled={live}
-            onChange={(v) => {
-              const next = v ? [...dests, d.id] : dests.filter((x) => x !== d.id);
-              setDests(next);
-              save({ destinationIds: next });
-            }}
-          />
+          <div key={d.id} className="flex items-center gap-1">
+            <div className="min-w-0 flex-1">
+              <Row
+                label={
+                  <span className="flex items-center gap-1.5">
+                    {d.kind === "YOUTUBE" && <Youtube className="size-4 text-destructive" />} {d.name}
+                  </span>
+                }
+                checked={dests.includes(d.id)}
+                disabled={live}
+                onChange={(v) => {
+                  const next = v ? [...dests, d.id] : dests.filter((x) => x !== d.id);
+                  setDests(next);
+                  save({ destinationIds: next });
+                }}
+              />
+            </div>
+            {!live && (
+              <Button size="icon-sm" variant="ghost" className="text-muted-foreground hover:text-destructive" aria-label={`Remove ${d.name}`} onClick={() => setRemoving(d)}>
+                <Trash2 />
+              </Button>
+            )}
+          </div>
         ))}
-        <Link to="/manager/devices" className="block text-xs font-semibold text-primary hover:underline">
-          + Add your own channel (stream key)
-        </Link>
+        {!live && (
+          <Button size="sm" variant="outline" className="w-full" onClick={() => setAdding(true)}>
+            <Plus /> Add stream key (YouTube, Facebook…)
+          </Button>
+        )}
+        <StreamKeyDialog
+          open={adding}
+          onOpenChange={setAdding}
+          onAdded={(id) => {
+            const next = [...dests, id];
+            setDests(next);
+            save({ destinationIds: next });
+          }}
+        />
+        <ConfirmDialog
+          open={!!removing}
+          onOpenChange={(v) => !v && setRemoving(null)}
+          title={`Remove ${removing?.name ?? "this stream key"}?`}
+          description="The Studio stops sending shows there. You can add the key again any time."
+          confirmLabel="Remove"
+          destructive
+          onConfirm={() => {
+            if (!removing) return;
+            const id = removing.id;
+            del.mutate(id, {
+              onSuccess: () => {
+                const next = dests.filter((x) => x !== id);
+                setDests(next);
+                save({ destinationIds: next });
+                void qcOutputs();
+              },
+            });
+          }}
+        />
         {live && <p className="text-[11px] text-muted-foreground">Change these before going live.</p>}
       </div>
     </Panel>
