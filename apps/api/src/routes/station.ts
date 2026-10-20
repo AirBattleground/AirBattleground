@@ -174,8 +174,8 @@ export function liveRouter() {
   // signed in or not, can list and watch them (web /watch). Station recordings below stay limited to their viewers.
   r.get("/", async (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
-    // phase 8: Studio shows first (they're produced shows), then single-device broadcasts
-    res.json({ items: [...(await studio.liveShows()), ...(await liveBroadcasts())] });
+    // phase 8: only Studio shows are broadcast (single-phone broadcasts were retired to save server CPU)
+    res.json({ items: await studio.liveShows() });
   });
   // phase 8: a live Studio show's HLS (public)
   r.get("/s/:showId/:file", async (req, res) => {

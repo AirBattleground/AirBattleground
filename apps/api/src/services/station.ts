@@ -333,8 +333,6 @@ export async function teamLive(teamId: string): Promise<TeamLiveCard[]> {
       tournamentId: r.match.group?.stage.tournament.id ?? null,
     });
   }
-  // phase 6c: iPhone broadcasts the manager started for this team's matches (the station wins if both run)
-  for (const c of await teamDeviceLive(teamId, teamInMatch)) if (!seen.has(c.matchId)) cards.push(c);
   return cards;
 }
 

@@ -125,14 +125,9 @@ export function mountBroadcast(r: Router) {
     res.json(await outputInfo(p(req.params.id)));
   });
   r.post("/devices/:id/output/start", async (req, res) => {
-    const me = currentUser(req).id;
-    const id = p(req.params.id);
-    const { destinationIds } = parse(startOutputSchema, req.body ?? {});
-    const d = await devices.getDevice(id, me);
-    if (!d.videoReady) throw conflict("The phone isn't sending video yet. Start streaming on the phone first.");
-    const known = new Set((await layout.listDestinations(me)).map((x) => x.id));
-    await startOutput(id, me, destinationIds.filter((x) => known.has(x)));
-    res.json(await outputInfo(id));
+    // phase 8: broadcasting happens only from the Studio (one encode on the server); single-phone outputs are off
+    await devices.assertOwnDevice(p(req.params.id), currentUser(req).id);
+    throw conflict("Go live from the Studio — add this phone as a source there.");
   });
   r.post("/devices/:id/output/stop", async (req, res) => {
     await devices.assertOwnDevice(p(req.params.id), currentUser(req).id);

@@ -1,13 +1,11 @@
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Clapperboard, DoorOpen, MessageCircle, MonitorSmartphone, Video } from "lucide-react";
+import { ChevronRight, Clapperboard, DoorOpen, MessageCircle, Video } from "lucide-react";
 import { MAP_LABELS } from "@7xen/shared";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@7xen/ui/components/ui/sheet";
 import type { TourStep } from "@7xen/ui/tour";
 import { cn } from "@7xen/ui/lib/utils";
 import { useNow } from "@/features/manager/components/useNow";
-import { useMatchLive, useStationStatus } from "@/features/station/api";
-import { StationPanel } from "@/features/station/components/StationPanel";
 import { useRecordings, useRoom } from "../api";
 import { CopyButton } from "./CopyButton";
 import { RecordingsCard, LiveBanner } from "./RecordingsCard";
@@ -15,12 +13,12 @@ import { RoomCard, roomMessage, type MatchLabel } from "./RoomCard";
 
 /** Tour steps for the match kit strip — append to a match center tour. */
 export const MATCH_OPS_TOUR: TourStep[] = [
-  { element: '[data-tour="match-kit"]', title: "Everything for this match", description: "Room, Studio, recordings and the station sit in this one strip. Tap a tile to open it.", side: "bottom" },
+  { element: '[data-tour="match-kit"]', title: "Everything for this match", description: "Room, Studio and recordings sit in this one strip. Tap a tile to open it.", side: "bottom" },
   { element: '[data-tour="kit-room"]', title: "Room ID & password", description: "Add them here. Teams see them at the time you choose. Copy sends a ready-made WhatsApp message.", side: "bottom" },
   { element: '[data-tour="match-studio"]', title: "Stream it from Studio", description: "Broadcast this match and grab the team list or results screenshots from the stream.", side: "bottom" },
 ];
 
-type Panel = "room" | "recordings" | "station" | null;
+type Panel = "room" | "recordings" | null;
 
 /** One tile of the strip: icon, label, a short status line, optional quick action. */
 function Tile({
@@ -78,22 +76,15 @@ function Tile({
 }
 
 /**
- * Room, Studio, recordings and the station for one match, in one compact strip (scrim or tournament match center).
- * Details open in a side sheet so the match steps stay at the top of the page. The station panel shows inline only
- * while it's in use for this match (it carries the live game picture).
+ * Room, Studio and recordings for one match, in one compact strip (scrim or tournament match center).
+ * Details open in a side sheet so the match steps stay at the top of the page. Streaming happens in the Studio.
  */
 export function MatchOps({ matchId, label, readOnly }: { matchId: string; label: MatchLabel; readOnly?: boolean }) {
   const [panel, setPanel] = useState<Panel>(null);
   const room = useRoom(matchId).data ?? null;
   const recs = (useRecordings(matchId).data ?? []).filter((r) => r.status !== "DELETED");
-  const station = useStationStatus().data;
-  const live = useMatchLive(matchId).data;
   const now = useNow(30_000);
 
-  const s = live?.station.matchId === matchId ? live.station : station;
-  const stationMine = !!s?.online && s.matchId === matchId && s.phase !== "IDLE";
-  const stationInUse = stationMine || (!!s?.online && !!s.device?.controllable && (s.emulator === "READY" || s.emulator === "BOOTING") && (!s.matchId || s.matchId === matchId));
-  const stationBusy = !!s?.online && !!s.matchId && s.matchId !== matchId && s.phase !== "IDLE";
   const roomVisible = !!room && (!room.revealAt || new Date(room.revealAt).getTime() <= now);
   const recLive = recs.some((r) => r.status === "LIVE");
   const title = `${label.title} · Match ${label.number}`;
@@ -101,7 +92,7 @@ export function MatchOps({ matchId, label, readOnly }: { matchId: string; label:
   return (
     <div className="space-y-3">
       <LiveBanner matchId={matchId} />
-      <div data-tour="match-kit" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border shadow-sm lg:grid-cols-4">
+      <div data-tour="match-kit" className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border bg-border shadow-sm lg:grid-cols-3 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1">
         <Tile
           tour="kit-room"
           icon={<DoorOpen className="size-4" />}
@@ -134,30 +125,17 @@ export function MatchOps({ matchId, label, readOnly }: { matchId: string; label:
           value={recLive ? "Recording now" : recs.length ? `${recs.length} saved` : "None yet"}
           onOpen={() => setPanel("recordings")}
         />
-        {!readOnly && (
-          <Tile
-            tour="kit-station"
-            icon={<MonitorSmartphone className="size-4" />}
-            label="Station"
-            tone={stationMine && s?.phase === "LIVE" ? "live" : s?.online && !stationBusy ? "ok" : "muted"}
-            value={!s ? "Checking…" : !s.online ? "Offline" : stationMine ? (s.phase === "LIVE" ? "Live for this match" : "In use for this match") : stationBusy ? "Busy with another match" : "Ready"}
-            onOpen={() => (stationInUse ? document.querySelector('[data-tour="station-panel"]')?.scrollIntoView({ behavior: "smooth", block: "start" }) : setPanel("station"))}
-          />
-        )}
       </div>
-
-      {!readOnly && stationInUse && <StationPanel matchId={matchId} />}
 
       <Sheet open={panel != null} onOpenChange={(o) => !o && setPanel(null)}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-xl">
           <SheetHeader>
-            <SheetTitle>{panel === "room" ? "Room" : panel === "recordings" ? "Recordings" : "AirBattleground Station"}</SheetTitle>
+            <SheetTitle>{panel === "room" ? "Room" : "Recordings"}</SheetTitle>
             <SheetDescription>{title}</SheetDescription>
           </SheetHeader>
           <div className="px-4 pb-6">
             {panel === "room" && <RoomCard matchId={matchId} label={label} readOnly={readOnly} />}
             {panel === "recordings" && <RecordingsCard matchId={matchId} title={`${title} · ${MAP_LABELS[label.map]}`} />}
-            {panel === "station" && <StationPanel matchId={matchId} />}
           </div>
         </SheetContent>
       </Sheet>

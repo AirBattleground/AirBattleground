@@ -338,12 +338,10 @@ export async function outputInfo(deviceId: string): Promise<DeviceOutput> {
 }
 
 /** Bring back outputs that were on before the API restarted. */
+/** Phase 8: single-phone outputs are retired (the Studio broadcasts), so start-up switches any left on off. */
 export async function resumeOutputs(): Promise<void> {
-  const on = await prisma.device.findMany({ where: { outputOn: true }, select: { id: true, managerId: true, outputDestIds: true } });
-  for (const d of on) {
-    logger.info({ deviceId: d.id }, "resuming broadcast output");
-    void startOutput(d.id, d.managerId, d.outputDestIds).catch((err) => logger.error({ err, deviceId: d.id }, "resume output failed"));
-  }
+  const { count } = await prisma.device.updateMany({ where: { outputOn: true }, data: { outputOn: false, outputStartedAt: null } });
+  if (count) logger.info({ count }, "switched off retired single-phone broadcast outputs");
 }
 
 /** Stop every output (API shutdown) without changing what's wanted in the DB. */

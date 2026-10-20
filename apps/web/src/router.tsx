@@ -70,7 +70,6 @@ const routes: RouteObject[] = [
       { path: "app", element: page(() => import("@/pages/manager/AppPage")) },
       { path: "devices", element: page(() => import("@/pages/manager/DevicesPage")) },
       { path: "devices/:deviceId", element: page(() => import("@/pages/manager/DeviceLivePage")) },
-      { path: "broadcast-layout", element: page(() => import("@/pages/manager/BroadcastLayoutPage")) },
       { path: "studio", element: page(() => import("@/pages/manager/studio/StudioPage")) },
       { path: "studio/:showId", element: page(() => import("@/pages/manager/studio/ShowConsolePage")) },
       { path: "live", element: page(() => import("@/pages/live/LiveNowPage")) },
