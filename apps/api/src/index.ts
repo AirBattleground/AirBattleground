@@ -7,7 +7,7 @@ import { startScreenshotWorker } from "./services/screenshotWorker.js";
 import { ensureDefaultRecipes } from "./services/recipes.js";
 import { startRetentionSweeper } from "./services/recordings.js";
 import { resumeOutputs, shutdownOutputs } from "./services/broadcast/compositor.js";
-import { shutdownStudio, startStudioWatchdog } from "./services/studio.js";
+import { resumeWorkerShows, shutdownStudio, startStudioWatchdog } from "./services/studio.js";
 
 const app = createApp();
 const server = app.listen(env.PORT, () => {
@@ -24,6 +24,8 @@ const stopSweeper = startRetentionSweeper();
 void resumeOutputs().catch((err) => logger.error({ err }, "could not resume broadcast outputs"));
 // phase 8: Studio shows end by themselves when their browser stops sending
 startStudioWatchdog();
+// phase 8b: shows running on a Studio worker survive a restart/deploy (their relays come back)
+void resumeWorkerShows().catch((err) => logger.error({ err }, "could not resume studio worker shows"));
 
 function shutdown(signal: string) {
   logger.info(`${signal} received, shutting down`);

@@ -3,6 +3,7 @@ packages:
   - "!apps/mobile"
   - "packages/*"
   - "services/station"
+  - "services/studio-worker"
 allowBuilds:
   "@prisma/client": true
   "@prisma/engines": true

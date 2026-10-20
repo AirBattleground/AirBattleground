@@ -17,11 +17,13 @@ import { useUpcomingMatches } from "@/features/broadcast/api";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { useCreateShow, useDeleteShow, useShows } from "@/features/studio/api";
+import { WorkersSection } from "@/features/studio/components/WorkersSection";
 
 const TOUR: TourStep[] = [
   { title: "Studio", description: "Produce a live show like a TV broadcast: mix your phones, webcam, scorecard, MVP and intro videos, and switch between scenes." },
   { element: '[data-tour="studio-sources"]', title: "Your sources", description: "Every phone you've added. A green dot means its video is reaching the server right now.", side: "bottom" },
   { element: '[data-tour="studio-new"]', title: "Create a show", description: "Give it a name and (optionally) the match — then open the studio console.", side: "bottom" },
+  { element: '[data-tour="studio-workers"]', title: "Studio workers", description: "Optional: a PC or server that runs your show instead of this browser, so closing the tab doesn't stop it. Add one, put its key on the computer, then pick it under “Runs on” in the console.", side: "bottom" },
   { element: '[data-tour="studio-shows"]', title: "Your shows", description: "Open a show to set up scenes and go live. You can reuse a show for many streams.", side: "top" },
 ];
 
@@ -108,6 +110,8 @@ export default function StudioPage() {
           </ul>
         )}
       </section>
+
+      <WorkersSection shows={shows.data} />
 
       <section data-tour="studio-shows" className="space-y-3">
         <h2 className="flex items-center gap-2 font-display text-xl font-bold">

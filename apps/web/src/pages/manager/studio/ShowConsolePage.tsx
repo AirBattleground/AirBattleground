@@ -15,9 +15,11 @@ import {
   Loader2,
   Mic,
   MicOff,
+  Monitor,
   Pencil,
   Plus,
   Radio,
+  Server,
   Smartphone,
   Square,
   Trash2,
@@ -26,7 +28,7 @@ import {
   Youtube,
 } from "lucide-react";
 import { toast } from "sonner";
-import { STUDIO_FPS, STUDIO_HEIGHT, STUDIO_WIDTH, type DeviceRow, type MatchDetail, type StudioShow } from "@7xen/shared";
+import { STUDIO_FPS, STUDIO_HEIGHT, STUDIO_WIDTH, type DeviceRow, type MatchDetail, type StudioShow, type StudioStatus, type StudioWorkerRow } from "@7xen/shared";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@7xen/ui/components/ui/dialog";
@@ -40,17 +42,20 @@ import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
 import { useDevices } from "@/features/devices/api";
-import { useStreamLayout, useUpcomingMatches } from "@/features/broadcast/api";
+import { useUpcomingMatches } from "@/features/broadcast/api";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
+import { errorMessage } from "@/features/manager/api";
 import { useDeleteDestination } from "@/features/broadcast/output";
 import { StreamKeyDialog } from "@/features/studio/components/StreamKeyDialog";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { useMatch } from "@/features/matches/api";
-import { useShow, useShowStatus, useStudioOutputs, useUpdateShow } from "@/features/studio/api";
+import { useShow, useShowControl, useShowStatus, useStartWorker, useStopShow, useStudioOutputs, useUpdateControl, useUpdateShow, useWorkers } from "@/features/studio/api";
+import { asConfig, defaultConfig, fadeMsOf, resolveScene, sid } from "@/features/studio/config";
+import { useOverlayImage } from "@/features/studio/overlayImage";
 import { LAYOUTS } from "@/features/studio/engine/layouts";
 import { StudioMixer, type MixerStatus } from "@/features/studio/engine/mixer";
 import { addProp, listProps, removeProp, type PropMeta } from "@/features/studio/engine/props";
-import { DEFAULT_OVERLAYS, sourceKey, type LayoutKind, type Scene, type SourceRef, type StudioConfigV1 } from "@/features/studio/engine/types";
+import { sourceKey, type LayoutKind, type Scene, type SourceRef, type StudioConfigV1 } from "@/features/studio/engine/types";
 
 const TOUR: TourStep[] = [
   { title: "Studio console", description: "Build your show from scenes. The big screen is what viewers see; the small one is what's next." },
@@ -58,32 +63,28 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="studio-scenes"]', title: "Scenes", description: "Click a scene to preview it, then TAKE to put it on air (or double-click / press 1–9). Edit a scene to change its frame and sources.", side: "top" },
   { element: '[data-tour="studio-sources-panel"]', title: "Sources", description: "Phones, your webcam and mic, and prop videos (intro, break, outro) saved in this browser.", side: "right" },
   { element: '[data-tour="studio-capture"]', title: "Capture for the match", description: "With a match selected: put the team list or results screen on air, then tap Team list / Results. The screenshot goes to the match center and is read automatically.", side: "bottom" },
-  { element: '[data-tour="studio-golive"]', title: "Go live", description: "Starts the broadcast. Keep this tab open while you're live; your intro scene is a good place to start.", side: "bottom" },
+  { element: '[data-tour="studio-runs-on"]', title: "Runs on", description: "Run the show in this browser, or on one of your Studio workers (a PC that renders and sends the show). On a worker the show keeps going even if you close this tab.", side: "bottom" },
+  { element: '[data-tour="studio-golive"]', title: "Go live", description: "Starts the broadcast. In this browser, keep the tab open while you're live; your intro scene is a good place to start.", side: "bottom" },
 ];
 
 const NO_MATCH = "none";
-const sid = () => Math.random().toString(36).slice(2, 9);
+const RUN_BROWSER = "browser";
+const RUN_ON_KEY = "7xen.studio.runOn";
 
-function defaultConfig(devices: DeviceRow[]): StudioConfigV1 {
-  const d = devices.map((x) => ({ kind: "device" as const, id: x.id }));
-  const scenes: Scene[] = [
-    { id: sid(), name: "Starting soon", layout: "full", slots: [{ kind: "slate" }] },
-    ...(d[0] ? [{ id: sid(), name: devices[0]!.name, layout: "full" as LayoutKind, slots: [d[0]] }] : []),
-    ...(d[1] ? [{ id: sid(), name: devices[1]!.name, layout: "full" as LayoutKind, slots: [d[1]] }] : []),
-    ...(d[1] ? [{ id: sid(), name: "Side by side", layout: "side" as LayoutKind, slots: [d[0]!, d[1]] }] : []),
-    { id: sid(), name: "Game + host", layout: "desk", slots: [d[0] ?? null, { kind: "camera" }] },
-    { id: sid(), name: "Host", layout: "full", slots: [{ kind: "camera" }] },
-    { id: sid(), name: "Scorecard", layout: "full", slots: [{ kind: "scorecard" }] },
-    { id: sid(), name: "MVP", layout: "full", slots: [{ kind: "mvp" }] },
-  ];
-  return { v: 1, scenes, overlays: { ...DEFAULT_OVERLAYS }, transition: "fade", introPropId: null };
+function savedRunOn(): string | null {
+  try {
+    return window.localStorage.getItem(RUN_ON_KEY);
+  } catch {
+    return null;
+  }
 }
-
-function asConfig(raw: unknown): StudioConfigV1 | null {
-  const c = raw as Partial<StudioConfigV1> | null;
-  return c && c.v === 1 && Array.isArray(c.scenes) ? ({ ...c, overlays: { ...DEFAULT_OVERLAYS, ...(c.overlays ?? {}) } } as StudioConfigV1) : null;
+function saveRunOn(v: string) {
+  try {
+    window.localStorage.setItem(RUN_ON_KEY, v);
+  } catch {
+    /* private mode etc. */
+  }
 }
-
 export default function ShowConsolePage() {
   const { showId } = useParams();
   const q = useShow(showId);
@@ -134,8 +135,36 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
     return () => window.removeEventListener("beforeunload", onUnload);
   }, [mixer]);
 
-  const live = !!mixStatus?.live;
-  const status = useShowStatus(show.id, live);
+  // where the show runs: this browser, or a Studio worker (phase 8b)
+  const workers = useWorkers();
+  const workerList = workers.data ?? [];
+  const [runOn, setRunOnState] = useState<string>(() => (show.runOn === "worker" && show.workerId ? show.workerId : (savedRunOn() ?? RUN_BROWSER)));
+  const setRunOn = (v: string) => {
+    setRunOnState(v);
+    saveRunOn(v);
+  };
+  const selectedWorker = runOn === RUN_BROWSER ? null : (workerList.find((w) => w.id === runOn) ?? null);
+  const [workerLiveHint, setWorkerLiveHint] = useState(show.runOn === "worker" && show.state === "LIVE");
+  const status = useShowStatus(show.id, !!mixStatus?.live || workerLiveHint);
+  const st = status.data ?? null;
+  const workerLive = st ? st.runOn === "worker" && st.state === "LIVE" : workerLiveHint;
+  useEffect(() => setWorkerLiveHint(workerLive), [workerLive]);
+  const browserLive = !!mixStatus?.live;
+  const live = browserLive || workerLive;
+  /** takes go to the worker while it runs the show (or is picked to run it) */
+  const mirror = workerLive || (!!selectedWorker && !browserLive);
+  const control = useShowControl(show.id);
+  const updateControl = useUpdateControl(show.id);
+  const startWorker = useStartWorker(show.id);
+  const stopShow = useStopShow(show.id);
+  const takeSeq = useRef(0);
+  useEffect(() => {
+    if (control.data) takeSeq.current = Math.max(takeSeq.current, control.data.takeSeq);
+  }, [control.data]);
+  // LIVE bug on the local program while a worker runs the show (so it matches what goes out)
+  useEffect(() => {
+    mixer.setLiveClock(workerLive ? (st?.liveSince ? Date.parse(st.liveSince) : Date.now()) : null);
+  }, [mixer, workerLive, st?.liveSince]);
 
   // save config/title/match (debounced)
   const first = useRef(true);
@@ -145,7 +174,7 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
       if (!asConfig(show.config)) update.mutate({ config: config as unknown as Record<string, unknown> });
       return;
     }
-    const t = window.setTimeout(() => update.mutate({ config: config as unknown as Record<string, unknown> }), 800);
+    const t = window.setTimeout(() => update.mutate({ config: config as unknown as Record<string, unknown> }), workerLive ? 300 : 800);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config]);
@@ -174,18 +203,30 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
   const preview = scenes.find((s) => s.id === previewId) ?? null;
   const program = scenes.find((s) => s.id === programId) ?? null;
   // the "Starting soon" slate plays the intro prop when one is picked
-  const resolve = useCallback(
-    (s: Scene): Scene => ({ ...s, slots: s.slots.map((x) => (x?.kind === "slate" && config.introPropId ? { kind: "prop", id: config.introPropId } : x)) }),
-    [config.introPropId],
-  );
+  const resolve = useCallback((s: Scene): Scene => resolveScene(s, config.introPropId), [config.introPropId]);
 
+  const mirrorRef = useRef(mirror);
+  mirrorRef.current = mirror;
+  const workerLiveRef = useRef(workerLive);
+  workerLiveRef.current = workerLive;
+  const mutateControl = updateControl.mutate;
+  const sendTake = useCallback(
+    (input: { programId: string; takeSeq: number }) =>
+      mutateControl(input, {
+        // before the show starts a missed mirror doesn't matter (Go live sends the scene again)
+        onError: (e) => workerLiveRef.current && toast.error("The worker didn't get that scene change", { description: errorMessage(e) }),
+      }),
+    [mutateControl],
+  );
   const take = useCallback(
-    async (scene: Scene | null) => {
+    async (scene: Scene | null, opts?: { local?: boolean }) => {
       if (!scene) return;
-      await mixer.take(resolve(scene), config.transition === "fade" ? 600 : 0);
+      // the worker cuts at the same moment as this preview
+      if (!opts?.local && mirrorRef.current) sendTake({ programId: scene.id, takeSeq: ++takeSeq.current });
+      await mixer.take(resolve(scene), fadeMsOf(config));
       setProgramId(scene.id);
     },
-    [config.transition, mixer, resolve],
+    [config, mixer, resolve, sendTake],
   );
 
   // keyboard: 1–9 takes scene n
@@ -202,18 +243,50 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
     return () => window.removeEventListener("keydown", onKey);
   }, [scenes, take]);
 
-  // start on the first scene so the program isn't empty
+  // start on the first scene so the program isn't empty (local only: never cut a show a worker is running)
   useEffect(() => {
-    if (!programId && scenes[0]) void take(scenes[0]);
+    if (!programId && scenes[0]) void take(scenes[0], { local: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // reopened while a worker runs the show: show what's on air there
+  const synced = useRef(false);
+  useEffect(() => {
+    // not on a worker when the console opened → nothing to pick up (a show started from here is already in step)
+    if (st && !workerLive) synced.current = true;
+    if (synced.current || !workerLive || !control.data) return;
+    synced.current = true;
+    const onAir = scenes.find((s) => s.id === control.data.programId);
+    if (onAir) void take(onAir, { local: true });
+  }, [st, workerLive, control.data, scenes, take]);
 
   const goLive = () => {
+    if (selectedWorker) {
+      startWorker.mutate(selectedWorker.id, {
+        onSuccess: () => {
+          synced.current = true;
+          setWorkerLiveHint(true);
+          // make sure the worker starts on what's on air here
+          if (programId) sendTake({ programId, takeSeq: ++takeSeq.current });
+          void status.refetch();
+        },
+      });
+      return;
+    }
     // no toast: it would cover the top-bar controls; the LIVE badge + red program frame say it
     mixer.goLive(show.id);
   };
   const endLive = async () => {
     setConfirmEnd(false);
+    if (workerLive && !browserLive) {
+      stopShow.mutate(undefined, {
+        onSuccess: () => {
+          setWorkerLiveHint(false);
+          toast.success("Show ended");
+          void status.refetch();
+        },
+      });
+      return;
+    }
     await mixer.endLive();
     toast.success("Show ended");
     void status.refetch();
@@ -242,7 +315,7 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
           </ToggleGroupItem>
         </ToggleGroup>
         <div className="ml-auto flex items-center gap-2">
-          <LiveHealth mix={mixStatus} status={status.data ?? null} />
+          <LiveHealth mix={mixStatus} status={st} workerLive={workerLive && !browserLive} />
           {live && (
             <Button
               variant="outline"
@@ -264,9 +337,12 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
               <Square className="fill-current" /> End show
             </Button>
           ) : (
-            <Button data-tour="studio-golive" className="shadow-glow" onClick={goLive}>
-              <Radio /> {matchId ? "Start match broadcast" : "Go live"}
-            </Button>
+            <>
+              {workerList.length > 0 && <RunsOnPicker value={selectedWorker ? selectedWorker.id : RUN_BROWSER} workers={workerList} showId={show.id} onChange={setRunOn} />}
+              <Button data-tour="studio-golive" className="shadow-glow" onClick={goLive} disabled={startWorker.isPending}>
+                {startWorker.isPending ? <Loader2 className="animate-spin" /> : <Radio />} {matchId ? "Start match broadcast" : "Go live"}
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -482,7 +558,8 @@ function MatchBar({ mixer, matchId, detail, onCaptured }: { mixer: StudioMixer; 
 
 // ---------------------------------------------------------------- health
 
-function LiveHealth({ mix, status }: { mix: MixerStatus | null; status: import("@7xen/shared").StudioStatus | null }) {
+function LiveHealth({ mix, status, workerLive }: { mix: MixerStatus | null; status: StudioStatus | null; workerLive: boolean }) {
+  if (workerLive) return <WorkerHealth status={status} />;
   if (!mix?.live) return null;
   const secs = mix.liveSince ? Math.floor((Date.now() - mix.liveSince) / 1000) : 0;
   return (
@@ -500,6 +577,54 @@ function LiveHealth({ mix, status }: { mix: MixerStatus | null; status: import("
         </span>
       )}
       {mix.error && <span className="rounded bg-destructive/15 px-2 py-1 font-semibold text-destructive">{mix.error}</span>}
+      <OutputChips status={status} />
+    </div>
+  );
+}
+
+/** While a Studio worker runs the show: its name, frame rate, encoder and send rate instead of the upload chip. */
+function WorkerHealth({ status }: { status: StudioStatus | null }) {
+  // tick the clock every second (the mixer here isn't live, so nothing else re-renders)
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  const since = status?.liveSince ? Date.parse(status.liveSince) : null;
+  const secs = since ? Math.max(0, Math.floor((Date.now() - since) / 1000)) : 0;
+  const w = status?.worker ?? null;
+  const slow = w?.fps != null && w.fps < STUDIO_FPS * 0.85;
+  const gpu = !!w?.encoder && w.encoder !== "libx264";
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <span className="rounded bg-destructive px-2 py-1 font-bold text-white">● LIVE {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, "0")}</span>
+      {w && (
+        <span className={cn("flex items-center gap-1.5 rounded px-2 py-1 font-semibold", w.online ? "bg-success/15 text-success" : "bg-warning/20 text-warning-foreground dark:text-warning")} title="This show runs on a Studio worker — closing this tab doesn't stop it">
+          <Server className="size-3.5" /> {w.name}
+          {!w.online && " · not responding"}
+        </span>
+      )}
+      {w?.fps != null && (
+        <span className={cn("rounded px-2 py-1 font-semibold tabular-nums", slow ? "bg-warning/20 text-warning-foreground dark:text-warning" : "bg-muted")} title={slow ? "The worker can't keep up with 60 frames a second. Close other apps on it." : "Frames per second the worker is drawing"}>
+          {w.fps} fps
+        </span>
+      )}
+      {w?.encoder && (
+        <span className="flex items-center gap-1 rounded bg-muted px-2 py-1" title={`Encoder: ${w.encoder}`}>
+          {gpu && <span className="rounded bg-primary px-1 text-[9px] font-bold text-primary-foreground">GPU</span>}
+          {gpu ? w.encoder.replace(/^h264_/, "").toUpperCase() : "CPU"}
+        </span>
+      )}
+      {w?.bitrateKbps != null && <span className="rounded bg-muted px-2 py-1 tabular-nums">Sending {(w.bitrateKbps / 1000).toFixed(1)} Mbps</span>}
+      {w?.error && <span className="rounded bg-destructive/15 px-2 py-1 font-semibold text-destructive">{w.error}</span>}
+      <OutputChips status={status} />
+    </div>
+  );
+}
+
+function OutputChips({ status }: { status: StudioStatus | null }) {
+  return (
+    <>
       {status?.destinations.map((d) => (
         <span key={d.id} className="flex items-center gap-1 rounded bg-muted px-2 py-1">
           <span className={cn("size-1.5 rounded-full", d.ok ? "bg-success" : "bg-warning")} /> {d.name}
@@ -515,7 +640,34 @@ function LiveHealth({ mix, status }: { mix: MixerStatus | null; status: import("
             YouTube: {status.youtube.error}
           </span>
         ))}
-    </div>
+    </>
+  );
+}
+
+// ---------------------------------------------------------------- runs on (browser / Studio worker)
+
+function RunsOnPicker({ value, workers, showId, onChange }: { value: string; workers: StudioWorkerRow[]; showId: string; onChange: (v: string) => void }) {
+  return (
+    <Select value={value} onValueChange={onChange}>
+      <SelectTrigger data-tour="studio-runs-on" size="sm" className="h-9 w-48 text-xs" aria-label="Where the show runs">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={RUN_BROWSER}>
+          <Monitor className="size-3.5" /> This browser
+        </SelectItem>
+        {workers.map((w) => {
+          const busy = !!w.showId && w.showId !== showId;
+          return (
+            <SelectItem key={w.id} value={w.id} disabled={!w.online}>
+              <span className={cn("size-2 shrink-0 rounded-full", w.online ? "bg-success" : "bg-muted-foreground/40")} />
+              <span className="truncate">{w.name}</span>
+              <span className="text-muted-foreground">{!w.online ? "· offline" : busy ? "· busy" : ""}</span>
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -992,47 +1144,3 @@ function MatchPicker({ value, onChange, disabled }: { value: string | null; onCh
     </Select>
   );
 }
-
-/** The organiser's broadcast layout (title bar, teams, points) as a transparent PNG over the program. */
-function useOverlayImage(mixer: StudioMixer, on: boolean, matchId: string | null) {
-  const layout = useStreamLayout();
-  useEffect(() => {
-    if (!on || !layout.data) {
-      mixer.setOverlayImage(null);
-      return;
-    }
-    let url: string | null = null;
-    let alive = true;
-    const load = async () => {
-      try {
-        const res = await fetch("/api/manager/stream/preview", {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ config: layout.data!.config, matchId }),
-        });
-        if (!res.ok || !alive) return;
-        const next = URL.createObjectURL(await res.blob());
-        const img = new Image();
-        img.onload = () => {
-          if (!alive) return URL.revokeObjectURL(next);
-          mixer.setOverlayImage(img);
-          if (url) URL.revokeObjectURL(url);
-          url = next;
-        };
-        img.src = next;
-      } catch {
-        /* keep the last image */
-      }
-    };
-    void load();
-    const t = window.setInterval(() => void load(), 5_000);
-    return () => {
-      alive = false;
-      window.clearInterval(t);
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [on, layout.data, matchId, mixer]);
-}
-
-

@@ -1,0 +1,26 @@
+{
+  "name": "@7xen/studio-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "7XEN Studio worker: runs a Studio show on a powerful PC (headless Chrome renders it, local ffmpeg encodes it, RTMP to the site)",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env --import tsx src/index.ts",
+    "dev": "node --env-file-if-exists=.env --import tsx --watch src/index.ts",
+    "smoke": "node --env-file-if-exists=.env --import tsx scripts/smoke-local.ts",
+    "e2e": "node --import tsx scripts/e2e-fake-api.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@7xen/shared": "workspace:*",
+    "playwright-core": "1.59.1",
+    "tsx": "^4.19.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

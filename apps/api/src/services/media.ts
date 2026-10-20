@@ -20,7 +20,8 @@ export const devicePath = (deviceId: string) => `live/dev_${deviceId}`;
 /** phase 6b: the composed broadcast output, published by the API's own ffmpeg */
 export const outputPath = (deviceId: string) => `live/out_${deviceId}`;
 const PATH_RE = /^live\/dev_([A-Za-z0-9]{8,40})$/;
-const OUT_PATH_RE = /^live\/(out|show)_[A-Za-z0-9]{8,40}$/;
+const OUT_PATH_RE = /^live\/out_[A-Za-z0-9]{8,40}$/;
+const SHOW_PATH_RE = /^live\/show_([A-Za-z0-9]{8,40})$/;
 
 /** user/pass the API uses for its own RTMP reads/publishes (query string ?user=&pass=). */
 export const internalCredentials = () => ({ user: INTERNAL_USER, pass: internalPassword() });
@@ -38,6 +39,27 @@ function safeEqual(a: string, b: string) {
   return x.length === y.length && timingSafeEqual(x, y);
 }
 
+/** phase 8b: a Studio worker's publish token for live/show_<id> (?wtoken=<exp>.<hmac>). */
+export const WORKER_PUBLISH_TTL_MS = 12 * 60 * 60_000;
+const signWorker = (showId: string, workerId: string, exp: number) =>
+  createHmac("sha256", secret("worker-publish")).update(`${showId}.${workerId}.${exp}`).digest("base64url");
+
+export function workerPublishToken(showId: string, workerId: string, now = Date.now()): { token: string; expiresAt: Date } {
+  const exp = now + WORKER_PUBLISH_TTL_MS;
+  return { token: `${exp}.${signWorker(showId, workerId, exp)}`, expiresAt: new Date(exp) };
+}
+
+/** Valid wtoken for a show that is LIVE on that very worker right now. */
+async function workerMayPublish(showId: string, query: string | undefined): Promise<boolean> {
+  const token = new URLSearchParams(query ?? "").get("wtoken") ?? "";
+  const [expStr, sig] = token.split(".");
+  const exp = Number(expStr);
+  if (!sig || !Number.isFinite(exp) || exp < Date.now()) return false;
+  const show = await prisma.studioShow.findUnique({ where: { id: showId }, select: { state: true, runOn: true, workerId: true } });
+  if (!show || show.state !== "LIVE" || show.runOn !== "worker" || !show.workerId) return false;
+  return safeEqual(sig, signWorker(showId, show.workerId, exp));
+}
+
 export interface MediaAuthRequest {
   user?: string;
   password?: string;
@@ -51,8 +73,11 @@ export interface MediaAuthRequest {
 export async function authorize(req: MediaAuthRequest): Promise<boolean> {
   const internal = req.user === INTERNAL_USER && !!req.password && safeEqual(req.password, internalPassword());
   if (req.action !== "publish") return internal;
-  // the composed output and Studio shows: only the API itself may publish them
+  // the composed output: only the API itself may publish it
   if (OUT_PATH_RE.test(req.path ?? "")) return internal;
+  // Studio shows: the API itself (browser shows), or the show's Studio worker with its token (phase 8b)
+  const show = SHOW_PATH_RE.exec(req.path ?? "");
+  if (show) return internal || (await workerMayPublish(show[1]!, req.query));
 
   const m = PATH_RE.exec(req.path ?? "");
   if (!m) return false;

@@ -115,6 +115,13 @@ export class StudioMixer {
   private lastStepDown = 0;
   private sentBytes: { at: number; bytes: number }[] = [];
   private codec: "h264" | "vp8" | "vp9" = "vp8";
+  /** capture mode (Studio worker render page): records the program locally and hands chunks over, in order */
+  private captureRec: MediaRecorder | null = null;
+  private captureChain: Promise<void> = Promise.resolve();
+  /** chunks handed over successfully since startCapture (and the last hand-over error) */
+  capture = { recording: false, error: null as string | null };
+  /** LIVE-bug clock while the show is on air somewhere else (a Studio worker) — this mixer itself isn't live */
+  private clockSince: number | null = null;
   status: MixerStatus = { live: false, backlog: 0, uploadKbps: 0, error: null, restarts: 0, liveSince: null, bitrateKbps: BITRATES[0]! / 1000, fps: 0 };
   onStatus: ((s: MixerStatus) => void) | null = null;
 
@@ -147,6 +154,7 @@ export class StudioMixer {
   dispose() {
     this.stopTicker?.();
     this.recorder?.state !== "inactive" && this.recorder?.stop();
+    this.stopCapture();
     for (const s of this.sources.values()) this.dropSource(s);
     this.mic?.stream.getTracks().forEach((t) => t.stop());
     void this.audio.close();
@@ -246,6 +254,11 @@ export class StudioMixer {
   /** The <video> of a source (for thumbnails in the UI). */
   videoOf(ref: SourceRef): HTMLVideoElement | null {
     return this.sources.get(sourceKey(ref))?.video ?? null;
+  }
+
+  /** Wake the audio engine (a worker's Chrome allows this without a click). */
+  async resumeAudio() {
+    if (this.audio.state === "suspended") await this.audio.resume().catch(() => undefined);
   }
 
   // ---------------------------------------------------------------- mic
@@ -472,8 +485,9 @@ export class StudioMixer {
   private drawOverlays(ctx: CanvasRenderingContext2D) {
     const o = this.overlays;
     if (o.layout && this.overlayImg?.complete) ctx.drawImage(this.overlayImg, 0, 0, W, H);
-    if (o.liveBug && this.status.live) {
-      const secs = this.status.liveSince ? Math.floor((Date.now() - this.status.liveSince) / 1000) : 0;
+    const since = this.status.live ? this.status.liveSince : this.clockSince;
+    if (o.liveBug && (this.status.live || this.clockSince !== null)) {
+      const secs = since ? Math.floor((Date.now() - since) / 1000) : 0;
       const t = `${String(Math.floor(secs / 3600)).padStart(1, "0")}:${String(Math.floor((secs % 3600) / 60)).padStart(2, "0")}:${String(secs % 60).padStart(2, "0")}`;
       ctx.fillStyle = "#e5252a";
       ctx.fillRect(W - 210, 22, 80, 34);
@@ -544,6 +558,57 @@ export class StudioMixer {
     ctx.setTransform(c.width / W, 0, 0, c.height / H, 0, 0);
     this.drawScene(ctx, this.program);
     return new Promise((resolve, reject) => c.toBlob((b) => (b ? resolve(b) : reject(new Error("Couldn't take the screenshot"))), "image/png"));
+  }
+
+  /** Show the LIVE bug + clock from `since` (ms) although this mixer isn't uploading (the show runs on a worker); null hides it. */
+  setLiveClock(since: number | null) {
+    this.clockSince = since;
+  }
+
+  // ---------------------------------------------------------------- capture (Studio worker)
+
+  /**
+   * Record the program (canvas + audio mix) without uploading it: every `timesliceMs` a chunk goes to `onChunk`.
+   * Chunks are handed over strictly in order — the next one waits until the previous `onChunk` has finished.
+   */
+  startCapture(opts: { bitsPerSecond: number; timesliceMs: number; onChunk: (b: Blob) => void | Promise<void> }) {
+    if (this.captureRec) return;
+    const { mime } = pickMime();
+    const stream = new MediaStream([...this.canvas.captureStream(STUDIO_FPS).getVideoTracks(), ...this.dest.stream.getAudioTracks()]);
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: opts.bitsPerSecond, audioBitsPerSecond: 192_000 });
+    this.captureChain = Promise.resolve();
+    this.capture = { recording: false, error: null };
+    rec.ondataavailable = (e) => {
+      if (!e.data.size) return;
+      const blob = e.data;
+      this.captureChain = this.captureChain
+        .then(() => opts.onChunk(blob))
+        .then(
+          () => {
+            if (this.captureRec === rec) this.capture = { recording: true, error: null };
+          },
+          (err: unknown) => {
+            this.capture = { recording: false, error: err instanceof Error ? err.message : "Couldn't hand the video over" };
+          },
+        );
+    };
+    rec.onerror = () => {
+      this.capture = { recording: false, error: "The recorder stopped" };
+    };
+    rec.start(opts.timesliceMs);
+    this.captureRec = rec;
+  }
+
+  stopCapture() {
+    const rec = this.captureRec;
+    this.captureRec = null;
+    if (rec && rec.state !== "inactive") rec.stop();
+    rec?.stream.getVideoTracks().forEach((t) => t.stop());
+    this.capture = { ...this.capture, recording: false };
+  }
+
+  get capturing(): boolean {
+    return !!this.captureRec;
   }
 
   // ---------------------------------------------------------------- going live

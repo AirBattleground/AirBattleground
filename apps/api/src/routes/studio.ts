@@ -1,10 +1,14 @@
 /** Phase 8 — Studio routes (manager). Contract: shared/studio.ts. */
 import express, { type Router } from "express";
-import { createShowSchema, ingestQuerySchema, MAX_INGEST_CHUNK_BYTES, updateShowSchema } from "@7xen/shared";
+import { z } from "zod";
+import { createShowSchema, createWorkerSchema, ingestQuerySchema, MAX_INGEST_CHUNK_BYTES, showControlSchema, startWorkerSchema, updateShowSchema } from "@7xen/shared";
 import { AppError } from "../lib/errors.js";
 import { parse } from "../lib/validate.js";
 import { currentUser } from "../middleware/requireAuth.js";
 import * as studio from "../services/studio.js";
+import * as workers from "../services/studioWorkers.js";
+
+const sinceSchema = z.object({ since: z.coerce.number().int().min(-1).default(-1) });
 
 const p = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
@@ -46,5 +50,35 @@ export function mountStudio(r: Router) {
   r.get("/studio/shows/:id/status", async (req, res) => {
     res.setHeader("Cache-Control", "no-store");
     res.json(await studio.showStatus(p(req.params.id), currentUser(req).id));
+  });
+
+  // ---- phase 8b: Studio workers (shared/studioWorker.ts) ----
+  r.get("/studio/workers", async (req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ items: await workers.listWorkers(currentUser(req).id) });
+  });
+  r.post("/studio/workers", async (req, res) => {
+    const { name } = parse(createWorkerSchema, req.body);
+    res.status(201).json(await workers.createWorker(currentUser(req).id, name));
+  });
+  r.delete("/studio/workers/:id", async (req, res) => {
+    await workers.deleteWorker(p(req.params.id), currentUser(req).id);
+    res.status(204).end();
+  });
+  r.post("/studio/shows/:id/start-worker", async (req, res) => {
+    const { workerId } = parse(startWorkerSchema, req.body);
+    res.json(await studio.startWorkerShow(p(req.params.id), currentUser(req).id, workerId));
+  });
+  r.patch("/studio/shows/:id/control", async (req, res) => {
+    res.json(await studio.setShowControl(p(req.params.id), currentUser(req).id, parse(showControlSchema, req.body)));
+  });
+  // long-poll (≤ 25 s) for the render page
+  r.get("/studio/shows/:id/control", async (req, res) => {
+    const { since } = parse(sinceSchema, req.query);
+    const ac = new AbortController();
+    res.on("close", () => ac.abort());
+    res.setHeader("Cache-Control", "no-store");
+    const state = await studio.showControl(p(req.params.id), currentUser(req).id, since, ac.signal);
+    if (!res.writableEnded && !res.destroyed) res.json(state);
   });
 }

@@ -55,6 +55,8 @@ const routes: RouteObject[] = [
   // public: anyone can watch matches an organiser is broadcasting (no sign-in)
   { path: "/watch", element: page(() => import("@/pages/watch/WatchPage")) },
   { path: "/watch/:matchId", element: page(() => import("@/pages/watch/WatchPage")) },
+  // Studio worker: the headless Chrome on a manager's worker PC renders the show here (no layout, nav or tour)
+  { path: "/studio-render/:showId", element: <RequireRole role="MANAGER">{page(() => import("@/pages/studio/RenderPage"))}</RequireRole> },
   {
     path: "/manager",
     element: (

@@ -1,0 +1,81 @@
+# Production build of 7xen running locally, side by side with `pnpm dev` (own database, ports and media server),
+# for testing release builds — e.g. the Studio worker — without touching the dev setup or production.
+#
+#   docker compose -p 7xen-localprod -f deploy/localprod/docker-compose.yml up -d --build
+#   web    → http://localhost:8090            admin → http://localhost:8090/admin-ui  (admin / Admin@12345)
+#   db     → 127.0.0.1:5434                   media → RTMP :1936 · HLS :8889 · API :9998
+#   stop:  docker compose -p 7xen-localprod -f deploy/localprod/docker-compose.yml down
+name: 7xen-localprod
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sevenxen
+      POSTGRES_PASSWORD: sevenxen
+      POSTGRES_DB: sevenxen
+    ports:
+      - "127.0.0.1:5434:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+      network: host
+    image: 7xen-localprod-api:latest
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      DATABASE_URL: postgresql://sevenxen:sevenxen@db:5432/sevenxen?schema=public
+      JWT_SECRET: localprod-secret-not-for-production-0123456789abcdef0123456789
+      COOKIE_SECURE: "0"
+      SESSION_TTL_DAYS: "7"
+      CORS_ORIGINS: http://localhost:8090
+      PUBLIC_URL: http://localhost:8090
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: Admin@12345
+      ADMIN_NAME: 7xen Admin
+      CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+      STORAGE_DIR: /data/storage
+      MEDIA_HLS_URL: http://host.docker.internal:8889
+      MEDIA_API_URL: http://host.docker.internal:9998
+      MEDIA_RTMP_INTERNAL: rtmp://host.docker.internal:1936
+      # what phones and Studio workers on this machine publish to
+      MEDIA_RTMP_URL: rtmp://127.0.0.1:1936/live
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - storage:/data/storage
+    ports:
+      - "127.0.0.1:4100:4000" # MediaMTX's auth hook (host network) reaches the API here
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+      network: host
+    image: 7xen-localprod-web:latest
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_UPSTREAM: http://api:4000
+    ports:
+      - "8090:80"
+
+  media:
+    image: bluenviron/mediamtx:1.9.3
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
+
+volumes:
+  pgdata:
+  storage:

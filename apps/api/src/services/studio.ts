@@ -7,10 +7,31 @@
  * A Matroska stream only carries its header in the first chunk, so a recorder session can't be resumed mid-way:
  * if the server doesn't know the session (API restarted, ffmpeg died), it answers RESTART and the browser starts a
  * fresh recorder session (seq 0).
+ *
+ * Phase 8b (shared/studioWorker.ts): a show can instead "run on" a Studio worker — the manager's own PC renders and
+ * encodes it and publishes live/show_<id> itself (worker publish token). Its runner has no ingest ffmpeg, only the
+ * relays; it survives API restarts (resumeWorkerShows) and ends on "End show" or when the worker goes silent.
  */
 import { spawn, type ChildProcess } from "node:child_process";
 import type { Prisma, StudioShow as DbShow } from "@prisma/client";
-import type { CreateShowInput, IngestQuery, LiveBroadcastCard, ShowState, StudioOutputs, StudioShow, StudioShowRow, StudioStatus, UpdateShowInput } from "@7xen/shared";
+import {
+  WORKER_GONE_MS,
+  WORKER_ONLINE_MS,
+  type CreateShowInput,
+  type IngestQuery,
+  type LiveBroadcastCard,
+  type ShowControlInput,
+  type ShowControlState,
+  type ShowRunOn,
+  type ShowState,
+  type StudioOutputs,
+  type StudioShow,
+  type StudioShowRow,
+  type StudioStatus,
+  type StudioWorkerStatus,
+  type UpdateShowInput,
+  type WorkerState,
+} from "@7xen/shared";
 import { env } from "../env.js";
 import { prisma } from "../db.js";
 import { logger } from "../logger.js";
@@ -63,6 +84,8 @@ async function toShow(s: DbShow): Promise<StudioShow> {
     siteYoutube: s.siteYoutube,
     config: (s.config ?? {}) as Record<string, unknown>,
     watchPath: `/watch/s_${s.id}`,
+    runOn: s.runOn as ShowRunOn,
+    workerId: s.workerId,
   };
 }
 
@@ -91,6 +114,8 @@ export async function getShow(id: string, managerId: string): Promise<StudioShow
 export async function updateShow(id: string, managerId: string, input: UpdateShowInput): Promise<StudioShow> {
   await loadOwn(id, managerId);
   if (input.matchId) await assertOwnMatch(input.matchId, managerId);
+  // what the worker's render page shows changed → bump the control version
+  const bump = input.config !== undefined || input.matchId !== undefined || input.title !== undefined;
   const s = await prisma.studioShow.update({
     where: { id },
     data: {
@@ -100,8 +125,10 @@ export async function updateShow(id: string, managerId: string, input: UpdateSho
       ...(input.publicListing !== undefined ? { publicListing: input.publicListing } : {}),
       ...(input.siteYoutube !== undefined ? { siteYoutube: input.siteYoutube } : {}),
       ...(input.config !== undefined ? { config: input.config as Prisma.InputJsonValue } : {}),
+      ...(bump ? { controlVersion: { increment: 1 } } : {}),
     },
   });
+  if (bump) wakeControl(id);
   return toShow(s);
 }
 
@@ -125,8 +152,12 @@ interface Relay {
 interface Runner {
   showId: string;
   managerId: string;
+  /** browser = this server's ingest ffmpeg; worker = a Studio worker publishes the show path itself */
+  mode: "browser" | "worker";
+  workerId: string | null;
   session: string;
-  proc: ChildProcess;
+  /** ingest ffmpeg (browser mode only) */
+  proc: ChildProcess | null;
   nextSeq: number;
   pending: Map<number, Buffer>;
   lastChunkAt: number;
@@ -211,13 +242,21 @@ async function startRelays(r: Runner) {
   for (const relay of r.relays.values()) startRelay(r, relay);
 }
 
+/**
+ * Start the relays once MediaMTX has the show's stream. In worker mode it keeps watching: lastChunkAt = when the
+ * worker's stream was last seen (status "receiving"). Relays that lose their source (worker ffmpeg restarting)
+ * exit and retry every RETRY_MS until the path is back.
+ */
 function watchReady(r: Runner) {
   r.readyTimer = setInterval(() => {
-    if (r.stopping || r.relaysStarted) return;
+    if (r.stopping || (r.relaysStarted && r.mode === "browser")) return;
     void pathReady(showPath(r.showId)).then((ready) => {
-      if (ready && runners.get(r.showId) === r) void startRelays(r);
+      if (!ready || runners.get(r.showId) !== r) return;
+      if (r.mode === "worker") r.lastChunkAt = Date.now();
+      void startRelays(r);
     });
   }, 1_500);
+  r.readyTimer.unref();
 }
 
 function startRunner(showId: string, managerId: string, session: string, codec: IngestQuery["codec"]): Runner {
@@ -225,6 +264,8 @@ function startRunner(showId: string, managerId: string, session: string, codec: 
   const r: Runner = {
     showId,
     managerId,
+    mode: "browser",
+    workerId: null,
     session,
     proc,
     nextSeq: 0,
@@ -261,14 +302,40 @@ async function teardown(r: Runner, end: boolean) {
     if (relay.retry) clearTimeout(relay.retry);
     if (relay.proc && relay.proc.exitCode === null) relay.proc.kill("SIGINT");
   }
-  if (r.proc.exitCode === null) {
-    r.proc.stdin?.end();
-    setTimeout(() => r.proc.exitCode === null && r.proc.kill("SIGKILL"), 3_000);
+  const proc = r.proc;
+  if (proc && proc.exitCode === null) {
+    proc.stdin?.end();
+    setTimeout(() => proc.exitCode === null && proc.kill("SIGKILL"), 3_000);
   }
   if (end) {
     if (r.yt?.broadcast) void endMatchBroadcast(r.yt.broadcast.broadcastId);
-    await prisma.studioShow.update({ where: { id: r.showId }, data: { state: "ENDED" } }).catch(() => undefined);
+    await prisma.studioShow.update({ where: { id: r.showId }, data: { state: "ENDED", controlVersion: { increment: 1 } } }).catch(() => undefined);
+    wakeControl(r.showId);
   }
+}
+
+/** A worker-mode runner: no ingest, just relays once the worker's stream reaches MediaMTX. */
+function startWorkerRunner(showId: string, managerId: string, workerId: string): Runner {
+  const r: Runner = {
+    showId,
+    managerId,
+    mode: "worker",
+    workerId,
+    session: "",
+    proc: null,
+    nextSeq: 0,
+    pending: new Map(),
+    lastChunkAt: 0,
+    relays: new Map(),
+    relaysStarted: false,
+    yt: null,
+    error: null,
+    stopping: false,
+    readyTimer: null,
+  };
+  runners.set(showId, r);
+  watchReady(r);
+  return r;
 }
 
 export type IngestResult = { ok: true; live: boolean } | { restart: true };
@@ -276,12 +343,14 @@ export type IngestResult = { ok: true; live: boolean } | { restart: true };
 /** One chunk from the browser. Chunks of a session are written to ffmpeg strictly in seq order. */
 export async function ingestChunk(showId: string, managerId: string, q: IngestQuery, body: Buffer): Promise<IngestResult> {
   let r = runners.get(showId);
+  if (r?.mode === "worker") throw conflict(RUNS_ON_WORKER);
   if (!r || r.session !== q.session) {
     if (q.seq !== 0) return { restart: true }; // unknown session mid-stream → browser starts over
-    await loadOwn(showId, managerId);
+    const s = await loadOwn(showId, managerId);
+    if (s.runOn === "worker" && s.state === "LIVE") throw conflict(RUNS_ON_WORKER);
     if (r) await teardown(r, false);
     r = startRunner(showId, managerId, q.session, q.codec);
-    await prisma.studioShow.update({ where: { id: showId }, data: { state: "LIVE", liveSince: new Date() } });
+    await prisma.studioShow.update({ where: { id: showId }, data: { state: "LIVE", liveSince: new Date(), runOn: "browser", workerId: null } });
   }
   if (r.managerId !== managerId) throw notFound(SHOW_NOT_FOUND);
   r.lastChunkAt = Date.now();
@@ -291,7 +360,7 @@ export async function ingestChunk(showId: string, managerId: string, q: IngestQu
     const chunk = r.pending.get(r.nextSeq)!;
     r.pending.delete(r.nextSeq);
     r.nextSeq++;
-    if (r.proc.stdin && !r.proc.stdin.destroyed) r.proc.stdin.write(chunk);
+    if (r.proc?.stdin && !r.proc.stdin.destroyed) r.proc.stdin.write(chunk);
   }
   if (r.pending.size > 20) {
     // a chunk went missing for good — the stream can't continue without it
@@ -303,17 +372,140 @@ export async function ingestChunk(showId: string, managerId: string, q: IngestQu
 
 export async function stopShow(showId: string, managerId: string): Promise<StudioStatus> {
   await loadOwn(showId, managerId);
+  await endShow(showId);
+  return showStatus(showId, managerId);
+}
+
+/** End a show (whatever runs it). The worker's next poll gets no job and stops. */
+export async function endShow(showId: string): Promise<void> {
   const r = runners.get(showId);
   if (r) await teardown(r, true);
-  else await prisma.studioShow.update({ where: { id: showId }, data: { state: "ENDED" } });
+  else {
+    await prisma.studioShow.update({ where: { id: showId }, data: { state: "ENDED", controlVersion: { increment: 1 } } });
+    wakeControl(showId);
+  }
+}
+
+// ---------------------------------------------------------------- phase 8b: run on a Studio worker
+
+const RUNS_ON_WORKER = "This show is running on your studio worker. End it there first.";
+
+export const workerOnline = (lastSeenAt: Date | null, now = Date.now()) => !!lastSeenAt && now - lastSeenAt.getTime() < WORKER_ONLINE_MS;
+
+/** Is this show LIVE with a worker-mode runner for this worker (= the worker's job)? */
+export const workerRunning = (showId: string, workerId: string) => {
+  const r = runners.get(showId);
+  return !!r && r.mode === "worker" && r.workerId === workerId && !r.stopping;
+};
+
+export async function startWorkerShow(showId: string, managerId: string, workerId: string): Promise<StudioStatus> {
+  const s = await loadOwn(showId, managerId);
+  const w = await prisma.studioWorker.findUnique({ where: { id: workerId } });
+  if (!w || w.managerId !== managerId) throw notFound("Studio worker not found");
+  const r = runners.get(showId);
+  if (r?.mode === "worker" && r.workerId === workerId) return showStatus(showId, managerId); // already running there
+  if (r?.mode === "browser") throw conflict("This show is live from a browser right now. End it there first.");
+  if (r?.mode === "worker" || (s.state === "LIVE" && s.runOn === "worker" && s.workerId !== workerId)) throw conflict("This show is already running on another studio worker.");
+  if (!workerOnline(w.lastSeenAt)) throw conflict("Your studio worker is offline. Start it and try again.");
+  const busy = await prisma.studioShow.findFirst({ where: { id: { not: showId }, state: "LIVE", runOn: "worker", workerId }, select: { id: true } });
+  if (busy) throw conflict("This studio worker is already running another show. End that show first.");
+  await prisma.studioShow.update({
+    where: { id: showId },
+    data: { runOn: "worker", workerId, state: "LIVE", liveSince: new Date(), controlVersion: { increment: 1 } },
+  });
+  startWorkerRunner(showId, managerId, workerId);
+  wakeControl(showId);
   return showStatus(showId, managerId);
+}
+
+/** Boot: worker-run shows that were LIVE before a restart/deploy get their runner (and relays) back. */
+export async function resumeWorkerShows(): Promise<void> {
+  const shows = await prisma.studioShow.findMany({ where: { state: "LIVE", runOn: "worker", workerId: { not: null } } });
+  for (const s of shows) if (!runners.has(s.id)) startWorkerRunner(s.id, s.managerId, s.workerId!);
+  if (shows.length) logger.info({ count: shows.length }, "studio worker shows resumed");
+}
+
+async function workerStatus(workerId: string | null): Promise<StudioWorkerStatus["worker"]> {
+  if (!workerId) return null;
+  const w = await prisma.studioWorker.findUnique({ where: { id: workerId } });
+  if (!w) return null;
+  return {
+    id: w.id,
+    name: w.name,
+    online: workerOnline(w.lastSeenAt),
+    state: w.state as WorkerState,
+    fps: w.fps,
+    encoder: w.encoder,
+    bitrateKbps: w.bitrateKbps,
+    error: w.error,
+  };
+}
+
+// ---------------------------------------------------------------- control state (console → worker render page)
+
+const CONTROL_WAIT_MS = 25_000;
+const controlWaiters = new Map<string, Set<() => void>>();
+
+function wakeControl(showId: string) {
+  const set = controlWaiters.get(showId);
+  if (!set) return;
+  controlWaiters.delete(showId);
+  for (const wake of set) wake();
+}
+
+function toControl(s: DbShow): ShowControlState {
+  const c = (s.control ?? {}) as Partial<ShowControlInput>;
+  return {
+    programId: typeof c.programId === "string" ? c.programId : null,
+    takeSeq: typeof c.takeSeq === "number" ? c.takeSeq : 0,
+    version: s.controlVersion,
+    title: s.title,
+    matchId: s.matchId,
+    config: (s.config ?? {}) as Record<string, unknown>,
+    state: s.state as ShowControlState["state"],
+  };
+}
+
+export async function setShowControl(showId: string, managerId: string, input: ShowControlInput): Promise<{ version: number }> {
+  await loadOwn(showId, managerId);
+  const s = await prisma.studioShow.update({
+    where: { id: showId },
+    data: { control: { programId: input.programId, takeSeq: input.takeSeq }, controlVersion: { increment: 1 } },
+    select: { controlVersion: true },
+  });
+  wakeControl(showId);
+  return { version: s.controlVersion };
+}
+
+/** Long-poll: answers at once when the version is newer than `since`, else waits (≤ 25 s) for the next change. */
+export async function showControl(showId: string, managerId: string, since: number, signal?: AbortSignal): Promise<ShowControlState> {
+  const s = await loadOwn(showId, managerId);
+  if (s.controlVersion > since || signal?.aborted) return toControl(s);
+  await new Promise<void>((resolve) => {
+    let set = controlWaiters.get(showId);
+    if (!set) controlWaiters.set(showId, (set = new Set()));
+    const done = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", done);
+      const cur = controlWaiters.get(showId);
+      cur?.delete(done);
+      if (cur?.size === 0) controlWaiters.delete(showId);
+      resolve();
+    };
+    const timer = setTimeout(done, CONTROL_WAIT_MS);
+    signal?.addEventListener("abort", done);
+    set.add(done);
+  });
+  return toControl(await loadOwn(showId, managerId));
 }
 
 export async function showStatus(showId: string, managerId: string): Promise<StudioStatus> {
   const s = await loadOwn(showId, managerId);
   const r = runners.get(showId);
-  const ago = r ? Math.round((Date.now() - r.lastChunkAt) / 1000) : null;
+  const ago = r && r.lastChunkAt ? Math.round((Date.now() - r.lastChunkAt) / 1000) : null;
   return {
+    runOn: s.runOn as ShowRunOn,
+    worker: await workerStatus(s.workerId),
     state: s.state as ShowState,
     liveSince: s.liveSince?.toISOString() ?? null,
     receiving: !!r && ago !== null && ago < 5,
@@ -332,16 +524,33 @@ export async function showStatus(showId: string, managerId: string): Promise<Stu
 
 /** Watchdog: end shows whose browser stopped sending. Started once at boot. */
 export function startStudioWatchdog() {
-  // shows left LIVE by a previous process have no runner any more
-  void prisma.studioShow.updateMany({ where: { state: "LIVE" }, data: { state: "IDLE" } }).catch(() => undefined);
+  // browser shows left LIVE by a previous process have no runner any more (worker shows resume: resumeWorkerShows)
+  void prisma.studioShow.updateMany({ where: { state: "LIVE", runOn: "browser" }, data: { state: "IDLE" } }).catch(() => undefined);
   setInterval(() => {
+    const workerRunners: Runner[] = [];
     for (const r of [...runners.values()]) {
-      if (Date.now() - r.lastChunkAt > IDLE_END_MS) {
+      if (r.mode === "worker") workerRunners.push(r);
+      else if (Date.now() - r.lastChunkAt > IDLE_END_MS) {
         logger.info({ showId: r.showId }, "studio show idle — ending");
         void teardown(r, true);
       }
     }
+    if (workerRunners.length) void endGoneWorkerShows(workerRunners).catch((err) => logger.warn({ err }, "studio worker watchdog failed"));
   }, 5_000).unref();
+}
+
+/** Worker-run shows end by themselves when their worker has been silent for WORKER_GONE_MS (or was removed). */
+async function endGoneWorkerShows(rs: Runner[]) {
+  const ids = [...new Set(rs.map((r) => r.workerId!))];
+  const workers = await prisma.studioWorker.findMany({ where: { id: { in: ids } }, select: { id: true, lastSeenAt: true } });
+  const seen = new Map(workers.map((w) => [w.id, w.lastSeenAt?.getTime() ?? 0]));
+  for (const r of rs) {
+    if (r.stopping || runners.get(r.showId) !== r) continue;
+    if (Date.now() - (seen.get(r.workerId!) ?? 0) > WORKER_GONE_MS) {
+      logger.info({ showId: r.showId, workerId: r.workerId }, "studio worker gone — ending show");
+      await teardown(r, true);
+    }
+  }
 }
 
 export async function shutdownStudio() {

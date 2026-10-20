@@ -188,6 +188,7 @@ model User {
   managerInviteAccepted   ManagerInvite[]     @relation("ManagerInviteAccepted")
   devices                 Device[]
   studioShows             StudioShow[]
+  studioWorkers           StudioWorker[]
   streamLayout            StreamLayout?
   streamDestinations      StreamDestination[]
   coinAwards              CoinAward[]
@@ -836,9 +837,40 @@ model StudioShow {
   siteYoutube    Boolean   @default(true)
   /// the Studio page's saved setup (scenes, overlays…); shape owned by the web app
   config         Json      @default("{}")
+  /// phase 8b: "browser" (the Studio tab mixes it) | "worker" (a StudioWorker renders it)
+  runOn          String    @default("browser")
+  /// the StudioWorker running it (runOn "worker")
+  workerId       String?
+  /// live switching state mirrored to the worker ({ programId, takeSeq })
+  control        Json?
+  /// bumped on every control/config/match/title change (render page long-polls it)
+  controlVersion Int       @default(0)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
   @@index([managerId])
   @@index([state])
+}
+
+/// phase 8b: a manager's own computer that renders + encodes Studio shows (services/studio-worker)
+model StudioWorker {
+  id          String    @id @default(cuid())
+  managerId   String
+  manager     User      @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  name        String
+  /// sha256 hex of the worker key (sent as X-Worker-Key)
+  keyHash     String    @unique
+  lastSeenAt  DateTime?
+  /// idle | starting | live | error (as last reported)
+  state       String    @default("idle")
+  encoder     String?
+  version     String?
+  showId      String?
+  fps         Float?
+  bitrateKbps Float?
+  error       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([managerId])
 }

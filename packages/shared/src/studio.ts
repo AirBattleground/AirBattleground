@@ -22,6 +22,7 @@
  *   GET /api/live/s/:showId/<hls file>.
  */
 import { z } from "zod";
+import type { ShowRunOn, StudioWorkerStatus } from "./studioWorker";
 
 export const STUDIO_WIDTH = 1280;
 export const STUDIO_HEIGHT = 720;
@@ -78,6 +79,9 @@ export interface StudioShow extends StudioShowRow {
   config: StudioConfig;
   /** public watch link while live */
   watchPath: string;
+  /** phase 8b: where the show runs — this browser tab, or a Studio worker (see studioWorker.ts) */
+  runOn: ShowRunOn;
+  workerId: string | null;
 }
 
 /** Where a show can be sent (for the Studio's "Where it goes" panel). */
@@ -88,7 +92,7 @@ export interface StudioOutputs {
   destinations: { id: string; name: string; kind: "YOUTUBE" | "FACEBOOK" | "CUSTOM" }[];
 }
 
-export interface StudioStatus {
+export interface StudioStatus extends StudioWorkerStatus {
   state: ShowState;
   liveSince: string | null;
   /** the server is receiving chunks right now */
