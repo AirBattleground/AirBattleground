@@ -486,9 +486,14 @@ function LiveHealth({ mix, status }: { mix: MixerStatus | null; status: import("
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
       <span className="rounded bg-destructive px-2 py-1 font-bold text-white">● LIVE {Math.floor(secs / 60)}:{String(secs % 60).padStart(2, "0")}</span>
-      <span className={cn("rounded px-2 py-1 font-semibold", mix.backlog > 4 ? "bg-warning/20 text-warning-foreground dark:text-warning" : "bg-success/15 text-success")}>
-        {mix.backlog > 4 ? `Slow upload · ${mix.backlog}s behind` : `Upload ${(mix.uploadKbps / 1000).toFixed(1)} Mbps`}
+      <span className={cn("rounded px-2 py-1 font-semibold", mix.backlog > 3 ? "bg-warning/20 text-warning-foreground dark:text-warning" : "bg-success/15 text-success")}>
+        {mix.backlog > 3 ? `Slow upload · ${mix.backlog}s behind` : `Upload ${(mix.uploadKbps / 1000).toFixed(1)} Mbps`}
       </span>
+      {mix.bitrateKbps < 2500 && (
+        <span className="rounded bg-muted px-2 py-1" title="Your internet upload couldn't keep up, so the Studio lowered the video quality to stay live. Close other uploads (or move the phone to mobile data) and go live again for full quality.">
+          Quality lowered to keep up · {(mix.bitrateKbps / 1000).toFixed(1)} Mbps
+        </span>
+      )}
       {mix.error && <span className="rounded bg-destructive/15 px-2 py-1 font-semibold text-destructive">{mix.error}</span>}
       {status?.destinations.map((d) => (
         <span key={d.id} className="flex items-center gap-1 rounded bg-muted px-2 py-1">

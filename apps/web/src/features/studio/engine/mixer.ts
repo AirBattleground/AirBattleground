@@ -24,7 +24,16 @@ export interface MixerStatus {
   /** the recorder had to start over (server lost the session) */
   restarts: number;
   liveSince: number | null;
+  /** video bitrate the recorder uses now (steps down when the upload can't keep up) */
+  bitrateKbps: number;
 }
+
+/** Recorder video bitrates, best first. 720p30 looks fine at 2.5 Mbps; lower steps keep a weak upload live. */
+const BITRATES = [2_500_000, 1_500_000, 900_000];
+/** chunks (≈ seconds) waiting before we drop to a lower bitrate and jump back to live */
+const CATCH_UP_AT = 6;
+/** uploads in flight at once — the server reorders by seq, so a slow round trip doesn't stall the stream */
+const PARALLEL = 3;
 
 interface Src {
   ref: SourceRef;
@@ -91,11 +100,15 @@ export class StudioMixer {
   private showId: string | null = null;
   private session = "";
   private seq = 0;
-  private queue: { session: string; seq: number; blob: Blob }[] = [];
-  private uploading = false;
+  private queue: { session: string; seq: number; blob: Blob; sending: boolean }[] = [];
+  private inFlight = 0;
+  /** the server accepted seq 0 of this session — until then only that chunk may be in flight (it opens the session) */
+  private opened = false;
+  private rate = 0;
+  private lastStepDown = 0;
   private sentBytes: { at: number; bytes: number }[] = [];
   private codec: "h264" | "vp8" | "vp9" = "vp8";
-  status: MixerStatus = { live: false, backlog: 0, uploadKbps: 0, error: null, restarts: 0, liveSince: null };
+  status: MixerStatus = { live: false, backlog: 0, uploadKbps: 0, error: null, restarts: 0, liveSince: null, bitrateKbps: BITRATES[0]! / 1000 };
   onStatus: ((s: MixerStatus) => void) | null = null;
 
   constructor() {
@@ -524,7 +537,8 @@ export class StudioMixer {
   goLive(showId: string) {
     if (this.status.live) return;
     this.showId = showId;
-    this.status = { ...this.status, live: true, error: null, liveSince: Date.now() };
+    this.rate = 0;
+    this.status = { ...this.status, live: true, error: null, liveSince: Date.now(), bitrateKbps: BITRATES[0]! / 1000 };
     this.startRecorder();
     this.emit();
   }
@@ -534,53 +548,81 @@ export class StudioMixer {
     this.codec = codec;
     this.session = newSession();
     this.seq = 0;
+    this.opened = false;
     const stream = new MediaStream([...this.canvas.captureStream(STUDIO_FPS).getVideoTracks(), ...this.dest.stream.getAudioTracks()]);
-    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: 4_500_000, audioBitsPerSecond: 128_000 });
+    const bitrate = BITRATES[this.rate]!;
+    this.status.bitrateKbps = bitrate / 1000;
+    const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: bitrate, audioBitsPerSecond: 128_000 });
     const session = this.session;
     rec.ondataavailable = (e) => {
       if (!e.data.size || session !== this.session) return;
-      this.queue.push({ session, seq: this.seq++, blob: e.data });
-      void this.pump();
+      this.queue.push({ session, seq: this.seq++, blob: e.data, sending: false });
+      this.catchUp();
+      this.pump();
     };
     rec.start(1000);
     this.recorder = rec;
   }
 
-  private async pump() {
-    if (this.uploading) return;
-    this.uploading = true;
-    try {
-      while (this.queue.length && this.showId) {
-        const c = this.queue[0]!;
-        if (c.session !== this.session) {
-          this.queue.shift();
-          continue;
-        }
-        const res = await fetch(`/api/manager/studio/shows/${this.showId}/ingest?session=${c.session}&seq=${c.seq}&codec=${this.codec}`, {
-          method: "POST",
-          credentials: "include",
-          headers: { "Content-Type": "video/webm" },
-          body: c.blob,
-        }).catch(() => null);
-        if (res?.ok) {
-          this.queue.shift();
-          this.sentBytes.push({ at: Date.now(), bytes: c.blob.size });
-          this.status.error = null;
-        } else if (res?.status === 409) {
-          // the server lost this session (restart / crash): begin a fresh recording
-          this.queue = [];
-          this.recorder?.stop();
-          this.status.restarts++;
-          if (this.status.live) this.startRecorder();
-        } else {
-          this.status.error = res ? `Upload failed (${res.status}). Retrying…` : "Connection lost. Retrying…";
-          this.emit();
-          await new Promise((r) => setTimeout(r, 1500));
-        }
-        this.emit();
+  /** The upload is falling behind: start a fresh recorder session at a lower bitrate and drop what's queued (back to live). */
+  private catchUp() {
+    if (this.queue.length < CATCH_UP_AT || !this.status.live) return;
+    if (Date.now() - this.lastStepDown < 10_000) return;
+    this.lastStepDown = Date.now();
+    this.rate = Math.min(this.rate + 1, BITRATES.length - 1);
+    this.queue = [];
+    const old = this.recorder;
+    this.recorder = null;
+    if (old && old.state !== "inactive") old.stop();
+    this.status.restarts++;
+    this.startRecorder();
+  }
+
+  /** Send queued chunks, up to PARALLEL at once. */
+  private pump() {
+    while (this.showId && this.inFlight < (this.opened ? PARALLEL : 1)) {
+      const c = this.queue.find((x) => !x.sending);
+      if (!c) break;
+      if (c.session !== this.session) {
+        this.queue = this.queue.filter((x) => x !== c);
+        continue;
       }
-    } finally {
-      this.uploading = false;
+      c.sending = true;
+      this.inFlight++;
+      void this.send(c).finally(() => {
+        this.inFlight--;
+        this.emit();
+        this.pump();
+      });
+    }
+  }
+
+  private async send(c: { session: string; seq: number; blob: Blob; sending: boolean }) {
+    const res = await fetch(`/api/manager/studio/shows/${this.showId}/ingest?session=${c.session}&seq=${c.seq}&codec=${this.codec}`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "video/webm" },
+      body: c.blob,
+    }).catch(() => null);
+    if (c.session !== this.session) return; // a newer session took over while this was in flight
+    if (res?.ok) {
+      this.opened = true;
+      this.queue = this.queue.filter((x) => x !== c);
+      this.sentBytes.push({ at: Date.now(), bytes: c.blob.size });
+      this.status.error = null;
+    } else if (res?.status === 409) {
+      // the server lost this session (restart / crash): begin a fresh recording
+      this.queue = [];
+      const old = this.recorder;
+      this.recorder = null;
+      if (old && old.state !== "inactive") old.stop();
+      this.status.restarts++;
+      if (this.status.live) this.startRecorder();
+    } else {
+      this.status.error = res ? `Upload failed (${res.status}). Retrying…` : "Connection lost. Retrying…";
+      this.emit();
+      await new Promise((r) => setTimeout(r, 1500));
+      c.sending = false;
     }
   }
 
