@@ -26,12 +26,19 @@ export interface MixerStatus {
   liveSince: number | null;
   /** video bitrate the recorder uses now (steps down when the upload can't keep up) */
   bitrateKbps: number;
+  /** frames the mixer actually drew in the last second (target STUDIO_FPS) */
+  fps: number;
 }
 
 /** Recorder video bitrates, best first. 720p30 looks fine at 2.5 Mbps; lower steps keep a weak upload live. */
 const BITRATES = [2_500_000, 1_500_000, 900_000];
-/** chunks (≈ seconds) waiting before we drop to a lower bitrate and jump back to live */
-const CATCH_UP_AT = 6;
+/**
+ * Chunks (≈ seconds) waiting before we drop to a lower bitrate and jump back to live. Every restart cuts the
+ * viewers' stream for a few seconds, so this is a last resort — short Wi-Fi spikes clear on their own (PARALLEL).
+ */
+const CATCH_UP_AT = 12;
+/** at the lowest bitrate we only restart (jump back to live) when this far behind */
+const GIVE_UP_AT = 25;
 /** uploads in flight at once — the server reorders by seq, so a slow round trip doesn't stall the stream */
 const PARALLEL = 3;
 
@@ -108,7 +115,7 @@ export class StudioMixer {
   private lastStepDown = 0;
   private sentBytes: { at: number; bytes: number }[] = [];
   private codec: "h264" | "vp8" | "vp9" = "vp8";
-  status: MixerStatus = { live: false, backlog: 0, uploadKbps: 0, error: null, restarts: 0, liveSince: null, bitrateKbps: BITRATES[0]! / 1000 };
+  status: MixerStatus = { live: false, backlog: 0, uploadKbps: 0, error: null, restarts: 0, liveSince: null, bitrateKbps: BITRATES[0]! / 1000, fps: 0 };
   onStatus: ((s: MixerStatus) => void) | null = null;
 
   constructor() {
@@ -122,10 +129,18 @@ export class StudioMixer {
     this.monitor.gain.value = 0;
     this.monitor.connect(this.audio.destination);
     let frames = 0;
+    let since = performance.now();
     this.stopTicker = workerTicker(STUDIO_FPS, () => {
       this.draw();
-      // refresh the UI (clock, upload rate) about once a second while live
-      if (this.status.live && ++frames % STUDIO_FPS === 0) this.emit();
+      frames++;
+      // measure the real frame rate and refresh the UI (clock, upload rate) about once a second
+      const now = performance.now();
+      if (now - since >= 1000) {
+        this.status.fps = Math.round((frames * 1000) / (now - since));
+        frames = 0;
+        since = now;
+        if (this.status.live) this.emit();
+      }
     });
   }
 
@@ -566,8 +581,10 @@ export class StudioMixer {
 
   /** The upload is falling behind: start a fresh recorder session at a lower bitrate and drop what's queued (back to live). */
   private catchUp() {
-    if (this.queue.length < CATCH_UP_AT || !this.status.live) return;
-    if (Date.now() - this.lastStepDown < 10_000) return;
+    if (!this.status.live || this.queue.length < CATCH_UP_AT) return;
+    const lowest = this.rate >= BITRATES.length - 1;
+    if (lowest && this.queue.length < GIVE_UP_AT) return;
+    if (Date.now() - this.lastStepDown < 20_000) return;
     this.lastStepDown = Date.now();
     this.rate = Math.min(this.rate + 1, BITRATES.length - 1);
     this.queue = [];

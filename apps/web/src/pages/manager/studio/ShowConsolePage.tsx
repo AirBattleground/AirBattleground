@@ -489,6 +489,9 @@ function LiveHealth({ mix, status }: { mix: MixerStatus | null; status: import("
       <span className={cn("rounded px-2 py-1 font-semibold", mix.backlog > 3 ? "bg-warning/20 text-warning-foreground dark:text-warning" : "bg-success/15 text-success")}>
         {mix.backlog > 3 ? `Slow upload · ${mix.backlog}s behind` : `Upload ${(mix.uploadKbps / 1000).toFixed(1)} Mbps`}
       </span>
+      <span className={cn("rounded px-2 py-1 font-semibold tabular-nums", mix.fps && mix.fps < 26 ? "bg-warning/20 text-warning-foreground dark:text-warning" : "bg-muted")} title={mix.fps && mix.fps < 26 ? "This computer can't draw 30 frames a second. Close other tabs and apps, or keep this tab in front." : "Frames per second the Studio is drawing"}>
+        {mix.fps} fps
+      </span>
       {mix.bitrateKbps < 2500 && (
         <span className="rounded bg-muted px-2 py-1" title="Your internet upload couldn't keep up, so the Studio lowered the video quality to stay live. Close other uploads (or move the phone to mobile data) and go live again for full quality.">
           Quality lowered to keep up · {(mix.bitrateKbps / 1000).toFixed(1)} Mbps

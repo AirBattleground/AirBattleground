@@ -149,7 +149,7 @@ function ffmpegArgs(showId: string, codec: IngestQuery["codec"]): string[] {
   const video =
     codec === "h264"
       ? ["-c:v", "copy"]
-      : ["-c:v", "libx264", "-preset", "superfast", "-tune", "zerolatency", "-b:v", `${VIDEO_KBPS}k`, "-maxrate", `${VIDEO_KBPS}k`, "-bufsize", `${VIDEO_KBPS * 2}k`, "-g", "60", "-keyint_min", "60", "-sc_threshold", "0", "-pix_fmt", "yuv420p"];
+      : ["-c:v", "libx264", "-preset", "superfast", "-tune", "zerolatency", "-b:v", `${VIDEO_KBPS}k`, "-maxrate", `${VIDEO_KBPS}k`, "-bufsize", `${VIDEO_KBPS * 2}k`, "-force_key_frames", "expr:gte(t,n_forced*2)", "-g", "120", "-keyint_min", "30", "-sc_threshold", "0", "-pix_fmt", "yuv420p"];
   return [
     "-hide_banner",
     "-loglevel", "warning",

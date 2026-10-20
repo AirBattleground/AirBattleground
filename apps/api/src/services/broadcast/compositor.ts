@@ -115,7 +115,7 @@ function ffmpegArgs(deviceId: string): string[] {
     "-map", "0:a?",
     "-c:v", "libx264", "-preset", "superfast", "-tune", "zerolatency",
     "-b:v", `${VIDEO_KBPS}k`, "-maxrate", `${VIDEO_KBPS}k`, "-bufsize", `${VIDEO_KBPS * 2}k`,
-    "-g", "60", "-keyint_min", "60", "-sc_threshold", "0",
+    "-force_key_frames", "expr:gte(t,n_forced*2)", "-g", "120", "-keyint_min", "30", "-sc_threshold", "0",
     "-c:a", "aac", "-b:a", "128k", "-ar", "44100",
     "-f", "flv", rtmpInternal(outputPath(deviceId)),
   ];
