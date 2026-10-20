@@ -1,10 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { lazy, Suspense, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarCheck, Medal, Ticket } from "lucide-react";
-import { todayInAppTz, type OrganizerRef, type TeamRegistration } from "@7xen/shared";
+import { CalendarCheck, Gamepad2, Hourglass, Medal, Swords, Ticket, Trophy, Users } from "lucide-react";
+import { todayInAppTz, type OrganizerRef, type TeamRegistration, type TeamScrimOnDate } from "@7xen/shared";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { ME_KEY, usePlayerSession } from "@/lib/auth";
+import { useSkin } from "@/lib/skin";
 import { useWatchForApproval } from "@/features/player/components/NoTeamHome";
 import { TeamUpBanner } from "@/features/player/components/TeamUpBanner";
 import { SuggestionsPanel } from "@/features/player/components/SuggestionsPanel";
@@ -12,8 +13,7 @@ import { useTeamDashboard } from "@/features/team/api";
 import { QueryError } from "@/features/team/components/QueryError";
 import { RegistrationCard, RegistrationCardSkeleton } from "@/features/team/components/RegistrationCard";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
-import { HomeHero } from "@/features/team/home/HomeHero";
-import { PlayerHero } from "@/features/team/home/PlayerHero";
+import { FeaturedHero, NextMatchCard, type HeroStatItem } from "@/features/team/home/FeaturedHero";
 import { OrganiserStrip, tallyOrganisers } from "@/features/team/home/OrganiserStrip";
 import { ScrimShowcase, useHomeScrims } from "@/features/team/home/ScrimShowcase";
 import { SeasonCard } from "@/features/team/home/SeasonCard";
@@ -22,13 +22,16 @@ import { TournamentRail, useFeaturedTournaments } from "@/features/team/home/Tou
 import { LastResultCard } from "@/features/results/components/LastResultCard";
 import { TournamentsHomeCard } from "@/features/tournaments/team/components/TournamentsHomeCard";
 import { NextRoomCard } from "@/features/live/components/TeamRoom";
+import { CoinLeaderboard } from "@/features/coins/components/CoinLeaderboard";
 import { TeamLiveCards } from "@/features/station/components/TeamLiveCard";
 
+/** Lux Battle only: plane + chutes over the home hero (lazy, so Teal never loads it). */
+const LuxHomeOverlay = lazy(() => import("@/skins/lux/pages/LuxHomeOverlay"));
 const STEPS: TourStep[] = [
   { title: "Welcome to AirBattleground!", description: "This is your team's home. Here's a quick look around — it takes 20 seconds." },
   { element: '[data-tour="find-scrim"]', title: "Find a scrim", description: "Your main button: browse scrims by day and register your team.", side: "bottom" },
   { element: '[data-tour="next-match"]', title: "Your next match", description: "Once an organiser approves you, your slot number, time and maps show up here with a live countdown.", side: "bottom" },
-  { element: '[data-tour="stats"]', title: "Your numbers", description: "Approved matches, requests still waiting for approval, matches played and your best finish.", side: "top" },
+  { element: '[data-tour="stats"]', title: "Your numbers", description: "Matches played, approved matches coming up and your best finish (plus requests still waiting, when you have some).", side: "top" },
   { element: '[data-tour="watch-live"]', title: "Watch live", description: "When one of your matches is being streamed, it shows up right here. Tap it to watch the game live.", side: "bottom" },
   { element: '[data-tour="next-room"]', title: "Room ID & password", description: "Before each match the room ID and password appear here, with copy buttons. Until then it shows when they'll appear.", side: "bottom" },
   { element: '[data-tour="team-suggestions"]', title: "Asked by your team", description: "Scrims and tournaments your members want to play. Register in one tap, or dismiss.", side: "top" },
@@ -36,6 +39,7 @@ const STEPS: TourStep[] = [
   { element: '[data-tour="home-scrims"]', title: "Scrims you can join", description: "Today's and tomorrow's scrims that still take teams. Register right from here.", side: "top" },
   { element: '[data-tour="upcoming"]', title: "Everything coming up", description: "All your upcoming scrims with their status — waiting or approved with a slot.", side: "top" },
   { element: '[data-tour="last-result"]', title: "Your last result", description: "Your rank and points from the latest published scrim. Tap it for the full points table.", side: "top" },
+  { element: '[data-tour="coins"]', title: "BG coins", description: "Every match winner earns BG coins for their team's leader. See the total given out and the top 10 teams.", side: "top" },
   { element: '[data-tour="organisers"]', title: "Organisers", description: "The organisers running scrims and tournaments you can play.", side: "top" },
 ];
 
@@ -45,6 +49,7 @@ const START_STEPS: TourStep[] = [
   { element: '[data-tour="team-up"]', title: "Team up", description: "Create your own team, or join your friends with their invite code.", side: "bottom" },
   { element: '[data-tour="home-tournaments"]', title: "Tournaments", description: "Live cups and ones open for registration. Tap a poster for the full details.", side: "top" },
   { element: '[data-tour="home-scrims"]', title: "Scrims you can join", description: "Today's and tomorrow's scrims that still take teams.", side: "top" },
+  { element: '[data-tour="coins"]', title: "BG coins", description: "Win matches to earn BG coins. See the total given out and the top 10 teams.", side: "top" },
   { element: '[data-tour="organisers"]', title: "Organisers", description: "The organisers running scrims and tournaments you can play.", side: "top" },
 ];
 
@@ -54,6 +59,18 @@ function greeting() {
   if (h < 17) return "Good afternoon";
   return "Good evening";
 }
+
+/** The next scrim (today, then tomorrow) the team can still register for. */
+function nextOpenScrim(lists: TeamScrimOnDate[][]): TeamScrimOnDate | null {
+  const now = Date.now();
+  for (const list of lists) {
+    const hit = list.find((s) => s.registrationOpen && new Date(s.startsAt).getTime() > now && (!s.myRegistration || s.myRegistration.status === "CANCELLED"));
+    if (hit) return hit;
+  }
+  return null;
+}
+
+const pulse = <span className="inline-block h-6 w-10 animate-pulse rounded bg-muted align-middle" />;
 
 /** /team: the player hub. No team yet → create / join; otherwise the team's home. */
 export default function DashboardPage() {
@@ -70,10 +87,6 @@ function StartHome() {
   const today = todayInAppTz();
   const scrims = useHomeScrims(today);
   const featured = useFeaturedTournaments();
-  const backdropUrl = useMemo(
-    () => [...featured.items.map((t) => t.posterUrl), ...scrims.today.items.map((s) => s.scrim.posterUrl), ...scrims.tomorrow.items.map((s) => s.scrim.posterUrl)].find((u): u is string => !!u) ?? null,
-    [featured.items, scrims.today.items, scrims.tomorrow.items],
-  );
   const organisers = useMemo(() => {
     const seen = new Set<string>();
     const fromScrims: OrganizerRef[] = [];
@@ -84,15 +97,25 @@ function StartHome() {
     }
     return tallyOrganisers(fromScrims, featured.items.map((t) => t.manager));
   }, [featured.items, scrims.today.items, scrims.tomorrow.items]);
+  const startStats: HeroStatItem[] = [
+    { icon: <Swords />, value: scrims.today.loading ? pulse : scrims.today.items.filter((s) => s.registrationOpen).length, label: "Scrims open today" },
+    { icon: <Trophy />, value: featured.loading ? pulse : featured.items.length, label: "Tournaments on" },
+    { icon: <Users />, value: organisers.length, label: "Organisers" },
+  ];
 
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
       <div className="flex flex-col gap-4">
-        <PlayerHero name={player?.ign ?? user?.displayName ?? "Player"} avatarUrl={player?.avatarUrl} greeting={greeting()} today={today} backdropUrl={backdropUrl} />
+        <FeaturedHero
+          eyebrow={`${greeting()}, ${player?.ign ?? user?.displayName ?? "player"}`}
+          stats={startStats}
+          card={<NextMatchCard booked={null} open={nextOpenScrim([scrims.today.items, scrims.tomorrow.items])} today={today} loading={scrims.today.loading} />}
+        />
         <TeamUpBanner pending={pending} />
       </div>
       <TournamentRail {...featured} />
       <ScrimShowcase data={scrims} />
+      <CoinLeaderboard />
       <OrganiserStrip items={organisers} />
     </div>
   );
@@ -101,6 +124,7 @@ function StartHome() {
 function TeamHome() {
   usePageTour("team.dashboard", STEPS);
   const { user, isLeader } = usePlayerSession();
+  const { isLux } = useSkin();
   const qc = useQueryClient();
   const q = useTeamDashboard();
   const d = q.data;
@@ -120,18 +144,6 @@ function TeamHome() {
   const scrims = useHomeScrims(today);
   const featured = useFeaturedTournaments();
 
-  // hero art: the next match's poster, else anything upcoming, else a featured tournament or today's scrim
-  const backdropUrl = useMemo(() => {
-    const candidates = [
-      d?.nextMatch?.scrim.posterUrl,
-      ...(d?.upcoming ?? []).map((r) => r.scrim.posterUrl),
-      ...featured.items.map((t) => t.posterUrl),
-      ...scrims.today.items.map((s) => s.scrim.posterUrl),
-      ...scrims.tomorrow.items.map((s) => s.scrim.posterUrl),
-    ];
-    return candidates.find((u): u is string => !!u) ?? null;
-  }, [d, featured.items, scrims.today.items, scrims.tomorrow.items]);
-
   const organisers = useMemo(() => {
     const fromScrims: OrganizerRef[] = [];
     const seen = new Set<string>();
@@ -146,18 +158,30 @@ function TeamHome() {
   }, [d, featured.items, scrims.today.items, scrims.tomorrow.items]);
 
   const showUpcoming = loading || booked || upcoming.length > 0;
+  const best = d?.results?.bestRank;
+  const stats: HeroStatItem[] = [
+    { icon: <Gamepad2 />, value: d ? d.counts.totalPlayed : pulse, label: "Matches played" },
+    { icon: <CalendarCheck />, value: d ? d.counts.approvedUpcoming : pulse, label: "Upcoming matches" },
+    { icon: <Trophy />, value: d ? (best != null ? `#${best}` : "—") : pulse, label: "Best finish" },
+    ...(d && d.counts.pending > 0 ? [{ icon: <Hourglass />, value: d.counts.pending, label: "Waiting for approval" }] : []),
+  ];
 
   return (
     <div className="flex flex-col gap-8 sm:gap-10">
       <div className="flex flex-col gap-4">
-        <HomeHero
-          team={team}
-          greeting={greeting()}
-          data={d}
-          loading={loading}
-          backdropUrl={backdropUrl}
-          error={failed ? <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your dashboard" className="bg-background/70 py-8 backdrop-blur" /> : undefined}
-        />
+        <div className="relative">
+          <FeaturedHero
+            eyebrow={`${greeting()}, ${team?.name ?? "your team"}`}
+            stats={stats}
+            card={<NextMatchCard booked={d?.nextMatch ?? null} open={nextOpenScrim([scrims.today.items, scrims.tomorrow.items])} today={today} loading={loading} />}
+            error={failed ? <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load your dashboard" className="rounded-2xl border bg-card/80 py-8 backdrop-blur-xl" /> : undefined}
+          />
+          {isLux && (
+            <Suspense fallback={null}>
+              <LuxHomeOverlay />
+            </Suspense>
+          )}
+        </div>
         <TeamLiveCards />
         <NextRoomCard />
       </div>
@@ -207,6 +231,8 @@ function TeamHome() {
           </section>
         </div>
       )}
+
+      <CoinLeaderboard />
 
       <OrganiserStrip items={organisers} />
     </div>

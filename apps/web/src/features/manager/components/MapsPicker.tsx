@@ -1,12 +1,16 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, ArrowUp, Plus, Sparkles, X } from "lucide-react";
-import { MAP_LABELS, MAPS, type GameMap } from "@7xen/shared";
+import { BR_MAPS, MAP_LABELS, TDM_MAPS, type GameMap } from "@7xen/shared";
 import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
 import { MAP_STYLES } from "./maps";
 
 const MAX_MATCHES = 8;
 const CLASSIC: GameMap[] = ["ERANGEL", "MIRAMAR", "SANHOK", "ERANGEL"];
+const MAP_GROUPS: { label: string; maps: readonly GameMap[]; short?: boolean }[] = [
+  { label: "Battle royale", maps: BR_MAPS },
+  { label: "Team Deathmatch (TDM)", maps: TDM_MAPS, short: true },
+];
 
 /** Ordered list of matches (one map each) with add / reorder / remove. */
 export function MapsPicker({ value, onChange }: { value: GameMap[]; onChange: (maps: GameMap[]) => void }) {
@@ -78,24 +82,29 @@ export function MapsPicker({ value, onChange }: { value: GameMap[]; onChange: (m
             </Button>
           )}
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          {MAPS.map((m) => (
-            <button
-              key={m}
-              type="button"
-              disabled={full}
-              onClick={() => onChange([...value, m])}
-              className={cn(
-                "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40",
-                MAP_STYLES[m].chip,
-              )}
-            >
-              <span className={cn("size-2.5 rounded-full", MAP_STYLES[m].dot)} />
-              {MAP_LABELS[m]}
-              <Plus className="ml-auto size-4 opacity-60" />
-            </button>
-          ))}
-        </div>
+        {MAP_GROUPS.map((g) => (
+          <div key={g.label} className="mt-3 first:mt-0">
+            <p className="mb-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">{g.label}</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {g.maps.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  disabled={full}
+                  onClick={() => onChange([...value, m])}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-all hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40",
+                    MAP_STYLES[m].chip,
+                  )}
+                >
+                  <span className={cn("size-2.5 shrink-0 rounded-full", MAP_STYLES[m].dot)} />
+                  <span className="truncate">{g.short ? MAP_LABELS[m].replace("TDM · ", "") : MAP_LABELS[m]}</span>
+                  <Plus className="ml-auto size-4 shrink-0 opacity-60" />
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

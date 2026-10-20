@@ -163,6 +163,8 @@ export interface Scrim {
   manager: OrganizerRef;
   /** poster image URL (GET it with the session cookie); null = none uploaded */
   posterUrl: string | null;
+  /** phase 7: BG coins for each match winner (0 = none) */
+  winCoins: number;
   createdAt: string;
 }
 

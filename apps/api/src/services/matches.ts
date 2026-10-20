@@ -28,6 +28,7 @@ import { dateToStr, iso, pointsSystemOf, strToDate, toTeamSummary } from "../lib
 import { datedKey, deleteKey, newFileId, saveBuffer } from "../lib/storage.js";
 import type { UploadedImage } from "../lib/upload.js";
 import { inferSlot, mergeResults, mergeSlotList, TEAM_SIZE, type DraftTeam } from "./merge.js";
+import { awardMatchCoins, revokeMatchCoins } from "./coins.js";
 import { ensureSession } from "./registrations.js";
 import { upsertCorrectionSample } from "./samples.js";
 import { scrimOccursOn } from "./schedule.js";
@@ -58,7 +59,7 @@ export const ownerInclude = {
   session: { include: { scrim: true } },
   group: {
     include: {
-      stage: { select: { id: true, name: true, lobbySize: true, tournament: { select: { id: true, title: true, managerId: true, firstSlot: true, pointsSystem: true } } } },
+      stage: { select: { id: true, name: true, lobbySize: true, tournament: { select: { id: true, title: true, managerId: true, firstSlot: true, pointsSystem: true, winCoins: true, mode: true } } } },
     },
   },
 } satisfies Prisma.MatchInclude;
@@ -613,6 +614,9 @@ export async function publishMatch(matchId: string, managerId: string, bypass = 
     await lockMatch(tx, matchId);
     await tx.matchTeam.updateMany({ where: { matchId, kills: null, placement: { not: null } }, data: { kills: 0 } });
     await storeMatchPoints(tx, matchId, ps);
+    // TDM battles pay the champion only (awardChampionCoins), not each match winner
+    const tour = m.group?.stage.tournament;
+    await awardMatchCoins(tx, matchId, m.session?.scrim.winCoins ?? (tour && tour.mode !== "TDM" ? tour.winCoins : 0));
     await tx.match.update({ where: { id: matchId }, data: { status: "PUBLISHED", publishedAt: new Date() } });
   });
   await recordResultsSamples(matchId, managerId);
@@ -651,6 +655,7 @@ export async function unpublishMatch(matchId: string, managerId: string, bypass 
   await prisma.$transaction(async (tx) => {
     await lockMatch(tx, matchId);
     await tx.matchTeam.updateMany({ where: { matchId }, data: { placementPoints: null, killPoints: null, totalPoints: null } });
+    await revokeMatchCoins(tx, matchId);
     await tx.match.update({ where: { id: matchId }, data: { status: "RESULTS_REVIEW", publishedAt: null } });
   });
   return buildMatchDetail(matchId);

@@ -1,3 +1,4 @@
+import { lazy } from "react";
 import { Link } from "react-router-dom";
 import { motion, MotionConfig } from "framer-motion";
 import { ArrowLeft, Crosshair } from "lucide-react";
@@ -6,6 +7,9 @@ import { Logo } from "@7xen/ui/components/brand/logo";
 import { ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
 import { Button } from "@7xen/ui/components/ui/button";
 import { homeFor, useAuth } from "@/lib/auth";
+import { SkinSwitch } from "@/lib/skin";
+
+const LuxNotFoundPage = lazy(() => import("@/skins/lux/pages/LuxNotFoundPage"));
 
 const EASE = [0.16, 1, 0.3, 1] as const;
 
@@ -36,6 +40,12 @@ function PlayZone() {
 }
 
 export default function NotFoundPage() {
+  const { user } = useAuth();
+  const home = homeFor(user);
+  return <SkinSwitch teal={<TealNotFound />} lux={<LuxNotFoundPage home={home} signedIn={!!user} />} />;
+}
+
+function TealNotFound() {
   const { user } = useAuth();
   const home = homeFor(user);
   return (

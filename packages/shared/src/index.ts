@@ -15,3 +15,6 @@ export * from "./access";
 export * from "./device";
 export * from "./system";
 export * from "./stream";
+export * from "./skin";
+export * from "./coins";
+export * from "./youtube";

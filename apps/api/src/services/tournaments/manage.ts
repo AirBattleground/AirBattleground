@@ -1,5 +1,6 @@
 /** Manager/admin tournament management: create/update, publish, registration lifecycle, entries, invites, schedules. */
 import { Prisma } from "@prisma/client";
+import { TDM_POINTS, tdmFormatError } from "@7xen/shared";
 import type {
   CreateTournamentInput,
   InviteTeamInput,
@@ -13,6 +14,7 @@ import type {
 import { prisma } from "../../db.js";
 import { AppError, conflict, notFound } from "../../lib/errors.js";
 import { storeMatchPoints } from "../standings.js";
+import { awardChampionCoins } from "../coins.js";
 import {
   TX_OPTS,
   assertNotFinished,
@@ -80,6 +82,11 @@ export async function createTournament(actor: Actor, input: CreateTournamentInpu
   const opens = toDate(input.registrationOpensAt);
   const closes = toDate(input.registrationClosesAt);
   checkWindow(opens, closes);
+  const tdm = input.mode === "TDM";
+  if (tdm) {
+    const bad = tdmFormatError(input.stages as StageSpec[], input.maxTeams);
+    if (bad) throw new AppError("VALIDATION_ERROR", bad);
+  }
   const t = await prisma.tournament.create({
     data: {
       managerId: actor.userId,
@@ -92,7 +99,9 @@ export async function createTournament(actor: Actor, input: CreateTournamentInpu
       maxTeams: input.maxTeams,
       registrationOpensAt: opens ?? null,
       registrationClosesAt: closes ?? null,
-      pointsSystem: jsonOrNull(input.pointsSystem),
+      pointsSystem: jsonOrNull(tdm ? TDM_POINTS : input.pointsSystem),
+      winCoins: input.winCoins,
+      mode: input.mode,
       stages: { create: input.stages.map((s, i) => stageData(s as StageSpec, i + 1)) },
     },
   });
@@ -103,10 +112,16 @@ export async function createTournament(actor: Actor, input: CreateTournamentInpu
 const FORMAT_KEYS = ["name", "teamsIn", "lobbySize", "groupCount", "matchesPerGroup", "maps", "advancePerGroup", "wildcardCount", "invitedSlots"] as const;
 const sameFormat = (a: StageSpec, b: StageSpec) => FORMAT_KEYS.every((k) => JSON.stringify(a[k]) === JSON.stringify(b[k]));
 
-export async function updateTournament(id: string, actor: Actor, input: UpdateTournamentInput): Promise<ManagerTournamentDetail> {
+export async function updateTournament(id: string, actor: Actor, raw: UpdateTournamentInput): Promise<ManagerTournamentDetail> {
   const t = await loadManaged(id, actor);
   assertNotFinished(t);
   const draft = t.status === "DRAFT";
+  // the mode is fixed at creation; a TDM battle always scores match wins (TDM_POINTS)
+  const input: UpdateTournamentInput = { ...raw, mode: undefined, ...(t.mode === "TDM" ? { pointsSystem: undefined } : {}) };
+  if (t.mode === "TDM" && input.stages && draft) {
+    const bad = tdmFormatError(input.stages as StageSpec[], input.maxTeams ?? t.maxTeams);
+    if (bad) throw new AppError("VALIDATION_ERROR", bad);
+  }
 
   const formatChange =
     (input.maxTeams !== undefined && input.maxTeams !== t.maxTeams) ||
@@ -151,6 +166,7 @@ export async function updateTournament(id: string, actor: Actor, input: UpdateTo
         ...(input.registrationOpensAt !== undefined ? { registrationOpensAt: opens ?? null } : {}),
         ...(input.registrationClosesAt !== undefined ? { registrationClosesAt: closes ?? null } : {}),
         ...(input.pointsSystem !== undefined ? { pointsSystem: jsonOrNull(input.pointsSystem) } : {}),
+        ...(input.winCoins !== undefined ? { winCoins: input.winCoins } : {}),
       },
     });
     if (input.stages && draft) {
@@ -236,7 +252,10 @@ export async function completeTournament(id: string, actor: Actor): Promise<Mana
     });
     championTeamId = top?.teamId ?? null;
   }
-  await prisma.tournament.update({ where: { id }, data: { status: "COMPLETED", championTeamId } });
+  await prisma.$transaction(async (tx) => {
+    await tx.tournament.update({ where: { id }, data: { status: "COMPLETED", championTeamId } });
+    await awardChampionCoins(tx, id);
+  });
   return getTournament(id, actor);
 }
 

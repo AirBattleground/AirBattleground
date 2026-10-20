@@ -8,6 +8,7 @@ import { Toaster } from "@7xen/ui/components/ui/sonner";
 import { TooltipProvider } from "@7xen/ui/components/ui/tooltip";
 import { queryClient } from "@/lib/query";
 import { AuthProvider } from "@/lib/auth";
+import { SkinProvider } from "@/lib/skin";
 import { router } from "@/router";
 import { installChunkReload } from "@/lib/chunkReload";
 import { splashFailsafe } from "@/lib/splash";
@@ -17,6 +18,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
+        <SkinProvider>
         <TourProvider>
           <AuthProvider>
             <TooltipProvider delayDuration={200}>
@@ -25,6 +27,7 @@ createRoot(document.getElementById("root")!).render(
             </TooltipProvider>
           </AuthProvider>
         </TourProvider>
+        </SkinProvider>
       </QueryClientProvider>
     </ThemeProvider>
   </StrictMode>,

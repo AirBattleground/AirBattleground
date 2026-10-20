@@ -59,11 +59,16 @@ const envSchema = z.object({
     .string()
     .default("admin")
     .transform((s) => s.trim().toLowerCase()),
-  /** phase 5b: Google OAuth client secret — optional, unused for now (ID-token sign-in needs only the client id) */
+  /** Google OAuth client secret — sign-in doesn't need it (ID tokens); phase 7b "Connect YouTube" does (code exchange) */
   GOOGLE_CLIENT_SECRET: z
     .string()
     .optional()
     .transform((s) => (s && s.trim() ? s.trim() : null)),
+  /** phase 7b: the site's public origin (OAuth redirect for "Connect YouTube"); default = first CORS origin */
+  PUBLIC_URL: z
+    .string()
+    .optional()
+    .transform((s) => (s && s.trim() ? s.trim().replace(/\/+$/, "") : null)),
   /** phase 5: dev-only email login for players (POST /api/auth/dev-login). Never active in production */
   PLAYER_DEV_LOGIN: z
     .string()

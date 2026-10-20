@@ -13,9 +13,10 @@ import { QueryError } from "@/features/team/components/QueryError";
 import { RegistrationCard, RegistrationCardSkeleton } from "@/features/team/components/RegistrationCard";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
 import { dayLabel, formatDate } from "@/features/team/format";
+import { MyEntriesList } from "@/features/tournaments/team/components/MyEntriesList";
 
 const STEPS: TourStep[] = [
-  { title: "Your registrations", description: "Every scrim your team asked to join, and what the organiser decided." },
+  { title: "Your registrations", description: "Every scrim, tournament and TDM battle your team joined, and what the organiser decided." },
   { element: '[data-tour="reg-tabs"]', title: "Upcoming and past", description: "Upcoming shows what's next. Past keeps your history.", side: "bottom" },
   { element: '[data-tour="reg-status"]', title: "Status in plain words", description: "“Waiting for approval” means the organiser hasn't decided yet. This page refreshes by itself.", side: "left" },
   { element: '[data-tour="reg-slot"]', title: "Your slot number", description: "Approved? This is your slot in the room. Remember it for the match!", side: "left" },
@@ -54,7 +55,7 @@ function RegistrationList({ scope, today }: { scope: RegistrationScope; today: s
       <EmptyState
         icon={<CalendarClock />}
         title="No upcoming scrims"
-        description="You haven't registered for anything yet. Find a scrim and send a request — it only takes a tap."
+        description="No scrim registrations yet. Find a scrim and send a request — it only takes a tap."
         action={
           <Button asChild size="lg">
             <Link to="/team/scrims">
@@ -109,8 +110,8 @@ export default function MyRegistrationsPage() {
     <div className="space-y-5">
       <PageHeader
         eyebrow="My registrations"
-        title="Your scrims"
-        description="Track every request. Approvals show up here automatically."
+        title="Your registrations"
+        description="Scrims, tournaments and TDM battles your team is in. Approvals show up here automatically."
         className="mb-0"
         actions={
           <Button asChild variant="outline">
@@ -138,10 +139,12 @@ export default function MyRegistrationsPage() {
             Past
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="upcoming" className="mt-5">
+        <TabsContent value="upcoming" className="mt-5 space-y-6">
+          <MyEntriesList scope="upcoming" />
           <RegistrationList scope="upcoming" today={today} />
         </TabsContent>
-        <TabsContent value="past" className="mt-5">
+        <TabsContent value="past" className="mt-5 space-y-6">
+          <MyEntriesList scope="past" />
           <RegistrationList scope="past" today={today} />
         </TabsContent>
       </Tabs>

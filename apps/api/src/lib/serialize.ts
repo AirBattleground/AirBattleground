@@ -113,6 +113,7 @@ export function toScrim(s: ScrimWithManager): Scrim {
     pointsSystem: pointsSystemOf(s.pointsSystem),
     manager: toOrganizer(s.manager),
     posterUrl: brandingUrl(s.posterKey),
+    winCoins: s.winCoins,
     createdAt: s.createdAt.toISOString(),
   };
 }

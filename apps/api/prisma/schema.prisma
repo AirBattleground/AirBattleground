@@ -89,6 +89,11 @@ enum TournamentStatus {
   CANCELLED
 }
 
+enum TournamentMode {
+  BR
+  TDM
+}
+
 enum StageStatus {
   PENDING
   DRAWN
@@ -182,6 +187,7 @@ model User {
   devices                 Device[]
   streamLayout            StreamLayout?
   streamDestinations      StreamDestination[]
+  coinAwards              CoinAward[]
 
   @@index([role])
 }
@@ -240,6 +246,7 @@ model Team {
   tournamentEntries TournamentEntry[]
   groupSlots        GroupTeam[]
   championOf        Tournament[]      @relation("TournamentChampion")
+  coinAwards        CoinAward[]
 }
 
 /// phase 5: one row per player in a team. userId is unique: a player is in at most ONE team.
@@ -352,6 +359,8 @@ model Scrim {
   pointsSystem Json?
   /// poster image (storage key under branding/)
   posterKey    String?
+  /// BG coins credited to the winning team's leader for each published match (0 = none)
+  winCoins     Int         @default(0)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 
@@ -430,6 +439,7 @@ model Match {
   teams       MatchTeam[]
   recordings  MatchRecording[]
   devices     Device[]
+  coinAward   CoinAward?
 
   @@unique([sessionId, number])
   @@unique([groupId, number])
@@ -550,11 +560,16 @@ model Tournament {
   champion             Team?            @relation("TournamentChampion", fields: [championTeamId], references: [id], onDelete: SetNull)
   /// poster image (storage key under branding/)
   posterKey            String?
+  /// BG coins credited to the winning team's leader — BR: each published match; TDM: the champion (0 = none)
+  winCoins             Int              @default(0)
+  /// phase 7: BR = classic tournament; TDM = knockout bracket of 2-team matches (shared/tournament/tdm.ts)
+  mode                 TournamentMode   @default(BR)
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
 
-  stages  TournamentStage[]
-  entries TournamentEntry[]
+  stages     TournamentStage[]
+  entries    TournamentEntry[]
+  coinAwards CoinAward[]
 
   @@index([status])
   @@index([managerId])
@@ -774,4 +789,25 @@ model StreamDestination {
   createdAt DateTime @default(now())
 
   @@index([managerId])
+}
+
+/// BG coins: the winner (placement #1) of a published match earns its scrim's/tournament's winCoins, credited to the
+/// team's leader at publish time. One row per match; removed when the match is unpublished.
+/// TDM battles pay the champion instead: one row per tournament (tournamentId set, matchId null).
+model CoinAward {
+  id           String      @id @default(cuid())
+  matchId      String?     @unique
+  match        Match?      @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  tournamentId String?     @unique
+  tournament   Tournament? @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  /// the team's leader when the coins were awarded
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int
+  createdAt DateTime @default(now())
+
+  @@index([teamId])
+  @@index([userId])
 }

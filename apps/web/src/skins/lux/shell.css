@@ -1,0 +1,363 @@
+/* Lux Battle: shell (scoped under [data-skin="lux"]) — top bar, mission bar, nav, tab bar, footer, backdrop. */
+
+/* ---------- shared shapes ---------- */
+[data-skin="lux"] .lux-sh-chip-badge {
+  clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+}
+
+[data-skin="lux"] .lux-sh-hazard {
+  background: repeating-linear-gradient(-45deg, var(--primary) 0 7px, transparent 7px 14px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+[data-skin="lux"] .lux-sh-hazard-move {
+  z-index: 1;
+  /* fade towards the middle so it reads as an accent, not a barrier */
+  -webkit-mask-image: linear-gradient(to right, black 0 18%, transparent 38% 62%, black 82% 100%);
+  mask-image: linear-gradient(to right, black 0 18%, transparent 38% 62%, black 82% 100%);
+  background-size: 19.8px 19.8px;
+  animation: lux-sh-hazard-slide 1.6s linear infinite;
+}
+@keyframes lux-sh-hazard-slide {
+  to { background-position: 19.8px 0; }
+}
+
+/* ---------- top bar ---------- */
+[data-skin="lux"] .lux-sh-header-bar {
+  box-shadow: 0 10px 30px -18px color-mix(in oklch, var(--background) 80%, black);
+}
+/* HUD corner brackets at the bar ends */
+[data-skin="lux"] .lux-sh-topbar::before,
+[data-skin="lux"] .lux-sh-topbar::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  width: 8px;
+  border: 1.5px solid color-mix(in oklch, var(--primary) 55%, transparent);
+  pointer-events: none;
+}
+@media (max-width: 1023px) {
+  [data-skin="lux"] .lux-sh-topbar::before,
+  [data-skin="lux"] .lux-sh-topbar::after { display: none; }
+}
+[data-skin="lux"] .lux-sh-topbar::before { left: 8px; border-right: 0; }
+[data-skin="lux"] .lux-sh-topbar::after { right: 8px; border-left: 0; }
+
+[data-skin="lux"] .lux-sh-logo img { transition: filter 0.3s ease; }
+[data-skin="lux"] .lux-sh-logo:hover img { filter: drop-shadow(0 0 10px var(--glow)); }
+
+/* nav links: chamfered hover plate + active plate with target-lock brackets */
+[data-skin="lux"] .lux-sh-nav-hover {
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  background: color-mix(in oklch, var(--foreground) 6%, transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+[data-skin="lux"] .lux-sh-nav-link:hover:not(.is-active) .lux-sh-nav-hover,
+[data-skin="lux"] .lux-sh-nav-link[data-state="open"] .lux-sh-nav-hover { opacity: 1; }
+
+[data-skin="lux"] .lux-sh-nav-active::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  background: linear-gradient(to bottom, color-mix(in oklch, var(--primary) 4%, transparent), color-mix(in oklch, var(--primary) 16%, transparent));
+}
+[data-skin="lux"] .lux-sh-nav-active::after {
+  content: "";
+  position: absolute;
+  inset: -3px -4px;
+  pointer-events: none;
+  /* four L-brackets drawn with gradients */
+  --b: color-mix(in oklch, var(--primary) 85%, transparent);
+  background:
+    linear-gradient(var(--b), var(--b)) top left / 8px 1.5px,
+    linear-gradient(var(--b), var(--b)) top left / 1.5px 8px,
+    linear-gradient(var(--b), var(--b)) top right / 8px 1.5px,
+    linear-gradient(var(--b), var(--b)) top right / 1.5px 8px,
+    linear-gradient(var(--b), var(--b)) bottom left / 8px 1.5px,
+    linear-gradient(var(--b), var(--b)) bottom left / 1.5px 8px,
+    linear-gradient(var(--b), var(--b)) bottom right / 8px 1.5px,
+    linear-gradient(var(--b), var(--b)) bottom right / 1.5px 8px;
+  background-repeat: no-repeat;
+  animation: lux-sh-lock 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes lux-sh-lock {
+  from { transform: scale(1.25); opacity: 0; }
+}
+[data-skin="lux"] .lux-sh-nav-underline {
+  box-shadow: 0 0 12px 1px var(--glow), 0 0 2px var(--primary);
+  clip-path: polygon(3px 0, calc(100% - 3px) 0, 100% 100%, 0 100%);
+}
+/* hover target-lock on inactive links: brackets snap in */
+[data-skin="lux"] .lux-sh-nav-link:not(.is-active)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  --b: color-mix(in oklch, var(--secondary-foreground, var(--foreground)) 45%, transparent);
+  background:
+    linear-gradient(var(--b), var(--b)) top left / 6px 1px,
+    linear-gradient(var(--b), var(--b)) top left / 1px 6px,
+    linear-gradient(var(--b), var(--b)) bottom right / 6px 1px,
+    linear-gradient(var(--b), var(--b)) bottom right / 1px 6px;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transform: scale(1.15);
+  transition: opacity 0.2s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-skin="lux"] .lux-sh-nav-link:not(.is-active):hover::after,
+[data-skin="lux"] .lux-sh-nav-link:not(.is-active):focus-visible::after { opacity: 1; transform: none; }
+
+/* slots from the layouts (team card / New scrim) squeezed into the bar */
+[data-skin="lux"] .lux-sh-slot-header [data-tour="team-card"] {
+  padding-block: 3px;
+  border-radius: 3px;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+[data-skin="lux"] .lux-sh-slot-action a {
+  height: 2.5rem;
+  border-radius: 0;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  font-family: var(--font-display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+[data-skin="lux"] .lux-sh-slot-action a:hover { filter: brightness(1.08); }
+
+[data-skin="lux"] .lux-sh-user-compact [data-tour="user-menu"] > :not(:first-child) { display: none; }
+
+[data-skin="lux"] .lux-sh-tour-btn:hover .lux-sh-tour-icon { transform: rotate(180deg); }
+[data-skin="lux"] .lux-sh-tour-icon { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* ---------- mission bar ---------- */
+[data-skin="lux"] .lux-sh-mission::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to right, color-mix(in oklch, var(--primary) 9%, transparent), transparent 30%);
+}
+[data-skin="lux"] .lux-sh-mission > * { position: relative; }
+[data-skin="lux"] .lux-sh-crumb-current {
+  font-family: var(--font-display);
+  letter-spacing: 0.12em;
+  text-shadow: 0 0 12px var(--glow);
+}
+[data-skin="lux"] .lux-sh-live-pill {
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--destructive) 45%, transparent);
+}
+[data-skin="lux"] .lux-sh-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--destructive);
+  animation: lux-sh-ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes lux-sh-ping {
+  75%, 100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* ---------- route change scan ---------- */
+[data-skin="lux"] .lux-sh-route-scan {
+  background: linear-gradient(to bottom, transparent, color-mix(in oklch, var(--primary) 10%, transparent) 85%, color-mix(in oklch, var(--primary) 55%, transparent) 99%, transparent);
+  opacity: 0;
+  animation: lux-sh-route-scan 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes lux-sh-route-scan {
+  0% { transform: translateY(-100%); opacity: 1; }
+  70% { opacity: 0.6; }
+  100% { transform: translateY(55vh); opacity: 0; }
+}
+
+/* ---------- phones: tab bar + FAB ---------- */
+[data-skin="lux"] .lux-sh-tab-active {
+  clip-path: polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%, 0 6px);
+  background: linear-gradient(to bottom, color-mix(in oklch, var(--primary) 18%, transparent), color-mix(in oklch, var(--primary) 3%, transparent));
+}
+[data-skin="lux"] .lux-sh-tab-active::before {
+  content: "";
+  position: absolute;
+  inset-inline: 22%;
+  top: 0;
+  height: 3px;
+  background: var(--primary);
+  box-shadow: 0 0 10px var(--glow);
+}
+[data-skin="lux"] .lux-sh-fab {
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  box-shadow: none;
+  filter: drop-shadow(0 6px 16px var(--glow));
+}
+
+/* ---------- backdrop ---------- */
+[data-skin="lux"] .lux-sh-backdrop { contain: strict; }
+
+[data-skin="lux"] .lux-sh-bd-grid {
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 12.5% 12.5%, 12.5% 12.5%, 3.125% 3.125%, 3.125% 3.125%;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 40%, black 30%, transparent 85%);
+  mask-image: radial-gradient(ellipse at 50% 40%, black 30%, transparent 85%);
+}
+[data-skin="lux"] .lux-sh-bd-coords {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: color-mix(in oklch, var(--foreground) 22%, transparent);
+}
+[data-skin="lux"] .lux-sh-bd-coords-x { grid-template-columns: repeat(8, 1fr); padding: 0 0 8px; }
+[data-skin="lux"] .lux-sh-bd-coords-x span { padding-left: 6px; }
+[data-skin="lux"] .lux-sh-bd-coords-y { grid-template-rows: repeat(8, 1fr); padding: 0 0 0 6px; }
+[data-skin="lux"] .lux-sh-bd-coords-y span { padding-top: 4px; }
+
+[data-skin="lux"] .lux-sh-bd-contour { stroke: color-mix(in oklch, var(--foreground) 6%, transparent); stroke-width: 1; }
+[data-skin="lux"] .lux-sh-bd-contour-major { stroke: color-mix(in oklch, var(--primary) 14%, transparent); stroke-width: 1.2; }
+[data-skin="lux"] .lux-sh-bd-topo {
+  animation: lux-sh-topo-drift 70s ease-in-out infinite alternate;
+  will-change: transform;
+}
+@keyframes lux-sh-topo-drift {
+  from { transform: translate3d(-1.5%, -1%, 0) scale(1); }
+  to { transform: translate3d(1.5%, 1.2%, 0) scale(1.04); }
+}
+
+[data-skin="lux"] .lux-sh-bd-zone {
+  left: 58%;
+  top: 8%;
+  width: 52vmax;
+  height: 52vmax;
+  animation: lux-sh-zone 38s ease-in-out infinite alternate;
+  will-change: transform;
+}
+[data-skin="lux"] .lux-sh-bd-zone-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1.5px dashed color-mix(in oklch, var(--primary) 30%, transparent);
+  box-shadow: 0 0 80px -20px var(--glow) inset;
+}
+[data-skin="lux"] .lux-sh-bd-zone-next {
+  position: absolute;
+  left: 22%;
+  top: 30%;
+  width: 46%;
+  height: 46%;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklch, var(--foreground) 14%, transparent);
+}
+@keyframes lux-sh-zone {
+  from { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+  to { transform: translate3d(-6vmax, 4vmax, 0) scale(0.82) rotate(40deg); }
+}
+
+[data-skin="lux"] .lux-sh-bd-radar {
+  left: 3%;
+  bottom: 6%;
+  width: clamp(160px, 22vmin, 260px);
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  opacity: 0.55;
+}
+[data-skin="lux"] .lux-sh-bd-radar-rings {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  --r: color-mix(in oklch, var(--success) 30%, transparent);
+  background:
+    linear-gradient(var(--r), var(--r)) center / 100% 1px no-repeat,
+    linear-gradient(var(--r), var(--r)) center / 1px 100% no-repeat,
+    repeating-radial-gradient(circle, transparent 0 calc(25% - 1px), var(--r) calc(25% - 1px) 25%);
+  box-shadow: inset 0 0 0 1px var(--r);
+}
+[data-skin="lux"] .lux-sh-bd-radar-sweep {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, color-mix(in oklch, var(--success) 45%, transparent), transparent 70deg, transparent);
+  animation: lux-sh-spin 6s linear infinite;
+  will-change: transform;
+}
+[data-skin="lux"] .lux-sh-bd-blip {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 9999px;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  animation: lux-sh-blip 6s ease-out infinite;
+}
+@keyframes lux-sh-spin { to { transform: rotate(360deg); } }
+@keyframes lux-sh-blip {
+  0%, 100% { opacity: 0; transform: scale(0.6); }
+  8% { opacity: 1; transform: scale(1.2); }
+  40% { opacity: 0.15; transform: scale(1); }
+}
+
+[data-skin="lux"] .lux-sh-bd-flight {
+  left: -10%;
+  top: 22%;
+  width: 120%;
+  height: 28px;
+  transform: rotate(-7deg);
+}
+[data-skin="lux"] .lux-sh-bd-flight-path {
+  position: absolute;
+  inset-inline: 0;
+  top: 50%;
+  height: 1.5px;
+  background: repeating-linear-gradient(to right, color-mix(in oklch, var(--foreground) 16%, transparent) 0 10px, transparent 10px 20px);
+  background-size: 20px 100%;
+  animation: lux-sh-dash 1.2s linear infinite;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 15%, black 85%, transparent);
+}
+[data-skin="lux"] .lux-sh-bd-plane {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  filter: drop-shadow(0 0 6px var(--glow));
+  animation: lux-sh-fly 32s linear infinite;
+  animation-delay: 3s;
+  will-change: transform;
+}
+@keyframes lux-sh-dash { to { background-position: 20px 0; } }
+@keyframes lux-sh-fly {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  3% { opacity: 0.5; }
+  42% { opacity: 0.5; }
+  45%, 100% { transform: translate3d(120vw, 0, 0); opacity: 0; }
+}
+
+[data-skin="lux"] .lux-sh-bd-scan {
+  background: repeating-linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 2.5%, transparent) 0 1px, transparent 1px 3px);
+  mix-blend-mode: overlay;
+}
+[data-skin="lux"] .lux-sh-bd-vignette {
+  background: radial-gradient(ellipse at 50% 40%, transparent 50%, color-mix(in oklch, var(--background) 85%, transparent) 100%);
+}
+
+@media (max-width: 639px) {
+  [data-skin="lux"] .lux-sh-bd-radar { opacity: 0.35; }
+  [data-skin="lux"] .lux-sh-bd-zone { left: 30%; }
+}
+
+/* ---------- reduced motion: everything still ---------- */
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="lux"] .lux-sh-anim,
+  [data-skin="lux"] .lux-sh-hazard-move,
+  [data-skin="lux"] .lux-sh-live-dot::after,
+  [data-skin="lux"] .lux-sh-nav-active::after,
+  [data-skin="lux"] .lux-sh-route-scan { animation: none !important; }
+  [data-skin="lux"] .lux-sh-bd-plane,
+  [data-skin="lux"] .lux-sh-route-scan { display: none; }
+  [data-skin="lux"] .lux-sh-tour-icon,
+  [data-skin="lux"] .lux-sh-nav-link::after { transition: none; }
+}

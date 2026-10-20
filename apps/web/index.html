@@ -14,10 +14,11 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" media="print" onload="this.media='all'" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@500&display=swap" /></noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=Barlow+Condensed:wght@700;800&family=JetBrains+Mono:wght@500&display=swap" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=Barlow+Condensed:wght@700;800&family=JetBrains+Mono:wght@500&display=swap" /></noscript>
     <script>try{var t="dark";/* theme switcher hidden for now (THEME_CONTROLS_ENABLED in @7xen/ui/theme); going live: t=localStorage.getItem("7xen.theme")||"dark" */if(t==="system")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";if(t==="dark")document.documentElement.classList.add("dark")}catch(e){document.documentElement.classList.add("dark")}</script>
     <script>/* brand before paint (see @7xen/ui/theme): teal / gold / the saved custom colour CSS; --splash-color + --splash-bg recolour the boot splash */try{var d=document.documentElement,b=new URLSearchParams(location.search).get("brand")||localStorage.getItem("7xen.brand")||"teal";b="teal";/* brand picker hidden for now; going live: if(!/^(teal|gold|custom)$/.test(b))b="teal"; */var c=b==="custom"&&localStorage.getItem("7xen.brand.css");if(b==="custom"&&!c)b="teal";if(c){var s=document.createElement("style");s.id="sx-brand-custom";s.textContent=c;document.head.appendChild(s)}d.dataset.brand=b;var k=d.classList.contains("dark")?1:0,p={teal:["#005e5f","#25c2c2"],gold:["#ac8d1c","#d7b43b"]}[b];d.style.setProperty("--splash-color",p?p[k]:(localStorage.getItem("7xen.brand.color")||"#005e5f"));d.style.setProperty("--splash-bg",k?(b==="teal"?"#010e10":"#070a10"):"#f1eadc")}catch(e){document.documentElement.dataset.brand="teal"}</script>
+    <script>/* site look (teal | lux) before paint — see src/lib/skin.tsx. ?skin= previews in this tab only; else the admin's last-seen choice */try{var q=new URLSearchParams(location.search).get("skin"),k=/^(teal|lux)$/;if(k.test(q||""))sessionStorage.setItem("7xen.skin.preview",q);var v=sessionStorage.getItem("7xen.skin.preview")||localStorage.getItem("7xen.skin");v=k.test(v||"")?v:"teal";document.documentElement.dataset.skin=v;if(v==="lux"){var f=document.createElement("link");f.rel="stylesheet";f.id="sx-lux-fonts";f.href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Chakra+Petch:wght@400;500;600;700&family=Share+Tech+Mono&display=swap";document.head.appendChild(f)}}catch(e){document.documentElement.dataset.skin="teal"}window.__sxSkin=fetch("/api/site/skin").then(function(r){return r.ok?r.json():undefined}).catch(function(){return undefined});</script>
     <style>
       /* Boot splash: painted from the first HTML bytes (inline logo, no extra request); src/lib/splash.ts fades it out
          once the first screen is ready (min 1.4s). */
@@ -32,6 +33,17 @@
       @keyframes sp-fade { from { opacity: 0; } to { opacity: 1; } }
       @keyframes sp-run { 0% { transform: translateX(-100%); } 100% { transform: translateX(270%); } }
       @media (prefers-reduced-motion: reduce) { #splash .sp-mark, #splash .sp-bar, #splash .sp-bar i { animation: none; } }
+      /* Lux Battle splash: olive-black map table, blaze-orange square bar, scanlines + a rolling scan band */
+      :root[data-skin="lux"] #splash { --splash-color: #f47a1f; background: radial-gradient(70% 60% at 50% 45%, #22261a, #12140e 70%); }
+      :root[data-skin="lux"]:not(.dark) #splash { --splash-color: #d0620c; background: radial-gradient(70% 60% at 50% 45%, #efe6cf, #ddd0b0 75%); }
+      :root[data-skin="lux"] #splash::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(to bottom, rgb(255 255 255 / .035) 0 1px, transparent 1px 3px), linear-gradient(to right, rgb(214 200 160 / .06) 1px, transparent 1px) 0 0 / 12.5% 12.5%, linear-gradient(to bottom, rgb(214 200 160 / .06) 1px, transparent 1px) 0 0 / 12.5% 12.5%; }
+      :root[data-skin="lux"] #splash::after { content: ""; position: absolute; inset: 0 0 auto; height: 22%; pointer-events: none; background: linear-gradient(to bottom, transparent, rgb(120 230 140 / .07), transparent); animation: sp-lux-scan 2.6s linear infinite; }
+      :root[data-skin="lux"] #splash .sp-bar, :root[data-skin="lux"] #splash .sp-bar i { border-radius: 0; }
+      :root[data-skin="lux"] #splash .sp-bar { height: 4px; width: min(52vw, 240px); }
+      :root[data-skin="lux"] #splash .sp-mark { filter: hue-rotate(200deg) saturate(1.5); animation: sp-in .9s cubic-bezier(.16, 1, .3, 1) both, sp-lux-glow 2.4s ease-in-out .9s infinite; }
+      @keyframes sp-lux-glow { 0%, 100% { filter: hue-rotate(200deg) saturate(1.5) drop-shadow(0 0 10px rgb(244 122 31 / .35)); } 50% { filter: hue-rotate(200deg) saturate(1.5) drop-shadow(0 0 26px rgb(244 122 31 / .7)); } }
+      @keyframes sp-lux-scan { from { transform: translateY(-100%); } to { transform: translateY(460%); } }
+      @media (prefers-reduced-motion: reduce) { :root[data-skin="lux"] #splash::after { animation: none; opacity: 0; } }
     </style>
   </head>
   <body>

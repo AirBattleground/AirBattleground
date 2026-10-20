@@ -1,0 +1,354 @@
+/* Lux Battle: scenes (scoped under [data-skin="lux"]) — tactical graphics, heroes, login.
+ * Only transform/opacity are animated. Everything stops under prefers-reduced-motion. */
+
+[data-skin="lux"] {
+  --lux-sc-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ---------- HUD frame (corner brackets) ---------- */
+[data-skin="lux"] .lux-sc-hud {
+  --lux-sc-hud-c: var(--primary);
+  --lux-sc-hud-len: 18px;
+  --lux-sc-hud-w: 2px;
+}
+[data-skin="lux"] .lux-sc-hud--khaki { --lux-sc-hud-c: var(--lux-khaki, var(--muted-foreground)); }
+[data-skin="lux"] .lux-sc-hud--success { --lux-sc-hud-c: var(--success); }
+[data-skin="lux"] .lux-sc-hud__c {
+  position: absolute;
+  z-index: 2;
+  width: var(--lux-sc-hud-len);
+  height: var(--lux-sc-hud-len);
+  pointer-events: none;
+  border: 0 solid var(--lux-sc-hud-c);
+  transition: transform 0.35s var(--lux-sc-ease);
+}
+[data-skin="lux"] .lux-sc-hud__c--tl { top: -6px; left: -6px; border-top-width: var(--lux-sc-hud-w); border-left-width: var(--lux-sc-hud-w); }
+[data-skin="lux"] .lux-sc-hud__c--tr { top: -6px; right: -6px; border-top-width: var(--lux-sc-hud-w); border-right-width: var(--lux-sc-hud-w); }
+[data-skin="lux"] .lux-sc-hud__c--bl { bottom: -6px; left: -6px; border-bottom-width: var(--lux-sc-hud-w); border-left-width: var(--lux-sc-hud-w); }
+[data-skin="lux"] .lux-sc-hud__c--br { bottom: -6px; right: -6px; border-bottom-width: var(--lux-sc-hud-w); border-right-width: var(--lux-sc-hud-w); }
+/* target lock: brackets snap in on hover / focus inside */
+[data-skin="lux"] .lux-sc-hud:is(:hover, :focus-within) .lux-sc-hud__c--tl { transform: translate(3px, 3px); }
+[data-skin="lux"] .lux-sc-hud:is(:hover, :focus-within) .lux-sc-hud__c--tr { transform: translate(-3px, 3px); }
+[data-skin="lux"] .lux-sc-hud:is(:hover, :focus-within) .lux-sc-hud__c--bl { transform: translate(3px, -3px); }
+[data-skin="lux"] .lux-sc-hud:is(:hover, :focus-within) .lux-sc-hud__c--br { transform: translate(-3px, -3px); }
+[data-skin="lux"] .lux-sc-hud__tag {
+  position: absolute;
+  z-index: 2;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--lux-sc-hud-c);
+  background: var(--background);
+  padding: 2px 6px;
+  pointer-events: none;
+}
+[data-skin="lux"] .lux-sc-hud__tag--tl { top: -11px; left: 22px; }
+[data-skin="lux"] .lux-sc-hud__tag--br { bottom: -11px; right: 22px; }
+
+/* ---------- topo / grid / backdrop ---------- */
+[data-skin="lux"] .lux-sc-topo__drift { animation: lux-sc-drift 60s ease-in-out infinite alternate; transform-origin: center; }
+@keyframes lux-sc-drift {
+  from { transform: translate3d(-1.5%, -1%, 0) scale(1.04); }
+  to { transform: translate3d(1.5%, 1%, 0) scale(1.08); }
+}
+
+[data-skin="lux"] .lux-sc-mapgrid {
+  --lux-sc-cell: 12.5%;
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, var(--lux-khaki, var(--foreground)) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--lux-khaki, var(--foreground)) 9%, transparent) 1px, transparent 1px);
+  background-size: var(--lux-sc-cell) var(--lux-sc-cell);
+  -webkit-mask-image: radial-gradient(130% 110% at 50% 40%, #000 45%, transparent 100%);
+  mask-image: radial-gradient(130% 110% at 50% 40%, #000 45%, transparent 100%);
+}
+[data-skin="lux"] .lux-sc-mapgrid__cols,
+[data-skin="lux"] .lux-sc-mapgrid__rows {
+  position: absolute;
+  display: flex;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: color-mix(in oklch, var(--lux-khaki, var(--muted-foreground)) 55%, transparent);
+}
+[data-skin="lux"] .lux-sc-mapgrid__cols { top: 4px; left: 0; right: 0; }
+[data-skin="lux"] .lux-sc-mapgrid__cols > span { flex: 1; padding-left: 6px; }
+[data-skin="lux"] .lux-sc-mapgrid__rows { top: 0; bottom: 0; left: 4px; flex-direction: column; }
+[data-skin="lux"] .lux-sc-mapgrid__rows > span { flex: 1; padding-top: 18px; }
+
+[data-skin="lux"] .lux-sc-backdrop__glow {
+  background:
+    radial-gradient(60% 55% at 72% 35%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 70%),
+    radial-gradient(50% 50% at 10% 90%, color-mix(in oklch, var(--success) 7%, transparent), transparent 70%);
+}
+[data-skin="lux"] .lux-sc-backdrop__vignette {
+  background: radial-gradient(120% 90% at 50% 45%, transparent 55%, color-mix(in oklch, var(--background) 85%, transparent) 100%);
+}
+[data-skin="lux"] .lux-sc-scanlines {
+  background-image: repeating-linear-gradient(to bottom, color-mix(in oklch, var(--foreground) 4%, transparent) 0 1px, transparent 1px 3px);
+  opacity: 0.5;
+}
+[data-skin="lux"] .lux-sc-scanlines::after {
+  /* a slow bright band rolling down */
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 18%;
+  background: linear-gradient(to bottom, transparent, color-mix(in oklch, var(--success) 6%, transparent), transparent);
+  animation: lux-sc-scan 7s linear infinite;
+}
+@keyframes lux-sc-scan {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(560%); }
+}
+
+/* ---------- aircraft flyover ---------- */
+[data-skin="lux"] .lux-sc-flight {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  height: calc(var(--lux-sc-plane) * 0.6875);
+  transform: translateY(-50%) rotate(var(--lux-sc-angle));
+}
+[data-skin="lux"] .lux-sc-flight__path {
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: 2px;
+  overflow: hidden;
+  opacity: 0.55;
+}
+[data-skin="lux"] .lux-sc-flight__path > i {
+  position: absolute;
+  inset: 0 -24px 0 0;
+  background: repeating-linear-gradient(to right, var(--primary) 0 12px, transparent 12px 24px);
+  animation: lux-sc-dash 0.9s linear infinite;
+}
+@keyframes lux-sc-dash {
+  to { transform: translateX(-24px); }
+}
+[data-skin="lux"] .lux-sc-flight__track {
+  position: absolute;
+  inset: 0;
+  animation: lux-sc-fly 16s linear infinite;
+  will-change: transform;
+}
+[data-skin="lux"] .lux-sc-flight__plane {
+  position: absolute;
+  top: 0;
+  /* the svg includes the contrail to its left: the body is the right 160/420 */
+  height: 100%;
+  width: calc(var(--lux-sc-plane) * 2.625);
+  left: calc(var(--lux-sc-plane) * -2.625);
+  filter: drop-shadow(0 0 10px color-mix(in oklch, var(--primary) 25%, transparent));
+}
+@keyframes lux-sc-fly {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(100% + var(--lux-sc-plane) * 2.7)); }
+}
+[data-skin="lux"] .lux-sc-blink { animation: lux-sc-blink 1.2s steps(1, end) infinite; }
+@keyframes lux-sc-blink {
+  50% { opacity: 0.15; }
+}
+
+/* ---------- parachutes ---------- */
+[data-skin="lux"] .lux-sc-chute {
+  position: absolute;
+  width: calc(34px * var(--lux-sc-s, 1));
+  opacity: 0;
+  animation: lux-sc-fall 10s linear infinite;
+  will-change: transform, opacity;
+}
+[data-skin="lux"] .lux-sc-chute__sway {
+  transform-origin: 50% 0;
+  animation: lux-sc-sway 3.2s ease-in-out infinite alternate;
+}
+[data-skin="lux"] .lux-sc-chute__svg { display: block; width: 100%; height: auto; overflow: visible; }
+@keyframes lux-sc-fall {
+  0% { opacity: 0; transform: translate3d(0, -12px, 0) scale(0.5); }
+  8% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  82% { opacity: 1; }
+  100% { opacity: 0; transform: translate3d(14px, var(--lux-sc-fall, 300px), 0) scale(0.92); }
+}
+@keyframes lux-sc-sway {
+  from { transform: rotate(-7deg); }
+  to { transform: rotate(7deg); }
+}
+
+/* ---------- zone ---------- */
+[data-skin="lux"] .lux-sc-zone__wall,
+[data-skin="lux"] .lux-sc-zone__safe,
+[data-skin="lux"] .lux-sc-zone__ping { transform-box: view-box; }
+[data-skin="lux"] .lux-sc-zone__wall {
+  transform-origin: 59% 44%; /* closes toward the next safe zone (118, 88) */
+  animation: lux-sc-zone-close 14s var(--lux-sc-ease) infinite;
+}
+@keyframes lux-sc-zone-close {
+  0% { opacity: 0; transform: scale(1.06); }
+  8% { opacity: 1; }
+  30% { transform: scale(1.0); }
+  45%, 55% { transform: scale(0.82); }
+  85% { opacity: 1; transform: scale(0.56); }
+  100% { opacity: 0; transform: scale(0.54); }
+}
+[data-skin="lux"] .lux-sc-zone__safe { transform-origin: 59% 44%; animation: lux-sc-breathe 3.5s ease-in-out infinite; }
+@keyframes lux-sc-breathe {
+  50% { opacity: 0.55; }
+}
+[data-skin="lux"] .lux-sc-zone__ping { transform-origin: 59% 44%; animation: lux-sc-ping 2.2s ease-out infinite; }
+@keyframes lux-sc-ping {
+  from { opacity: 0.9; transform: scale(0.6); }
+  to { opacity: 0; transform: scale(3.2); }
+}
+
+/* ---------- radar ---------- */
+[data-skin="lux"] .lux-sc-radar {
+  background: radial-gradient(circle, color-mix(in oklch, var(--success) 10%, transparent), color-mix(in oklch, var(--success) 3%, transparent) 70%);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--success) 30%, transparent), 0 0 30px color-mix(in oklch, var(--success) 12%, transparent);
+}
+[data-skin="lux"] .lux-sc-radar__sweep {
+  background: conic-gradient(from 0deg, transparent 0deg 280deg, color-mix(in oklch, var(--success) 10%, transparent) 300deg, color-mix(in oklch, var(--success) 45%, transparent) 359deg, transparent 360deg);
+  animation: lux-sc-spin 4s linear infinite;
+}
+[data-skin="lux"] .lux-sc-radar__blip {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 999px;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  opacity: 0;
+  animation: lux-sc-blip 4s linear infinite;
+}
+@keyframes lux-sc-blip {
+  0% { opacity: 1; transform: scale(1.4); }
+  60% { opacity: 0.15; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+@keyframes lux-sc-spin {
+  to { transform: rotate(360deg); }
+}
+[data-skin="lux"] .lux-sc-spin-slow { transform-box: view-box; transform-origin: center; animation: lux-sc-spin 40s linear infinite; }
+
+/* ---------- ticker ---------- */
+[data-skin="lux"] .lux-sc-ticker {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+[data-skin="lux"] .lux-sc-ticker__track {
+  display: flex;
+  width: max-content;
+  animation: lux-sc-marquee 40s linear infinite;
+}
+[data-skin="lux"] .lux-sc-ticker:hover .lux-sc-ticker__track { animation-play-state: paused; }
+[data-skin="lux"] .lux-sc-ticker__row {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2.5rem;
+  padding-right: 2.5rem;
+  white-space: nowrap;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+[data-skin="lux"] .lux-sc-ticker__row > li { display: inline-flex; align-items: center; gap: 0.6rem; }
+[data-skin="lux"] .lux-sc-ticker__dot {
+  width: 6px;
+  height: 6px;
+  background: var(--primary);
+  transform: rotate(45deg);
+}
+@keyframes lux-sc-marquee {
+  to { transform: translateX(-50%); }
+}
+
+/* ---------- shared bits for Lux pages ---------- */
+/* stencil headline: hard edge + faint offset ghost */
+[data-skin="lux"] .lux-sc-stencil {
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-shadow: 3px 3px 0 color-mix(in oklch, var(--primary) 22%, transparent);
+}
+[data-skin="lux"] .lux-sc-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+[data-skin="lux"] .lux-sc-hazard {
+  background-image: repeating-linear-gradient(-45deg, var(--primary) 0 8px, transparent 8px 16px);
+}
+[data-skin="lux"] .lux-sc-live-dot {
+  position: relative;
+  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--success);
+}
+[data-skin="lux"] .lux-sc-live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--success);
+  animation: lux-sc-ping 1.8s ease-out infinite;
+}
+/* staggered entrance */
+[data-skin="lux"] .lux-sc-rise {
+  animation: lux-sc-rise 0.7s var(--lux-sc-ease) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+@keyframes lux-sc-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+/* hero numbers */
+[data-skin="lux"] .lux-sc-stat {
+  position: relative;
+  border-left: 2px solid color-mix(in oklch, var(--primary) 70%, transparent);
+  padding-left: 0.85rem;
+}
+[data-skin="lux"] .lux-sc-stat--success { border-left-color: var(--success); }
+[data-skin="lux"] .lux-sc-stat--warning { border-left-color: var(--warning); }
+
+/* ---------- login ---------- */
+[data-skin="lux"] .lux-sc-login-zone {
+  /* the zone/radar cluster floats a little */
+  animation: lux-sc-float 9s ease-in-out infinite alternate;
+}
+@keyframes lux-sc-float {
+  from { transform: translate3d(0, -6px, 0); }
+  to { transform: translate3d(0, 8px, 0); }
+}
+
+/* ---------- reduced motion: freeze every scene ---------- */
+@media (prefers-reduced-motion: reduce) {
+  [data-skin="lux"] .lux-sc-scene,
+  [data-skin="lux"] .lux-sc-scene *,
+  [data-skin="lux"] .lux-sc-scanlines::after,
+  [data-skin="lux"] .lux-sc-rise,
+  [data-skin="lux"] .lux-sc-live-dot::after,
+  [data-skin="lux"] .lux-sc-login-zone {
+    animation: none !important;
+  }
+  /* frozen frames: keep the drop and flight visible mid-way rather than at their invisible start */
+  [data-skin="lux"] .lux-sc-chute { opacity: 0.9; transform: translateY(calc(var(--lux-sc-fall, 300px) * 0.35)); }
+  [data-skin="lux"] .lux-sc-flight__track { transform: translateX(62%); }
+  [data-skin="lux"] .lux-sc-radar__blip { opacity: 0.7; }
+  [data-skin="lux"] .lux-sc-hud__c { transition: none; }
+}
+
+/* ---------- login: Google button on a chamfered blaze plate ----------
+ * Google's button is a cross-origin iframe (shape set in GoogleSignInButton), so we frame it rather than restyle it. */
+[data-skin="lux"] .lux-sc-signin [data-tour="google-signin"] {
+  --lux-sc-cut: 12px;
+  padding: 4px;
+  background: linear-gradient(135deg, var(--primary), color-mix(in oklch, var(--primary) 70%, var(--background)));
+  clip-path: polygon(var(--lux-sc-cut) 0, 100% 0, 100% calc(100% - var(--lux-sc-cut)), calc(100% - var(--lux-sc-cut)) 100%, 0 100%, 0 var(--lux-sc-cut));
+  transition: filter 0.2s;
+}
+[data-skin="lux"] .lux-sc-signin [data-tour="google-signin"]:hover { filter: brightness(1.08); }
+[data-skin="lux"] .lux-sc-signin [data-tour="google-signin"] > div:first-child { background: color-mix(in oklch, var(--background) 85%, black); }
+/* the loading / busy overlays and error inside it: square, on-palette */
+[data-skin="lux"] .lux-sc-signin [data-tour="google-signin"] > div.absolute { inset: 4px; border-radius: 0; }
+[data-skin="lux"] .lux-sc-signin [data-tour="google-signin"] > p[role="alert"] { border-radius: 0; margin: 0; }

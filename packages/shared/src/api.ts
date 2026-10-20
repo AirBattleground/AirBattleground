@@ -100,6 +100,13 @@
  *            Match center for ANY match (scrim or tournament): GET /api/admin/matches/:matchId · PUT …/lineup · PUT …/results ·
  *            POST …/publish · POST …/unpublish · POST …/screenshots · GET /api/admin/screenshots/:id/image · POST …/retry ·
  *            DELETE /api/admin/screenshots/:id   (same bodies/responses as the manager routes)
+ *
+ * BG COINS (coins.ts): GET /api/team/coins/leaderboard → CoinLeaderboard · Scrim/Tournament inputs + DTOs gain winCoins
+ * TDM BATTLES (tournament/tdm.ts): Tournament.mode "TDM" = knockout of 2-team matches; same tournament endpoints
+ *   (CreateTournamentInput.mode, TournamentSummary.mode). Coins go to the champion.
+ * SITE YOUTUBE (youtube.ts): GET|PATCH|DELETE /api/admin/youtube · POST /api/admin/youtube/connect · GET …/callback
+ *
+ * SITE LOOK (skin.ts): GET /api/site/skin (public) → UiSkinResponse · PUT /api/admin/site/skin {skin} → UiSkinResponse
  */
 export const API_PREFIX = "/api";
 export const APP_COOKIE = "sx_app";

@@ -1,10 +1,11 @@
-import { Link, NavLink } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { motion } from "framer-motion";
-import { LogoMark } from "@7xen/ui/components/brand/logo";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { BrandPicker } from "@7xen/ui/components/brand/theme-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { cn } from "@7xen/ui/lib/utils";
-import type { NavItem, SidebarSlot, SidebarSlotState, ShellBrand } from "./types";
+import sidebarArtUrl from "@/assets/brand/sidebar-art.webp";
+import type { NavItem, SidebarSlot, SidebarSlotState } from "./types";
 
 /**
  * Collapse design: the sidebar content is laid out at full width and never reflows. Icons sit in a
@@ -18,13 +19,36 @@ export const EASE = "ease-[cubic-bezier(0.32,0.72,0,1)]";
 
 interface SidebarContentProps {
   nav: NavItem[];
-  homeHref: string;
   collapsed: boolean;
+  onToggle: () => void;
   /** Distinct per rendering so active indicators don't animate between unrelated lists. */
   layoutId: string;
   header?: SidebarSlot;
   action?: SidebarSlot;
-  brand?: ShellBrand;
+}
+
+/**
+ * Battlefield art behind the sidebar. The image is a portrait scene on its left ~60% that already fades to navy on
+ * the right, so it's fitted to the expanded width (×1.25) and pinned bottom-left: the kneeling soldier lands in the
+ * empty space above the footer, the drop (plane, chutes, town) rises behind the team card, and the top melts into
+ * the sidebar colour so the nav stays clean. Fixed width, so collapsing just reveals the left slice (no reflow).
+ */
+export function SidebarArt({ collapsed }: { collapsed: boolean }) {
+  return (
+    <div aria-hidden className="sidebar-art pointer-events-none absolute inset-0 overflow-hidden transition-opacity duration-500">
+      <img
+        src={sidebarArtUrl}
+        alt=""
+        decoding="async"
+        className={cn("absolute bottom-0 left-0 h-auto max-w-none opacity-35 transition-opacity duration-300 dark:opacity-100", collapsed && "dark:opacity-60")}
+        style={{ width: SIDEBAR_FULL * 1.25 }}
+      />
+      {/* nav zone: solid sidebar colour, easing into the art below the menu */}
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--sidebar)_0%,color-mix(in_oklch,var(--sidebar)_92%,transparent)_30%,color-mix(in_oklch,var(--sidebar)_35%,transparent)_58%,color-mix(in_oklch,var(--sidebar)_10%,transparent)_78%,color-mix(in_oklch,var(--sidebar)_70%,transparent)_100%)]" />
+      {/* keep the theme hue on the art */}
+      <div className="absolute inset-0 bg-primary opacity-[0.06] mix-blend-color" />
+    </div>
+  );
 }
 
 /** Text that fades out when the rail collapses (and back in slightly after it expands). */
@@ -55,7 +79,7 @@ function NavRow({ item, collapsed, layoutId }: { item: NavItem; collapsed: boole
           aria-label={collapsed ? (badge ? `${item.label} (${badge})` : item.label) : undefined}
           className={({ isActive }: { isActive: boolean }) =>
             cn(
-              "group relative flex h-11 items-center gap-3 rounded-xl pr-3 pl-4 text-sm font-medium outline-none",
+              "group relative flex h-11 items-center gap-3 pr-3 pl-4 text-sm font-medium outline-none",
               "transition-[width,color] duration-300",
               EASE,
               "focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50",
@@ -69,17 +93,19 @@ function NavRow({ item, collapsed, layoutId }: { item: NavItem; collapsed: boole
               <span
                 aria-hidden
                 className={cn(
-                  "absolute inset-0 rounded-xl transition-colors duration-200",
+                  "absolute inset-0 transition-colors duration-200",
                   !isActive && "group-hover:bg-sidebar-accent/50",
                 )}
               />
               {isActive && (
                 <motion.span
                   layoutId={layoutId}
-                  className="absolute inset-0 rounded-xl border border-primary/25 bg-sidebar-accent shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04)]"
+                  className="absolute inset-0"
                   transition={{ type: "spring", stiffness: 520, damping: 42 }}
                 >
-                  <span className="absolute top-1/2 -left-px h-5 w-1 -translate-y-1/2 rounded-r-full bg-primary shadow-glow" />
+                  {/* same pill as before, faded out toward the right so it melts into the sidebar */}
+                  <span className="absolute inset-0 border border-primary/25 bg-[linear-gradient(90deg,color-mix(in_oklch,var(--primary)_16%,var(--sidebar-accent))_0%,var(--sidebar-accent)_45%,transparent_100%)] shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04)] [mask-image:linear-gradient(90deg,#000_55%,transparent_100%)]" />
+                  <span className="absolute inset-y-0 -left-px w-[3px] bg-primary shadow-glow" />
                 </motion.span>
               )}
               <span className="relative shrink-0">
@@ -116,50 +142,13 @@ function NavRow({ item, collapsed, layoutId }: { item: NavItem; collapsed: boole
   );
 }
 
-export function SidebarContent({ nav, homeHref, collapsed, layoutId, header, action, brand }: SidebarContentProps) {
+export function SidebarContent({ nav, collapsed, onToggle, layoutId, header, action }: SidebarContentProps) {
   const slot: SidebarSlotState = { collapsed, close: () => undefined };
   return (
     <div className="flex h-full flex-col" style={{ width: SIDEBAR_FULL }}>
-      <div className="flex h-16 shrink-0 items-center pl-5">
-        <Link
-          to={homeHref}
-          className="flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50"
-          aria-label={`${brand?.name ?? "AirBattleground"} home`}
-        >
-          {brand ? (
-            // expanded: full wordmark; collapsed rail (76px): cross-fades to the compact mark
-            <span className="relative block h-10">
-              <Fade collapsed={collapsed} className="block h-full">
-                <img src={brand.wordmarkInk} alt="" className="brand-ink h-full w-auto dark:hidden" />
-                <img src={brand.wordmark} alt="" className="brand-ink hidden h-full w-auto dark:block" />
-              </Fade>
-              <img
-                src={brand.mark}
-                alt=""
-                aria-hidden
-                className={cn("brand-ink absolute top-1/2 -left-1.5 h-7 w-auto -translate-y-1/2 transition-opacity duration-200", collapsed ? "opacity-100 delay-100" : "pointer-events-none opacity-0")}
-              />
-            </span>
-          ) : (
-            <>
-              <LogoMark />
-              <Fade collapsed={collapsed} className="leading-none">
-                <span className="block font-display text-xl font-bold tracking-wide">
-                  Air<span className="text-primary">Battleground</span>
-                </span>
-                <span className="mt-0.5 block text-[10px] font-semibold tracking-[0.25em] text-muted-foreground uppercase">Scrim Portal</span>
-              </Fade>
-            </>
-          )}
-        </Link>
-      </div>
+      {header && <div className="shrink-0 px-3 pt-4 pb-2">{header(slot)}</div>}
 
-      {header && <div className="shrink-0 px-3 pb-2">{header(slot)}</div>}
-
-      <nav aria-label="Main" className="flex-1 overflow-x-hidden overflow-y-auto px-3 py-2">
-        <Fade collapsed={collapsed} className="mb-2 block px-4 text-[10px] font-semibold tracking-[0.25em] text-muted-foreground uppercase">
-          Menu
-        </Fade>
+      <nav aria-label="Main" className="flex-1 overflow-x-hidden overflow-y-auto px-3 pt-4 pb-2">
         <ul className="flex flex-col gap-1">
           {nav.map((item) => (
             <li key={item.key}>
@@ -170,12 +159,33 @@ export function SidebarContent({ nav, homeHref, collapsed, layoutId, header, act
         {action && <div className="mt-4">{action(slot)}</div>}
       </nav>
 
-      {/* bottom: brand colour picker (stays centred in the 76px rail) + collapse hint */}
-      <div className="flex shrink-0 items-center gap-3 px-5 pb-4">
-        <BrandPicker />
-        <Fade collapsed={collapsed} className="text-[11px] whitespace-nowrap text-muted-foreground">
-          <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">Ctrl</kbd> + <kbd className="rounded border bg-muted px-1 font-mono text-[10px]">B</kbd> to collapse
+      {/* footer: brand colour picker on the left, collapse toggle on the right (alone, in the icon column, when collapsed) */}
+      <div className="relative flex h-14 shrink-0 items-center border-t border-sidebar-border px-5">
+        <Fade collapsed={collapsed}>
+          <BrandPicker />
         </Fade>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={onToggle}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              aria-expanded={!collapsed}
+              className={cn(
+                "absolute top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-lg border border-sidebar-border text-muted-foreground outline-none",
+                "transition-[left,color,border-color,background-color] duration-300 hover:border-primary/50 hover:bg-sidebar-accent/50 hover:text-primary focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50",
+                EASE,
+              )}
+              // expanded: right edge of the 264px column; collapsed: centred in the 76px rail
+              style={{ left: collapsed ? SIDEBAR_RAIL / 2 - 18 : SIDEBAR_FULL - 12 - 36 }}
+            >
+              {collapsed ? <PanelLeftOpen className="size-[18px]" /> : <PanelLeftClose className="size-[18px]" />}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right" sideOffset={8}>
+            {collapsed ? "Expand" : "Collapse"} <span className="ml-1 opacity-60">Ctrl+B</span>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </div>
   );

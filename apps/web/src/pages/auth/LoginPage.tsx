@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, useEffect, useState, type ReactNode } from "react";
 import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,9 +16,12 @@ import { useAuth } from "@/lib/auth";
 import { destinationFor } from "@/lib/guards";
 import { useAuthConfig } from "@/features/player/api";
 import { GoogleSignInButton } from "@/features/player/components/GoogleSignInButton";
+import { SkinSwitch } from "@/lib/skin";
 import { WelcomeHeading } from "./WelcomeHeading";
 import wordmarkUrl from "@/assets/brand/airbattleground-wordmark.webp";
 import markUrl from "@/assets/brand/airbattleground-mark.webp";
+
+const LuxLoginPage = lazy(() => import("@/skins/lux/pages/LuxLoginPage"));
 
 const STEPS: TourStep[] = [
   { title: "Sign in", description: "Everyone signs in with Google — players, organisers and admins. No password to remember." },
@@ -30,7 +33,7 @@ const ADMIN_CONSOLE = "/admin-ui/";
 
 const errorText = (e: unknown) => (e instanceof ApiError ? e.message : "Something went wrong. Please try again.");
 
-function ErrorBanner({ message }: { message: string }) {
+export function ErrorBanner({ message }: { message: string }) {
   return (
     <motion.div
       role="alert"
@@ -45,7 +48,7 @@ function ErrorBanner({ message }: { message: string }) {
 }
 
 /** Email-only sign-in for local testing (shown only when the API has PLAYER_DEV_LOGIN=1). */
-function DevSignIn({ onDone }: { onDone: (input: DevLoginInput) => Promise<void> }) {
+export function DevSignIn({ onDone }: { onDone: (input: DevLoginInput) => Promise<void> }) {
   const form = useForm<DevLoginInput>({ resolver: zodResolver(devLoginSchema), defaultValues: { email: "", name: "" } });
   const { register, handleSubmit, formState, setError } = form;
   const submit = handleSubmit(async (v) => {
@@ -77,7 +80,7 @@ function DevSignIn({ onDone }: { onDone: (input: DevLoginInput) => Promise<void>
 }
 
 /** Google for everyone (plus the dev email sign-in when the API allows it). */
-function SignIn({ onSignedIn }: { onSignedIn: (p: Promise<SessionUser>) => Promise<void> }) {
+export function SignIn({ onSignedIn }: { onSignedIn: (p: Promise<SessionUser>) => Promise<void> }) {
   const config = useAuthConfig();
   const { loginWithGoogle, devLogin } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -125,7 +128,14 @@ function SignIn({ onSignedIn }: { onSignedIn: (p: Promise<SessionUser>) => Promi
   );
 }
 
-export default function LoginPage() {
+export type OnSignedIn = (p: Promise<SessionUser>) => Promise<void>;
+
+/**
+ * Everything the sign-in screen does besides drawing it (shared by both site looks): page tour, splash hand-over,
+ * redirects for signed-in users and admins, and the post-sign-in navigation. `blocker` is what to render instead of the
+ * form (a redirect or the admin hand-off loader), else null.
+ */
+export function useLoginFlow(): { onSignedIn: OnSignedIn; blocker: ReactNode | null } {
   usePageTour("auth.login", STEPS);
   const { user, isLoading } = useAuth();
   const location = useLocation();
@@ -160,9 +170,20 @@ export default function LoginPage() {
     }
   };
 
-  if (isAdmin) return <FullPageLoader />;
-  if (!isLoading && user && !signingIn) return <Navigate to={destinationFor(user, next)} replace />;
+  let blocker: ReactNode | null = null;
+  if (isAdmin) blocker = <FullPageLoader />;
+  else if (!isLoading && user && !signingIn) blocker = <Navigate to={destinationFor(user, next)} replace />;
+  return { onSignedIn, blocker };
+}
 
+export default function LoginPage() {
+  const { onSignedIn, blocker } = useLoginFlow();
+  if (blocker) return blocker;
+  return <SkinSwitch teal={<TealLogin onSignedIn={onSignedIn} />} lux={<LuxLoginPage onSignedIn={onSignedIn} />} />;
+}
+
+/** Teal Battle sign-in screen. */
+function TealLogin({ onSignedIn }: { onSignedIn: OnSignedIn }) {
   return (
     <div className="bg-background">
       <LoginScene

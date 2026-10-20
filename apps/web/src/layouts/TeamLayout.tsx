@@ -1,9 +1,6 @@
 import { useMemo } from "react";
-import { Link, Outlet } from "react-router-dom";
-import { CalendarSearch, Home, Medal, Megaphone, Plus, Radio, Search, Ticket, Trophy, Users } from "lucide-react";
-import { TeamAvatar } from "@7xen/ui/components/brand/status";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
-import { cn } from "@7xen/ui/lib/utils";
+import { Outlet } from "react-router-dom";
+import { CalendarSearch, Crosshair, Home, Medal, Megaphone, Radio, Search, Ticket, Trophy, Users } from "lucide-react";
 import { usePlayerSession } from "@/lib/auth";
 import { usePlayerTeam } from "@/features/player/api";
 import { AppShell, type NavItem, type ShellBrand, type SidebarSlot, type WelcomeStep } from "@/components/shell";
@@ -12,6 +9,10 @@ import wordmarkUrl from "@/assets/brand/airbattleground-wordmark.webp";
 import wordmarkInkUrl from "@/assets/brand/airbattleground-wordmark-ink.webp";
 import { useTeamTournamentCrumbLabels } from "@/features/tournaments/team/crumbs";
 import { useLiveBroadcasts } from "@/features/broadcast/live";
+import { MyTeamCard } from "@/features/team/shell/MyTeamCard";
+import { CoinsSidebarCard } from "@/features/coins/components/CoinsSidebarCard";
+import { TeamAlerts } from "@/features/team/shell/TeamAlerts";
+import { TeamSearch, type SearchPage } from "@/features/team/shell/TeamSearch";
 
 const MY_TEAM_NAV: NavItem = { key: "my-team", to: "/team/my-team", label: "My team", short: "Team", icon: Users };
 
@@ -23,6 +24,7 @@ const NAV: NavItem[] = [
   { key: "home", to: "/team", label: "Home", icon: Home, end: true },
   { key: "scrims", to: "/team/scrims", label: "Find scrims", short: "Scrims", icon: Search },
   { key: "tournaments", to: "/team/tournaments", label: "Tournaments", short: "Cups", icon: Trophy },
+  { key: "tdm", to: "/team/tdm", label: "TDM battles", short: "TDM", icon: Crosshair },
   { key: "registrations", to: "/team/registrations", label: "My registrations", short: "Slots", icon: Ticket },
   { key: "results", to: "/team/results", label: "Results", icon: Medal },
   // phones: in the tab bar only while something is live (the count is the badge)
@@ -36,69 +38,17 @@ const WELCOME_STEPS: WelcomeStep[] = [
   { icon: Trophy, title: "Get your slot", text: "Once the manager approves, your slot number shows up right here." },
 ];
 
-/** Fixed avatar position; collapsing narrows the card to the avatar and fades the text (no layout swap). */
-function TeamCard({ collapsed }: { collapsed: boolean }) {
-  const { team } = usePlayerSession();
-  if (!team) {
-    return (
-      <Link
-        to="/team/my-team"
-        data-tour="team-card"
-        aria-label="Create or join a team"
-        className={cn(
-          "flex items-center gap-3 overflow-hidden rounded-xl border border-dashed border-primary/40 p-1.5 text-sm font-semibold text-primary outline-none transition-[width,background-color] duration-300 hover:bg-primary/10 focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50",
-          collapsed ? "w-[52px]" : "w-full",
-        )}
-      >
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15">
-          <Plus className="size-5" />
-        </span>
-        <span className={cn("whitespace-nowrap transition-opacity duration-200", collapsed ? "opacity-0" : "opacity-100 delay-100")}>Create or join a team</span>
-      </Link>
-    );
-  }
-  return (
-    <Tooltip open={collapsed ? undefined : false}>
-      <TooltipTrigger asChild>
-        <Link
-          to="/team/my-team"
-          data-tour="team-card"
-          aria-label={`${team.name} — my team`}
-          className={cn(
-            "group relative flex items-center gap-3 overflow-hidden rounded-xl border p-1.5 outline-none",
-            "transition-[width,border-color,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50",
-            collapsed ? "w-[52px] border-transparent bg-transparent" : "w-full border-sidebar-border bg-card/70 pr-3 hover:border-primary/40 hover:shadow-glow",
-          )}
-        >
-          <span
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute -top-10 -right-10 size-24 rounded-full bg-gradient-to-br from-primary/25 to-transparent blur-2xl transition-opacity duration-300",
-              collapsed && "opacity-0",
-            )}
-          />
-          <TeamAvatar name={team.name} tag={team.tag} size="md" />
-          <span className={cn("relative min-w-0 whitespace-nowrap transition-opacity duration-200", collapsed ? "opacity-0" : "opacity-100 delay-100")}>
-            <span className="block truncate font-display text-base leading-tight font-bold">{team.name}</span>
-            <span className="mt-0.5 flex items-center gap-1.5">
-              <span className="inline-flex items-center rounded-md border border-primary/30 bg-primary/10 px-1.5 py-px font-mono text-[10px] font-medium tracking-wider text-primary">
-                [{team.tag}]
-              </span>
-              <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">{team.role === "LEADER" ? "Leader" : "Member"}</span>
-            </span>
-          </span>
-        </Link>
-      </TooltipTrigger>
-      <TooltipContent side="right" sideOffset={12}>
-        {team.name} · {team.tag}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
+const SEGMENT_LABELS: Record<string, string> = { matches: "Match", standings: "Points table", "my-team": "My team", coins: "BG coins", tdm: "TDM battles" };
 
-const SEGMENT_LABELS: Record<string, string> = { matches: "Match", standings: "Points table", "my-team": "My team" };
-
-const teamHeader: SidebarSlot = (s) => <TeamCard {...s} />;
+const teamCard: SidebarSlot = (s) => (
+  <div className="flex flex-col gap-3">
+    <MyTeamCard {...s} />
+    <CoinsSidebarCard {...s} />
+  </div>
+);
+const SEARCH_PAGES: SearchPage[] = [...NAV.filter((n) => n.key !== "live"), { key: "profile", to: "/team/profile", label: "My profile", icon: Users }];
+const search = <TeamSearch pages={SEARCH_PAGES} />;
+const alerts = <TeamAlerts />;
 
 const BRAND: ShellBrand = { name: "AirBattleground", wordmark: wordmarkUrl, wordmarkInk: wordmarkInkUrl, mark: markUrl };
 
@@ -124,7 +74,16 @@ export default function TeamLayout() {
     [isLeader, suggestions, joinRequests, liveCount],
   );
   return (
-    <AppShell nav={nav} homeHref="/team" sidebarHeader={teamHeader} segmentLabels={tournamentLabels ?? SEGMENT_LABELS} welcomeSteps={WELCOME_STEPS} brand={BRAND}>
+    <AppShell
+      nav={nav}
+      homeHref="/team"
+      sidebarAction={teamCard}
+      search={search}
+      notifications={alerts}
+      segmentLabels={tournamentLabels ?? SEGMENT_LABELS}
+      welcomeSteps={WELCOME_STEPS}
+      brand={BRAND}
+    >
       {/* phase 5c: every page is open without a team; only registering asks for one */}
       <Outlet />
     </AppShell>

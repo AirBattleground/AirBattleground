@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { AlertTriangle, ArrowLeft, CalendarDays, Info, Layers, Loader2, Map as MapIcon, Save, Type } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CalendarDays, Coins, Info, Layers, Loader2, Map as MapIcon, Save, Type } from "lucide-react";
 import { toast } from "sonner";
 import {
   addDays,
@@ -35,13 +35,15 @@ import { SlotGridPreview } from "@/features/manager/components/SlotGridPreview";
 import { ScrimPosterCard } from "@/features/manager/components/BrandingCards";
 import { Stepper } from "@/features/manager/components/Stepper";
 import { TimeSelect } from "@/features/manager/components/TimeSelect";
+import { coinsLabel, WinCoinsInput } from "@/features/coins/components/WinCoinsInput";
 
 const TOUR: TourStep[] = [
-  { title: "Set up a scrim", description: "Four quick sections. Everything can be changed later." },
+  { title: "Set up a scrim", description: "Five quick sections. Everything can be changed later." },
   { element: '[data-tour="form-basics"]', title: "Give it a name", description: "Teams see this title when they browse scrims, so keep it clear — e.g. “Evening T3 Scrims”." },
   { element: '[data-tour="form-schedule"]', title: "When does it run?", description: "One-time, every day, or weekends only. Pick the start date and time (Indian time)." },
   { element: '[data-tour="form-maps"]', title: "Matches", description: "Add one map per match, in the order you'll play them. Use the arrows to reorder." },
   { element: '[data-tour="form-slots"]', title: "Slots", description: "How many teams can join, and which slot number they start from. The grid shows exactly which slots teams get." },
+  { element: '[data-tour="form-coins"]', title: "BG coins", description: "Coins the winner of each match earns. They go to the winning team's leader when you publish the results." },
   { element: '[data-tour="form-poster"]', title: "Poster", description: "Optional: upload square poster artwork. Teams see it when they browse scrims. It saves right away." },
   { element: '[data-tour="form-preview"]', title: "Check and save", description: "This preview shows the next dates it will run. Happy? Hit save." },
 ];
@@ -59,6 +61,7 @@ function defaults(): FormIn {
     endDate: null,
     slotCount: 16,
     firstSlot: 3,
+    winCoins: 0,
   };
 }
 
@@ -73,6 +76,7 @@ function fromScrim(s: Scrim): FormIn {
     endDate: s.endDate,
     slotCount: s.slotCount,
     firstSlot: s.firstSlot,
+    winCoins: s.winCoins,
   };
 }
 
@@ -128,6 +132,7 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
   const slotCount = watch("slotCount");
   const firstSlot = watch("firstSlot") ?? 1;
   const title = watch("title");
+  const winCoins = watch("winCoins");
   const noEnd = endDate == null;
 
   const upcoming = useMemo(
@@ -178,7 +183,7 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
       <PageHeader
         eyebrow={isEdit ? "Edit scrim" : "New scrim"}
         title={isEdit ? scrim.title : title?.trim() || "Create a scrim"}
-        description={isEdit ? "Changes apply to upcoming sessions." : "Fill in four quick sections. You can change any of it later."}
+        description={isEdit ? "Changes apply to upcoming sessions." : "Fill in five quick sections. You can change any of it later."}
       />
 
       {conflict && (
@@ -354,6 +359,17 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
               </div>
             </div>
           </Section>
+
+          {/* (e) Rewards */}
+          <Section n={5} icon={<Coins />} title="BG coins" description="Coins the winner of each match earns. They go to the winning team's leader." tour="form-coins">
+            <Field label="Coins per match win" htmlFor="winCoins" error={errors.winCoins?.message} hint="Paid when you publish a match's results. Leave at 0 for no coins.">
+              <Controller
+                control={control}
+                name="winCoins"
+                render={({ field }) => <WinCoinsInput id="winCoins" value={field.value} onChange={(v) => field.onChange(v)} invalid={!!errors.winCoins} />}
+              />
+            </Field>
+          </Section>
         </div>
 
         {/* Live preview */}
@@ -386,6 +402,10 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
               <div>
                 <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Slots</p>
                 <p className="font-display text-lg font-bold">{slotRangeLabel(firstSlot, slotCount)}</p>
+              </div>
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Each match winner gets</p>
+                <p className="font-display text-lg font-bold">{coinsLabel(winCoins ?? 0)}</p>
               </div>
               {Object.keys(errors).length > 0 && (
                 <p className="flex items-center gap-2 rounded-lg bg-destructive/10 p-2.5 text-sm text-destructive">

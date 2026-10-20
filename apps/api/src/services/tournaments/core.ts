@@ -9,6 +9,7 @@ import {
   groupSizes,
   planSchedule,
   scheduleConfigSchema,
+  tdmFormatError,
   teamsOut,
   validateFormat,
   type FormatIssue,
@@ -245,6 +246,8 @@ function summaryOf(t: TournamentFull, counts: Counts, times: StageTimes): Tourna
     manager: toOrganizer(t.manager),
     posterUrl: brandingUrl(t.posterKey),
     champion: t.champion ? toTeamSummary(t.champion) : null,
+    mode: t.mode,
+    winCoins: t.winCoins,
     createdAt: t.createdAt.toISOString(),
   };
 }
@@ -296,7 +299,9 @@ async function slotTaken(t: TournamentFull, options: TimeSlotOption[]): Promise<
 
 export function formatIssues(t: TournamentFull): FormatIssue[] {
   if (!t.stages.length) return [{ stage: null, level: "error", message: "Add at least one stage" }];
-  return validateFormat(t.stages.map(specOf), t.maxTeams);
+  const specs = t.stages.map(specOf);
+  const tdm = t.mode === "TDM" ? tdmFormatError(specs, t.maxTeams) : null;
+  return [...(tdm ? [{ stage: null, level: "error" as const, message: tdm }] : []), ...validateFormat(specs, t.maxTeams)];
 }
 
 export async function toManagerDetail(t: TournamentFull): Promise<ManagerTournamentDetail> {

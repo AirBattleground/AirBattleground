@@ -14,6 +14,8 @@ import {
   adminRecordingsQuerySchema,
   saveRecipeSchema,
   updateSettingsSchema,
+  updateUiSkinSchema,
+  updateYoutubeSchema,
   createManagerInviteSchema,
   managerInviteQuerySchema,
 } from "@7xen/shared";
@@ -21,6 +23,8 @@ import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import * as admin from "../services/admin.js";
 import * as training from "../services/training.js";
+import * as uiSkin from "../services/uiSkin.js";
+import * as youtube from "../services/youtube.js";
 import { AppError } from "../lib/errors.js";
 import { sendStoredFile } from "../lib/storage.js";
 import { parseMultipart, singleImage } from "../lib/upload.js";
@@ -60,6 +64,32 @@ export function adminRouter() {
 
   r.get("/stats", async (_req, res) => {
     res.json(await admin.adminStats());
+  });
+
+  // ---- phase 7b: site YouTube channel (every streamed match goes live there) ----
+  r.get("/youtube", async (_req, res) => {
+    res.json(await youtube.getYoutubeStatus());
+  });
+  r.patch("/youtube", async (req, res) => {
+    res.json(await youtube.updateYoutube(parse(updateYoutubeSchema, req.body)));
+  });
+  r.post("/youtube/connect", (req, res) => {
+    res.json({ url: youtube.connectUrl(currentUser(req).id) });
+  });
+  r.delete("/youtube", async (_req, res) => {
+    res.json(await youtube.disconnectYoutube());
+  });
+  // Google sends the admin back here (top-level GET, so the lax session cookie comes along)
+  r.get("/youtube/callback", async (req, res) => {
+    const back = (q: string) => res.redirect(302, `/admin-ui/youtube?${q}`);
+    const { code, state, error } = req.query as Record<string, string | undefined>;
+    if (error || !code || !state) return back(`error=${encodeURIComponent(error === "access_denied" ? "You cancelled the Google sign-in." : "Google didn't finish the sign-in. Try again.")}`);
+    try {
+      await youtube.finishConnect(code, state, currentUser(req).id);
+      back("connected=1");
+    } catch (err) {
+      back(`error=${encodeURIComponent(err instanceof AppError ? err.message : "Couldn't connect YouTube. Try again.")}`);
+    }
   });
   r.get("/system/health", async (_req, res) => {
     res.setHeader("Cache-Control", "no-store");
@@ -177,6 +207,10 @@ export function adminRouter() {
   });
   r.patch("/settings", async (req, res) => {
     res.json(await recordings.updateSettings(parse(updateSettingsSchema, req.body)));
+  });
+  // ---- site look (teal | lux) of the web portal ----
+  r.put("/site/skin", async (req, res) => {
+    res.json(await uiSkin.setUiSkin(parse(updateUiSkinSchema, req.body)));
   });
   r.get("/recipes", async (_req, res) => {
     res.json({ items: await recipes.adminRecipes() });

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { CalendarClock, CalendarPlus, Inbox, Plus, Swords, Users } from "lucide-react";
 import { APP_TIMEZONE } from "@7xen/shared";
@@ -6,6 +7,7 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
+import { useSkin } from "@/lib/skin";
 import { useDashboard } from "@/features/manager/api";
 import { formatDate } from "@/features/manager/format";
 import { QueryError } from "@/features/manager/components/QueryError";
@@ -13,6 +15,9 @@ import { SessionCard, SessionCardSkeleton } from "@/features/manager/components/
 import { GetAppCard } from "@/features/live/components/GetAppCard";
 import { OrgLogoCard } from "@/features/manager/components/BrandingCards";
 
+
+/** Lux Battle only: the "control room" banner replaces the PageHeader (lazy, so Teal never loads it). */
+const LuxManagerHero = lazy(() => import("@/skins/lux/pages/LuxManagerHero"));
 const TOUR: TourStep[] = [
   { title: "Welcome to your control room", description: "This is where you run your scrims. Let's take a 20-second look around." },
   { element: '[data-tour="stat-pending"]', title: "Teams waiting for you", description: "When teams ask to join a scrim, they show up here. Click it to approve or reject them." },
@@ -33,30 +38,37 @@ function greeting() {
 export default function DashboardPage() {
   usePageTour("manager.dashboard", TOUR);
   const { user } = useAuth();
+  const { isLux } = useSkin();
   const q = useDashboard();
   const d = q.data;
   const firstName = user?.displayName.split(" ")[0] ?? "there";
 
   return (
     <>
-      <PageHeader
-        eyebrow={d ? formatDate(d.today) : "Dashboard"}
-        title={`${greeting()}, ${firstName}`}
-        description={
-          d
-            ? d.pendingCount > 0
-              ? `${d.pendingCount} team${d.pendingCount === 1 ? " is" : "s are"} waiting for your approval.`
-              : "No teams waiting right now. Here's what's happening today."
-            : "Here's what's happening with your scrims today."
-        }
-        actions={
-          <Button asChild size="lg" data-tour="new-scrim">
-            <Link to="/manager/scrims/new">
-              <Plus /> New scrim
-            </Link>
-          </Button>
-        }
-      />
+      {isLux ? (
+        <Suspense fallback={null}>
+          <LuxManagerHero name={firstName} greeting={greeting()} data={d} />
+        </Suspense>
+      ) : (
+        <PageHeader
+          eyebrow={d ? formatDate(d.today) : "Dashboard"}
+          title={`${greeting()}, ${firstName}`}
+          description={
+            d
+              ? d.pendingCount > 0
+                ? `${d.pendingCount} team${d.pendingCount === 1 ? " is" : "s are"} waiting for your approval.`
+                : "No teams waiting right now. Here's what's happening today."
+              : "Here's what's happening with your scrims today."
+          }
+          actions={
+            <Button asChild size="lg" data-tour="new-scrim">
+              <Link to="/manager/scrims/new">
+                <Plus /> New scrim
+              </Link>
+            </Button>
+          }
+        />
+      )}
 
       {q.isError ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} />

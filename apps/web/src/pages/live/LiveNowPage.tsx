@@ -11,7 +11,7 @@ import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 
 const TOUR: TourStep[] = [
-  { title: "Live now", description: "Every match an organiser is broadcasting right now. Anyone signed in can watch." },
+  { title: "Live now", description: "Every match an organiser is broadcasting right now. Anyone can watch — even without signing in." },
   { element: '[data-tour="live-grid"]', title: "Pick a match", description: "Tap a match to watch it. You can pause and go back to anything since you started watching, then jump to Live again.", side: "top" },
 ];
 
@@ -46,7 +46,7 @@ export default function LiveNowPage() {
   );
 }
 
-function LiveCard({ b, to }: { b: LiveBroadcastCard; to: string }) {
+export function LiveCard({ b, to }: { b: LiveBroadcastCard; to: string }) {
   return (
     <Link to={to} className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all outline-none hover:-translate-y-0.5 hover:border-destructive/50 hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-ring/50">
       <div className="relative aspect-video overflow-hidden bg-[radial-gradient(ellipse_at_30%_20%,#3d2a2a_0%,#1d1414_45%,#0b0808_100%)]">

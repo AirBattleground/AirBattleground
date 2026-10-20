@@ -72,6 +72,7 @@ export async function createScrim(managerId: string, input: CreateScrimInput): P
       endDate: input.recurrence === "ONCE" || !input.endDate ? null : strToDate(input.endDate),
       slotCount: input.slotCount,
       firstSlot: input.firstSlot,
+      winCoins: input.winCoins,
     },
     include: scrimInclude,
   });
@@ -131,6 +132,7 @@ export async function updateScrim(scrimId: string, managerId: string, input: Upd
   if (input.startTime !== undefined) data.startTime = input.startTime;
   if (input.status !== undefined) data.status = input.status;
   if (input.pointsSystem !== undefined) data.pointsSystem = input.pointsSystem;
+  if (input.winCoins !== undefined) data.winCoins = input.winCoins;
 
   const updated = await prisma.scrim.update({ where: { id: scrimId }, data, include: scrimInclude });
   if (input.pointsSystem !== undefined) await recomputeScrimPoints(scrimId, pointsSystemOf(updated.pointsSystem));

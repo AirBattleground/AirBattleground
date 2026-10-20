@@ -15,4 +15,5 @@ export { planSchedule } from "./plan";
 export { createRng } from "./rng";
 export { drawGroups, snakeSeed } from "./draw";
 export { rankStage, promote, nextStageSeeds } from "./promotion";
+export * from "./tdm";
 export type { DrawTeam, DrawGroup, DrawResult, GroupResults, RankedTeam, PromotionResult } from "./types";

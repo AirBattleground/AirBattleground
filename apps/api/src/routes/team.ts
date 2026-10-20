@@ -10,6 +10,7 @@ import { tournamentTeamRouter } from "./tournaments.js";
 import { teamRooms } from "../services/live.js";
 import { teamLive } from "../services/station.js";
 import { MSG } from "../services/players.js";
+import { coinLeaderboard, coinWallet } from "../services/coins.js";
 
 /** The player's team (phase 5: from their membership); 403 NO_TEAM when they aren't in one (dashboard + mutations). */
 function membership(req: Request) {
@@ -33,6 +34,13 @@ export function teamRouter() {
 
   r.get("/dashboard", async (req, res) => {
     res.json(await team.teamDashboard(teamId(req), membership(req).role));
+  });
+
+  r.get("/coins/leaderboard", async (req, res) => {
+    res.json(await coinLeaderboard(optTeamId(req)));
+  });
+  r.get("/coins", async (req, res) => {
+    res.json(await coinWallet(optTeamId(req)));
   });
 
   r.get("/scrims", async (req, res) => {

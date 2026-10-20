@@ -39,6 +39,8 @@ export const router = createBrowserRouter([
       { path: "manager-app/recordings", element: page(() => import("@/pages/managerApp/RecordingsPage")) },
       { path: "manager-app/recipes", element: page(() => import("@/pages/managerApp/RecipesPage")) },
       { path: "manager-app/settings", element: page(() => import("@/pages/managerApp/SettingsPage")) },
+      { path: "site-look", element: page(() => import("@/pages/SiteLookPage")) },
+      { path: "youtube", element: page(() => import("@/pages/YoutubePage")) },
     ],
   },
   { path: "*", element: page(() => import("@/pages/NotFoundPage")) },

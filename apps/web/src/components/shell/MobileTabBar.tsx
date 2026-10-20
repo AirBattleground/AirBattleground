@@ -33,7 +33,7 @@ export function MobileTabBar({ nav: all }: { nav: NavItem[] }) {
               >
                 {({ isActive }: { isActive: boolean }) => (
                   <>
-                    <span className="relative flex h-8 w-14 items-center justify-center">
+                    <span className="relative flex h-8 w-full max-w-14 items-center justify-center">
                       {isActive && (
                         <motion.span
                           layoutId="tabbar-active"

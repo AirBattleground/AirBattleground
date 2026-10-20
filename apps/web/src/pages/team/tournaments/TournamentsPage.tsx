@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Flag, Radio, Search, Ticket, Trophy } from "lucide-react";
-import type { TournamentSummary } from "@7xen/shared";
+import { Crosshair, Flag, Radio, Search, Ticket, Trophy } from "lucide-react";
+import type { TournamentMode, TournamentSummary } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@7xen/ui/components/ui/tabs";
@@ -47,10 +47,20 @@ function MineCard({ t, tour }: { t: TournamentSummary; tour?: boolean }) {
   );
 }
 
-function TournamentGrid({ scope, mineIds }: { scope: TournamentScope; mineIds: Set<string> }) {
+const TDM_EMPTY: Record<TournamentScope, { title: string; description: string }> = {
+  open: { title: "No open TDM battles right now", description: "When an organiser opens a TDM battle, it shows up here. Check back soon!" },
+  live: { title: "No TDM battle live at the moment", description: "Battles being played right now appear here." },
+  mine: { title: "You haven't joined a TDM battle yet", description: "Pick an open battle and register your team — it takes a few taps." },
+  completed: { title: "No finished TDM battles yet", description: "Finished battles and their champions will be listed here." },
+};
+
+function TournamentGrid({ scope, mineIds, mode }: { scope: TournamentScope; mineIds: Set<string>; mode: TournamentMode }) {
   const { hasTeam } = usePlayerSession();
-  const q = useTeamTournaments(scope);
-  if (q.isError) return <QueryError error={q.error} onRetry={() => void q.refetch()} title="Couldn't load tournaments" />;
+  const raw = useTeamTournaments(scope);
+  const q = { ...raw, data: raw.data?.filter((t) => (t.mode ?? "BR") === mode) };
+  const empty = (mode === "TDM" ? TDM_EMPTY : EMPTY)[scope];
+  const base = mode === "TDM" ? "/team/tdm" : "/team/tournaments";
+  if (q.isError) return <QueryError error={q.error} onRetry={() => void q.refetch()} title={mode === "TDM" ? "Couldn't load TDM battles" : "Couldn't load tournaments"} />;
   if (q.isLoading || !q.data)
     return (
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -59,18 +69,19 @@ function TournamentGrid({ scope, mineIds }: { scope: TournamentScope; mineIds: S
         ))}
       </div>
     );
-  if (q.data.length === 0 && scope === "mine" && !hasTeam) return <NoTeamHint icon={<Trophy />}>Tournaments your team joins show up here.</NoTeamHint>;
+  if (q.data.length === 0 && scope === "mine" && !hasTeam)
+    return <NoTeamHint icon={<Trophy />}>{mode === "TDM" ? "TDM battles" : "Tournaments"} your team joins show up here.</NoTeamHint>;
   if (q.data.length === 0)
     return (
       <EmptyState
-        icon={<Trophy />}
-        title={EMPTY[scope].title}
-        description={EMPTY[scope].description}
+        icon={mode === "TDM" ? <Crosshair /> : <Trophy />}
+        title={empty.title}
+        description={empty.description}
         action={
           scope === "mine" ? (
             <Button asChild size="lg">
-              <Link to="/team/tournaments?tab=open">
-                <Search /> See open tournaments
+              <Link to={`${base}?tab=open`}>
+                <Search /> {mode === "TDM" ? "See open TDM battles" : "See open tournaments"}
               </Link>
             </Button>
           ) : undefined
@@ -94,23 +105,39 @@ function TournamentGrid({ scope, mineIds }: { scope: TournamentScope; mineIds: S
   );
 }
 
+const TDM_STEPS: TourStep[] = [
+  { title: "TDM battles", description: "Team Deathmatch knockouts: 2 teams per match, the winner goes through, until one champion is left." },
+  { element: '[data-tour="t-tabs"]', title: "Find the right one", description: "Open = taking teams now. Live = being played. My battles = the ones you're in. Completed = past champions.", side: "bottom" },
+  { element: '[data-tour="t-card"]', title: "Tap a battle", description: "See the bracket, the BG coins for the champion, and register your team.", side: "bottom" },
+];
+
 export default function TournamentsPage() {
-  usePageTour("team.tournaments", STEPS);
+  return <TournamentsList mode="BR" />;
+}
+
+/** Player list of tournaments of one mode (BR tournaments or TDM battles). */
+export function TournamentsList({ mode }: { mode: TournamentMode }) {
+  usePageTour(mode === "TDM" ? "team.tdm" : "team.tournaments", mode === "TDM" ? TDM_STEPS : STEPS);
   const [params, setParams] = useSearchParams();
   const tab = (TABS.find((t) => t.key === params.get("tab"))?.key ?? "open") as TournamentScope;
   const mine = useTeamTournaments("mine");
-  const mineIds = useMemo(() => new Set((mine.data ?? []).map((t) => t.id)), [mine.data]);
+  const mineOfMode = useMemo(() => (mine.data ?? []).filter((t) => (t.mode ?? "BR") === mode), [mine.data, mode]);
+  const mineIds = useMemo(() => new Set(mineOfMode.map((t) => t.id)), [mineOfMode]);
   const featured = useFeaturedTournament();
-  const liveMine = (mine.data ?? []).filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELLED").length;
+  const liveMine = mineOfMode.filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELLED").length;
 
   return (
     <>
       <PageHeader
         eyebrow="Compete"
-        title="Tournaments"
-        description="Fight through the stages for the trophy. Spots are first come, first served."
+        title={mode === "TDM" ? "TDM battles" : "Tournaments"}
+        description={
+          mode === "TDM"
+            ? "2 teams per match — win and you go through. The champion earns BG coins."
+            : "Fight through the stages for the trophy. Spots are first come, first served."
+        }
       />
-      {featured.loading ? <FeaturedTournamentSkeleton className="mb-6" /> : featured.t && <FeaturedTournamentBanner t={featured.t} className="mb-6" />}
+      {mode === "BR" && (featured.loading ? <FeaturedTournamentSkeleton className="mb-6" /> : featured.t && featured.t.mode !== "TDM" && <FeaturedTournamentBanner t={featured.t} className="mb-6" />)}
       <Tabs value={tab} onValueChange={(v) => setParams(v === "open" ? {} : { tab: v }, { replace: true })} className="gap-4">
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <TabsList className="h-10" data-tour="t-tabs">
@@ -127,7 +154,7 @@ export default function TournamentsPage() {
         </div>
         {TABS.map(({ key }) => (
           <TabsContent key={key} value={key}>
-            {tab === key && <TournamentGrid scope={key} mineIds={mineIds} />}
+            {tab === key && <TournamentGrid scope={key} mineIds={mineIds} mode={mode} />}
           </TabsContent>
         ))}
       </Tabs>

@@ -1,0 +1,634 @@
+/*
+ * Lux Battle: components (scoped under [data-skin="lux"]).
+ * Restyles shadcn slots + brand components through their data-slot attributes. These rules are unlayered, so they win
+ * over Tailwind utilities — they only touch looks (colour, border, radius, clip-path, type, background-image), never
+ * layout. Defaults that pages must still be able to override (position) go in @layer components.
+ *
+ * Chamfer = clip-path cutting the top-right + bottom-left corners by --lux-ch. Because clip-path also clips outer
+ * focus rings, clipped controls show an inset outline on :focus-visible instead.
+ */
+
+/* ================================================================ CARDS */
+@layer components {
+  :root[data-skin="lux"] :is([data-slot="card"], [data-slot="stat-card"], [data-slot="page-header"], [data-slot="empty-state"]) {
+    position: relative;
+  }
+}
+
+:root[data-skin="lux"] [data-slot="card"]:not(.tc-card),
+:root[data-skin="lux"] [data-slot="stat-card"] {
+  --lux-ch: 12px;
+  --lux-bk: var(--lux-bracket);
+  --lux-bl: 12px;
+  --lux-edge: var(--border);
+  border-radius: 2px;
+  box-shadow: none;
+  clip-path: polygon(0 0, calc(100% - var(--lux-ch)) 0, 100% var(--lux-ch), 100% 100%, var(--lux-ch) 100%, 0 calc(100% - var(--lux-ch)));
+  transition: box-shadow 0.35s var(--lux-ease), background-size 0.35s var(--lux-ease), border-color 0.35s ease, transform 0.35s var(--lux-ease);
+}
+/* brackets on the square corners (top-left, bottom-right) + the border line across both chamfers.
+   Skipped when the card brings its own background image (gradients, posters). */
+:root[data-skin="lux"] [data-slot="card"]:not(.tc-card):not([class*="bg-gradient"], [class*="bg-linear"], [class*="bg-radial"], [class*="bg-conic"], [class*="bg-[url"], [style*="background-image"]),
+:root[data-skin="lux"] [data-slot="stat-card"] {
+  background-image:
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(to top right, transparent calc(50% - 0.75px), var(--lux-edge) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px)),
+    linear-gradient(to top right, transparent calc(50% - 0.75px), var(--lux-edge) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+  background-position: 0 0, 0 0, 100% 100%, 100% 100%, 100% 0, 0 100%;
+  background-size:
+    var(--lux-bl) 2px, 2px var(--lux-bl), var(--lux-bl) 2px, 2px var(--lux-bl),
+    var(--lux-ch) var(--lux-ch), var(--lux-ch) var(--lux-ch);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+}
+:root[data-skin="lux"] [data-slot="card-title"] { line-height: 1.15; }
+:root[data-skin="lux"] [data-slot="card-description"] { color: var(--muted-foreground); }
+
+/* hover target-lock: brackets snap out + turn blaze orange on interactive cards */
+:root[data-skin="lux"] :is(
+  a[data-slot="card"], button[data-slot="card"], [data-slot="card"][role="button"], [data-slot="card"][data-clickable],
+  [data-slot="card"][class*="cursor-pointer"], [data-slot="card"][class*="hover:"], a > [data-slot="card"], [data-slot="stat-card"]
+):not(.tc-card):is(:hover, :focus-visible) {
+  --lux-bk: var(--primary);
+  --lux-bl: 26px;
+  --lux-edge: var(--primary);
+  border-color: color-mix(in oklch, var(--primary) 55%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--primary) 25%, transparent), inset 0 0 36px -14px var(--glow);
+}
+:root[data-skin="lux"] :is(a[data-slot="card"], button[data-slot="card"], [data-slot="card"][role="button"]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -4px;
+}
+
+/* ================================================================ BUTTONS */
+:root[data-skin="lux"] [data-slot="button"] {
+  --lux-ch: 8px;
+  border-radius: 2px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-position 0.6s var(--lux-ease), transform 0.15s ease;
+}
+:root[data-skin="lux"] [data-slot="button"]:is([data-variant="default"], [data-variant="destructive"], [data-variant="secondary"], [data-variant="outline"]) {
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  clip-path: polygon(0 0, calc(100% - var(--lux-ch)) 0, 100% var(--lux-ch), 100% 100%, var(--lux-ch) 100%, 0 calc(100% - var(--lux-ch)));
+}
+:root[data-skin="lux"] [data-slot="button"]:is([data-size="xs"], [data-size="sm"], [data-size="icon-xs"], [data-size="icon-sm"], [data-size="icon"]) { --lux-ch: 6px; }
+:root[data-skin="lux"] [data-slot="button"]:is([data-size="xs"], [data-size="icon-xs"]) { font-size: 0.7rem; }
+:root[data-skin="lux"] [data-slot="button"][data-size="lg"] { --lux-ch: 10px; font-size: 0.875rem; }
+:root[data-skin="lux"] [data-slot="button"]:active:not(:disabled) { transform: translateY(1px); }
+:root[data-skin="lux"] [data-slot="button"]:focus-visible {
+  box-shadow: none;
+  outline: 2px solid currentColor;
+  outline-offset: -4px;
+}
+
+/* primary: blaze orange with a light sweep on hover */
+:root[data-skin="lux"] [data-slot="button"][data-variant="default"]:not([class*="bg-gradient"], [class*="bg-linear"]) {
+  background-image: linear-gradient(105deg, transparent 35%, oklch(1 0 0 / 0.28) 50%, transparent 65%);
+  background-size: 250% 100%;
+  background-position: 130% 0;
+  background-repeat: no-repeat;
+}
+:root[data-skin="lux"] [data-slot="button"][data-variant="default"]:hover { background-position: -30% 0; }
+
+/* outline / secondary: khaki frame, chamfer edge drawn in */
+:root[data-skin="lux"] [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"]) {
+  --lux-edge: var(--lux-rule);
+  border: 1px solid var(--lux-rule);
+  background-image:
+    linear-gradient(to top right, transparent calc(50% - 0.75px), var(--lux-edge) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px)),
+    linear-gradient(to top right, transparent calc(50% - 0.75px), var(--lux-edge) calc(50% - 0.75px) calc(50% + 0.75px), transparent calc(50% + 0.75px));
+  background-position: 100% 0, 0 100%;
+  background-size: var(--lux-ch) var(--lux-ch), var(--lux-ch) var(--lux-ch);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+}
+:root[data-skin="lux"] [data-slot="button"][data-variant="outline"] { box-shadow: none; }
+:root[data-skin="lux"] [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"]):hover {
+  --lux-edge: var(--primary);
+  border-color: var(--primary);
+}
+:root[data-skin="lux"] [data-slot="button"][data-variant="link"] { color: var(--primary); letter-spacing: 0.02em; }
+
+/* ================================================================ BADGES */
+:root[data-skin="lux"] [data-slot="badge"] {
+  --lux-ch: 5px;
+  border-radius: 0;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding-inline: 0.55rem;
+  clip-path: polygon(var(--lux-ch) 0, 100% 0, 100% calc(100% - var(--lux-ch)), calc(100% - var(--lux-ch)) 100%, 0 100%, 0 var(--lux-ch));
+}
+:root[data-skin="lux"] [data-slot="badge"][data-variant="outline"] { border-color: var(--lux-rule); color: var(--secondary-foreground); }
+:root[data-skin="lux"] [data-slot="badge"][data-variant="secondary"] { background-color: var(--secondary); color: var(--secondary-foreground); }
+
+/* ================================================================ FORM CONTROLS */
+:root[data-skin="lux"] :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"]) {
+  border-radius: 2px;
+  border-color: var(--input);
+  background-image: linear-gradient(var(--lux-rule) 0 0);
+  background-size: 100% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-size 0.3s var(--lux-ease);
+}
+:root[data-skin="lux"] :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"]):hover:not(:disabled) {
+  border-color: color-mix(in oklch, var(--lux-khaki) 45%, transparent);
+}
+:root[data-skin="lux"] :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"]):is(:focus-visible, [data-state="open"]) {
+  border-color: var(--primary);
+  background-image: linear-gradient(var(--primary) 0 0);
+  background-size: 100% 2px;
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 18%, transparent);
+}
+:root[data-skin="lux"] :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"])[aria-invalid="true"] {
+  border-color: var(--destructive);
+  background-image: linear-gradient(var(--destructive) 0 0);
+}
+:root[data-skin="lux"] :is([data-slot="input"], [data-slot="textarea"])::placeholder { color: color-mix(in oklch, var(--muted-foreground) 75%, transparent); }
+:root[data-skin="lux"] [data-slot="form-label"],
+:root[data-skin="lux"] [data-slot="label"] { letter-spacing: 0.03em; }
+:root[data-skin="lux"] [data-slot="form-message"] { font-family: var(--font-sans); }
+
+/* checkbox / switch / radio: square, tactical */
+:root[data-skin="lux"] [data-slot="checkbox"] { border-radius: 1px; border-color: var(--lux-rule); }
+:root[data-skin="lux"] [data-slot="checkbox"][data-state="checked"] { border-color: var(--primary); box-shadow: 0 0 10px -2px var(--glow); }
+:root[data-skin="lux"] [data-slot="switch"] { border-radius: 2px; border-color: var(--lux-rule); }
+:root[data-skin="lux"] [data-slot="switch"][data-state="unchecked"] { background-color: var(--muted); }
+:root[data-skin="lux"] [data-slot="switch"][data-state="checked"] { background-color: var(--primary); border-color: var(--primary); box-shadow: 0 0 12px -3px var(--glow); }
+:root[data-skin="lux"] [data-slot="switch-thumb"] { border-radius: 1px; }
+:root[data-skin="lux"] [data-slot="radio-group-item"] { border-color: var(--lux-rule); }
+
+/* toggle / toggle group */
+:root[data-skin="lux"] :is([data-slot="toggle"], [data-slot="toggle-group-item"]) { border-radius: 2px; letter-spacing: 0.04em; }
+:root[data-skin="lux"] :is([data-slot="toggle"], [data-slot="toggle-group-item"])[data-state="on"] {
+  background-color: color-mix(in oklch, var(--primary) 16%, transparent);
+  color: var(--primary);
+  box-shadow: inset 0 -2px 0 var(--primary);
+}
+
+/* ================================================================ TABS */
+:root[data-skin="lux"] [data-slot="tabs-list"] { border-radius: 0; }
+:root[data-skin="lux"] [data-slot="tabs-list"][data-variant="default"] {
+  --lux-ch: 8px;
+  background-color: color-mix(in oklch, var(--muted) 80%, transparent);
+  border: 1px solid var(--border);
+  clip-path: polygon(0 0, calc(100% - var(--lux-ch)) 0, 100% var(--lux-ch), 100% 100%, var(--lux-ch) 100%, 0 calc(100% - var(--lux-ch)));
+}
+:root[data-skin="lux"] [data-slot="tabs-trigger"] {
+  border-radius: 0;
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+:root[data-skin="lux"] [data-slot="tabs-list"][data-variant="default"] [data-slot="tabs-trigger"][data-state="active"] {
+  --lux-ch: 6px;
+  background-color: color-mix(in oklch, var(--primary) 16%, var(--card));
+  border-color: transparent;
+  color: var(--primary);
+  box-shadow: inset 0 -2px 0 var(--primary);
+  clip-path: polygon(0 0, calc(100% - var(--lux-ch)) 0, 100% var(--lux-ch), 100% 100%, var(--lux-ch) 100%, 0 calc(100% - var(--lux-ch)));
+}
+:root[data-skin="lux"] [data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"][data-state="active"] { color: var(--primary); }
+:root[data-skin="lux"] [data-slot="tabs-list"][data-variant="line"] [data-slot="tabs-trigger"]::after { background-color: var(--primary); box-shadow: 0 0 8px var(--glow); }
+
+/* ================================================================ OVERLAYS: dialog / alert-dialog / sheet (HUD frame) */
+:root[data-skin="lux"] :is([data-slot="dialog-overlay"], [data-slot="alert-dialog-overlay"], [data-slot="sheet-overlay"]) {
+  background-color: oklch(0.1 0.015 120 / 0.68);
+  background-image: repeating-linear-gradient(to bottom, oklch(0.8 0.06 85 / 0.04) 0 1px, transparent 1px 3px);
+  backdrop-filter: blur(3px) saturate(0.8);
+}
+:root[data-skin="lux"] :is([data-slot="dialog-content"], [data-slot="alert-dialog-content"], [data-slot="sheet-content"]) {
+  --lux-bk: var(--primary);
+  --lux-bl: 18px;
+  border-radius: 2px;
+  background-color: var(--popover);
+  color: var(--popover-foreground);
+  border-color: var(--lux-rule);
+  box-shadow: 0 30px 80px -20px oklch(0 0 0 / 0.6), 0 0 0 1px oklch(0 0 0 / 0.25);
+  /* corner brackets + an orange top rule fading out + faint grid */
+  background-image:
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(90deg, var(--primary), transparent 55%),
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%, 0 0, 0 0, 0 0;
+  background-size:
+    var(--lux-bl) 2px, 2px var(--lux-bl), var(--lux-bl) 2px, 2px var(--lux-bl),
+    var(--lux-bl) 2px, 2px var(--lux-bl), var(--lux-bl) 2px, 2px var(--lux-bl),
+    100% 2px, 28px 28px, 28px 28px;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, repeat;
+  background-origin: border-box;
+}
+:root[data-skin="lux"] [data-slot="alert-dialog-content"] { --lux-bk: var(--warning); }
+:root[data-skin="lux"] :is([data-slot="dialog-title"], [data-slot="alert-dialog-title"], [data-slot="sheet-title"]) {
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+:root[data-skin="lux"] :is([data-slot="dialog-content"], [data-slot="sheet-content"]) > button:last-child { border-radius: 2px; }
+
+/* ================================================================ FLOATING: dropdown / popover / select / command / tooltip */
+:root[data-skin="lux"] :is([data-slot="dropdown-menu-content"], [data-slot="dropdown-menu-sub-content"], [data-slot="popover-content"], [data-slot="select-content"]) {
+  --lux-bk: var(--lux-bracket);
+  --lux-bl: 10px;
+  border-radius: 2px;
+  border-color: var(--lux-rule);
+  background-color: var(--popover);
+  box-shadow: 0 18px 50px -14px oklch(0 0 0 / 0.55);
+  background-image:
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0);
+  background-position: 0 0, 0 0, 100% 100%, 100% 100%;
+  background-size: var(--lux-bl) 2px, 2px var(--lux-bl), var(--lux-bl) 2px, 2px var(--lux-bl);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+}
+:root[data-skin="lux"] :is([data-slot="dropdown-menu-item"], [data-slot="dropdown-menu-checkbox-item"], [data-slot="dropdown-menu-radio-item"], [data-slot="dropdown-menu-sub-trigger"], [data-slot="select-item"], [data-slot="command-item"]) {
+  border-radius: 1px;
+}
+:root[data-skin="lux"] :is([data-slot="dropdown-menu-item"], [data-slot="dropdown-menu-checkbox-item"], [data-slot="dropdown-menu-radio-item"], [data-slot="dropdown-menu-sub-trigger"], [data-slot="select-item"]):is([data-highlighted], :focus),
+:root[data-skin="lux"] [data-slot="command-item"][data-selected="true"] {
+  background-color: color-mix(in oklch, var(--primary) 14%, transparent);
+  color: var(--foreground);
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+:root[data-skin="lux"] :is([data-slot="dropdown-menu-label"], [data-slot="select-label"]) {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--lux-khaki);
+}
+:root[data-skin="lux"] :is([data-slot="dropdown-menu-shortcut"], kbd) { font-family: var(--font-mono); }
+:root[data-skin="lux"] [data-slot="tooltip-content"] {
+  border-radius: 1px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+
+/* ================================================================ TABLE */
+:root[data-skin="lux"] [data-slot="table-header"] [data-slot="table-row"] {
+  background-color: color-mix(in oklch, var(--muted) 55%, transparent);
+  border-bottom-color: var(--lux-rule);
+}
+:root[data-skin="lux"] [data-slot="table-head"] {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--lux-khaki);
+}
+:root[data-skin="lux"] [data-slot="table-body"] [data-slot="table-row"] { transition: background-color 0.15s ease, box-shadow 0.15s ease; }
+:root[data-skin="lux"] [data-slot="table-body"] [data-slot="table-row"]:hover {
+  background-color: color-mix(in oklch, var(--primary) 6%, transparent);
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+
+/* ================================================================ PROGRESS / SEPARATOR / AVATAR */
+:root[data-skin="lux"] [data-slot="progress"] {
+  border-radius: 0;
+  background-color: color-mix(in oklch, var(--primary) 14%, transparent);
+  /* segmented track */
+  background-image: repeating-linear-gradient(90deg, transparent 0 10px, var(--background) 10px 12px);
+}
+:root[data-skin="lux"] [data-slot="progress-indicator"] {
+  background-image: repeating-linear-gradient(90deg, transparent 0 10px, var(--background) 10px 12px);
+  box-shadow: 0 0 10px var(--glow);
+}
+:root[data-skin="lux"] [data-slot="separator"][data-orientation="horizontal"],
+:root[data-skin="lux"] [data-slot="separator"]:not([data-orientation]) {
+  background-color: transparent;
+  background-image: linear-gradient(90deg, var(--lux-rule), var(--border) 60%, transparent);
+}
+:root[data-skin="lux"] [data-slot="separator"][data-orientation="vertical"] {
+  background-color: transparent;
+  background-image: linear-gradient(180deg, transparent, var(--lux-rule) 30% 70%, transparent);
+}
+:root[data-skin="lux"] [data-slot="avatar"]:not([class*="rounded-full"]) { border-radius: 2px; }
+
+/* ================================================================ TOASTS (sonner) */
+:root[data-skin="lux"] [data-sonner-toaster] [data-sonner-toast][data-styled="true"] {
+  --lux-ch: 10px;
+  --lux-tone: var(--lux-khaki);
+  border-radius: 2px;
+  border: 1px solid var(--lux-rule);
+  background: var(--popover);
+  color: var(--popover-foreground);
+  font-family: var(--font-sans);
+  box-shadow: inset 3px 0 0 var(--lux-tone), 0 16px 40px -12px oklch(0 0 0 / 0.55);
+  clip-path: polygon(0 0, calc(100% - var(--lux-ch)) 0, 100% var(--lux-ch), 100% 100%, 0 100%);
+}
+:root[data-skin="lux"] [data-sonner-toaster] [data-sonner-toast][data-type="success"] { --lux-tone: var(--success); }
+:root[data-skin="lux"] [data-sonner-toaster] [data-sonner-toast][data-type="error"] { --lux-tone: var(--destructive); }
+:root[data-skin="lux"] [data-sonner-toaster] [data-sonner-toast][data-type="warning"] { --lux-tone: var(--warning); }
+:root[data-skin="lux"] [data-sonner-toaster] [data-sonner-toast][data-type="info"] { --lux-tone: var(--info); }
+:root[data-skin="lux"] [data-sonner-toaster] [data-sonner-toast][data-type="loading"] { --lux-tone: var(--primary); }
+:root[data-skin="lux"] [data-sonner-toaster] [data-sonner-toast] [data-icon] { color: var(--lux-tone); }
+:root[data-skin="lux"] [data-sonner-toaster] [data-sonner-toast] [data-title] { font-weight: 700; letter-spacing: 0.03em; }
+:root[data-skin="lux"] [data-sonner-toaster] [data-sonner-toast] [data-description] { color: var(--muted-foreground); }
+:root[data-skin="lux"] [data-sonner-toaster] [data-sonner-toast] :is([data-button], [data-cancel]) {
+  border-radius: 1px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ================================================================ GUIDED TOUR (driver.js) */
+html:root[data-skin="lux"] .driver-popover.sx-tour {
+  --lux-bk: var(--primary);
+  --lux-bl: 16px;
+  border-radius: 2px;
+  border-color: var(--lux-rule);
+  font-family: var(--font-sans);
+  box-shadow: 0 24px 60px -18px oklch(0 0 0 / 0.6);
+  background-image:
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(90deg, var(--primary), transparent 60%);
+  background-position: 0 0, 0 0, 100% 100%, 100% 100%, 0 0;
+  background-size: var(--lux-bl) 2px, 2px var(--lux-bl), var(--lux-bl) 2px, 2px var(--lux-bl), 100% 2px;
+  background-repeat: no-repeat;
+  background-origin: border-box;
+}
+html:root[data-skin="lux"] .driver-popover.sx-tour .driver-popover-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+html:root[data-skin="lux"] .driver-popover.sx-tour .driver-popover-progress-text {
+  font-family: var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lux-khaki);
+}
+html:root[data-skin="lux"] .driver-popover.sx-tour .driver-popover-footer button {
+  border-radius: 1px;
+  border-color: var(--lux-rule);
+  font-family: var(--font-sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+}
+
+/* ================================================================ PAGE HEADER (branded banner) */
+:root[data-skin="lux"] [data-slot="page-header"] {
+  --lux-bk: var(--primary);
+  --lux-bl: 16px;
+  --lux-ch: 18px;
+  overflow: hidden;
+  isolation: isolate;
+  padding: 1.35rem 1.25rem 1.25rem 1.4rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: 0;
+  background-color: color-mix(in oklch, var(--card) 85%, transparent);
+  background-image:
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    /* glow from the left edge */
+    radial-gradient(120% 140% at 0% 0%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 55%),
+    /* topographic contours */
+    repeating-radial-gradient(circle at 88% 120%, transparent 0 22px, var(--grid-line) 22px 23px),
+    /* map grid */
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-position: 100% 0, 100% 0, 100% 100%, 100% 100%, 0 0, 0 0, 0 0, 0 0;
+  background-size:
+    var(--lux-bl) 2px, 2px var(--lux-bl), var(--lux-bl) 2px, 2px var(--lux-bl),
+    100% 100%, 100% 100%, 32px 32px, 32px 32px;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat, repeat, repeat;
+  background-origin: border-box;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, var(--lux-ch) 100%, 0 calc(100% - var(--lux-ch)));
+}
+/* coordinates readout, top-right (decorative: alt text empty) */
+:root[data-skin="lux"] [data-slot="page-header"]::before {
+  content: "N 28°36′14″ · E 77°12′32″ · GRID 24-B";
+  content: "N 28°36′14″ · E 77°12′32″ · GRID 24-B" / "";
+  position: absolute;
+  top: 0.55rem;
+  right: 2.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  color: color-mix(in oklch, var(--lux-khaki) 70%, transparent);
+  pointer-events: none;
+  z-index: -1;
+}
+/* thin scan rule along the bottom: a bright segment sweeping across */
+:root[data-skin="lux"] [data-slot="page-header"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 30%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary), var(--lux-hud), transparent);
+  box-shadow: 0 0 10px var(--glow);
+  animation: lux-ds-scan-x 5.5s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+  pointer-events: none;
+}
+:root[data-skin="lux"] [data-slot="page-header-eyebrow"] {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 0.72rem;
+  letter-spacing: 0.24em;
+  color: var(--primary);
+}
+:root[data-skin="lux"] [data-slot="page-header-eyebrow"]::before {
+  content: "";
+  width: 18px;
+  height: 2px;
+  flex: none;
+  background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 6px);
+}
+:root[data-skin="lux"] [data-slot="page-header-title"] {
+  position: relative;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+  /* one-shot "decrypt": wipe in left→right in steps with an RGB-ish jitter, then settle */
+  animation:
+    lux-ds-decrypt-wipe 0.9s steps(18, end) both,
+    lux-ds-decrypt-jitter 0.9s steps(1) both;
+}
+/* block cursor that rides the wipe then blinks out */
+:root[data-skin="lux"] [data-slot="page-header-title"]::after {
+  content: "";
+  display: inline-block;
+  width: 0.5em;
+  height: 0.12em;
+  margin-left: 0.15em;
+  vertical-align: baseline;
+  background: var(--primary);
+  animation: lux-ds-cursor 0.35s steps(1) 0.9s 4 both;
+}
+:root[data-skin="lux"] [data-slot="page-header-description"] { color: var(--muted-foreground); max-width: 46rem; }
+@media (max-width: 639px) {
+  :root[data-skin="lux"] [data-slot="page-header"]::before { display: none; }
+  :root[data-skin="lux"] [data-slot="page-header"] { padding: 1rem 1rem 1rem 1.1rem; }
+}
+@keyframes lux-ds-decrypt-wipe {
+  from { clip-path: inset(-10% 100% -10% 0); }
+  to { clip-path: inset(-10% -2% -10% 0); }
+}
+@keyframes lux-ds-decrypt-jitter {
+  0% { text-shadow: 2px 0 var(--lux-hud), -2px 0 var(--primary); opacity: 0.85; }
+  20% { text-shadow: -3px 0 var(--lux-hud), 2px 0 var(--primary); }
+  40% { text-shadow: 1px 0 var(--lux-hud), -1px 0 var(--primary); opacity: 1; }
+  60% { text-shadow: -1px 0 var(--lux-hud), 1px 0 var(--primary); }
+  80%, 100% { text-shadow: none; }
+}
+@keyframes lux-ds-cursor {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
+/* ================================================================ STAT CARD */
+:root[data-skin="lux"] [data-slot="stat-card"] {
+  --lux-tone: var(--primary);
+  isolation: isolate;
+  border-color: var(--border);
+  background-color: var(--card);
+}
+:root[data-skin="lux"] [data-slot="stat-card"][data-tone="success"] { --lux-tone: var(--success); }
+:root[data-skin="lux"] [data-slot="stat-card"][data-tone="warning"] { --lux-tone: var(--warning); }
+:root[data-skin="lux"] [data-slot="stat-card"][data-tone="info"] { --lux-tone: var(--info); }
+/* the blurred blob becomes a tone bar on the left edge + a faint range ring top-right */
+:root[data-skin="lux"] [data-slot="stat-card"] > div:first-child {
+  inset: 0 auto 0 0;
+  top: 0;
+  right: auto;
+  width: 3px;
+  height: 100%;
+  border-radius: 0;
+  filter: none;
+  background: var(--lux-tone);
+  box-shadow: 0 0 12px var(--lux-tone);
+  opacity: 0.9;
+}
+:root[data-skin="lux"] [data-slot="stat-card"]::after {
+  content: "";
+  position: absolute;
+  right: -46px;
+  bottom: -46px;
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: repeating-radial-gradient(circle, transparent 0 14px, color-mix(in oklch, var(--lux-tone) 16%, transparent) 14px 15px);
+  pointer-events: none;
+  transition: transform 0.6s var(--lux-ease), opacity 0.3s ease;
+  opacity: 0.8;
+  z-index: -1;
+}
+:root[data-skin="lux"] [data-slot="stat-card"]:hover::after { transform: scale(1.15); opacity: 1; }
+/* label: mono uppercase · value: big stencil numbers */
+:root[data-skin="lux"] [data-slot="stat-card"] > div:last-child > div:first-child > p:first-child {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--lux-khaki);
+}
+:root[data-skin="lux"] [data-slot="stat-card"] p.font-display {
+  font-size: 2.6rem;
+  line-height: 1;
+  color: var(--foreground);
+  text-shadow: 0 0 22px color-mix(in oklch, var(--lux-tone) 35%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+/* icon tile: chamfered, toned */
+:root[data-skin="lux"] [data-slot="stat-card"] > div:last-child > div:last-child:not(:first-child) {
+  border-radius: 0;
+  color: var(--lux-tone);
+  background-color: color-mix(in oklch, var(--lux-tone) 12%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--lux-tone) 35%, transparent);
+  clip-path: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+}
+
+/* ================================================================ EMPTY STATE ("no contacts" radar) */
+:root[data-skin="lux"] [data-slot="empty-state"] {
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 0;
+  border: 1px dashed var(--lux-rule);
+  background-color: color-mix(in oklch, var(--card) 55%, transparent);
+  background-image:
+    repeating-radial-gradient(circle at 50% 3.6rem, transparent 0 34px, var(--grid-line) 34px 35px),
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+}
+:root[data-skin="lux"] [data-slot="empty-state"] > div:first-child {
+  position: relative;
+  border-radius: 999px;
+  padding: 1.15rem;
+  color: var(--lux-khaki);
+  background-color: color-mix(in oklch, var(--lux-hud) 6%, var(--card));
+  outline: 1px dashed color-mix(in oklch, var(--lux-hud) 45%, transparent);
+  outline-offset: 7px;
+  margin-bottom: 1.6rem;
+  margin-top: 0.3rem;
+  isolation: isolate;
+}
+/* slow sweep around the ring */
+:root[data-skin="lux"] [data-slot="empty-state"] > div:first-child::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 999px;
+  background: conic-gradient(from 0deg, transparent 0 75%, color-mix(in oklch, var(--lux-hud) 32%, transparent) 99%, var(--lux-hud) 100%);
+  animation: lux-ds-spin 4s linear infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+:root[data-skin="lux"] [data-slot="empty-state"] > div:first-child > svg { position: relative; }
+:root[data-skin="lux"] [data-slot="empty-state"] > h3 {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+:root[data-skin="lux"] [data-slot="empty-state"] > h3::before {
+  content: "◇ NO CONTACTS ◇";
+  content: "◇ NO CONTACTS ◇" / "";
+  display: block;
+  margin-bottom: 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.3em;
+  color: color-mix(in oklch, var(--lux-hud) 80%, transparent);
+}
+
+/* ================================================================ APP CLASSES (src/index.css) */
+:root[data-skin="lux"] .tc-card { border-radius: 2px; }
+
+/* ================================================================ REDUCED MOTION */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-skin="lux"] [data-slot="page-header"]::after,
+  :root[data-skin="lux"] [data-slot="page-header-title"],
+  :root[data-skin="lux"] [data-slot="page-header-title"]::after,
+  :root[data-skin="lux"] [data-slot="empty-state"] > div:first-child::before {
+    animation: none;
+  }
+  :root[data-skin="lux"] [data-slot="page-header-title"]::after { opacity: 0; }
+  :root[data-skin="lux"] :is([data-slot="card"], [data-slot="stat-card"], [data-slot="button"]) { transition: none; }
+}

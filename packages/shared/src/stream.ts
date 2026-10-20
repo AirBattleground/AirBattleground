@@ -23,6 +23,7 @@
  */
 import { z } from "zod";
 import type { GameMap } from "./enums";
+import type { OutputYoutube } from "./youtube";
 
 export const OUTPUT_WIDTH = 1280;
 export const OUTPUT_HEIGHT = 720;
@@ -153,4 +154,6 @@ export interface DeviceOutput {
   /** HLS of the composed output (null while OFF) */
   hlsUrl: string | null;
   match: { id: string; title: string; subtitle: string; map: GameMap } | null;
+  /** phase 7b: this match's broadcast on the site YouTube channel (youtube.ts); absent/null = not streaming there */
+  youtube?: OutputYoutube | null;
 }

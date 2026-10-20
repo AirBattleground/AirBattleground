@@ -1,0 +1,14 @@
+/*
+ * Lux Battle — military-tactical branded skin. Imported by src/index.css for everyone, but every rule here must be
+ * scoped under :root[data-skin="lux"] (or [data-skin="lux"] …) so Teal Battle is untouched.
+ *   tokens.css      colour/font/radius tokens (dark + light)          — design system
+ *   components.css  restyles shadcn slots + brand components (data-slot) — design system
+ *   loaders.css     spinner / skeleton replacements (no spinners in Lux)  — design system
+ *   shell.css       top navigation shell                                 — shell
+ *   scenes.css      tactical graphics, heroes, login                     — scenes
+ */
+@import "./tokens.css";
+@import "./components.css";
+@import "./loaders.css";
+@import "./shell.css";
+@import "./scenes.css";

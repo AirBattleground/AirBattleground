@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { NavLink, useLocation, useNavigate, useOutlet } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, Compass, GraduationCap, LayoutDashboard, LogOut, Shield, Smartphone, Trophy, UserRound, Users, type LucideIcon } from "lucide-react";
+import { ChevronLeft, Compass, GraduationCap, LayoutDashboard, LogOut, Palette, Shield, Smartphone, Trophy, UserRound, Users, Youtube, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { AnimatedBackground } from "@7xen/ui/components/brand/animated-background";
 import { LogoMark } from "@7xen/ui/components/brand/logo";
@@ -48,6 +48,9 @@ const NAV: NavDef[] = [
   { to: "/training", label: "Training", short: "Training", icon: GraduationCap, tour: "nav-training", end: false },
   // Phones: reachable from the Overview "Manager app" card (the tab bar keeps 5 items).
   { to: "/manager-app", label: "Manager app", short: "App", icon: Smartphone, tour: "nav-manager-app", end: false, desktopOnly: true },
+  // Phones: reachable from the Overview "Site look" link.
+  { to: "/site-look", label: "Site look", short: "Look", icon: Palette, tour: "nav-site-look", end: false, desktopOnly: true },
+  { to: "/youtube", label: "YouTube", short: "YouTube", icon: Youtube, tour: "nav-youtube", end: false, desktopOnly: true },
 ];
 
 const COLLAPSE_KEY = "7xen.admin.sidebar-collapsed";

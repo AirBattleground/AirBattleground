@@ -1,0 +1,216 @@
+/*
+ * Lux Battle: loaders (scoped under [data-skin="lux"]). No spinners anywhere in Lux.
+ *   1. LuxLoader (radar scope) — classes lux-loader-*
+ *   2. Every inline `.animate-spin` (63× lucide <Loader2>, sonner's loading icon, RefreshCw while fetching, border
+ *      spinners) → stops rotating and becomes three pulsing "signal bars" painted as background layers on the element
+ *      itself (svg strokes made transparent), so no markup changes are needed.
+ *   3. Skeletons → chamfered blocks with faint hazard stripes and a scan line sweeping across.
+ */
+
+/* ================================================================ 1. LuxLoader */
+:root[data-skin="lux"] .lux-loader[data-fullscreen="true"] {
+  background-image:
+    radial-gradient(60% 50% at 50% 45%, color-mix(in oklch, var(--lux-hud) 7%, transparent), transparent 70%),
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+}
+:root[data-skin="lux"] .lux-loader-scope {
+  position: relative;
+  width: min(15rem, 64vw);
+  aspect-ratio: 1;
+  animation: lux-ds-rise 0.6s var(--lux-ease) both;
+}
+:root[data-skin="lux"] .lux-loader-sweep {
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, color-mix(in oklch, var(--lux-hud) 6%, transparent), transparent 70%),
+    conic-gradient(from 0deg, transparent 0 70%, color-mix(in oklch, var(--lux-hud) 8%, transparent) 80%, color-mix(in oklch, var(--lux-hud) 45%, transparent) 99.4%, var(--lux-hud) 99.6% 100%);
+  animation: lux-ds-spin 2.4s linear infinite;
+  will-change: transform;
+}
+:root[data-skin="lux"] .lux-loader-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+:root[data-skin="lux"] .lux-loader-ring { fill: none; stroke: color-mix(in oklch, var(--lux-hud) 28%, transparent); stroke-width: 0.8; }
+:root[data-skin="lux"] .lux-loader-ring-outer { stroke: color-mix(in oklch, var(--lux-khaki) 55%, transparent); stroke-width: 1.2; }
+:root[data-skin="lux"] .lux-loader-cross { stroke: color-mix(in oklch, var(--lux-hud) 22%, transparent); stroke-width: 0.6; fill: none; }
+:root[data-skin="lux"] .lux-loader-cross-diag { stroke-dasharray: 2 4; }
+:root[data-skin="lux"] .lux-loader-tick { stroke: color-mix(in oklch, var(--lux-khaki) 40%, transparent); stroke-width: 0.8; }
+:root[data-skin="lux"] .lux-loader-tick-major { stroke: var(--lux-khaki); stroke-width: 1.4; }
+:root[data-skin="lux"] .lux-loader-cardinal {
+  fill: var(--lux-khaki);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  letter-spacing: 0;
+}
+:root[data-skin="lux"] .lux-loader-path {
+  fill: none;
+  stroke: color-mix(in oklch, var(--primary) 55%, transparent);
+  stroke-width: 1;
+  stroke-dasharray: 5 5;
+  animation: lux-ds-dash 1s linear infinite;
+}
+:root[data-skin="lux"] .lux-loader-plane {
+  fill: var(--primary);
+  filter: drop-shadow(0 0 3px var(--glow));
+  animation: lux-ds-fly 4.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+:root[data-skin="lux"] .lux-loader-blip { fill: var(--lux-hud); opacity: 0; animation-name: lux-ds-blip; animation-timing-function: ease-out; animation-iteration-count: infinite; animation-fill-mode: both; }
+:root[data-skin="lux"] .lux-loader-blip-halo { fill: none; stroke: var(--lux-hud); stroke-width: 0.8; opacity: 0.6; }
+:root[data-skin="lux"] .lux-loader-center { fill: var(--lux-hud); }
+
+:root[data-skin="lux"] .lux-loader-bracket {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 0 solid var(--primary);
+  animation: lux-ds-lock 2.4s var(--lux-ease) infinite;
+}
+:root[data-skin="lux"] .lux-loader-bracket-tl { top: -6px; left: -6px; border-top-width: 2px; border-left-width: 2px; --lux-dx: -4px; --lux-dy: -4px; }
+:root[data-skin="lux"] .lux-loader-bracket-tr { top: -6px; right: -6px; border-top-width: 2px; border-right-width: 2px; --lux-dx: 4px; --lux-dy: -4px; }
+:root[data-skin="lux"] .lux-loader-bracket-bl { bottom: -6px; left: -6px; border-bottom-width: 2px; border-left-width: 2px; --lux-dx: -4px; --lux-dy: 4px; }
+:root[data-skin="lux"] .lux-loader-bracket-br { bottom: -6px; right: -6px; border-bottom-width: 2px; border-right-width: 2px; --lux-dx: 4px; --lux-dy: 4px; }
+
+:root[data-skin="lux"] .lux-loader-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--lux-hud);
+}
+:root[data-skin="lux"] .lux-loader-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lux-hud);
+  box-shadow: 0 0 8px var(--lux-hud);
+  animation: lux-ds-blink 1.2s ease-in-out infinite;
+}
+:root[data-skin="lux"] .lux-loader-dots {
+  display: inline-block;
+  width: 3ch;
+  text-align: left;
+  letter-spacing: 0;
+}
+:root[data-skin="lux"] .lux-loader-dots::after {
+  content: "...";
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  animation: lux-ds-dots 1.2s steps(4, end) infinite;
+}
+:root[data-skin="lux"] .lux-loader-bar {
+  position: relative;
+  width: 9rem;
+  height: 2px;
+  overflow: hidden;
+  background: color-mix(in oklch, var(--lux-khaki) 20%, transparent);
+}
+:root[data-skin="lux"] .lux-loader-bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  animation: lux-ds-scan-x 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+:root[data-skin="lux"] .lux-loader-label {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+@keyframes lux-ds-dash { to { stroke-dashoffset: -10; } }
+@keyframes lux-ds-fly {
+  0% { transform: translate(-14px, 156px); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translate(214px, 44px); opacity: 0; }
+}
+@keyframes lux-ds-blip {
+  0% { opacity: 1; }
+  8% { opacity: 1; }
+  70%, 100% { opacity: 0; }
+}
+@keyframes lux-ds-lock {
+  0%, 100% { transform: translate(var(--lux-dx), var(--lux-dy)); opacity: 0.5; }
+  40%, 70% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes lux-ds-dots {
+  from { width: 0; }
+  to { width: 4ch; }
+}
+
+/* ================================================================ 2. inline spinners → signal bars */
+/* three bars (left, middle, right) whose heights pulse in sequence; colour = currentColor */
+:root[data-skin="lux"] .animate-spin {
+  animation: lux-ds-signal 0.9s ease-in-out infinite;
+  border-radius: 0;
+  background-image: linear-gradient(currentColor 0 0), linear-gradient(currentColor 0 0), linear-gradient(currentColor 0 0);
+  background-repeat: no-repeat;
+  background-position: 12% 50%, 50% 50%, 88% 50%;
+  background-size: 20% 35%, 20% 35%, 20% 35%;
+}
+:root[data-skin="lux"] svg.animate-spin {
+  stroke: transparent;
+  fill: transparent;
+  overflow: hidden;
+}
+:root[data-skin="lux"] svg.animate-spin * { stroke: transparent; fill: transparent; }
+/* border-ring spinners (span/div): drop the ring, keep the box, use the brand colour */
+:root[data-skin="lux"] :not(svg).animate-spin {
+  border-color: transparent;
+  color: var(--primary);
+}
+@keyframes lux-ds-signal {
+  0%, 100% { background-size: 20% 35%, 20% 35%, 20% 35%; }
+  20% { background-size: 20% 90%, 20% 35%, 20% 35%; }
+  40% { background-size: 20% 50%, 20% 90%, 20% 35%; }
+  60% { background-size: 20% 35%, 20% 50%, 20% 90%; }
+  80% { background-size: 20% 35%, 20% 35%, 20% 50%; }
+}
+
+/* ================================================================ 3. skeletons → tactical scan */
+:root[data-skin="lux"] [data-slot="skeleton"] {
+  --lux-ch: 6px;
+  border-radius: 1px;
+  background-color: color-mix(in oklch, var(--muted) 85%, transparent);
+  background-image:
+    linear-gradient(90deg, transparent 0%, color-mix(in oklch, var(--lux-hud) 14%, transparent) 46%, color-mix(in oklch, var(--lux-hud) 45%, transparent) 50%, transparent 51%),
+    repeating-linear-gradient(-45deg, color-mix(in oklch, var(--lux-khaki) 7%, transparent) 0 6px, transparent 6px 14px);
+  background-size: 50% 100%, auto;
+  background-repeat: no-repeat, repeat;
+  background-position: -60% 0, 0 0;
+  animation: lux-ds-skeleton-scan 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+:root[data-skin="lux"] [data-slot="skeleton"]:not([class*="rounded-full"]) {
+  clip-path: polygon(0 0, calc(100% - var(--lux-ch)) 0, 100% var(--lux-ch), 100% 100%, var(--lux-ch) 100%, 0 calc(100% - var(--lux-ch)));
+}
+:root[data-skin="lux"] [data-slot="skeleton"][class*="rounded-full"] { border-radius: 999px; }
+@keyframes lux-ds-skeleton-scan {
+  from { background-position: -60% 0, 0 0; }
+  to { background-position: 160% 0, 0 0; }
+}
+
+/* ================================================================ reduced motion: everything still, still readable */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-skin="lux"] :is(.lux-loader-scope, .lux-loader-sweep, .lux-loader-path, .lux-loader-plane, .lux-loader-bracket, .lux-loader-live, .lux-loader-bar > span) {
+    animation: none;
+  }
+  :root[data-skin="lux"] .lux-loader-dots::after { animation: none; }
+  :root[data-skin="lux"] .lux-loader-plane { transform: translate(100px, 100px); opacity: 1; }
+  :root[data-skin="lux"] .lux-loader-blip { animation: none; opacity: 0.8; }
+  :root[data-skin="lux"] .animate-spin { animation: none; background-size: 20% 45%, 20% 70%, 20% 95%; }
+  :root[data-skin="lux"] [data-slot="skeleton"] { animation: none; background-position: -100% 0, 0 0; }
+}

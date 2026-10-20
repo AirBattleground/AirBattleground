@@ -49,6 +49,8 @@ import { MAPS, MAX_ROOM_SLOTS, type GameMap } from "./enums";
 import type { PointsSystem } from "./points";
 import type { OrganizerRef, TeamSummary } from "./dto";
 import { DATE_RE, TIME_RE } from "./schedule";
+import { winCoinsSchema } from "./coins";
+import { TOURNAMENT_MODES, type TournamentMode } from "./tournament/tdm";
 
 // ---------- enums ----------
 export const TOURNAMENT_STATUSES = ["DRAFT", "REGISTRATION_OPEN", "REGISTRATION_CLOSED", "LIVE", "COMPLETED", "CANCELLED"] as const;
@@ -190,6 +192,10 @@ export interface TournamentSummary {
   /** poster image URL; null = none uploaded */
   posterUrl: string | null;
   champion: TeamSummary | null;
+  /** phase 7: "BR" = classic tournament; "TDM" = 2-team knockout bracket (see tournament/tdm.ts) */
+  mode: TournamentMode;
+  /** phase 7: BG coins — BR: for each match winner; TDM: for the champion. 0 = none */
+  winCoins: number;
   createdAt: string;
 }
 
@@ -342,7 +348,7 @@ export const scheduleConfigSchema = z
     endDate: ymd,
     windows: z.array(z.object({ start: hhmm, end: hhmm })).min(1, "Add at least one time window").max(4),
     excludeDates: z.array(ymd).max(60).default([]),
-    matchMinutes: z.number().int().min(15).max(120).default(40),
+    matchMinutes: z.number().int().min(5).max(120).default(40),
     breakMinutes: z.number().int().min(0).max(60).default(5),
     parallelLobbies: z.number().int().min(1).max(4).default(1),
   })
@@ -380,6 +386,10 @@ export const createTournamentSchema = z.object({
   registrationOpensAt: z.string().datetime({ offset: true }).optional(),
   registrationClosesAt: z.string().datetime({ offset: true }).optional(),
   pointsSystem: pointsSystem.optional(),
+  /** phase 7: BG coins — BR: each match winner; TDM: the champion (see coins.ts) */
+  winCoins: winCoinsSchema.default(0),
+  /** phase 7: "TDM" = knockout bracket of 2-team matches; fixed at creation (ignored on update) */
+  mode: z.enum(TOURNAMENT_MODES).default("BR"),
   stages: z.array(stageSpecSchema).min(1).max(MAX_STAGES),
 });
 export type CreateTournamentInput = z.infer<typeof createTournamentSchema>;

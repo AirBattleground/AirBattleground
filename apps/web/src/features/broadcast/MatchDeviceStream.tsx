@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Camera, ExternalLink, LayoutTemplate, Radio, Square, ListOrdered, Loader2, MonitorOff, Palette, Plus, Smartphone, Trophy, Unplug, WifiOff } from "lucide-react";
+import { Camera, ExternalLink, LayoutTemplate, Link2, Radio, Square, ListOrdered, Loader2, MonitorOff, Palette, Plus, Smartphone, Trophy, Unplug, WifiOff } from "lucide-react";
 import { deviceLiveUrl, type DeviceCaptureResponse, type DeviceRow, type ScreenshotKind } from "@7xen/shared";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Label } from "@7xen/ui/components/ui/label";
@@ -21,7 +21,7 @@ import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { LiveOverlay, useLayoutToggle } from "./LiveOverlay";
 
 export const MATCH_DEVICE_TOUR: TourStep[] = [
-  { element: '[data-tour="match-device-broadcast"]', title: "Broadcast to teams", description: "Only you see the stream until you press Start broadcast. Then the teams in this match get a Watch live card and see it with your layout. Stop broadcast hides it again.", side: "bottom" },
+  { element: '[data-tour="match-device-broadcast"]', title: "Broadcast", description: "Only you see the stream until you press Start broadcast. Then anyone can watch it with your layout — on the public Live page, without signing in. Copy the watch link to share it. Stop broadcast hides it again.", side: "bottom" },
   { element: '[data-tour="match-device"]', title: "Stream from an iPhone", description: "Pick one of your iPhones for this match. Its live screen shows here with your layout, using this match's teams and points.", side: "bottom" },
   { element: '[data-tour="match-device-capture"]', title: "Capture screenshots", description: "When the team list or the results screen is showing on the phone, press the matching button. The screenshot is read automatically, just like an upload.", side: "top" },
 ];
@@ -33,15 +33,23 @@ function useBroadcast(deviceId: string) {
     onSuccess: (d) => {
       qc.setQueryData([...deviceKeys.all, deviceId], d);
       void qc.invalidateQueries({ queryKey: deviceKeys.all });
-      toast.success(d.broadcastLive ? "You're live to the teams" : "Broadcast stopped", {
-        description: d.broadcastLive ? "Teams in this match now see a Watch live card on their home screen." : "Teams can't see the stream any more. You still can.",
+      toast.success(d.broadcastLive ? "You're live — anyone can watch" : "Broadcast stopped", {
+        description: d.broadcastLive
+          ? "It's on the public Live page, and the teams in this match get a Watch live card. Copy the link to share it."
+          : "Nobody can see the stream any more. You still can.",
       });
     },
     onError: (e) => toast.error(errorMessage(e)),
   });
 }
 
-/** Start / stop showing this match's stream to its teams. */
+const copyWatchLink = (matchId: string) =>
+  void navigator.clipboard.writeText(`${window.location.origin}/watch/${matchId}`).then(
+    () => toast.success("Watch link copied", { description: "Anyone with the link can watch — share it on WhatsApp, Discord or Instagram." }),
+    () => toast.error("Couldn't copy the link"),
+  );
+
+/** Start / stop the public broadcast of this match (anyone can watch at /watch/:matchId). */
 function BroadcastBar({ device }: { device: DeviceRow }) {
   const b = useBroadcast(device.id);
   const [confirmStop, setConfirmStop] = useState(false);
@@ -58,29 +66,34 @@ function BroadcastBar({ device }: { device: DeviceRow }) {
         {live ? (
           <>
             <LiveBadge startedAt={device.broadcastStartedAt} />
-            <span className="font-semibold">Teams in this match can watch.</span>
+            <span className="font-semibold">Anyone can watch, no sign-in needed.</span>
           </>
         ) : (
           <>
             <Radio className="size-4 shrink-0 text-muted-foreground" />
-            <span className="text-muted-foreground">{device.videoReady ? "Only you can see this stream. Start the broadcast to show it to the teams." : "Start streaming on the iPhone first."}</span>
+            <span className="text-muted-foreground">{device.videoReady ? "Only you can see this stream. Start the broadcast and anyone can watch it." : "Start streaming on the iPhone first."}</span>
           </>
         )}
       </div>
+      {live && device.match && (
+        <Button variant="outline" size="lg" onClick={() => copyWatchLink(device.match!.id)}>
+          <Link2 /> Copy watch link
+        </Button>
+      )}
       {live ? (
         <Button variant="outline" size="lg" disabled={b.isPending} onClick={() => setConfirmStop(true)} className="border-destructive/50 text-destructive hover:bg-destructive/10">
           {b.isPending ? <Loader2 className="animate-spin" /> : <Square className="fill-current" />} Stop broadcast
         </Button>
       ) : (
         <Button size="lg" disabled={!device.videoReady || b.isPending} onClick={() => b.mutate(true)} className="shadow-glow">
-          {b.isPending ? <Loader2 className="animate-spin" /> : <Radio />} Start broadcast to teams
+          {b.isPending ? <Loader2 className="animate-spin" /> : <Radio />} Start broadcast
         </Button>
       )}
       <ConfirmDialog
         open={confirmStop}
         onOpenChange={setConfirmStop}
         title="Stop the broadcast?"
-        description="Teams stop seeing the stream right away. You keep watching here, and you can start it again any time."
+        description="Everyone watching stops seeing the stream right away. You keep watching here, and you can start it again any time."
         confirmLabel="Stop broadcast"
         destructive
         onConfirm={() => {
@@ -269,7 +282,7 @@ export function MatchDeviceStream({ matchId }: { matchId: string }) {
       )}
       <CaptureButtons matchId={matchId} device={current} />
       <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        {current.broadcastLive ? "Teams in this match are watching this stream with your layout." : "Only you can see this stream."}
+        {current.broadcastLive ? "Live for everyone with your layout — on the public Live page." : "Only you can see this stream."}
         <Link to={`/manager/devices/${current.id}`} className="inline-flex items-center gap-1 font-medium text-primary hover:underline">
           Open the device page <ExternalLink className="size-3" />
         </Link>

@@ -1,23 +1,23 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { lazy, useCallback, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 import { motion, MotionConfig } from "framer-motion";
-import { ChevronLeft } from "lucide-react";
 import { AnimatedBackground } from "@7xen/ui/components/brand/animated-background";
-import { BRAND_ASSETS } from "@7xen/ui/components/brand/logo";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
+import markUrl from "@/assets/brand/airbattleground-mark.webp";
+import wordmarkUrl from "@/assets/brand/airbattleground-wordmark.webp";
+import wordmarkInkUrl from "@/assets/brand/airbattleground-wordmark-ink.webp";
 import { cn } from "@7xen/ui/lib/utils";
 import { useAuth } from "@/lib/auth";
 import { readStorage, writeStorage } from "@/lib/storage";
 import { useIsDesktop } from "@/lib/use-media-query";
-import { EASE, SIDEBAR_FULL, SIDEBAR_RAIL, SidebarContent } from "./Sidebar";
+import { EASE, SIDEBAR_FULL, SIDEBAR_RAIL, SidebarArt, SidebarContent } from "./Sidebar";
 import { MobileFab, MobileTabBar } from "./MobileTabBar";
 import { Topbar } from "./Topbar";
 import { WelcomeDialog } from "./WelcomeDialog";
 import { useSessionExpiryToast } from "./useSessionExpiryToast";
+import { SkinSwitch } from "@/lib/skin";
 import type { MobileAction, NavItem, SidebarSlot, ShellBrand, WelcomeStep } from "./types";
 
 const COLLAPSED_KEY = "7xen.sidebar.collapsed";
-const NO_LABELS: Record<string, string> = {};
 
 export interface AppShellProps {
   nav: NavItem[];
@@ -35,12 +35,26 @@ export interface AppShellProps {
   welcomeSteps?: WelcomeStep[];
   /** Image logo; defaults to the AirBattleground mark. */
   brand?: ShellBrand;
+  /** Header search (e.g. the team quick-jump). Renders its own desktop field / phone icon. */
+  search?: ReactNode;
+  /** Header alerts (e.g. the team bell). */
+  notifications?: ReactNode;
   children: ReactNode;
 }
 
-export function AppShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAction, segmentLabels = NO_LABELS, welcomeSteps, brand: brandProp, children }: AppShellProps) {
-  // every area (manager, player) shows the AirBattleground logo images unless a layout passes its own
-  const brand = brandProp ?? BRAND_ASSETS;
+/** The web portal's logo set (header + phone bar), shared by the team and manager areas. */
+const WEB_BRAND: ShellBrand = { name: "AirBattleground", mark: markUrl, wordmark: wordmarkUrl, wordmarkInk: wordmarkInkUrl };
+
+const LuxShell = lazy(() => import("@/skins/lux/shell/LuxShell"));
+
+/** Teal Battle = the sidebar shell below; Lux Battle = src/skins/lux/shell (same props). Picked by the site skin. */
+export function AppShell(props: AppShellProps) {
+  return <SkinSwitch teal={<TealShell {...props} />} lux={<LuxShell {...props} />} />;
+}
+
+function TealShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAction, welcomeSteps, brand: brandProp, search, notifications, children }: AppShellProps) {
+  // every area (manager, player) shows the same AirBattleground logo unless a layout passes its own
+  const brand = brandProp ?? WEB_BRAND;
   const { user } = useAuth();
   const { pathname } = useLocation();
   const isDesktop = useIsDesktop();
@@ -74,7 +88,11 @@ export function AppShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAc
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="relative isolate flex min-h-dvh bg-background">
+      {/* --shell-top: header height; pages can bleed art up under the see-through header with it */}
+      <div
+        className="relative isolate flex min-h-dvh bg-background pt-[var(--shell-top)]"
+        style={{ "--shell-top": `calc(${isDesktop ? "4rem" : "3.5rem"} + env(safe-area-inset-top, 0px))` } as CSSProperties}
+      >
         <a
           href="#main"
           className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
@@ -84,42 +102,33 @@ export function AppShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAc
         <div aria-hidden className="pointer-events-none fixed inset-0 -z-10">
           <AnimatedBackground />
         </div>
+        {/* full-window art slot behind header, sidebar and page (filled via portal, e.g. a tournament's poster) */}
+        <div id="app-backdrop" aria-hidden className="pointer-events-none fixed inset-0 -z-10 empty:hidden" />
 
         {/* Desktop sidebar — only mounted on desktop so tour steps never target a hidden element */}
         {isDesktop && (
           <aside
-            className={cn("group/sidebar sticky top-0 z-20 h-dvh shrink-0 border-r border-sidebar-border bg-sidebar/80 text-sidebar-foreground backdrop-blur-xl transition-[width] duration-300", EASE)}
+            className={cn("sticky top-[var(--shell-top)] z-20 h-[calc(100dvh-var(--shell-top))] shrink-0 border-r border-sidebar-border bg-sidebar/80 text-sidebar-foreground backdrop-blur-xl transition-[width] duration-300", EASE)}
             style={{ width: collapsed ? SIDEBAR_RAIL : SIDEBAR_FULL }}
           >
-            <div className="h-full overflow-hidden">
-              <SidebarContent nav={nav} homeHref={homeHref} collapsed={collapsed} layoutId="nav-active-desktop" header={sidebarHeader} action={sidebarAction} brand={brand} />
+            <SidebarArt collapsed={collapsed} />
+            <div className="relative h-full overflow-hidden">
+              <SidebarContent nav={nav} collapsed={collapsed} onToggle={toggleCollapsed} layoutId="nav-active-desktop" header={sidebarHeader} action={sidebarAction} />
             </div>
-            {/* edge toggle: sits on the border, always reachable */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={toggleCollapsed}
-                  aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-                  aria-expanded={!collapsed}
-                  className={cn(
-                    "absolute top-[22px] -right-3.5 z-30 flex size-7 items-center justify-center rounded-full border border-sidebar-border bg-card text-muted-foreground shadow-md outline-none",
-                    "transition-[color,border-color,box-shadow,opacity] duration-200 hover:border-primary/50 hover:text-primary hover:shadow-glow focus-visible:ring-[3px] focus-visible:ring-sidebar-ring/50",
-                    "opacity-70 group-hover/sidebar:opacity-100 focus-visible:opacity-100",
-                  )}
-                >
-                  <ChevronLeft className={cn("size-4 transition-transform duration-300", EASE, collapsed && "rotate-180")} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={8}>
-                {collapsed ? "Expand" : "Collapse"} <span className="ml-1 opacity-60">Ctrl+B</span>
-              </TooltipContent>
-            </Tooltip>
           </aside>
         )}
 
+        <Topbar
+          homeHref={homeHref}
+          compact={!isDesktop}
+          brand={brand}
+          collapsed={collapsed}
+          brandWidth={collapsed ? SIDEBAR_RAIL : SIDEBAR_FULL}
+          search={search}
+          notifications={notifications}
+        />
+
         <div className="flex min-w-0 flex-1 flex-col">
-          <Topbar nav={nav} segmentLabels={segmentLabels} homeHref={homeHref} compact={!isDesktop} brand={brand} />
           <main
             id="main"
             tabIndex={-1}
@@ -132,7 +141,7 @@ export function AppShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAc
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8"
+              className="w-full px-4 py-4 sm:px-5 sm:py-5 lg:px-6"
             >
               {children}
             </motion.div>

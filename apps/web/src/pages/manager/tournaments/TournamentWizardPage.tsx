@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
@@ -73,11 +73,12 @@ import { PointsPicker, pointsLabel } from "@/features/tournaments/manager/compon
 import { ScheduleEditor } from "@/features/tournaments/manager/components/ScheduleEditor";
 import { SchedulePreview } from "@/features/tournaments/manager/components/SchedulePreview";
 import { StageEditor } from "@/features/tournaments/manager/components/StageEditor";
+import { coinsLabel, WinCoinsInput } from "@/features/coins/components/WinCoinsInput";
 
 const TOUR: TourStep[] = [
   { title: "Create a tournament", description: "Four short steps. Nothing goes live until you press Publish — you can save a draft any time." },
   { element: '[data-tour="wizard-steps"]', title: "Four steps", description: "Basics → Format → Schedule → Registration. Tap a step to jump back to it." },
-  { element: '[data-tour="wizard-basics"]', title: "Name and prize", description: "What teams see first. Rules and description are optional." },
+  { element: '[data-tour="wizard-basics"]', title: "Name and prize", description: "What teams see first, plus the BG coins each match winner earns. Rules and description are optional." },
   { element: '[data-tour="wizard-poster"]', title: "Poster", description: "Add the tournament poster here. It's saved together with the tournament." },
   { element: '[data-tour="wizard-presets"]', title: "Pick a size", description: "Choose a ready-made format. AirBattleground works out the groups and who goes through." },
   { element: '[data-tour="wizard-flow"]', title: "Live preview", description: "See how teams flow from registration to the final. It updates as you change numbers." },
@@ -96,6 +97,7 @@ const basicsSchema = createTournamentSchema.pick({
   teamSize: true,
   firstSlot: true,
   pointsSystem: true,
+  winCoins: true,
   registrationOpensAt: true,
   registrationClosesAt: true,
 });
@@ -181,6 +183,8 @@ export default function TournamentWizardPage() {
       </>
     );
   if (tournamentId && !q.data) return <WizardSkeleton />;
+  // TDM battles have their own (simpler) wizard
+  if (q.data?.mode === "TDM") return <Navigate replace to={`/manager/tdm/${q.data.id}/edit`} />;
   return <Wizard key={tournamentId ?? "new"} existing={tournamentId ? q.data : undefined} />;
 }
 
@@ -246,10 +250,11 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
           teamSize: existing.teamSize,
           firstSlot: existing.firstSlot,
           pointsSystem: existing.pointsSystem,
+          winCoins: existing.winCoins,
           registrationOpensAt: existing.registrationOpensAt ?? undefined,
           registrationClosesAt: existing.registrationClosesAt ?? undefined,
         }
-      : { title: "", description: "", rules: "", prize: "", teamSize: 4, firstSlot: 3, pointsSystem: DEFAULT_POINTS_SYSTEM },
+      : { title: "", description: "", rules: "", prize: "", teamSize: 4, firstSlot: 3, pointsSystem: DEFAULT_POINTS_SYSTEM, winCoins: 0 },
   });
   const { register, control, watch, trigger, getValues, setError, formState } = form;
   const { errors } = formState;
@@ -257,6 +262,7 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
   const prize = watch("prize");
   const firstSlot = watch("firstSlot") ?? 1;
   const pointsSystem = watch("pointsSystem") ?? DEFAULT_POINTS_SYSTEM;
+  const winCoins = watch("winCoins") ?? 0;
   const opensAt = watch("registrationOpensAt");
   const closesAt = watch("registrationClosesAt");
 
@@ -364,7 +370,7 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
   // ----- navigation -----
   const go = async (to: number) => {
     if (to > step && step === 0) {
-      const ok = await trigger(["title", "prize", "description", "rules", "teamSize", "firstSlot", "pointsSystem"]);
+      const ok = await trigger(["title", "prize", "description", "rules", "teamSize", "firstSlot", "pointsSystem", "winCoins"]);
       if (!ok) return;
     }
     setDir(to > step ? 1 : -1);
@@ -511,6 +517,9 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
                   </div>
                   <Field label="Points system" hint="Used for every match in every stage.">
                     <Controller control={control} name="pointsSystem" render={({ field }) => <PointsPicker value={field.value ?? DEFAULT_POINTS_SYSTEM} onChange={field.onChange} />} />
+                  </Field>
+                  <Field label="BG coins per match win" htmlFor="t-coins" error={errors.winCoins?.message} hint="The winner of every match earns these coins. They go to the team's leader when you publish the results.">
+                    <Controller control={control} name="winCoins" render={({ field }) => <WinCoinsInput id="t-coins" value={field.value} onChange={(v) => field.onChange(v)} invalid={!!errors.winCoins} />} />
                   </Field>
                 </div>
               </Section>
@@ -728,6 +737,7 @@ function Wizard({ existing }: { existing?: ManagerTournamentDetail }) {
                     onEdit={() => void go(2)}
                   />
                   <ReviewItem label="Points" value={pointsLabel(pointsSystem)} onEdit={() => void go(0)} />
+                  <ReviewItem label="Match win reward" value={coinsLabel(winCoins)} onEdit={() => void go(0)} />
                   <ReviewItem label="Slots" value={`From #${firstSlot} in every lobby`} onEdit={() => void go(0)} />
                   <ReviewItem label="Registration" value={`${opensAt ? `Opens ${formatInstant(opensAt)}` : "Opens when published"} · ${closesAt ? `closes ${formatInstant(closesAt)}` : "closes when play starts"}`} />
                 </div>

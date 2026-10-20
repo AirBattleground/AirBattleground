@@ -11,6 +11,11 @@ const MAP_TONE: Record<GameMap, string> = {
   KARAKIN: "bg-primary/10 text-primary border-primary/30",
   NUSA: "bg-chart-2/10 text-chart-2 border-chart-2/30",
   RONDO: "bg-destructive/10 text-destructive border-destructive/30",
+  WAREHOUSE: "bg-chart-1/10 text-chart-1 border-chart-1/30",
+  HANGAR: "bg-chart-3/10 text-chart-3 border-chart-3/30",
+  RUINS: "bg-chart-4/10 text-chart-4 border-chart-4/30",
+  LIBRARY: "bg-chart-2/10 text-chart-2 border-chart-2/30",
+  TOWN: "bg-chart-5/10 text-chart-5 border-chart-5/30",
 };
 
 const MAP_DOT: Record<GameMap, string> = {
@@ -22,6 +27,11 @@ const MAP_DOT: Record<GameMap, string> = {
   KARAKIN: "bg-primary",
   NUSA: "bg-chart-2",
   RONDO: "bg-destructive",
+  WAREHOUSE: "bg-chart-1",
+  HANGAR: "bg-chart-3",
+  RUINS: "bg-chart-4",
+  LIBRARY: "bg-chart-2",
+  TOWN: "bg-chart-5",
 };
 
 export function MapChip({ map, index, className }: { map: GameMap; index?: number; className?: string }) {

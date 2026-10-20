@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { MAPS, MAX_ROOM_SLOTS, RECURRENCES, SCRIM_STATUSES, TEAM_REQUEST_STATUSES } from "./enums";
 import { DATE_RE, TIME_RE } from "./schedule";
+import { winCoinsSchema } from "./coins";
 
 const username = z
   .string()
@@ -124,6 +125,8 @@ const scrimBase = z.object({
   slotCount: z.number().int().min(2, "At least 2 slots").max(MAX_ROOM_SLOTS),
   /** First slot number teams get (organisers often reserve slots 1–2). */
   firstSlot: z.number().int().min(1).max(MAX_ROOM_SLOTS).default(1),
+  /** phase 7: BG coins for the winner of each match (see coins.ts) */
+  winCoins: winCoinsSchema.default(0),
 });
 
 export const createScrimSchema = scrimBase.superRefine((v, ctx) => {

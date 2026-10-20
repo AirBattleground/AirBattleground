@@ -1,0 +1,253 @@
+/*
+ * Lux Battle: tokens (scoped under [data-skin="lux"]).
+ *
+ * Selectors are `html:root[data-skin="lux"]` (0,2,1) and `html:root.dark[data-skin="lux"]` (0,3,1) so they beat the
+ * brand presets in globals.css (`:root[data-brand=…]` 0,2,0 / `:root.dark[data-brand=…]` 0,3,0) and the runtime
+ * custom-brand <style>. Light = "desert sand" daylight; dark = night ops (the main look).
+ *
+ * Lux-only extras (use them in Lux CSS / SVG via var()):
+ *   --lux-khaki      sand label/rule/bracket colour        --lux-hud        radar / NV green (live, scanning)
+ *   --lux-hazard     hazard-stripe amber                    --lux-rule       khaki hairline (stronger than --border)
+ *   --lux-bracket    HUD corner-bracket colour              --lux-scanline   scanline tint
+ *   --lux-ease       cubic-bezier(.16,1,.3,1)               --lux-ch         default chamfer size
+ */
+
+html:root[data-skin="lux"] {
+  --radius: 0.2rem;
+
+  /* desert sand daylight */
+  --background: oklch(0.9 0.035 85);
+  --foreground: oklch(0.24 0.025 110);
+  --card: oklch(0.935 0.028 88);
+  --card-foreground: oklch(0.24 0.025 110);
+  --popover: oklch(0.95 0.024 88);
+  --popover-foreground: oklch(0.24 0.025 110);
+  --primary: oklch(0.6 0.19 47);
+  --primary-foreground: oklch(0.15 0.03 50);
+  --secondary: oklch(0.85 0.042 86);
+  --secondary-foreground: oklch(0.3 0.03 105);
+  --muted: oklch(0.86 0.036 86);
+  --muted-foreground: oklch(0.43 0.03 100);
+  --accent: oklch(0.86 0.055 70);
+  --accent-foreground: oklch(0.36 0.1 50);
+  --destructive: oklch(0.54 0.21 27);
+  --border: oklch(0.35 0.04 100 / 0.2);
+  --input: oklch(0.35 0.04 100 / 0.3);
+  --ring: oklch(0.6 0.19 47);
+
+  --success: oklch(0.5 0.14 145);
+  --success-foreground: oklch(0.98 0.02 145);
+  --warning: oklch(0.66 0.15 72);
+  --warning-foreground: oklch(0.2 0.04 70);
+  --info: oklch(0.5 0.09 215);
+  --info-foreground: oklch(0.98 0.01 215);
+
+  --chart-1: oklch(0.6 0.19 47);
+  --chart-2: oklch(0.5 0.14 145);
+  --chart-3: oklch(0.55 0.07 95);
+  --chart-4: oklch(0.5 0.09 215);
+  --chart-5: oklch(0.54 0.21 27);
+
+  --sidebar: oklch(0.88 0.038 85);
+  --sidebar-foreground: oklch(0.26 0.025 110);
+  --sidebar-primary: oklch(0.6 0.19 47);
+  --sidebar-primary-foreground: oklch(0.15 0.03 50);
+  --sidebar-accent: oklch(0.85 0.05 72);
+  --sidebar-accent-foreground: oklch(0.34 0.1 50);
+  --sidebar-border: oklch(0.35 0.04 100 / 0.2);
+  --sidebar-ring: oklch(0.6 0.19 47);
+
+  --glow: oklch(0.6 0.19 47 / 0.3);
+  --grid-line: oklch(0.35 0.05 100 / 0.07);
+  --aurora-1: oklch(0.78 0.13 55 / 0.35);
+  --aurora-2: oklch(0.7 0.08 120 / 0.28);
+  --aurora-3: oklch(0.82 0.07 85 / 0.3);
+
+  /* blaze-orange brand scale (logo, text-gradient-brand) */
+  --brand-50: oklch(0.97 0.02 60);
+  --brand-100: oklch(0.94 0.045 58);
+  --brand-200: oklch(0.89 0.09 55);
+  --brand-300: oklch(0.83 0.14 53);
+  --brand-400: oklch(0.77 0.17 51);
+  --brand-500: oklch(0.72 0.19 50);
+  --brand-600: oklch(0.63 0.19 47);
+  --brand-700: oklch(0.54 0.17 45);
+  --brand-800: oklch(0.45 0.14 44);
+  --brand-900: oklch(0.37 0.11 44);
+  --brand-950: oklch(0.25 0.07 44);
+
+  /* lux extras */
+  --lux-khaki: oklch(0.45 0.05 95);
+  --lux-hud: oklch(0.5 0.14 145);
+  --lux-hazard: oklch(0.72 0.16 75);
+  --lux-rule: oklch(0.4 0.05 95 / 0.35);
+  --lux-bracket: oklch(0.42 0.05 95 / 0.65);
+  --lux-scanline: oklch(0.3 0.04 100 / 0.05);
+  --lux-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --lux-ch: 10px;
+
+  /* type */
+  --font-sans: "Chakra Petch", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Black Ops One", "Chakra Petch", "Rajdhani", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Share Tech Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --default-font-family: var(--font-sans);
+  --default-mono-font-family: var(--font-mono);
+}
+
+/* night ops — the main look */
+html:root.dark[data-skin="lux"] {
+  --background: oklch(0.15 0.012 120);
+  --foreground: oklch(0.93 0.018 95);
+  --card: oklch(0.2 0.018 118);
+  --card-foreground: oklch(0.93 0.018 95);
+  --popover: oklch(0.225 0.02 118);
+  --popover-foreground: oklch(0.93 0.018 95);
+  --primary: oklch(0.72 0.19 50);
+  --primary-foreground: oklch(0.17 0.03 50);
+  --secondary: oklch(0.27 0.022 115);
+  --secondary-foreground: oklch(0.86 0.055 85);
+  --muted: oklch(0.25 0.018 118);
+  --muted-foreground: oklch(0.73 0.03 95);
+  --accent: oklch(0.29 0.035 75);
+  --accent-foreground: oklch(0.9 0.07 75);
+  --destructive: oklch(0.64 0.22 27);
+  --border: oklch(0.8 0.06 85 / 0.14);
+  --input: oklch(0.8 0.06 85 / 0.2);
+  --ring: oklch(0.72 0.19 50);
+
+  --success: oklch(0.82 0.18 145);
+  --success-foreground: oklch(0.18 0.04 145);
+  --warning: oklch(0.82 0.16 80);
+  --warning-foreground: oklch(0.2 0.04 80);
+  --info: oklch(0.78 0.1 210);
+  --info-foreground: oklch(0.17 0.03 215);
+
+  --chart-1: oklch(0.72 0.19 50);
+  --chart-2: oklch(0.82 0.18 145);
+  --chart-3: oklch(0.8 0.06 85);
+  --chart-4: oklch(0.78 0.1 210);
+  --chart-5: oklch(0.64 0.22 27);
+
+  --sidebar: oklch(0.17 0.014 120);
+  --sidebar-foreground: oklch(0.9 0.02 95);
+  --sidebar-primary: oklch(0.72 0.19 50);
+  --sidebar-primary-foreground: oklch(0.17 0.03 50);
+  --sidebar-accent: oklch(0.27 0.035 70);
+  --sidebar-accent-foreground: oklch(0.92 0.07 75);
+  --sidebar-border: oklch(0.8 0.06 85 / 0.12);
+  --sidebar-ring: oklch(0.72 0.19 50);
+
+  --glow: oklch(0.72 0.19 50 / 0.4);
+  --grid-line: oklch(0.8 0.06 85 / 0.05);
+  --aurora-1: oklch(0.6 0.17 50 / 0.28);
+  --aurora-2: oklch(0.45 0.08 125 / 0.35);
+  --aurora-3: oklch(0.55 0.06 85 / 0.2);
+
+  --lux-khaki: oklch(0.8 0.06 85);
+  --lux-hud: oklch(0.82 0.18 145);
+  --lux-hazard: oklch(0.82 0.16 80);
+  --lux-rule: oklch(0.8 0.06 85 / 0.3);
+  --lux-bracket: oklch(0.8 0.06 85 / 0.55);
+  --lux-scanline: oklch(0.8 0.06 85 / 0.035);
+}
+
+/* ---------------------------------------------------------------- type
+ * @theme inline bakes the font stacks into .font-sans/.font-display/.font-mono, so switch the utilities too. */
+html:root[data-skin="lux"] body { font-family: var(--font-sans); }
+:root[data-skin="lux"] .font-sans { font-family: var(--font-sans); }
+:root[data-skin="lux"] .font-mono,
+:root[data-skin="lux"] :is(code, kbd, samp, pre) { font-family: var(--font-mono); }
+:root[data-skin="lux"] :is(h1, h2, h3, .font-display) {
+  font-family: var(--font-display);
+  /* Black Ops One has one (heavy) weight — never fake-bold it */
+  font-weight: 400;
+  font-synthesis: none;
+  letter-spacing: 0.025em;
+}
+/* small headings inside dense UI read better in the UI face, bold + uppercase */
+:root[data-skin="lux"] :is([data-slot="card-title"], [data-slot="dialog-title"], [data-slot="alert-dialog-title"], [data-slot="sheet-title"], [data-slot="popover-title"]):not(.font-display) {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+:root[data-skin="lux"] ::selection { background: oklch(0.72 0.19 50 / 0.35); }
+:root[data-skin="lux"] * { scrollbar-color: var(--lux-rule) transparent; }
+
+/* ---------------------------------------------------------------- Lux utilities (class names prefixed lux-ds-; keyframes lux-ds-*) */
+/* chamfered corners (top-right + bottom-left); set --lux-ch to resize */
+:root[data-skin="lux"] .lux-ds-chamfer {
+  clip-path: polygon(0 0, calc(100% - var(--lux-ch)) 0, 100% var(--lux-ch), 100% 100%, var(--lux-ch) 100%, 0 calc(100% - var(--lux-ch)));
+}
+/* all four corners */
+:root[data-skin="lux"] .lux-ds-chamfer-4 {
+  clip-path: polygon(var(--lux-ch) 0, calc(100% - var(--lux-ch)) 0, 100% var(--lux-ch), 100% calc(100% - var(--lux-ch)), calc(100% - var(--lux-ch)) 100%, var(--lux-ch) 100%, 0 calc(100% - var(--lux-ch)), 0 var(--lux-ch));
+}
+/* HUD corner brackets drawn as background layers (keeps ::before/::after free) */
+:root[data-skin="lux"] .lux-ds-brackets {
+  --lux-bk: var(--lux-bracket);
+  --lux-bl: 12px;
+  background-image:
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0),
+    linear-gradient(var(--lux-bk) 0 0), linear-gradient(var(--lux-bk) 0 0);
+  background-position: 0 0, 0 0, 100% 0, 100% 0, 0 100%, 0 100%, 100% 100%, 100% 100%;
+  background-size:
+    var(--lux-bl) 2px, 2px var(--lux-bl), var(--lux-bl) 2px, 2px var(--lux-bl),
+    var(--lux-bl) 2px, 2px var(--lux-bl), var(--lux-bl) 2px, 2px var(--lux-bl);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+}
+/* faint map grid / scanlines / hazard stripes / topo texture */
+:root[data-skin="lux"] .lux-ds-grid {
+  background-image:
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+:root[data-skin="lux"] .lux-ds-scanlines {
+  background-image: repeating-linear-gradient(to bottom, var(--lux-scanline) 0 1px, transparent 1px 3px);
+}
+:root[data-skin="lux"] .lux-ds-hazard {
+  background-image: repeating-linear-gradient(-45deg, var(--lux-hazard) 0 8px, oklch(0.18 0.02 90) 8px 16px);
+}
+:root[data-skin="lux"] .lux-ds-topo {
+  background-image:
+    repeating-radial-gradient(circle at 20% 30%, transparent 0 18px, var(--grid-line) 18px 19px),
+    repeating-radial-gradient(circle at 85% 80%, transparent 0 22px, var(--grid-line) 22px 23px);
+}
+/* type helpers */
+:root[data-skin="lux"] .lux-ds-stencil { font-family: var(--font-display); font-weight: 400; letter-spacing: 0.04em; text-transform: uppercase; }
+:root[data-skin="lux"] .lux-ds-mono { font-family: var(--font-mono); letter-spacing: 0.08em; }
+:root[data-skin="lux"] .lux-ds-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--lux-khaki);
+}
+/* glowing live dot */
+:root[data-skin="lux"] .lux-ds-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--lux-hud);
+  box-shadow: 0 0 8px var(--lux-hud);
+  animation: lux-ds-blink 1.6s ease-in-out infinite;
+}
+:root[data-skin="lux"] .lux-ds-rise { animation: lux-ds-rise 0.6s var(--lux-ease) both; }
+:root[data-skin="lux"] .lux-ds-flicker { animation: lux-ds-flicker 1.2s steps(1) 1 both; }
+
+/* shared keyframes (all Lux CSS uses these names) */
+@keyframes lux-ds-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@keyframes lux-ds-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes lux-ds-flicker {
+  0% { opacity: 0; } 10% { opacity: 1; } 15% { opacity: 0.3; } 25% { opacity: 1; } 32% { opacity: 0.5; } 40%, 100% { opacity: 1; }
+}
+@keyframes lux-ds-spin { to { transform: rotate(360deg); } }
+@keyframes lux-ds-scan-x { from { transform: translateX(-100%); } to { transform: translateX(400%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-skin="lux"] :is(.lux-ds-live-dot, .lux-ds-rise, .lux-ds-flicker) { animation: none; }
+}

@@ -1,54 +1,70 @@
-import { Fragment, useMemo } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { ChevronRight, Compass } from "lucide-react";
+import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { Compass } from "lucide-react";
 import { toast } from "sonner";
-import { format, parseISO } from "date-fns";
-import { DATE_RE } from "@7xen/shared";
 import { ThemeToggle } from "@7xen/ui/components/brand/theme-toggle";
 import { LogoMark } from "@7xen/ui/components/brand/logo";
 import { Button } from "@7xen/ui/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { useTour } from "@7xen/ui/tour";
 import { cn } from "@7xen/ui/lib/utils";
-import type { NavItem, ShellBrand } from "./types";
+import { EASE } from "./Sidebar";
+import type { ShellBrand } from "./types";
 import { UserMenu } from "./UserMenu";
 
-interface Crumb {
-  label: string;
-  to?: string;
+/** Logo block: on desktop it spans the sidebar column (wordmark ↔ mark as the sidebar collapses). */
+function Brand({ brand, homeHref, compact, collapsed, width }: { brand?: ShellBrand; homeHref: string; compact: boolean; collapsed: boolean; width?: number }) {
+  const name = brand?.name ?? "AirBattleground";
+  return (
+    <div className={cn("flex h-full shrink-0 items-center transition-[width] duration-300", EASE, !compact && "pl-5")} style={compact ? undefined : { width }}>
+      <Link to={homeHref} aria-label={`${name} home`} className="relative flex h-10 items-center rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
+        {brand ? (
+          compact ? (
+            <img src={brand.mark} alt="" className="brand-ink h-8 w-auto" />
+          ) : (
+            <>
+              <span className={cn("block h-10 transition-opacity duration-200", collapsed ? "pointer-events-none opacity-0" : "opacity-100 delay-100")}>
+                <img src={brand.wordmarkInk} alt="" className="brand-ink h-full w-auto dark:hidden" />
+                <img src={brand.wordmark} alt="" className="brand-ink hidden h-full w-auto dark:block" />
+              </span>
+              <img
+                src={brand.mark}
+                alt=""
+                aria-hidden
+                className={cn("brand-ink absolute top-1/2 -left-1.5 h-7 w-auto -translate-y-1/2 transition-opacity duration-200", collapsed ? "opacity-100 delay-100" : "pointer-events-none opacity-0")}
+              />
+            </>
+          )
+        ) : (
+          <LogoMark className="size-8" />
+        )}
+      </Link>
+    </div>
+  );
 }
 
-const DEFAULT_SEGMENT_LABELS: Record<string, string> = { new: "New", edit: "Edit" };
-
-/** Section from the best-matching nav item, then any deeper path segments. */
-function useCrumbs(nav: NavItem[], segmentLabels: Record<string, string>): Crumb[] {
-  const { pathname } = useLocation();
-  return useMemo(() => {
-    const path = pathname.replace(/\/+$/, "") || "/";
-    const match = [...nav]
-      .filter((n) => path === n.to || (!n.end && path.startsWith(n.to + "/")))
-      .sort((a, b) => b.to.length - a.to.length)[0];
-    if (!match) return [];
-    const crumbs: Crumb[] = [{ label: match.label, to: match.to }];
-    const rest = path.slice(match.to.length).split("/").filter(Boolean);
-    let acc = match.to;
-    rest.forEach((seg, i) => {
-      acc += `/${seg}`;
-      // an id right before a date (".../:scrimId/:date") is shown as the date crumb only
-      if (DATE_RE.test(rest[i + 1] ?? "") && !segmentLabels[seg]) return;
-      const label = DATE_RE.test(seg) ? format(parseISO(seg), "EEE, d MMM") : (segmentLabels[seg] ?? DEFAULT_SEGMENT_LABELS[seg] ?? "Details");
-      crumbs.push({ label, to: acc });
-    });
-    // the last crumb is the current page — not a link
-    const last = crumbs[crumbs.length - 1];
-    if (last) delete last.to;
-    return crumbs;
-  }, [nav, pathname, segmentLabels]);
-}
-
-export function Topbar({ nav, segmentLabels, homeHref, compact, brand }: { nav: NavItem[]; segmentLabels: Record<string, string>; homeHref: string; compact: boolean; brand?: ShellBrand }) {
-  const crumbs = useCrumbs(nav, segmentLabels);
+/**
+ * Full-width header above the sidebar and the page: logo, search, then alerts / tour / theme / account.
+ * Fixed and see-through, so page art (the home hero) runs up underneath it.
+ */
+export function Topbar({
+  homeHref,
+  compact,
+  brand,
+  collapsed,
+  brandWidth,
+  search,
+  notifications,
+}: {
+  homeHref: string;
+  compact: boolean;
+  brand?: ShellBrand;
+  collapsed: boolean;
+  brandWidth?: number;
+  search?: ReactNode;
+  notifications?: ReactNode;
+}) {
   const tour = useTour();
-
   const startTour = () => {
     if (tour.hasTour()) tour.start();
     else toast.info("There's no tour for this page yet.");
@@ -56,57 +72,28 @@ export function Topbar({ nav, segmentLabels, homeHref, compact, brand }: { nav: 
 
   return (
     <header
-      className={cn(
-        "sticky top-0 z-30 flex shrink-0 items-center gap-3 border-b bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/55",
-        compact ? "h-14 px-4" : "h-16 px-6",
-      )}
-      style={{ paddingTop: "env(safe-area-inset-top, 0px)", boxSizing: "content-box" }}
+      className="fixed inset-x-0 top-0 z-40 border-b border-border/70 bg-[linear-gradient(180deg,color-mix(in_oklch,var(--background)_88%,transparent),color-mix(in_oklch,var(--background)_62%,transparent))] backdrop-blur-xl"
+      style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
     >
-      {compact && (
-        <Link to={homeHref} aria-label={`${brand?.name ?? "AirBattleground"} home`} className="-ml-1 shrink-0 rounded-lg outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
-          {brand ? <img src={brand.mark} alt="" className="brand-ink h-8 w-auto" /> : <LogoMark className="size-8" />}
-        </Link>
-      )}
+      <div className={cn("flex items-center gap-3", compact ? "h-14 pr-3 pl-4" : "h-16 pr-6")}>
+        <Brand brand={brand} homeHref={homeHref} compact={compact} collapsed={collapsed} width={brandWidth} />
 
-      {/* mobile: logo + actions only — the page name stays for screen readers (the page header shows it anyway) */}
-      <nav aria-label="Breadcrumb" className={cn("min-w-0 flex-1", compact && "[&_ol]:sr-only")}>
-        <ol className="flex min-w-0 items-center gap-1.5 text-sm">
-          {crumbs.map((c, i) => {
-            const last = i === crumbs.length - 1;
-            return (
-              <Fragment key={c.label + i}>
-                <li className={cn("min-w-0 items-center gap-1.5", last ? "flex" : "hidden sm:flex")}>
-                  {i > 0 && <ChevronRight aria-hidden className="hidden size-4 shrink-0 text-muted-foreground/60 sm:block" />}
-                  {c.to ? (
-                    <Link to={c.to} className="truncate rounded text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50">
-                      {c.label}
-                    </Link>
-                  ) : (
-                    <span aria-current="page" className="block truncate font-display text-lg font-bold leading-none">
-                      {c.label}
-                    </span>
-                  )}
-                </li>
-              </Fragment>
-            );
-          })}
-        </ol>
-      </nav>
+        <div className={cn("flex min-w-0 flex-1 items-center", !compact && "pl-6 xl:pl-10")}>{search}</div>
 
-      <div className="flex shrink-0 items-center gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={startTour}
-          data-tour="tour-btn"
-          aria-label="Take a tour"
-          className={cn("gap-2 border-primary/30 hover:border-primary/60", compact ? "size-9 p-0" : "h-9")}
-        >
-          <Compass className="size-4 text-primary" />
-          {!compact && <span>Take a tour</span>}
-        </Button>
-        <ThemeToggle />
-        <UserMenu />
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+          {notifications}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="ghost" size="icon" onClick={startTour} data-tour="tour-btn" aria-label="Take a tour" className="size-9 text-muted-foreground hover:text-primary">
+                <Compass className="size-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Take a tour</TooltipContent>
+          </Tooltip>
+          <ThemeToggle />
+          <span aria-hidden className="mx-1.5 hidden h-8 w-px bg-border sm:block" />
+          <UserMenu />
+        </div>
       </div>
     </header>
   );

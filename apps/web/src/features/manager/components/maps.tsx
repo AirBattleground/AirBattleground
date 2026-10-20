@@ -14,6 +14,11 @@ export const MAP_STYLES: Record<GameMap, { chip: string; dot: string; solid: str
   KARAKIN: { chip: "bg-orange-500/12 text-orange-700 border-orange-500/30 dark:text-orange-300", dot: "bg-orange-500", solid: "from-orange-500/25" },
   NUSA: { chip: "bg-fuchsia-500/12 text-fuchsia-700 border-fuchsia-500/30 dark:text-fuchsia-300", dot: "bg-fuchsia-500", solid: "from-fuchsia-500/25" },
   RONDO: { chip: "bg-indigo-500/12 text-indigo-700 border-indigo-500/30 dark:text-indigo-300", dot: "bg-indigo-500", solid: "from-indigo-500/25" },
+  WAREHOUSE: { chip: "bg-rose-500/12 text-rose-700 border-rose-500/30 dark:text-rose-300", dot: "bg-rose-500", solid: "from-rose-500/25" },
+  HANGAR: { chip: "bg-slate-500/12 text-slate-700 border-slate-500/30 dark:text-slate-300", dot: "bg-slate-500", solid: "from-slate-500/25" },
+  RUINS: { chip: "bg-yellow-500/15 text-yellow-800 border-yellow-500/35 dark:text-yellow-300", dot: "bg-yellow-500", solid: "from-yellow-500/25" },
+  LIBRARY: { chip: "bg-violet-500/12 text-violet-700 border-violet-500/30 dark:text-violet-300", dot: "bg-violet-500", solid: "from-violet-500/25" },
+  TOWN: { chip: "bg-cyan-500/12 text-cyan-700 border-cyan-500/30 dark:text-cyan-300", dot: "bg-cyan-500", solid: "from-cyan-500/25" },
 };
 
 export function MapChip({ map, index, className }: { map: GameMap; index?: number; className?: string }) {

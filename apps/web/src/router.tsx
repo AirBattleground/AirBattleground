@@ -52,6 +52,9 @@ const routes: RouteObject[] = [
   { path: "/login", element: <LoginPage /> },
   { path: "/welcome", element: page(() => import("@/pages/player/WelcomePage")) },
   { path: "/join/:code", element: page(() => import("@/pages/player/JoinPage")) },
+  // public: anyone can watch matches an organiser is broadcasting (no sign-in)
+  { path: "/watch", element: page(() => import("@/pages/watch/WatchPage")) },
+  { path: "/watch/:matchId", element: page(() => import("@/pages/watch/WatchPage")) },
   {
     path: "/manager",
     element: (
@@ -86,6 +89,10 @@ const routes: RouteObject[] = [
       { path: "tournaments/:tournamentId/stages/:stageId", element: page(() => import("@/pages/manager/tournaments/StagePage")) },
       { path: "tournaments/:tournamentId/stages/:stageId/matches", element: <TournamentRedirect /> },
       { path: "tournaments/:tournamentId/stages/:stageId/matches/:matchId", element: page(() => import("@/pages/manager/tournaments/TournamentMatchPage")) },
+      // TDM battles: own list + wizard; detail/stage/match pages are the tournament ones
+      { path: "tdm", element: page(() => import("@/pages/manager/tdm/TdmBattlesPage")) },
+      { path: "tdm/new", element: page(() => import("@/pages/manager/tdm/TdmWizardPage")) },
+      { path: "tdm/:tournamentId/edit", element: page(() => import("@/pages/manager/tdm/TdmWizardPage")) },
     ],
   },
   {
@@ -109,6 +116,8 @@ const routes: RouteObject[] = [
       { path: "results/:scrimId/:date/matches", element: <SessionRedirect area="team" /> },
       { path: "results/:scrimId/:date/matches/:matchId", element: page(() => import("@/pages/team/MatchScorecardPage")) },
       { path: "tournaments", element: page(() => import("@/pages/team/tournaments/TournamentsPage")) },
+      { path: "tdm", element: page(() => import("@/pages/team/tdm/TdmBattlesPage")) },
+      { path: "coins", element: page(() => import("@/pages/team/CoinsPage")) },
       { path: "tournaments/:id", element: page(() => import("@/pages/team/tournaments/TournamentHubPage")) },
       { path: "tournaments/:id/stages", element: <TeamTournamentRedirect /> },
       { path: "tournaments/:id/stages/:stageId", element: page(() => import("@/pages/team/tournaments/StagePage")) },

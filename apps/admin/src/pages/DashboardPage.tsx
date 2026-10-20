@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, CalendarClock, CircleDashed, Cpu, PlugZap, CheckCircle2, ChevronRight, Hourglass, KeyRound, Shield, Swords, Trophy, UserPlus, UserRound, Users } from "lucide-react";
+import { ArrowRight, CalendarClock, CircleDashed, Cpu, PlugZap, CheckCircle2, ChevronRight, Hourglass, KeyRound, Palette, Shield, Swords, Trophy, UserPlus, UserRound, Users } from "lucide-react";
 import { PageHeader, StatCard } from "@7xen/ui/components/brand/page";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -25,7 +25,7 @@ import { relativeTime } from "@/lib/format";
 const TOUR: TourStep[] = [
   { element: '[data-tour="stats"]', title: "Welcome to your control room", description: "These numbers show managers, players and teams on AirBattleground, scrims running, and registrations waiting for approval.", side: "bottom" },
   { element: '[data-tour="system-card"]', title: "Server health", description: "Speedometers for the server's CPU, memory, disk and network, plus how many phones are streaming. Green is fine, amber is busy, red needs attention.", side: "bottom" },
-  { element: '[data-tour="quick-actions"]', title: "Quick actions", description: "Make a manager login in a few clicks, or see the players who signed up with Google.", side: "bottom" },
+  { element: '[data-tour="quick-actions"]', title: "Quick actions", description: "Make a manager login in a few clicks, see the players who signed up with Google, or change how the website looks.", side: "bottom" },
   { element: '[data-tour="reader-card"]', title: "Screenshot reader", description: "Claude reads match screenshots for managers. Checked samples here are a test set for spotting what it gets wrong.", side: "bottom" },
   { element: '[data-tour="tournaments-card"]', title: "Tournaments", description: "How many tournaments are live or open for registration right now. Click to see them all.", side: "bottom" },
   { element: '[data-tour="manager-app-card"]', title: "Manager app", description: "Match videos recorded by managers' phones, the room-creation recipes, and how long videos are kept.", side: "bottom" },
@@ -291,9 +291,10 @@ export default function DashboardPage() {
       <div className="space-y-6">
         <Stats />
         <SystemHealthCard />
-        <div className="grid gap-4 md:grid-cols-2" data-tour="quick-actions">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-tour="quick-actions">
           <QuickAction to="/managers?create=1" icon={<UserPlus />} title="Invite manager" text="For someone who will run scrims" />
           <QuickAction to="/players" icon={<UserRound />} title="See players" text="Everyone who signed up with Google" />
+          <QuickAction to="/site-look" icon={<Palette />} title="Site look" text="Teal Battle or Lux Battle for everyone" />
         </div>
         <TournamentsCard />
         <ReaderCard />

@@ -10,6 +10,7 @@ export function SectionHeader({
   icon,
   to,
   linkLabel = "See all",
+  description,
   className,
 }: {
   eyebrow: string;
@@ -17,6 +18,8 @@ export function SectionHeader({
   icon?: ReactNode;
   to?: string;
   linkLabel?: string;
+  /** one plain line under the title */
+  description?: ReactNode;
   className?: string;
 }) {
   return (
@@ -30,6 +33,7 @@ export function SectionHeader({
           {icon}
           {title}
         </h2>
+        {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
       {to && (
         <Link

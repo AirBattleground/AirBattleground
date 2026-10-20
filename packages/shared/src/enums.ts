@@ -12,8 +12,12 @@ export type ScrimStatus = (typeof SCRIM_STATUSES)[number];
 export const REGISTRATION_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
 export type RegistrationStatus = (typeof REGISTRATION_STATUSES)[number];
 
+/** Battle royale maps. */
+export const BR_MAPS = ["ERANGEL", "MIRAMAR", "SANHOK", "VIKENDI", "LIVIK", "KARAKIN", "NUSA", "RONDO"] as const;
+/** Team Deathmatch (TDM) arena maps. */
+export const TDM_MAPS = ["WAREHOUSE", "HANGAR", "RUINS", "LIBRARY", "TOWN"] as const;
 /** Battlegrounds maps. Each entry in a scrim's `maps` array is one match of the session, in order. */
-export const MAPS = ["ERANGEL", "MIRAMAR", "SANHOK", "VIKENDI", "LIVIK", "KARAKIN", "NUSA", "RONDO"] as const;
+export const MAPS = [...BR_MAPS, ...TDM_MAPS] as const;
 export type GameMap = (typeof MAPS)[number];
 
 export const MAP_LABELS: Record<GameMap, string> = {
@@ -25,7 +29,14 @@ export const MAP_LABELS: Record<GameMap, string> = {
   KARAKIN: "Karakin",
   NUSA: "Nusa",
   RONDO: "Rondo",
+  WAREHOUSE: "TDM · Warehouse",
+  HANGAR: "TDM · Hangar",
+  RUINS: "TDM · Ruins",
+  LIBRARY: "TDM · Library",
+  TOWN: "TDM · Town",
 };
+
+export const isTdmMap = (m: GameMap): boolean => (TDM_MAPS as readonly string[]).includes(m);
 
 export const RECURRENCE_LABELS: Record<Recurrence, string> = {
   ONCE: "One-time",

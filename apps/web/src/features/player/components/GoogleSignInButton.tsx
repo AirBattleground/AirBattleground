@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { useSkin } from "@/lib/skin";
 import { cn } from "@7xen/ui/lib/utils";
 
 /** The slice of Google Identity Services we use (https://developers.google.com/identity/gsi/web/reference/js-reference). */
@@ -47,6 +48,8 @@ export function GoogleSignInButton({ clientId, onCredential, busy, className }: 
   cb.current = onCredential;
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
+  // Lux Battle is angular: Google's square-cornered button instead of the pill
+  const shape = useSkin().isLux ? "rectangular" : "pill";
 
   useEffect(() => {
     let live = true;
@@ -55,7 +58,7 @@ export function GoogleSignInButton({ clientId, onCredential, busy, className }: 
         if (!live || !host.current) return;
         gsi.initialize({ client_id: clientId, ux_mode: "popup", auto_select: false, itp_support: true, context: "signin", callback: (r) => r.credential && cb.current(r.credential) });
         const width = Math.min(400, Math.max(220, Math.round(host.current.getBoundingClientRect().width)));
-        gsi.renderButton(host.current, { type: "standard", theme: "filled_black", size: "large", text: "continue_with", shape: "pill", width, logo_alignment: "left" });
+        gsi.renderButton(host.current, { type: "standard", theme: "filled_black", size: "large", text: "continue_with", shape, width, logo_alignment: "left" });
         setState("ready");
       })
       .catch((e: unknown) => {
@@ -66,7 +69,7 @@ export function GoogleSignInButton({ clientId, onCredential, busy, className }: 
     return () => {
       live = false;
     };
-  }, [clientId]);
+  }, [clientId, shape]);
 
   return (
     <div className={cn("relative", className)} data-tour="google-signin">

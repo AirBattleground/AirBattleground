@@ -19,6 +19,7 @@ import { devicePath, deviceStreamReady, internalCredentials, outputPath } from "
 import { overlayDataForMatch, sampleOverlayData, type OverlayData } from "./data.js";
 import { destinationTargets, loadLayout, sponsorPaths } from "./layout.js";
 import { renderOverlay } from "./render.js";
+import { endMatchBroadcast, startMatchBroadcast, YoutubeError, type MatchBroadcast } from "../youtube.js";
 
 const OVERLAY_EVERY_MS = 500;
 const RETRY_MS = 4_000;
@@ -40,9 +41,36 @@ interface Runner {
   retryTimer: NodeJS.Timeout | null;
   stopping: boolean;
   rendering: boolean;
+  /** phase 7b: this output's broadcast on the site YouTube channel (kept across reconnects) */
+  yt: { matchId: string; broadcast: MatchBroadcast | null; error: string | null; triedAt: number } | null;
 }
 
 const runners = new Map<string, Runner>();
+const SITE_YOUTUBE_ID = "site-youtube";
+/** after YouTube refused, wait this long before asking again (quota) */
+const YT_RETRY_MS = 60_000;
+
+/** The site YouTube channel as an extra relay target, when it's connected and the device shows a match. */
+async function youtubeTargets(r: Runner): Promise<{ id: string; name: string; kind: "YOUTUBE"; target: string }[]> {
+  const d = await prisma.device.findUnique({ where: { id: r.deviceId }, select: { matchId: true } });
+  const matchId = d?.matchId ?? null;
+  const asTarget = (b: MatchBroadcast) => [{ id: SITE_YOUTUBE_ID, name: "AirBattleground YouTube", kind: "YOUTUBE" as const, target: b.target }];
+  if (!matchId) return [];
+  if (r.yt && r.yt.matchId === matchId) {
+    if (r.yt.broadcast) return asTarget(r.yt.broadcast);
+    if (Date.now() - r.yt.triedAt < YT_RETRY_MS) return [];
+  } else if (r.yt?.broadcast) {
+    void endMatchBroadcast(r.yt.broadcast.broadcastId); // the device moved to another match between reconnects
+  }
+  try {
+    const b = await startMatchBroadcast(matchId);
+    r.yt = { matchId, broadcast: b, error: null, triedAt: Date.now() };
+    return b ? asTarget(b) : [];
+  } catch (err) {
+    r.yt = { matchId, broadcast: null, error: err instanceof YoutubeError ? err.message : "Couldn't reach YouTube.", triedAt: Date.now() };
+    return [];
+  }
+}
 
 export function outputStateOf(deviceId: string): OutputState {
   return runners.get(deviceId)?.state ?? "OFF";
@@ -107,7 +135,7 @@ async function launch(r: Runner) {
     r.retryTimer = setTimeout(() => void launch(r), RETRY_MS);
     return;
   }
-  const targets = await destinationTargets(r.managerId, r.destIds);
+  const targets = [...(await destinationTargets(r.managerId, r.destIds)), ...(await youtubeTargets(r))];
   // not ok until a relay is actually sending
   r.destinations = targets.map((t) => ({ id: t.id, name: t.name, kind: t.kind, ok: false }));
 
@@ -247,6 +275,7 @@ export async function startOutput(deviceId: string, managerId: string, destIds: 
     retryTimer: null,
     stopping: false,
     rendering: false,
+    yt: null,
   };
   runners.set(deviceId, r);
   await prisma.device.update({ where: { id: deviceId }, data: { outputOn: true, outputDestIds: destIds, outputStartedAt: r.startedAt } });
@@ -258,6 +287,7 @@ async function stopRunner(deviceId: string) {
   if (!r) return;
   r.stopping = true;
   stopRelays(r);
+  if (r.yt?.broadcast) void endMatchBroadcast(r.yt.broadcast.broadcastId);
   if (r.retryTimer) clearTimeout(r.retryTimer);
   if (r.overlayTimer) clearInterval(r.overlayTimer);
   const p = r.proc;
@@ -292,6 +322,18 @@ export async function outputInfo(deviceId: string): Promise<DeviceOutput> {
     error: r?.error ?? null,
     hlsUrl: r ? `/api/manager/devices/${deviceId}/output/live/index.m3u8` : null,
     match,
+    youtube: r?.yt
+      ? r.yt.broadcast
+        ? {
+            title: r.yt.broadcast.title,
+            watchUrl: r.yt.broadcast.watchUrl,
+            ok: r.destinations.find((x) => x.id === SITE_YOUTUBE_ID)?.ok ?? false,
+            error: null,
+          }
+        : r.yt.error
+          ? { title: "AirBattleground YouTube", watchUrl: null, ok: false, error: r.yt.error }
+          : null
+      : null,
   };
 }
 

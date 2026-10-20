@@ -4,6 +4,7 @@
  */
 import { randomBytes } from "node:crypto";
 import {
+  bracketPairs,
   computeStandings,
   drawGroups,
   groupName,
@@ -34,6 +35,7 @@ import { prisma, type Tx } from "../../db.js";
 import { AppError, conflict, notFound } from "../../lib/errors.js";
 import { iso, teamSelect, toTeamSummary } from "../../lib/serialize.js";
 import { normName } from "../merge.js";
+import { awardChampionCoins } from "../coins.js";
 import {
   TX_OPTS,
   assertNotFinished,
@@ -128,6 +130,19 @@ async function performDraw(tx: Tx, t: TournamentFull, stage: StageWithGroups, se
       t.firstSlot,
     );
     drawn = res.groups;
+  } else if (t.mode === "TDM") {
+    // knockout: winner of M1 meets winner of M2, M3 meets M4, …
+    const prev = t.stages.find((s) => s.order === stage.order - 1)!;
+    const prevGroups = await tx.tournamentGroup.findMany({
+      where: { stageId: prev.id },
+      orderBy: { index: "asc" },
+      select: { teams: { where: { status: "ADVANCED" }, select: { teamId: true }, take: 1 } },
+    });
+    drawn = bracketPairs(
+      prevGroups.map((g) => g.teams[0]?.teamId ?? null),
+      seed,
+      t.firstSlot,
+    );
   } else {
     drawn = snakeSeed(
       entrants.map((e) => e.teamId),
@@ -543,6 +558,9 @@ export async function promoteStage(id: string, actor: Actor, stageId: string, ov
       });
     }
     await tx.tournamentStage.update({ where: { id: stageId }, data: { status: "COMPLETED", completedAt: new Date() } });
-    if (isLast) await tx.tournament.update({ where: { id }, data: { championTeamId: champion } });
+    if (isLast) {
+      await tx.tournament.update({ where: { id }, data: { championTeamId: champion } });
+      await awardChampionCoins(tx, id);
+    }
   }, TX_OPTS);
 }

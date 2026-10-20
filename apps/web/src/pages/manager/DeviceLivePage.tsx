@@ -15,11 +15,13 @@ import { DeviceHealthPanel, DeviceStreamBadges } from "@/features/devices/compon
 import { DeviceKeyDialog } from "@/features/devices/components/DeviceDialogs";
 import { PairQr } from "@/features/devices/components/PairQr";
 import { LiveOverlay, MatchPicker, useLayoutToggle } from "@/features/broadcast/LiveOverlay";
+import { GoLivePanel } from "@/features/broadcast/GoLivePanel";
 
 const TOUR: TourStep[] = [
   { title: "Watching your phone", description: "This is the iPhone's screen, live. Only you can see it here. Nobody can control the phone from 7xen." },
   { element: '[data-tour="device-player"]', title: "The live picture", description: "It runs a few seconds behind the phone. Tap the speaker for sound, or the corner button for full screen.", side: "bottom" },
   { element: '[data-tour="device-layout"]', title: "Your broadcast layout", description: "Turn the layout on to see the stream with your title bar, team list and points table. Pick the match it shows, or open Edit layout to change colours and panels.", side: "bottom" },
+  { element: '[data-tour="device-go-live"]', title: "Go live", description: "Broadcast the phone's video with your layout to AirBattleground, your own channels, and the site YouTube channel when it's connected.", side: "left" },
   { element: '[data-tour="device-health"]', title: "Phone health", description: "Battery, temperature and how hard the app is working. If the phone gets hot it lowers the quality by itself.", side: "left" },
 ];
 
@@ -132,6 +134,7 @@ export default function DeviceLivePage() {
         </div>
 
         <aside data-tour="device-health" className="space-y-3">
+          <GoLivePanel deviceId={d.id} videoReady={d.videoReady} hasMatch={!!d.match} />
           <h2 className="flex items-center gap-2 font-display text-xl font-bold">
             <Smartphone className="size-5 text-primary" /> Phone health
           </h2>

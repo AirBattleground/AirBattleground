@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarDays, ChevronRight, Crown, Hourglass, Layers, Plus, Trophy } from "lucide-react";
-import type { TournamentStatus, TournamentSummary } from "@7xen/shared";
+import { CalendarDays, ChevronRight, Crosshair, Crown, Hourglass, Layers, Plus, Trophy } from "lucide-react";
+import type { TournamentMode, TournamentStatus, TournamentSummary } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
@@ -31,53 +31,88 @@ const FILTERS: { key: Filter; label: string; match: (s: TournamentStatus) => boo
 ];
 const ORDER: Record<TournamentStatus, number> = { LIVE: 0, REGISTRATION_CLOSED: 1, REGISTRATION_OPEN: 2, DRAFT: 3, COMPLETED: 4, CANCELLED: 5 };
 
+const TDM_TOUR: TourStep[] = [
+  { title: "TDM battles", description: "Knockouts of 2-team Team Deathmatch matches: winners go through until one champion is left." },
+  { element: '[data-tour="t-create"]', title: "Create a TDM battle", description: "Pick the number of teams, the maps and the time. The bracket builds itself." },
+  { element: '[data-tour="t-filter"]', title: "Filter", description: "Switch between running, drafts and finished battles." },
+  { element: '[data-tour="t-card"]', title: "Open one", description: "Run the bracket round by round: draw, play, publish results, send the winners through." },
+];
+
+const COPY: Record<TournamentMode, { title: string; description: string; create: string; newHref: string; emptyTitle: string; emptyText: string; errorTitle: string }> = {
+  BR: {
+    title: "Tournaments",
+    description: "Qualifiers, semi-finals and a grand final — set up once, then follow one button at a time.",
+    create: "Create tournament",
+    newHref: "/manager/tournaments/new",
+    emptyTitle: "Run your first tournament",
+    emptyText: "Pick a size (16, 64, 128 teams…), choose the dates and publish. Teams register first-come-first-served and AirBattleground handles groups, schedule and who goes through.",
+    errorTitle: "We couldn't load your tournaments",
+  },
+  TDM: {
+    title: "TDM battles",
+    description: "2 teams per match, winner goes through. 4 teams = two semi-finals and a final.",
+    create: "Create TDM battle",
+    newHref: "/manager/tdm/new",
+    emptyTitle: "Run your first TDM battle",
+    emptyText: "Pick 4, 8, 16, 32 or 64 teams, the TDM maps and a start time. Teams register, you run each round, and the champion earns BG coins.",
+    errorTitle: "We couldn't load your TDM battles",
+  },
+};
+
 export default function TournamentsPage() {
-  usePageTour("manager.tournaments", TOUR);
+  return <TournamentsList mode="BR" />;
+}
+
+/** The manager's tournaments of one mode (BR tournaments or TDM battles). */
+export function TournamentsList({ mode }: { mode: TournamentMode }) {
+  usePageTour(mode === "TDM" ? "manager.tdm" : "manager.tournaments", mode === "TDM" ? TDM_TOUR : TOUR);
+  const copy = COPY[mode];
   const q = useTournaments();
   const [filter, setFilter] = useState<Filter | null>(null);
+  const data = useMemo(() => q.data?.filter((t) => (t.mode ?? "BR") === mode), [q.data, mode]);
 
-  const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.key, q.data?.filter((t) => f.match(t.status)).length ?? 0])) as Record<Filter, number>, [q.data]);
+  const counts = useMemo(() => Object.fromEntries(FILTERS.map((f) => [f.key, data?.filter((t) => f.match(t.status)).length ?? 0])) as Record<Filter, number>, [data]);
   // default to the first non-empty filter so a manager with only drafts doesn't land on an empty list
   const active = filter ?? (counts.active ? "active" : counts.draft ? "draft" : "all");
   const items = useMemo(
     () =>
-      [...(q.data ?? [])]
+      [...(data ?? [])]
         .filter((t) => FILTERS.find((f) => f.key === active)!.match(t.status))
         .sort((a, b) => ORDER[a.status] - ORDER[b.status] || (a.startsAt ?? a.createdAt).localeCompare(b.startsAt ?? b.createdAt)),
-    [q.data, active],
+    [data, active],
   );
 
   return (
     <>
       <PageHeader
-        title="Tournaments"
-        description="Qualifiers, semi-finals and a grand final — set up once, then follow one button at a time."
+        title={copy.title}
+        description={copy.description}
         actions={
           <Button asChild size="lg" data-tour="t-create" className="shadow-glow">
-            <Link to="/manager/tournaments/new">
-              <Plus /> Create tournament
+            <Link to={copy.newHref}>
+              <Plus /> {copy.create}
             </Link>
           </Button>
         }
       />
 
       {q.isError ? (
-        <QueryError error={q.error} onRetry={() => void q.refetch()} title="We couldn't load your tournaments" />
-      ) : !q.data ? (
+        <QueryError error={q.error} onRetry={() => void q.refetch()} title={copy.errorTitle} />
+      ) : !data ? (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 3 }, (_, i) => (
             <Skeleton key={i} className="h-64 rounded-2xl" />
           ))}
         </div>
-      ) : q.data.length === 0 ? (
+      ) : data.length === 0 ? (
         <EmptyState
-          icon={<Trophy />}
-          title="Run your first tournament"
-          description="Pick a size (16, 64, 128 teams…), choose the dates and publish. Teams register first-come-first-served and AirBattleground handles groups, schedule and who goes through."
+          icon={mode === "TDM" ? <Crosshair /> : <Trophy />}
+          title={copy.emptyTitle}
+          description={copy.emptyText}
           action={
             <Button asChild size="lg">
-              <Link to="/manager/tournaments/new">
-                <Plus /> Create tournament
+              <Link to={copy.newHref}>
+                <Plus /> {copy.create}
               </Link>
             </Button>
           }
@@ -103,7 +138,7 @@ export default function TournamentsPage() {
             <EmptyState
               icon={<Layers />}
               title={active === "draft" ? "No drafts" : active === "done" ? "Nothing finished yet" : "Nothing running right now"}
-              description={active === "draft" ? "Drafts you save in the wizard show up here." : "Publish a tournament to open registration."}
+              description={active === "draft" ? "Drafts you save in the wizard show up here." : `Publish a ${mode === "TDM" ? "TDM battle" : "tournament"} to open registration.`}
             />
           ) : (
             <StaggerList key={active} className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
