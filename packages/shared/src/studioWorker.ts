@@ -37,6 +37,7 @@
  *   The page renders the program from ShowControlState and records the canvas at RENDER_VIDEO_BPS / STUDIO_FPS.
  */
 import { z } from "zod";
+import { boxPollInfoSchema, type BoxInfo, type BoxOutput } from "./studioBox";
 
 /** a worker counts as online when it polled within this window */
 export const WORKER_ONLINE_MS = 10_000;
@@ -66,6 +67,8 @@ export interface StudioWorkerRow {
   showId: string | null;
   lastSeenAt: string | null;
   error: string | null;
+  /** phase 8c: set when this worker is a Studio Box */
+  box?: BoxInfo | null;
 }
 
 export const startWorkerSchema = z.object({ workerId: z.string().min(1) });
@@ -99,6 +102,8 @@ export const workerPollSchema = z.object({
   /** what ffmpeg is sending (kbps) */
   bitrateKbps: z.number().min(0).max(100_000).nullable(),
   error: z.string().max(300).nullable(),
+  /** phase 8c: sent by a Studio Box (studioBox.ts) */
+  box: boxPollInfoSchema.optional(),
 });
 export type WorkerPollInput = z.infer<typeof workerPollSchema>;
 
@@ -118,6 +123,10 @@ export interface WorkerJob {
    * machine (HLS ?rtoken=…), instead of through the API — see the worker's LOCAL_HLS_BASE.
    */
   mediaReadToken?: string;
+  /** phase 8c (box only): destinations the box pushes the finished show to (stream keys + site-YouTube ingest) */
+  outputs?: BoxOutput[];
+  /** phase 8c (box only): also publish publishUrl to AWS for the Live page (false = the Live page embeds YouTube) */
+  sendToAws?: boolean;
 }
 
 export interface WorkerPollResponse {

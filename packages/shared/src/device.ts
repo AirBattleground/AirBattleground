@@ -204,6 +204,8 @@ export interface LiveBroadcastCard {
   map: GameMap;
   /** phase 8: a Studio show (produced in the browser; layout already in the video, overlayUrl is "") */
   studio?: boolean;
+  /** phase 8c: the show is on the site YouTube channel — Live/Watch embed this video instead of playing hlsUrl */
+  youtubeVideoId?: string;
   /** phase 8: a Studio show that's NOT on the public Live page — only its owner gets it (private test stream) */
   unlisted?: boolean;
   startedAt: string;
