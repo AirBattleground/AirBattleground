@@ -24,7 +24,7 @@ import { useBox, useBoxDevices } from "@/features/studio/box";
 const TOUR: TourStep[] = [
   { title: "Studio", description: "Produce a live show like a TV broadcast: mix your phones, webcam, scorecard, MVP and intro videos, and switch between scenes." },
   { element: '[data-tour="studio-new"]', title: "Create a show", description: "Give it a name and (optionally) the match — then open the studio console.", side: "bottom" },
-  { element: '[data-tour="studio-workers"]', title: "Studio boxes", description: "A PC at the venue that runs your phones and your show and sends it to YouTube. Add one, put its key on the PC, then use “Open Studio on …” to add phones and go live from there.", side: "bottom" },
+  { element: '[data-tour="studio-workers"]', title: "Connected studios", description: "The PCs that run your show. Press “Connect a studio” and scan the QR in 7XEN Studio — it can then pick your matches and go live to your outputs. A Studio box (venue PC with phones) shows here too.", side: "bottom" },
   { element: '[data-tour="studio-shows"]', title: "Your shows", description: "Open a show to set up scenes and go live. You can reuse a show for many streams.", side: "top" },
 ];
 

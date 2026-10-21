@@ -67,10 +67,11 @@ const liveInclude = {
   screenshots: { select: recordingShotSelect },
 } satisfies Prisma.MatchInclude;
 
-/** The manager's scrim + tournament matches from today to today+days (IST), soonest first. */
-export async function liveToday(managerId: string, days: number, now = new Date()): Promise<LiveMatchCard[]> {
-  const first = todayInAppTz(now);
-  const last = addDays(first, days);
+/** The manager's scrim + tournament matches from today-back to today+days (IST), soonest first. */
+export async function liveToday(managerId: string, days: number, now = new Date(), back = 0): Promise<LiveMatchCard[]> {
+  const first = addDays(todayInAppTz(now), -back);
+  const last = addDays(todayInAppTz(now), days);
+  days += back;
 
   // make sure every scrim session in the window has its Match rows
   const scrims = await prisma.scrim.findMany({

@@ -1,0 +1,2 @@
+ALTER TABLE "StudioShow" ADD COLUMN "studioLink" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "StudioWorker" ADD COLUMN "linkSeenAt" TIMESTAMP(3);

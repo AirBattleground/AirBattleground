@@ -11,7 +11,7 @@ import { prisma } from "../db.js";
 import { signMobileToken } from "../lib/auth.js";
 import { notFound } from "../lib/errors.js";
 import { workerPublishToken, workerReadToken } from "./media.js";
-import { boxJobOutputs, endShow, workerOnline, workerRunning } from "./studio.js";
+import { boxJobOutputs, endShow, studioWorkerOnline, workerRunning } from "./studio.js";
 import { publicUrl } from "./youtube.js";
 
 const hashKey = (key: string) => createHash("sha256").update(key).digest("hex");
@@ -20,7 +20,7 @@ function toRow(w: DbWorker): StudioWorkerRow {
   return {
     id: w.id,
     name: w.name,
-    online: workerOnline(w.lastSeenAt),
+    online: studioWorkerOnline(w),
     state: w.state as WorkerState,
     encoder: w.encoder,
     version: w.version,
@@ -63,7 +63,7 @@ export async function workerByKey(key: string | undefined): Promise<DbWorker | n
 const tokenCache = new Map<string, { workerId: string; token: string; exp: number }>();
 const sessionCache = new Map<string, { token: string; exp: number }>();
 
-function publishTokenFor(showId: string, workerId: string): string {
+export function publishTokenFor(showId: string, workerId: string): string {
   const c = tokenCache.get(showId);
   if (c && c.workerId === workerId && c.exp - Date.now() > 60 * 60_000) return c.token;
   const { token, expiresAt } = workerPublishToken(showId, workerId);

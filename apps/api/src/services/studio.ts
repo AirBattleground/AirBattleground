@@ -17,6 +17,7 @@ import type { Prisma, StudioShow as DbShow } from "@prisma/client";
 import {
   WORKER_GONE_MS,
   WORKER_ONLINE_MS,
+  STUDIO_LINK_ONLINE_MS,
   type BoxOutput,
   type CreateShowInput,
   type IngestQuery,
@@ -375,12 +376,12 @@ async function prepareBoxOutputs(r: Runner) {
 }
 
 /** Box mode: what the box's job carries (null = not a box show / not running). */
-export async function boxJobOutputs(showId: string, workerId: string): Promise<{ outputs: BoxOutput[]; youtube: boolean } | null> {
+export async function boxJobOutputs(showId: string, workerId: string): Promise<{ outputs: BoxOutput[]; youtube: boolean; youtubeWatchUrl: string | null } | null> {
   const r = runners.get(showId);
   if (!r || !r.box || r.workerId !== workerId || r.stopping) return null;
   await r.boxReady;
   const outputs = [...r.relays.values()].map((x) => ({ id: x.id, name: x.name, url: x.target }));
-  return { outputs, youtube: !!r.yt?.broadcast };
+  return { outputs, youtube: !!r.yt?.broadcast, youtubeWatchUrl: r.yt?.broadcast?.watchUrl ?? null };
 }
 
 /** Is this show running on a Studio Box (no server relays)? */
@@ -439,6 +440,9 @@ export async function endShow(showId: string): Promise<void> {
 const RUNS_ON_WORKER = "This show is running on your studio worker. End it there first.";
 
 export const workerOnline = (lastSeenAt: Date | null, now = Date.now()) => !!lastSeenAt && now - lastSeenAt.getTime() < WORKER_ONLINE_MS;
+/** A worker/box polling, or a connected 7XEN Studio app (studio-link, heartbeats every ~10 s) calling recently. */
+export const studioWorkerOnline = (w: { lastSeenAt: Date | null; linkSeenAt: Date | null }, now = Date.now()) =>
+  workerOnline(w.lastSeenAt, now) || (!!w.linkSeenAt && now - w.linkSeenAt.getTime() < STUDIO_LINK_ONLINE_MS);
 
 /** Is this show LIVE with a worker-mode runner for this worker (= the worker's job)? */
 export const workerRunning = (showId: string, workerId: string) => {
@@ -446,7 +450,8 @@ export const workerRunning = (showId: string, workerId: string) => {
   return !!r && r.mode === "worker" && r.workerId === workerId && !r.stopping;
 };
 
-export async function startWorkerShow(showId: string, managerId: string, workerId: string): Promise<StudioStatus> {
+/** `opts.box` forces box mode (a connected 7XEN Studio app pushes to the outputs itself, without a box poll). */
+export async function startWorkerShow(showId: string, managerId: string, workerId: string, opts: { box?: boolean } = {}): Promise<StudioStatus> {
   const s = await loadOwn(showId, managerId);
   const w = await prisma.studioWorker.findUnique({ where: { id: workerId } });
   if (!w || w.managerId !== managerId) throw notFound("Studio worker not found");
@@ -454,7 +459,7 @@ export async function startWorkerShow(showId: string, managerId: string, workerI
   if (r?.mode === "worker" && r.workerId === workerId) return showStatus(showId, managerId); // already running there
   if (r?.mode === "browser") throw conflict("This show is live from a browser right now. End it there first.");
   if (r?.mode === "worker" || (s.state === "LIVE" && s.runOn === "worker" && s.workerId !== workerId)) throw conflict("This show is already running on another studio worker.");
-  if (!workerOnline(w.lastSeenAt)) throw conflict("Your studio worker is offline. Start it and try again.");
+  if (!studioWorkerOnline(w)) throw conflict("Your studio worker is offline. Start it and try again.");
   const busy = await prisma.studioShow.findFirst({ where: { id: { not: showId }, state: "LIVE", runOn: "worker", workerId }, select: { id: true } });
   if (busy) throw conflict("This studio worker is already running another show. End that show first.");
   if (s.recordLocal && !w.boxLanUrl) throw conflict("Recording on the box needs a Studio box. Pick a box, or switch to Stream.");
@@ -462,7 +467,7 @@ export async function startWorkerShow(showId: string, managerId: string, workerI
     where: { id: showId },
     data: { runOn: "worker", workerId, state: "LIVE", liveSince: new Date(), controlVersion: { increment: 1 } },
   });
-  const nr = startWorkerRunner(showId, managerId, workerId, !!w.boxLanUrl);
+  const nr = startWorkerRunner(showId, managerId, workerId, !!opts.box || !!w.boxLanUrl);
   await nr.boxReady;
   wakeControl(showId);
   return showStatus(showId, managerId);
@@ -472,7 +477,7 @@ export async function startWorkerShow(showId: string, managerId: string, workerI
 export async function resumeWorkerShows(): Promise<void> {
   const shows = await prisma.studioShow.findMany({ where: { state: "LIVE", runOn: "worker", workerId: { not: null } } });
   const boxes = new Set((await prisma.studioWorker.findMany({ where: { boxLanUrl: { not: null } }, select: { id: true } })).map((w) => w.id));
-  for (const s of shows) if (!runners.has(s.id)) startWorkerRunner(s.id, s.managerId, s.workerId!, boxes.has(s.workerId!));
+  for (const s of shows) if (!runners.has(s.id)) startWorkerRunner(s.id, s.managerId, s.workerId!, s.studioLink || boxes.has(s.workerId!));
   if (shows.length) logger.info({ count: shows.length }, "studio worker shows resumed");
 }
 
@@ -483,7 +488,7 @@ async function workerStatus(workerId: string | null): Promise<StudioWorkerStatus
   return {
     id: w.id,
     name: w.name,
-    online: workerOnline(w.lastSeenAt),
+    online: studioWorkerOnline(w),
     state: w.state as WorkerState,
     fps: w.fps,
     encoder: w.encoder,

@@ -19,6 +19,7 @@ import { internalStationRouter, liveRouter } from "./routes/station.js";
 import { deviceRouter, internalMediaRouter } from "./routes/devices.js";
 import { siteRouter } from "./routes/site.js";
 import { studioWorkerRouter } from "./routes/studioWorker.js";
+import { studioLinkRouter } from "./routes/studioLink.js";
 
 /** Friendly message for a unique-constraint violation, based on the columns involved. */
 /** Friendly message + the form field that clashed, so UIs can show the error in the right place. */
@@ -120,6 +121,8 @@ export function createApp() {
   app.use(`${API_PREFIX}/internal/media`, internalMediaRouter());
   // phase 8b: Studio workers (X-Worker-Key)
   app.use(`${API_PREFIX}/studio-worker`, studioWorkerRouter());
+  // studio link: a connected 7XEN Studio app (X-Studio-Key)
+  app.use(`${API_PREFIX}/studio-link`, studioLinkRouter());
 
   app.use((_req, res) => {
     const body: ApiErrorBody = { error: { code: "NOT_FOUND", message: "Not found" } };

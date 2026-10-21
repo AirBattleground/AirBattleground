@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { formatDistanceToNow, parseISO } from "date-fns";
-import { Check, Copy, ExternalLink, Loader2, Plus, Radio, Server, Smartphone, Trash2 } from "lucide-react";
+import { Check, Copy, ExternalLink, Link2, Loader2, Plus, Radio, Server, Smartphone, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ApiError, BOX_DEFAULT_PORT, createWorkerSchema, type CreateWorkerInput, type StudioShowRow, type StudioWorkerRow } from "@7xen/shared";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -15,15 +15,18 @@ import { errorMessage } from "@/features/manager/api";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { useCreateWorker, useDeleteWorker, useWorkers } from "../api";
 import { isThisBox } from "../box";
+import { ConnectStudioDialog } from "./ConnectStudioDialog";
 
 /**
- * Studio page: the manager's Studio boxes (phase 8c — a venue PC that runs the phones and the show, see studioBox.ts).
- * A box is a Studio worker that reports `box`; plain workers (phase 8b) still show, labelled "Studio worker".
+ * Studio page: the manager's connected studios — a 7XEN Studio app linked by QR (studioLink.ts), Studio boxes (phase 8c
+ * — a venue PC that runs the phones and the show, see studioBox.ts) and plain Studio workers (phase 8b). All of them are
+ * Studio worker keys.
  */
 export function WorkersSection({ shows }: { shows: StudioShowRow[] | undefined }) {
   const workers = useWorkers();
   const del = useDeleteWorker();
   const [adding, setAdding] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [removing, setRemoving] = useState<StudioWorkerRow | null>(null);
 
   return (
@@ -31,17 +34,22 @@ export function WorkersSection({ shows }: { shows: StudioShowRow[] | undefined }
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-            <Server className="size-5 text-primary" /> Studio boxes
+            <Server className="size-5 text-primary" /> Connected studios
           </h2>
-          <p className="text-sm text-muted-foreground">A PC at the venue: your phones stream to it over Wi-Fi, and it runs the show and sends it to YouTube.</p>
+          <p className="text-sm text-muted-foreground">The PCs that run your show: 7XEN Studio linked to your account, or a Studio box at the venue.</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
-          <Plus /> Add Studio box
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={() => setAdding(true)}>
+            <Plus /> Add Studio box
+          </Button>
+          <Button size="sm" data-tour="studio-connect" onClick={() => setConnecting(true)}>
+            <Link2 /> Connect a studio
+          </Button>
+        </div>
       </div>
       {workers.isError ? (
         <p className="text-sm text-muted-foreground">
-          We couldn't load your Studio boxes.{" "}
+          We couldn't load your connected studios.{" "}
           <button type="button" className="font-semibold text-primary hover:underline" onClick={() => void workers.refetch()}>
             Try again
           </button>
@@ -49,7 +57,7 @@ export function WorkersSection({ shows }: { shows: StudioShowRow[] | undefined }
       ) : !workers.data ? (
         <Skeleton className="h-14 rounded-lg" />
       ) : workers.data.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No Studio boxes yet. Add one, install it on a PC at the venue, then add your phones and go live from its Studio.</p>
+        <p className="text-sm text-muted-foreground">No studios connected yet. Press “Connect a studio” and scan the QR in 7XEN Studio on your venue PC.</p>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {workers.data.map((w) => (
@@ -59,12 +67,13 @@ export function WorkersSection({ shows }: { shows: StudioShowRow[] | undefined }
       )}
 
       <AddWorkerDialog open={adding} onOpenChange={setAdding} />
+      <ConnectStudioDialog open={connecting} onOpenChange={setConnecting} />
       <ConfirmDialog
         open={!!removing}
         onOpenChange={(o) => !o && setRemoving(null)}
-        title={`Remove “${removing?.name ?? "this box"}”?`}
-        description={removing?.showId ? "It's running a show right now — the show stops. Its key stops working." : "Its key stops working. You can add it again any time with a new key."}
-        confirmLabel={removing?.box ? "Remove box" : "Remove worker"}
+        title={`Remove “${removing?.name ?? "this studio"}”?`}
+        description={removing?.showId ? "It's running a show right now — the show stops. Its key stops working." : "Its key stops working. You can connect it again any time with a new key."}
+        confirmLabel={removing?.box ? "Remove box" : "Remove studio"}
         destructive
         onConfirm={() => {
           if (removing) del.mutate(removing.id);
@@ -79,6 +88,9 @@ function WorkerItem({ worker: w, show, onRemove }: { worker: StudioWorkerRow; sh
   const gpu = !!w.encoder && w.encoder !== "libx264";
   const box = w.box ?? null;
   const here = isThisBox(w);
+  // a 7XEN Studio app never polls as a worker, so it reports no encoder
+  const kind = box ? "Studio box" : w.encoder ? "Studio worker" : "7XEN Studio";
+  const running = !!w.showId && (!show || show.state === "LIVE");
   return (
     <li className="flex flex-col gap-2 rounded-lg border bg-background/50 px-3 py-2.5">
       <div className="flex items-center gap-3">
@@ -94,7 +106,7 @@ function WorkerItem({ worker: w, show, onRemove }: { worker: StudioWorkerRow; sh
             {here && <span className="shrink-0 rounded bg-primary/15 px-1 text-[10px] font-bold text-primary">THIS BOX</span>}
           </span>
           <span className="block truncate text-xs text-muted-foreground">
-            {box ? "Studio box" : "Studio worker"} ·{" "}
+            {kind} ·{" "}
             {w.online ? "Online" : w.lastSeenAt ? `Offline · last seen ${formatDistanceToNow(parseISO(w.lastSeenAt), { addSuffix: true })}` : "Offline · never connected"}
           </span>
           {box && (
@@ -108,9 +120,9 @@ function WorkerItem({ worker: w, show, onRemove }: { worker: StudioWorkerRow; sh
               </span>
             </span>
           )}
-          {w.showId && (
+          {running && (
             <span className="flex items-center gap-1 truncate text-xs font-semibold text-destructive">
-              <Radio className="size-3" /> Running {show ? `“${show.title}”` : "a show"}
+              <Radio className="size-3" /> Broadcasting {show ? `“${show.match ? `${show.match.title} · ${show.match.subtitle}` : show.title}”` : "a show"}
             </span>
           )}
           {w.error && (

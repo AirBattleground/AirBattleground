@@ -837,6 +837,8 @@ model StudioShow {
   siteYoutube    Boolean   @default(true)
   /// phase 8c: "Record on this box" — the box only saves the show to its disk, nothing is sent anywhere
   recordLocal    Boolean   @default(false)
+  /// started by a connected 7XEN Studio app (studio-link): the app pushes to the outputs itself (box mode, no relays)
+  studioLink     Boolean   @default(false)
   /// the Studio page's saved setup (scenes, overlays…); shape owned by the web app
   config         Json      @default("{}")
   /// phase 8b: "browser" (the Studio tab mixes it) | "worker" (a StudioWorker renders it)
@@ -875,6 +877,8 @@ model StudioWorker {
   boxLanUrl    String?
   boxDevices   Int?
   boxStreaming Int?
+  /// studio-link: last call from a connected 7XEN Studio app with this key (online while recent)
+  linkSeenAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
