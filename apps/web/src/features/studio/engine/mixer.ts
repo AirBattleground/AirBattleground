@@ -587,7 +587,10 @@ export class StudioMixer {
    */
   startCapture(opts: { bitsPerSecond: number; timesliceMs: number; onChunk: (b: Blob) => void | Promise<void> }) {
     if (this.captureRec) return;
-    const { mime } = pickMime();
+    // H.264 when the browser can record it: about a third less CPU than VP8 on the worker's headless Chrome (and cheaper
+    // for its ffmpeg to decode). The worker re-encodes either way, so the codec here doesn't change the broadcast.
+    const h264 = "video/webm;codecs=h264,opus";
+    const mime = typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(h264) ? h264 : pickMime().mime;
     const stream = new MediaStream([...this.canvas.captureStream(STUDIO_FPS).getVideoTracks(), ...this.dest.stream.getAudioTracks()]);
     const rec = new MediaRecorder(stream, { mimeType: mime, videoBitsPerSecond: opts.bitsPerSecond, audioBitsPerSecond: 192_000 });
     this.captureChain = Promise.resolve();

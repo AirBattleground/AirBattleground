@@ -44,7 +44,7 @@ export const WORKER_ONLINE_MS = 10_000;
 /** a worker-run show ends by itself when its worker has been silent this long */
 export const WORKER_GONE_MS = 60_000;
 /** what the render page records (local, so it can be generous — the worker's ffmpeg sets the broadcast bitrate) */
-export const RENDER_VIDEO_BPS = 25_000_000;
+export const RENDER_VIDEO_BPS = 12_000_000;
 /** broadcast video bitrate the worker encodes to (kbps) */
 export const WORKER_VIDEO_KBPS = 6000;
 
