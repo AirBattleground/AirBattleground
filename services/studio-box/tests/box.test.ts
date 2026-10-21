@@ -330,3 +330,32 @@ describe("API proxy (real upstream)", () => {
     }
   });
 });
+
+import { writeFileSync, utimesSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join as pjoin } from "node:path";
+import { parseRecordingName, Recordings } from "../src/recordings.js";
+describe("recordings", () => {
+  it("parses the worker's file names", () => {
+    expect(parseRecordingName("2026-10-21_19-05-12_evening-scrim_cmvh5ao4z0001nt071n9dcwd1.mp4")).toEqual({ title: "Evening scrim", showId: "cmvh5ao4z0001nt071n9dcwd1" });
+    expect(parseRecordingName("my clip.mp4").showId).toBeNull();
+  });
+  it("lists, marks the one being written, refuses to delete it, deletes old ones", async () => {
+    const dir = mkdtempSync(pjoin(tmpdir(), "rec-"));
+    const old = "2026-10-20_10-00-00_old_cmvh5ao4z0001nt071n9dcwd1.mp4";
+    const live = "2026-10-21_10-00-00_live_cmvh5ao4z0001nt071n9dcwd1.mp4";
+    writeFileSync(pjoin(dir, old), "x".repeat(10));
+    writeFileSync(pjoin(dir, live), "y");
+    writeFileSync(pjoin(dir, "notes.txt"), "ignored");
+    const past = new Date(Date.now() - 60_000);
+    utimesSync(pjoin(dir, old), past, past);
+    const r = new Recordings(dir);
+    const list = await r.list();
+    expect(list.items.map((x) => [x.file, x.recording])).toEqual([[live, true], [old, false]]);
+    expect(list.disk.totalBytes).toBeGreaterThan(0);
+    await expect(r.remove(live)).rejects.toMatchObject({ status: 409 });
+    await r.remove(old);
+    expect((await r.list()).items).toHaveLength(1);
+    await expect(r.remove("../etc/passwd")).rejects.toMatchObject({ status: 404 });
+  });
+});

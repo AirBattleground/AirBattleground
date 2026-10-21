@@ -129,4 +129,19 @@ describe("studio box", () => {
     expect(job.sendToAws).toBeUndefined();
     await mgr.post(`/api/manager/studio/shows/${showId}/stop`);
   });
+
+  it("record on the box: no outputs, no AWS copy, record flag, not on the Live page; refused on a plain worker", async () => {
+    await mgr.patch(`/api/manager/studio/shows/${showId}`).send({ recordLocal: true, publicListing: true });
+    await poll(key, IDLE);
+    expect((await mgr.post(`/api/manager/studio/shows/${showId}/start-worker`).send({ workerId })).status).toBe(409);
+    await poll(key, BOX);
+    expect((await mgr.post(`/api/manager/studio/shows/${showId}/start-worker`).send({ workerId })).status).toBe(200);
+    const job = (await poll(key, { ...BOX, state: "live", showId })).body.job;
+    expect(job.record).toBe(true);
+    expect(job.outputs).toEqual([]);
+    expect(job.sendToAws).toBe(false);
+    const live = await http().get("/api/live/");
+    expect(live.body.items.some((c: { matchId: string }) => c.matchId === `s_${showId}`)).toBe(false);
+    await mgr.post(`/api/manager/studio/shows/${showId}/stop`);
+  });
 });

@@ -835,6 +835,8 @@ model StudioShow {
   publicListing  Boolean   @default(true)
   /// also go live on the site YouTube channel (when the admin connected one)
   siteYoutube    Boolean   @default(true)
+  /// phase 8c: "Record on this box" — the box only saves the show to its disk, nothing is sent anywhere
+  recordLocal    Boolean   @default(false)
   /// the Studio page's saved setup (scenes, overlays…); shape owned by the web app
   config         Json      @default("{}")
   /// phase 8b: "browser" (the Studio tab mixes it) | "worker" (a StudioWorker renders it)

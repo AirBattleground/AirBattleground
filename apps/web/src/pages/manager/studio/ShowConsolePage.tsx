@@ -66,6 +66,7 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="studio-sources-panel"]', title: "Sources", description: "Phones, your webcam and mic, and prop videos (intro, break, outro) saved in this browser.", side: "right" },
   { element: '[data-tour="studio-capture"]', title: "Capture for the match", description: "With a match selected: put the team list or results screen on air, then tap Team list / Results. The screenshot goes to the match center and is read automatically.", side: "bottom" },
   { element: '[data-tour="studio-runs-on"]', title: "Runs on", description: "Run the show in this browser, or on one of your Studio boxes (a PC that renders and sends the show). On a box the show keeps going even if you close this tab.", side: "bottom" },
+  { element: '[data-tour="studio-mode"]', title: "Stream or record", description: "On a Studio box: Stream sends the show to YouTube and your channels; Record on this box only saves it to this PC — nothing is sent anywhere.", side: "left" },
   { element: '[data-tour="studio-golive"]', title: "Go live", description: "Starts the broadcast. In this browser, keep the tab open while you're live; your intro scene is a good place to start.", side: "bottom" },
 ];
 
@@ -131,6 +132,8 @@ function Console({ show, devices, mixer, box }: { show: StudioShow; devices: Stu
   const [programId, setProgramId] = useState<string | null>(null);
   const [editing, setEditing] = useState<Scene | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  /** "Record on this box" (box only): the show is saved on the box and sent nowhere */
+  const [recordLocal, setRecordLocal] = useState(show.recordLocal);
   const [mixStatus, setMixStatus] = useState<MixerStatus | null>(null);
   const [props, setProps] = useState<PropMeta[]>([]);
 
@@ -364,13 +367,13 @@ function Console({ show, devices, mixer, box }: { show: StudioShow; devices: Stu
           )}
           {live ? (
             <Button variant="destructive" data-tour="studio-golive" onClick={() => setConfirmEnd(true)}>
-              <Square className="fill-current" /> End show
+              <Square className="fill-current" /> {recordLocal && box ? "Stop recording" : "End show"}
             </Button>
           ) : (
             <>
               {workerList.length > 0 && <RunsOnPicker value={selectedWorker ? selectedWorker.id : RUN_BROWSER} workers={workerList} showId={show.id} onChange={setRunOn} />}
               <Button data-tour="studio-golive" className="shadow-glow" onClick={goLive} disabled={startWorker.isPending}>
-                {startWorker.isPending ? <Loader2 className="animate-spin" /> : <Radio />} {matchId ? "Start match broadcast" : "Go live"}
+                {startWorker.isPending ? <Loader2 className="animate-spin" /> : <Radio />} {recordLocal && box ? "Start recording" : matchId ? "Start match broadcast" : "Go live"}
               </Button>
             </>
           )}
@@ -437,7 +440,7 @@ function Console({ show, devices, mixer, box }: { show: StudioShow; devices: Stu
         </div>
 
         <aside className="flex flex-col gap-3">
-          <OutputsPanel show={show} live={live} />
+          <OutputsPanel show={show} live={live} isBox={!!box} recordLocal={recordLocal} onRecordLocal={setRecordLocal} />
           <OverlaysPanel config={config} setConfig={setConfig} />
         </aside>
       </div>
@@ -461,9 +464,9 @@ function Console({ show, devices, mixer, box }: { show: StudioShow; devices: Stu
       <ConfirmDialog
         open={confirmEnd}
         onOpenChange={setConfirmEnd}
-        title="End the show?"
-        description="The broadcast stops for everyone watching (AirBattleground and YouTube). You can go live again any time."
-        confirmLabel="End show"
+        title={recordLocal && box ? "Stop recording?" : "End the show?"}
+        description={recordLocal && box ? "The recording is saved on this PC — find it under Recordings on the Studio page." : "The broadcast stops for everyone watching (AirBattleground and YouTube). You can go live again any time."}
+        confirmLabel={recordLocal && box ? "Stop recording" : "End show"}
         destructive
         onConfirm={() => void endLive()}
       />
@@ -1030,7 +1033,7 @@ function Panel({ title, icon, children }: { title: string; icon: React.ReactNode
 // ---------------------------------------------------------------- overlays
 
 /** Where the show goes: public Live page, the site YouTube channel (if connected), own stream-key channels. */
-function OutputsPanel({ show, live }: { show: StudioShow; live: boolean }) {
+function OutputsPanel({ show, live, isBox, recordLocal, onRecordLocal }: { show: StudioShow; live: boolean; isBox: boolean; recordLocal: boolean; onRecordLocal: (v: boolean) => void }) {
   const outputs = useStudioOutputs();
   const qcOutputs = () => outputs.refetch();
   const update = useUpdateShow(show.id);
@@ -1041,10 +1044,40 @@ function OutputsPanel({ show, live }: { show: StudioShow; live: boolean }) {
   const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
   const del = useDeleteDestination();
   const o = outputs.data;
-  const save = (patch: { publicListing?: boolean; siteYoutube?: boolean; destinationIds?: string[] }) => update.mutate(patch);
+  const save = (patch: { publicListing?: boolean; siteYoutube?: boolean; destinationIds?: string[]; recordLocal?: boolean }) => update.mutate(patch);
   return (
     <Panel title="Where it goes" icon={<Radio />}>
       <div className="space-y-2.5 text-sm">
+        {isBox && (
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            className="w-full"
+            data-tour="studio-mode"
+            value={recordLocal ? "record" : "stream"}
+            disabled={live}
+            onValueChange={(v) => {
+              if (!v) return;
+              const rec = v === "record";
+              onRecordLocal(rec);
+              save({ recordLocal: rec });
+            }}
+          >
+            <ToggleGroupItem value="stream" className="flex-1">
+              <Radio /> Stream
+            </ToggleGroupItem>
+            <ToggleGroupItem value="record" className="flex-1">
+              <Film /> Record on this box
+            </ToggleGroupItem>
+          </ToggleGroup>
+        )}
+        {recordLocal ? (
+          <p className="rounded-lg bg-muted p-2.5 text-xs text-muted-foreground">
+            The show is saved on this PC only — nothing is sent to YouTube, AirBattleground or any other platform. Find it under Recordings on the Studio page.
+          </p>
+        ) : (
+        <>
         <Row label="AirBattleground Live page" checked={pub} disabled={live} onChange={(v) => (setPub(v), save({ publicListing: v }))} />
         {!pub && <p className="-mt-1 text-[11px] text-muted-foreground">Private: only you can watch (a test stream).</p>}
         {o?.siteYoutube ? (
@@ -1122,6 +1155,8 @@ function OutputsPanel({ show, live }: { show: StudioShow; live: boolean }) {
             });
           }}
         />
+        </>
+        )}
         {live && <p className="text-[11px] text-muted-foreground">Change these before going live.</p>}
       </div>
     </Panel>

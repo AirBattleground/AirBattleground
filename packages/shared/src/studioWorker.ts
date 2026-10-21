@@ -127,6 +127,8 @@ export interface WorkerJob {
   outputs?: BoxOutput[];
   /** phase 8c (box only): also publish publishUrl to AWS for the Live page (false = the Live page embeds YouTube) */
   sendToAws?: boolean;
+  /** phase 8c (box only): "Record on this box" — save the finished show to the box's disk; outputs is empty and sendToAws false */
+  record?: boolean;
 }
 
 export interface WorkerPollResponse {

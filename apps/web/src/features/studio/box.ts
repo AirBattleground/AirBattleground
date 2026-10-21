@@ -6,7 +6,7 @@
 import { useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { deviceLiveUrl, type BoxDevice, type BoxDeviceNameInput, type BoxInfo, type StudioWorkerRow } from "@7xen/shared";
+import { deviceLiveUrl, type BoxDevice, type BoxDeviceNameInput, type BoxInfo, type BoxRecordings, type StudioWorkerRow } from "@7xen/shared";
 import { api } from "@/lib/api";
 import { errorMessage } from "@/features/manager/api";
 import type { StudioMixer } from "./engine/mixer";
@@ -14,6 +14,7 @@ import type { StudioMixer } from "./engine/mixer";
 export const boxKeys = {
   info: ["box", "info"] as const,
   devices: ["box", "devices"] as const,
+  recordings: ["box", "recordings"] as const,
 };
 
 async function fetchBoxInfo(): Promise<BoxInfo | null> {
@@ -101,4 +102,24 @@ export function useMixerDeviceUrls(mixer: StudioMixer, isBox: boolean, devices: 
   byId.current = new Map((devices ?? []).map((d) => [d.id, d.hlsUrl]));
   if (isBox) mixer.deviceUrl = (id) => byId.current.get(id) ?? boxDeviceHlsUrl(id);
   else mixer.deviceUrl = deviceLiveUrl;
+}
+
+// ---------------------------------------------------------------- recordings ("Record on this box")
+
+export const boxRecordingUrl = (file: string, download = false) => `/box/recordings/${encodeURIComponent(file)}${download ? "?download=1" : ""}`;
+
+export function useBoxRecordings(enabled = true) {
+  return useQuery({ queryKey: boxKeys.recordings, queryFn: () => api.get<BoxRecordings>("/box/recordings"), enabled, refetchInterval: 5_000 });
+}
+
+export function useDeleteBoxRecording() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (file: string) => api.del(`/box/recordings/${encodeURIComponent(file)}`),
+    onSuccess: () => {
+      toast.success("Recording deleted");
+      void qc.invalidateQueries({ queryKey: boxKeys.recordings });
+    },
+    onError: (e) => toast.error("Couldn't delete the recording", { description: errorMessage(e) }),
+  });
 }

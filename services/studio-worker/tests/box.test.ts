@@ -98,3 +98,28 @@ describe("box info in the poll", () => {
     expect(bodies[1]).not.toHaveProperty("box");
   });
 });
+
+import { recordingPath } from "../src/pipeline.js";
+import { isRecordingPath, teeTarget as teeOf } from "../src/encoder.js";
+describe("record on this box", () => {
+  const base = { showId: "show123", title: "Evening Scrim!", renderUrl: "http://b/r", session: { cookieName: "c", token: "t" }, publishUrl: "rtmp://aws:1935/live/show_show123?wtoken=1.s", videoKbps: 6000, fps: 60 };
+  it("records to a dated mp4 and sends nowhere else", () => {
+    const plan = publishPlan({ ...base, outputs: [], sendToAws: false, record: true }, { recordDir: "/rec" });
+    expect(plan.urls).toHaveLength(1);
+    expect(plan.urls[0]).toMatch(/^\/rec\/\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_evening-scrim_show123\.mp4$/);
+    expect(plan.names).toEqual(["Recording on this box"]);
+  });
+  it("keeps the box preview next to the recording", () => {
+    const plan = publishPlan({ ...base, outputs: [], sendToAws: false, record: true }, { recordDir: "/rec", boxPublishBase: "rtmp://127.0.0.1:1939/live" });
+    expect(plan.urls[1]).toBe("rtmp://127.0.0.1:1939/live/show_show123?wtoken=1.s");
+  });
+  it("writes fragmented mp4 for the file, flv for rtmp", () => {
+    const t = teeOf(["/rec/a.mp4", "rtmp://x/live/k"]);
+    expect(t).toContain("[f=mp4:movflags=+frag_keyframe+empty_moov+default_base_moof:onfail=ignore]/rec/a.mp4");
+    expect(t).toContain("[f=flv:onfail=ignore:flvflags=no_duration_filesize]rtmp://x/live/k");
+    expect(isRecordingPath("rtmp://x/a.mp4")).toBe(false);
+  });
+  it("names a file per (re)start", () => {
+    expect(recordingPath({ ...base, title: "" } as never, "/r", new Date(2026, 9, 21, 9, 5, 7))).toBe("/r/2026-10-21_09-05-07_show_show123.mp4");
+  });
+});

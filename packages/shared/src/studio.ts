@@ -49,6 +49,8 @@ export const updateShowSchema = z.object({
   publicListing: z.boolean().optional(),
   /** also go live on the site YouTube channel (if connected) */
   siteYoutube: z.boolean().optional(),
+  /** phase 8c: "Record on this box" — the Studio box only saves the show to its disk; nothing is sent anywhere */
+  recordLocal: z.boolean().optional(),
   config: studioConfigSchema.optional(),
 });
 export type UpdateShowInput = z.infer<typeof updateShowSchema>;
@@ -82,6 +84,8 @@ export interface StudioShow extends StudioShowRow {
   /** phase 8b: where the show runs — this browser tab, or a Studio worker (see studioWorker.ts) */
   runOn: ShowRunOn;
   workerId: string | null;
+  /** phase 8c: record on the Studio box only (no YouTube, stream keys or Live page) */
+  recordLocal: boolean;
 }
 
 /** Where a show can be sent (for the Studio's "Where it goes" panel). */

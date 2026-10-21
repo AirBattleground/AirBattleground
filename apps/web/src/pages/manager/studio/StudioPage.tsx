@@ -18,6 +18,7 @@ import { QueryError } from "@/features/manager/components/QueryError";
 import { useCreateShow, useDeleteShow, useShows } from "@/features/studio/api";
 import { WorkersSection } from "@/features/studio/components/WorkersSection";
 import { BoxPhonesList } from "@/features/studio/components/BoxPhones";
+import { BoxRecordingsSection } from "@/features/studio/components/BoxRecordings";
 import { useBox, useBoxDevices } from "@/features/studio/box";
 
 const TOUR: TourStep[] = [
@@ -99,6 +100,8 @@ export default function StudioPage() {
           {!boxDevices.data ? <Skeleton className="h-16 rounded-lg" /> : <BoxPhonesList devices={boxDevices.data} />}
         </section>
       )}
+
+      {box.isBox && <BoxRecordingsSection />}
 
       <WorkersSection shows={shows.data} />
 

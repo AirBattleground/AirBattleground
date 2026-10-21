@@ -92,3 +92,26 @@ export type BoxDeviceNameInput = z.infer<typeof boxDeviceNameSchema>;
 /** QR the 7XEN Stream app scans to pair with a box: host is the box's LAN base URL. */
 export const boxPairUrl = (host: string, key: string, name: string) =>
   `7xen://pair?host=${encodeURIComponent(host)}&key=${encodeURIComponent(key)}&name=${encodeURIComponent(name)}`;
+
+/**
+ * Phase 8c — "Record on this box" recordings (box UI API, signed-in manager):
+ *   GET    /box/recordings          → BoxRecordings
+ *   GET    /box/recordings/:file    → the MP4 (Range requests supported — plays and seeks in a <video>; ?download=1 to save)
+ *   DELETE /box/recordings/:file    → 204 (409 while it's still being recorded)
+ */
+export interface BoxRecording {
+  /** file name, e.g. 2026-10-21_19-05-12_evening-scrim_<showId>.mp4 */
+  file: string;
+  /** show title part of the name, for display */
+  title: string;
+  showId: string | null;
+  sizeBytes: number;
+  startedAt: string;
+  updatedAt: string;
+  /** still being written (the show is recording now) */
+  recording: boolean;
+}
+export interface BoxRecordings {
+  items: BoxRecording[];
+  disk: { freeBytes: number; totalBytes: number };
+}

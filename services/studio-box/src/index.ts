@@ -3,6 +3,8 @@
  * the web app with the box's Studio, and proxies everything else to the website. The Studio worker on the same PC
  * renders and sends the show (it reports this box in its poll via GET /box/worker-info).
  */
+import { join } from "node:path";
+import { Recordings } from "./recordings.js";
 import http from "node:http";
 import { ManagerAuth } from "./auth.js";
 import { loadConfig } from "./config.js";
@@ -30,6 +32,7 @@ const server = http.createServer(
     store,
     tokens,
     devices,
+    recordings: new Recordings(join(cfg.dataDir, "recordings")),
     media,
     auth: new ManagerAuth(cfg.apiUrl),
     devNoAuth: cfg.devNoAuth,

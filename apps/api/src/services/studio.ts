@@ -87,6 +87,7 @@ async function toShow(s: DbShow): Promise<StudioShow> {
     watchPath: `/watch/s_${s.id}`,
     runOn: s.runOn as ShowRunOn,
     workerId: s.workerId,
+    recordLocal: s.recordLocal,
   };
 }
 
@@ -124,6 +125,7 @@ export async function updateShow(id: string, managerId: string, input: UpdateSho
       ...(input.matchId !== undefined ? { matchId: input.matchId } : {}),
       ...(input.destinationIds !== undefined ? { destinationIds: input.destinationIds } : {}),
       ...(input.publicListing !== undefined ? { publicListing: input.publicListing } : {}),
+      ...(input.recordLocal !== undefined ? { recordLocal: input.recordLocal } : {}),
       ...(input.siteYoutube !== undefined ? { siteYoutube: input.siteYoutube } : {}),
       ...(input.config !== undefined ? { config: input.config as Prisma.InputJsonValue } : {}),
       ...(bump ? { controlVersion: { increment: 1 } } : {}),
@@ -355,6 +357,8 @@ function startWorkerRunner(showId: string, managerId: string, workerId: string, 
 async function prepareBoxOutputs(r: Runner) {
   const show = await prisma.studioShow.findUnique({ where: { id: r.showId } });
   if (!show || r.stopping) return;
+  // "Record on this box": nothing goes out — no stream keys, no YouTube broadcast
+  if (show.recordLocal) return;
   const targets = await destinationTargets(r.managerId, show.destinationIds);
   for (const t of targets) r.relays.set(t.id, { id: t.id, name: t.name, target: t.target, ok: false, proc: null, retry: null });
   if (show.siteYoutube) try {
@@ -453,6 +457,7 @@ export async function startWorkerShow(showId: string, managerId: string, workerI
   if (!workerOnline(w.lastSeenAt)) throw conflict("Your studio worker is offline. Start it and try again.");
   const busy = await prisma.studioShow.findFirst({ where: { id: { not: showId }, state: "LIVE", runOn: "worker", workerId }, select: { id: true } });
   if (busy) throw conflict("This studio worker is already running another show. End that show first.");
+  if (s.recordLocal && !w.boxLanUrl) throw conflict("Recording on the box needs a Studio box. Pick a box, or switch to Stream.");
   await prisma.studioShow.update({
     where: { id: showId },
     data: { runOn: "worker", workerId, state: "LIVE", liveSince: new Date(), controlVersion: { increment: 1 } },
@@ -614,7 +619,7 @@ export async function shutdownStudio() {
 /** Live Studio shows: the public ones, plus `ownerId`'s private (unlisted) ones when given. */
 export async function liveShows(ownerId?: string | null): Promise<LiveBroadcastCard[]> {
   const shows = await prisma.studioShow.findMany({
-    where: { state: "LIVE", id: { in: [...runners.keys()] }, OR: [{ publicListing: true }, ...(ownerId ? [{ managerId: ownerId }] : [])] },
+    where: { state: "LIVE", recordLocal: false, id: { in: [...runners.keys()] }, OR: [{ publicListing: true }, ...(ownerId ? [{ managerId: ownerId }] : [])] },
     include: { manager: { select: { displayName: true, orgName: true, orgLogoKey: true } } },
     orderBy: { liveSince: "desc" },
     take: 50,
@@ -656,10 +661,11 @@ export async function showIsLive(showId: string): Promise<boolean> {
   if (!runners.has(showId)) return false;
   const c = listedCache.get(showId);
   if (c && Date.now() - c.at < 3000) return c.listed;
-  const s = await prisma.studioShow.findUnique({ where: { id: showId }, select: { publicListing: true } });
+  const s = await prisma.studioShow.findUnique({ where: { id: showId }, select: { publicListing: true, recordLocal: true } });
+  const listed = !!s?.publicListing && !s.recordLocal;
   if (listedCache.size > 500) listedCache.clear();
-  listedCache.set(showId, { at: Date.now(), listed: !!s?.publicListing });
-  return !!s?.publicListing;
+  listedCache.set(showId, { at: Date.now(), listed });
+  return listed;
 }
 
 /** What a manager's show can go out to. */

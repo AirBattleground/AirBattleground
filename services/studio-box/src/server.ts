@@ -9,6 +9,7 @@
  *   /api/*                proxied to the website
  *   everything else       the web app build (SPA)
  */
+import type { Recordings } from "./recordings.js";
 import type { IncomingMessage, RequestListener, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import type { ReadableStream as WebReadableStream } from "node:stream/web";
@@ -43,6 +44,8 @@ export interface AppContext {
   store: Store;
   tokens: Tokens;
   devices: Devices;
+  /** "Record on this box" files */
+  recordings?: Recordings;
   media: Pick<MediaClient, "fetchHlsPath">;
   auth: Pick<ManagerAuth, "require">;
   /** skip the manager check (BOX_DEV_NO_AUTH, never in production) */
@@ -145,9 +148,22 @@ export function createApp(ctx: AppContext): RequestListener {
     }
 
     const seg = sub.split("/");
-    if (seg[0] !== "devices" && seg[0] !== "shows") throw notFound();
+    if (seg[0] !== "devices" && seg[0] !== "shows" && seg[0] !== "recordings") throw notFound();
     if (!ctx.devNoAuth) await ctx.auth.require(header(req, "cookie"));
     const id = seg[1];
+
+    if (seg[0] === "recordings") {
+      const rec = ctx.recordings;
+      if (!rec) throw notFound();
+      if (!id && seg.length === 1 && m === "GET") return sendJson(res, 200, await rec.list());
+      if (id && seg.length === 2 && (m === "GET" || m === "HEAD")) return rec.send(req, res, decodeURIComponent(id), new URLSearchParams(search).has("download"));
+      if (id && seg.length === 2 && m === "DELETE") {
+        await rec.remove(decodeURIComponent(id));
+        res.writeHead(204).end();
+        return;
+      }
+      throw notFound();
+    }
 
     // additive: the Studio worker's local copy of a show (BOX_RTMP_BASE) — a preview that doesn't need AWS / YouTube
     if (seg[0] === "shows") {

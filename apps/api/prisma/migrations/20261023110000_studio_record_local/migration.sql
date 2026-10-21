@@ -1,0 +1,1 @@
+ALTER TABLE "StudioShow" ADD COLUMN "recordLocal" BOOLEAN NOT NULL DEFAULT false;

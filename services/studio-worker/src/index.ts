@@ -31,7 +31,7 @@ async function main() {
   log.info(`Using encoder ${det.encoder}${det.encoder === "libx264" ? " (CPU — a GPU encoder would be lighter)" : " (GPU)"}`);
 
   const runner = new JobRunner(
-    realPipeline({ ffmpegPath: cfg.ffmpegPath, chromePath: cfg.chromePath, chromeArgs: cfg.chromeArgs, encoder: det.encoder, publishBase: cfg.publishBase, localHlsBase: cfg.localHlsBase, boxPublishBase: cfg.boxPublishBase }),
+    realPipeline({ ffmpegPath: cfg.ffmpegPath, chromePath: cfg.chromePath, chromeArgs: cfg.chromeArgs, encoder: det.encoder, publishBase: cfg.publishBase, localHlsBase: cfg.localHlsBase, boxPublishBase: cfg.boxPublishBase, recordDir: cfg.recordDir }),
   );
   if (cfg.boxUrl) log.info(`Studio Box mode: reporting the box at ${cfg.boxUrl}`);
   const step = makePollStep({

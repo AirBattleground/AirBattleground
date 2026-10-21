@@ -79,8 +79,16 @@ export function escapeTeeUrl(url: string): string {
  * doesn't take the others down; ffmpeg only stops when all of them failed.
  */
 export function teeTarget(urls: string[]): string {
-  return urls.map((u) => `[f=flv:onfail=ignore:flvflags=no_duration_filesize]${escapeTeeUrl(u)}`).join("|");
+  return urls.map((u) => `${isRecordingPath(u) ? RECORD_SLAVE : "[f=flv:onfail=ignore:flvflags=no_duration_filesize]"}${escapeTeeUrl(u)}`).join("|");
 }
+
+/** A local recording target (a .mp4 file path) rather than an RTMP URL. */
+export const isRecordingPath = (u: string) => !/^[a-z]+:\/\//i.test(u) && u.endsWith(".mp4");
+/**
+ * Fragmented MP4: playable while it's being written and safe if the PC loses power (everything up to the last
+ * fragment is kept) — plain MP4 would be unreadable without its final index.
+ */
+const RECORD_SLAVE = "[f=mp4:movflags=+frag_keyframe+empty_moov+default_base_moof:onfail=ignore]";
 
 /**
  * Where the encoded show goes: one URL → plain FLV (unchanged phase-8b behaviour); several (or `tee: true`) → the

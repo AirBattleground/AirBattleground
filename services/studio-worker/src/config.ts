@@ -1,5 +1,6 @@
 /** Worker settings from the environment (scripts load an optional .env next to package.json). */
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 export interface Config {
   apiUrl: string;
@@ -28,6 +29,8 @@ export interface Config {
   boxUrl: string | null;
   /** phase 8c: RTMP base of the box's own media server (e.g. rtmp://127.0.0.1:1935/live) — a copy of the show goes there for the Studio preview */
   boxPublishBase: string | null;
+  /** where "Record on this box" saves shows (the box lists this folder as Recordings) */
+  recordDir: string;
   version: string;
 }
 
@@ -57,6 +60,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     localHlsBase: blank(env.LOCAL_HLS_BASE)?.replace(/\/+$/, "") ?? null,
     boxUrl: blank(env.BOX_URL)?.replace(/\/+$/, "") ?? null,
     boxPublishBase: blank(env.BOX_RTMP_BASE)?.replace(/\/+$/, "") ?? null,
+    recordDir: blank(env.RECORD_DIR) ?? fileURLToPath(new URL("../../studio-box/data/recordings", import.meta.url)),
     version: packageVersion(),
   };
 }

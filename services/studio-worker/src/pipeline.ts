@@ -1,5 +1,7 @@
 /** The real pipeline: ffmpeg first (so it's ready for the WebM header), then Chrome on the render page. */
 import os from "node:os";
+import path from "node:path";
+import { mkdirSync } from "node:fs";
 import type { WorkerJob } from "@7xen/shared";
 import { RenderBrowser } from "./browser.js";
 import type { Encoder } from "./encoder.js";
@@ -20,6 +22,8 @@ export interface PipelineConfig {
   localHlsBase?: string | null;
   /** phase 8c: RTMP base of the Studio Box's own media server (see Config.boxPublishBase) */
   boxPublishBase?: string | null;
+  /** phase 8c: folder for "Record on this box" (see Config.recordDir) */
+  recordDir?: string;
 }
 
 /** rtmp://host:1935/live/show_x?wtoken=… + rtmp://127.0.0.1:1937/live → rtmp://127.0.0.1:1937/live/show_x?wtoken=… */
@@ -45,7 +49,15 @@ export interface PublishPlan {
  *     (BOX_RTMP_BASE) for the Studio preview. With no outputs and no AWS copy and no BOX_RTMP_BASE, PUBLISH_RTMP_BASE
  *     is used for that local copy; without either, the show is encoded but sent nowhere.
  */
-export function publishPlan(job: WorkerJob, o: { publishBase?: string | null; boxPublishBase?: string | null }): PublishPlan {
+/** <recordDir>/2026-10-21_19-05-12_evening-scrim_<showId>.mp4 — a new file each time the pipeline (re)starts. */
+export function recordingPath(job: WorkerJob, dir: string, now = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  const stamp = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}_${p(now.getHours())}-${p(now.getMinutes())}-${p(now.getSeconds())}`;
+  const slug = job.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "show";
+  return path.join(dir, `${stamp}_${slug}_${job.showId}.mp4`);
+}
+
+export function publishPlan(job: WorkerJob, o: { publishBase?: string | null; boxPublishBase?: string | null; recordDir?: string }): PublishPlan {
   if (job.outputs === undefined) return { urls: [publishTarget(job.publishUrl, o.publishBase)], names: ["AirBattleground"], tee: false };
   const urls: string[] = [];
   const names: string[] = [];
@@ -54,6 +66,8 @@ export function publishPlan(job: WorkerJob, o: { publishBase?: string | null; bo
     urls.push(url);
     names.push(name);
   };
+  // "Record on this box": the show is saved locally and sent nowhere (outputs is empty, sendToAws false)
+  if (job.record && o.recordDir) add(recordingPath(job, o.recordDir), "Recording on this box");
   for (const out of job.outputs) add(out.url, out.name);
   if (job.sendToAws) add(publishTarget(job.publishUrl, o.publishBase), "AirBattleground");
   const local = o.boxPublishBase ?? (urls.length === 0 ? o.publishBase : null);
@@ -63,6 +77,7 @@ export function publishPlan(job: WorkerJob, o: { publishBase?: string | null; bo
 
 export async function startRealPipeline(cfg: PipelineConfig, job: WorkerJob, hooks: PipelineHooks): Promise<Pipeline> {
   const plan: PublishPlan = cfg.output ? { urls: [cfg.output], names: ["file"], tee: false } : publishPlan(job, cfg);
+  if (job.record) mkdirSync(cfg.recordDir ?? ".", { recursive: true });
   if (job.outputs !== undefined) {
     if (plan.urls.length) log.info(`Sending the show to ${plan.names.join(", ")}`, { showId: job.showId });
     else log.warn("No destinations for this show and no BOX_RTMP_BASE — encoding only, sending it nowhere", { showId: job.showId });

@@ -128,7 +128,12 @@ export async function poll(worker: DbWorker, input: WorkerPollInput): Promise<Wo
     // phase 8c: a box renders from its own copy of the site (which proxies /api here) and pushes to the outputs itself
     if (input.box) job.renderUrl = `${input.box.lanUrl.replace(/\/+$/, "")}/studio-render/${show.id}`;
     const box = await boxJobOutputs(show.id, worker.id);
-    if (box) {
+    if (box && show.recordLocal) {
+      // "Record on this box": the box only saves the show — nothing is sent anywhere
+      job.outputs = [];
+      job.sendToAws = false;
+      job.record = true;
+    } else if (box) {
       job.outputs = box.outputs;
       job.sendToAws = show.publicListing && !box.youtube;
     }
