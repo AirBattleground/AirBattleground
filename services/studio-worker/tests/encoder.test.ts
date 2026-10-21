@@ -110,3 +110,15 @@ describe("publishTarget", () => {
     expect(publishTarget("rtmp://a.com:1935/live/show_x?wtoken=1.s", "rtmp://127.0.0.1:1937/live")).toBe("rtmp://127.0.0.1:1937/live/show_x?wtoken=1.s");
   });
 });
+
+import { localDeviceHlsUrl } from "../src/browser.js";
+describe("localDeviceHlsUrl", () => {
+  it("maps a phone feed request to the local media server with the read token", () => {
+    expect(localDeviceHlsUrl("https://x.com/api/manager/devices/abc123/live/video1_stream.m3u8?_HLS_msn=5", "http://127.0.0.1:8890", "w.1.s")).toBe(
+      "http://127.0.0.1:8890/live/dev_abc123/video1_stream.m3u8?_HLS_msn=5&rtoken=w.1.s",
+    );
+  });
+  it("ignores anything else", () => {
+    expect(localDeviceHlsUrl("https://x.com/api/manager/studio/shows/1", "http://h", "t")).toBeNull();
+  });
+});

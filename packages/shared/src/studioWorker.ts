@@ -113,6 +113,11 @@ export interface WorkerJob {
   publishUrl: string;
   videoKbps: number;
   fps: number;
+  /**
+   * (additive) token that lets the worker read the manager's phone streams straight from a media server on its own
+   * machine (HLS ?rtoken=…), instead of through the API — see the worker's LOCAL_HLS_BASE.
+   */
+  mediaReadToken?: string;
 }
 
 export interface WorkerPollResponse {

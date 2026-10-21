@@ -4,7 +4,7 @@
  */
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import type { WorkerPollInput } from "@7xen/shared";
-import { authorize } from "../src/services/media.js";
+import { authorize, workerReadToken } from "../src/services/media.js";
 import { adminAgent, createAdminUser, createManager, http, prisma, resetDb, server, type TestAgent } from "./helpers.js";
 
 const IDLE: WorkerPollInput = { version: "0.1.0", encoder: "libx264", state: "idle", showId: null, fps: null, bitrateKbps: null, error: null };
@@ -36,6 +36,19 @@ afterAll(async () => {
 });
 
 describe("studio worker", () => {
+  it("read token: the worker may read its own manager's phone streams, nothing else", async () => {
+    const w = await prisma.studioWorker.findUniqueOrThrow({ where: { id: workerId } });
+    const other = (await createManager(await adminAgent())).row as { id: string };
+    const mine = await prisma.device.create({ data: { managerId: w.managerId, name: "My iPad", keyHash: "k1", keyEnc: "x", keyPrefix: "k1" } as never });
+    const theirs = await prisma.device.create({ data: { managerId: other.id, name: "Their phone", keyHash: "k2", keyEnc: "x", keyPrefix: "k2" } as never });
+    const query = `rtoken=${workerReadToken(workerId)}`;
+    expect(await authorize({ action: "read", path: `live/dev_${mine.id}`, query })).toBe(true);
+    expect(await authorize({ action: "read", path: `live/dev_${theirs.id}`, query })).toBe(false);
+    expect(await authorize({ action: "read", path: `live/dev_${mine.id}`, query: query.slice(0, -2) + "xx" })).toBe(false);
+    expect(await authorize({ action: "read", path: `live/show_${showId}`, query })).toBe(false);
+    expect(await authorize({ action: "read", path: `live/dev_${mine.id}` })).toBe(false);
+  });
+
   it("rejects a missing or unknown worker key", async () => {
     expect((await poll(null)).status).toBe(401);
     const bad = await poll("sw_nope");

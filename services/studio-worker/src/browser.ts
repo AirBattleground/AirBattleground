@@ -14,6 +14,8 @@ export interface RenderOpts {
   extraArgs?: string[];
   /** session cookie (the show's manager) */
   cookie?: { name: string; value: string };
+  /** read phone feeds from a media server on this machine instead of through the API (see Config.localHlsBase) */
+  deviceHls?: { base: string; token: string } | null;
   onChunk: (buf: Buffer) => Promise<void>;
   onStatus: (s: RenderStatus) => void;
   /** browser crashed / page closed */
@@ -32,12 +34,43 @@ export const CHROME_ARGS = [
   "--no-default-browser-check",
 ];
 
+/** /api/manager/devices/<id>/live/<file>?q → <base>/live/dev_<id>/<file>?q&rtoken=… (null = not a phone feed request) */
+export function localDeviceHlsUrl(requestUrl: string, base: string, token: string): string | null {
+  const u = new URL(requestUrl);
+  const m = /^\/api\/manager\/devices\/([A-Za-z0-9]+)\/live\/([A-Za-z0-9_.-]+)$/.exec(u.pathname);
+  if (!m) return null;
+  const q = new URLSearchParams(u.search);
+  q.set("rtoken", token);
+  return `${base}/live/dev_${m[1]}/${m[2]}?${q}`;
+}
+
 export class RenderBrowser {
   private browser: Browser | null = null;
   private context: BrowserContext | null = null;
   private closing = false;
 
   constructor(private readonly opts: RenderOpts) {}
+
+  /** Serve the page's phone-feed HLS from the local media server; anything that fails falls back to the API. */
+  private async routeDeviceHls(context: BrowserContext, hls: { base: string; token: string }) {
+    const warn = rateLimited(3, 60_000);
+    await context.route(/\/api\/manager\/devices\/[A-Za-z0-9]+\/live\//, async (route) => {
+      const target = localDeviceHlsUrl(route.request().url(), hls.base, hls.token);
+      if (!target) return route.continue();
+      try {
+        const r = await fetch(target, { signal: AbortSignal.timeout(15_000) });
+        if (!r.ok) {
+          warn(() => log.warn(`local phone feed answered ${r.status} — using the API instead`));
+          return route.continue();
+        }
+        const body = Buffer.from(await r.arrayBuffer());
+        await route.fulfill({ status: 200, body, headers: { "content-type": r.headers.get("content-type") ?? "application/octet-stream", "cache-control": "no-store" } });
+      } catch (err) {
+        warn(() => log.warn(`local phone feed failed (${(err as Error).message}) — using the API instead`));
+        await route.continue().catch(() => undefined);
+      }
+    });
+  }
 
   async start(): Promise<void> {
     const o = this.opts;
@@ -55,6 +88,7 @@ export class RenderBrowser {
       const origin = new URL(o.url).origin;
       await this.context.addCookies([{ name: o.cookie.name, value: o.cookie.value, url: origin, httpOnly: true, sameSite: "Lax" }]);
     }
+    if (o.deviceHls) await this.routeDeviceHls(this.context, o.deviceHls);
     await this.context.exposeBinding("__swChunk", async (_src, b64: unknown) => {
       if (typeof b64 === "string" && b64.length) await o.onChunk(Buffer.from(b64, "base64"));
     });

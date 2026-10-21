@@ -15,6 +15,8 @@ export interface PipelineConfig {
   output?: string;
   /** RTMP base to publish to instead of the job's (see Config.publishBase) */
   publishBase?: string | null;
+  /** local media server HLS base for the phone feeds (see Config.localHlsBase) */
+  localHlsBase?: string | null;
 }
 
 /** rtmp://host:1935/live/show_x?wtoken=… + rtmp://127.0.0.1:1937/live → rtmp://127.0.0.1:1937/live/show_x?wtoken=… */
@@ -39,6 +41,7 @@ export async function startRealPipeline(cfg: PipelineConfig, job: WorkerJob, hoo
     chromePath: cfg.chromePath,
     extraArgs: cfg.chromeArgs,
     cookie: { name: job.session.cookieName, value: job.session.token },
+    deviceHls: cfg.localHlsBase && job.mediaReadToken ? { base: cfg.localHlsBase, token: job.mediaReadToken } : null,
     onChunk: async (buf) => {
       await ffmpeg.write(buf);
       hooks.chunk();

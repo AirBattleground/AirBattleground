@@ -16,6 +16,11 @@ export interface Config {
    * on this same machine (the job's path and publish token are kept). null = use the job's publishUrl as is.
    */
   publishBase: string | null;
+  /**
+   * HLS base of a media server on this same machine, e.g. http://127.0.0.1:8890 — the render page's phone feeds are
+   * then read from it directly (with the job's read token) instead of through the API. null = through the API.
+   */
+  localHlsBase: string | null;
   version: string;
 }
 
@@ -42,6 +47,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     encoder: blank(env.ENCODER),
     chromeArgs: (blank(env.CHROME_ARGS) ?? "").split(/\s+/).filter(Boolean),
     publishBase: blank(env.PUBLISH_RTMP_BASE)?.replace(/\/+$/, "") ?? null,
+    localHlsBase: blank(env.LOCAL_HLS_BASE)?.replace(/\/+$/, "") ?? null,
     version: packageVersion(),
   };
 }

@@ -60,6 +60,25 @@ async function workerMayPublish(showId: string, query: string | undefined): Prom
   return safeEqual(sig, signWorker(showId, show.workerId, exp));
 }
 
+const signRead = (workerId: string, exp: number) => createHmac("sha256", secret("worker-read")).update(`${workerId}.${exp}`).digest("base64url");
+
+/** phase 8b: lets a Studio worker read its manager's phone streams (HLS ?rtoken=<workerId>.<exp>.<hmac>) from a media server on its own machine. */
+export function workerReadToken(workerId: string, now = Date.now()): string {
+  const exp = now + WORKER_PUBLISH_TTL_MS;
+  return `${workerId}.${exp}.${signRead(workerId, exp)}`;
+}
+
+async function workerMayRead(deviceId: string, query: string | undefined): Promise<boolean> {
+  const [workerId, expStr, sig] = (new URLSearchParams(query ?? "").get("rtoken") ?? "").split(".");
+  const exp = Number(expStr);
+  if (!workerId || !sig || !Number.isFinite(exp) || exp < Date.now() || !safeEqual(sig, signRead(workerId, exp))) return false;
+  const [worker, device] = await Promise.all([
+    prisma.studioWorker.findUnique({ where: { id: workerId }, select: { managerId: true } }),
+    prisma.device.findUnique({ where: { id: deviceId }, select: { managerId: true, manager: { select: { isActive: true } } } }),
+  ]);
+  return !!worker && !!device && device.manager.isActive && device.managerId === worker.managerId;
+}
+
 export interface MediaAuthRequest {
   user?: string;
   password?: string;
@@ -72,7 +91,12 @@ export interface MediaAuthRequest {
 /** MediaMTX auth hook: publish needs a valid device token for that path; everything else needs the API's credentials. */
 export async function authorize(req: MediaAuthRequest): Promise<boolean> {
   const internal = req.user === INTERNAL_USER && !!req.password && safeEqual(req.password, internalPassword());
-  if (req.action !== "publish") return internal;
+  if (req.action !== "publish") {
+    if (internal) return true;
+    // a Studio worker reading its manager's phone stream from the media server on its own machine
+    const dev = req.action === "read" ? PATH_RE.exec(req.path ?? "") : null;
+    return dev ? workerMayRead(dev[1]!, req.query) : false;
+  }
   // the composed output: only the API itself may publish it
   if (OUT_PATH_RE.test(req.path ?? "")) return internal;
   // Studio shows: the API itself (browser shows), or the show's Studio worker with its token (phase 8b)

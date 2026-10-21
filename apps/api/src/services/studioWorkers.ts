@@ -10,7 +10,7 @@ import { env } from "../env.js";
 import { prisma } from "../db.js";
 import { signMobileToken } from "../lib/auth.js";
 import { notFound } from "../lib/errors.js";
-import { workerPublishToken } from "./media.js";
+import { workerPublishToken, workerReadToken } from "./media.js";
 import { endShow, workerOnline, workerRunning } from "./studio.js";
 import { publicUrl } from "./youtube.js";
 
@@ -71,6 +71,16 @@ function publishTokenFor(showId: string, workerId: string): string {
   return token;
 }
 
+const readCache = new Map<string, { token: string; exp: number }>();
+function readTokenFor(workerId: string): string {
+  const c = readCache.get(workerId);
+  if (c && c.exp - Date.now() > 60 * 60_000) return c.token;
+  const token = workerReadToken(workerId);
+  if (readCache.size > 500) readCache.clear();
+  readCache.set(workerId, { token, exp: Number(token.split(".")[1]) });
+  return token;
+}
+
 function sessionFor(managerId: string): string {
   const c = sessionCache.get(managerId);
   if (c && c.exp - Date.now() > 24 * 60 * 60_000) return c.token;
@@ -108,6 +118,7 @@ export async function poll(worker: DbWorker, input: WorkerPollInput): Promise<Wo
       publishUrl: `${env.MEDIA_RTMP_URL.replace(/\/+$/, "")}/show_${show.id}?wtoken=${publishTokenFor(show.id, worker.id)}`,
       videoKbps: WORKER_VIDEO_KBPS,
       fps: STUDIO_FPS,
+      mediaReadToken: readTokenFor(worker.id),
     };
   }
   return { worker: { id: worker.id, name: worker.name }, job };

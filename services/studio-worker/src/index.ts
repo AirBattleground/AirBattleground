@@ -31,7 +31,7 @@ async function main() {
   log.info(`Using encoder ${det.encoder}${det.encoder === "libx264" ? " (CPU — a GPU encoder would be lighter)" : " (GPU)"}`);
 
   const runner = new JobRunner(
-    realPipeline({ ffmpegPath: cfg.ffmpegPath, chromePath: cfg.chromePath, chromeArgs: cfg.chromeArgs, encoder: det.encoder, publishBase: cfg.publishBase }),
+    realPipeline({ ffmpegPath: cfg.ffmpegPath, chromePath: cfg.chromePath, chromeArgs: cfg.chromeArgs, encoder: det.encoder, publishBase: cfg.publishBase, localHlsBase: cfg.localHlsBase }),
   );
   const step = makePollStep({ poll: makePoll(cfg.apiUrl, cfg.workerKey), runner, version: cfg.version, encoder: det.encoder });
 
