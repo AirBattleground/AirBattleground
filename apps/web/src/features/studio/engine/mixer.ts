@@ -132,6 +132,13 @@ export class StudioMixer {
     this.ctx = this.canvas.getContext("2d", { alpha: false })!;
     this.audio = new AudioContext();
     this.dest = this.audio.createMediaStreamDestination();
+    // a silent source keeps the mix's audio track producing samples even when nothing on air has sound — without it
+    // MediaRecorder (VP8 + Opus) emits no data at all in headless Chrome (Studio worker)
+    const silence = this.audio.createConstantSource();
+    const mute = this.audio.createGain();
+    mute.gain.value = 0;
+    silence.connect(mute).connect(this.dest);
+    silence.start();
     this.monitor = this.audio.createGain();
     this.monitor.gain.value = 0;
     this.monitor.connect(this.audio.destination);
@@ -164,7 +171,9 @@ export class StudioMixer {
 
   /** Make sure every source a scene needs is loaded (device feeds, props, camera). */
   async prepare(refs: (SourceRef | null)[]) {
-    if (this.audio.state === "suspended") await this.audio.resume().catch(() => undefined);
+    // resume() can stay pending forever where there's no audio output (headless Chrome on a Studio worker) — don't let
+    // that hold up the picture; the audio engine is nudged again later (resumeAudio)
+    if (this.audio.state === "suspended") await Promise.race([this.audio.resume().catch(() => undefined), new Promise((r) => setTimeout(r, 500))]);
     await Promise.all(refs.filter((r): r is SourceRef => !!r).map((r) => this.ensure(r)));
   }
 

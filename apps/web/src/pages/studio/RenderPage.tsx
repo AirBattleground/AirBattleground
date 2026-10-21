@@ -29,8 +29,10 @@ function toBase64(b: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = () => {
+      // "data:video/webm;codecs=vp8,opus;base64,…" — the MIME type itself has a comma, so cut after ";base64,"
       const s = r.result as string;
-      resolve(s.slice(s.indexOf(",") + 1));
+      const at = s.indexOf(";base64,");
+      resolve(at >= 0 ? s.slice(at + 8) : s.slice(s.lastIndexOf(",") + 1));
     };
     r.onerror = () => reject(r.error ?? new Error("Couldn't read the chunk"));
     r.readAsDataURL(b);
