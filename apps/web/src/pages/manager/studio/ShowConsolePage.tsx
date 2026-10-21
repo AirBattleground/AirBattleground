@@ -138,11 +138,19 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
   // where the show runs: this browser, or a Studio worker (phase 8b)
   const workers = useWorkers();
   const workerList = workers.data ?? [];
-  const [runOn, setRunOnState] = useState<string>(() => (show.runOn === "worker" && show.workerId ? show.workerId : (savedRunOn() ?? RUN_BROWSER)));
+  // what the manager picked on this page (null = automatic: an online Studio worker if there is one — a show in this
+  // browser stops when the tab does, and with the media server on the studio PC it also crosses the home link twice)
+  const [choice, setChoice] = useState<string | null>(() => (show.runOn === "worker" && show.workerId ? show.workerId : null));
   const setRunOn = (v: string) => {
-    setRunOnState(v);
+    setChoice(v);
     saveRunOn(v);
   };
+  const autoRunOn = useMemo(() => {
+    const online = workerList.filter((w) => w.online);
+    const saved = savedRunOn();
+    return (online.find((w) => w.id === saved) ?? online[0])?.id ?? RUN_BROWSER;
+  }, [workerList]);
+  const runOn = choice ?? autoRunOn;
   const selectedWorker = runOn === RUN_BROWSER ? null : (workerList.find((w) => w.id === runOn) ?? null);
   const [workerLiveHint, setWorkerLiveHint] = useState(show.runOn === "worker" && show.state === "LIVE");
   const status = useShowStatus(show.id, !!mixStatus?.live || workerLiveHint);
