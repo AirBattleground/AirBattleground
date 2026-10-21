@@ -1,0 +1,14 @@
+# Caching relay for the media server's auth hook (systemd --user). See auth-cache.mjs.
+#   cp deploy/pcmedia/7xen-auth-cache.service ~/.config/systemd/user/ && systemctl --user daemon-reload
+#   systemctl --user enable --now 7xen-auth-cache
+[Unit]
+Description=7xen media auth cache
+After=network-online.target 7xen-tunnel.service
+
+[Service]
+ExecStart=%h/.nvm/versions/node/v24.19.0/bin/node %h/fun/7xen/deploy/pcmedia/auth-cache.mjs
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

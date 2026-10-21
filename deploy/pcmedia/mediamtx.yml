@@ -9,7 +9,7 @@ logLevel: info
 logDestinations: [stdout]
 
 authMethod: http
-authHTTPAddress: http://127.0.0.1:14000/api/internal/media/auth
+authHTTPAddress: http://127.0.0.1:14001/api/internal/media/auth
 authHTTPExclude:
   - action: metrics
   - action: pprof
