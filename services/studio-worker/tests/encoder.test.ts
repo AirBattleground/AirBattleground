@@ -100,3 +100,13 @@ describe("ProgressMeter", () => {
     expect(m.outSeconds).toBe(4);
   });
 });
+
+import { publishTarget } from "../src/pipeline.js";
+describe("publishTarget", () => {
+  it("keeps the job URL without a base", () => {
+    expect(publishTarget("rtmp://a.com:1935/live/show_x?wtoken=1.s", null)).toBe("rtmp://a.com:1935/live/show_x?wtoken=1.s");
+  });
+  it("swaps host and base path, keeps path + token", () => {
+    expect(publishTarget("rtmp://a.com:1935/live/show_x?wtoken=1.s", "rtmp://127.0.0.1:1937/live")).toBe("rtmp://127.0.0.1:1937/live/show_x?wtoken=1.s");
+  });
+});

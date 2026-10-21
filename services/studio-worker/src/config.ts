@@ -11,6 +11,11 @@ export interface Config {
   encoder: string | null;
   /** extra Chrome flags, space separated (e.g. "--enable-gpu") */
   chromeArgs: string[];
+  /**
+   * Publish to this RTMP base instead of the job's host, e.g. rtmp://127.0.0.1:1937/live when the media server runs
+   * on this same machine (the job's path and publish token are kept). null = use the job's publishUrl as is.
+   */
+  publishBase: string | null;
   version: string;
 }
 
@@ -36,6 +41,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     chromePath: blank(env.CHROME_PATH),
     encoder: blank(env.ENCODER),
     chromeArgs: (blank(env.CHROME_ARGS) ?? "").split(/\s+/).filter(Boolean),
+    publishBase: blank(env.PUBLISH_RTMP_BASE)?.replace(/\/+$/, "") ?? null,
     version: packageVersion(),
   };
 }

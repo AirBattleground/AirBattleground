@@ -1,0 +1,43 @@
+# Phase 6: MediaMTX — receives the iPhones' RTMP streams and serves them as HLS to the API only.
+# Runs on the host network (docker-compose service "media"). Every publish/read is checked by the API:
+#   publish  live/dev_<deviceId>?token=<signed, 10 min>   (token from POST /api/device/stream/start)
+#   read     only the API itself (basic auth user "api", password derived from JWT_SECRET)
+#   publish  live/out_<deviceId>   only the API itself (phase 6b broadcast output = video + layout)
+# Managers never talk to MediaMTX directly: the API proxies HLS after checking their session.
+
+logLevel: info
+logDestinations: [stdout]
+
+authMethod: http
+authHTTPAddress: http://127.0.0.1:14000/api/internal/media/auth
+authHTTPExclude:
+  - action: metrics
+  - action: pprof
+
+# control API (kick a phone when its key changes); needs the API's credentials like HLS reads. Don't open 9997 publicly.
+api: yes
+apiAddress: :9999
+
+# phones publish here (open TCP 1935 in the firewall / EC2 security group)
+rtmp: yes
+rtmpAddress: :1937
+rtmpEncryption: "no"
+
+# HLS for the API proxy (port 8888 must NOT be opened to the internet; reads need the API's credentials anyway)
+hls: yes
+hlsAddress: :8890
+hlsAlwaysRemux: yes
+hlsVariant: fmp4
+hlsSegmentCount: 7
+hlsSegmentDuration: 1s
+hlsAllowOrigin: ""
+
+rtsp: no
+webrtc: no
+srt: no
+
+paths:
+  # dev_ = a phone's raw video (phone publishes), out_ = the composed broadcast (the API publishes),
+  # show_ = a Studio show mixed in the manager's browser (the API publishes, phase 8)
+  "~^live/(dev|out|show)_[A-Za-z0-9]{8,40}$":
+    source: publisher

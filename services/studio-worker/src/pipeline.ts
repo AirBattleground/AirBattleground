@@ -13,6 +13,15 @@ export interface PipelineConfig {
   encoder: Encoder;
   /** override the job's publish URL (smoke test writes a local file) */
   output?: string;
+  /** RTMP base to publish to instead of the job's (see Config.publishBase) */
+  publishBase?: string | null;
+}
+
+/** rtmp://host:1935/live/show_x?wtoken=… + rtmp://127.0.0.1:1937/live → rtmp://127.0.0.1:1937/live/show_x?wtoken=… */
+export function publishTarget(publishUrl: string, base: string | null | undefined): string {
+  if (!base) return publishUrl;
+  const i = publishUrl.lastIndexOf("/");
+  return i < 0 ? publishUrl : `${base}${publishUrl.slice(i)}`;
 }
 
 export async function startRealPipeline(cfg: PipelineConfig, job: WorkerJob, hooks: PipelineHooks): Promise<Pipeline> {
@@ -22,7 +31,7 @@ export async function startRealPipeline(cfg: PipelineConfig, job: WorkerJob, hoo
     fps: job.fps,
     kbps: job.videoKbps,
     cores: os.cpus().length,
-    output: cfg.output ?? job.publishUrl,
+    output: cfg.output ?? publishTarget(job.publishUrl, cfg.publishBase),
     onExit: hooks.exit,
   });
   const browser = new RenderBrowser({

@@ -1,0 +1,25 @@
+# SSH tunnel between the studio PC and AWS (systemd --user). Install:
+#   cp deploy/pcmedia/7xen-tunnel.service ~/.config/systemd/user/ && systemctl --user daemon-reload
+#   systemctl --user enable --now 7xen-tunnel     (logs: journalctl --user -u 7xen-tunnel -f)
+#   loginctl enable-linger $USER                   (keeps it running when you're logged out)
+# AWS 127.0.0.1:21935/28888/29997 → this PC's media server (RTMP / HLS / API); this PC 127.0.0.1:14000 → AWS API.
+# On AWS, small forwarders publish 0.0.0.0:1935/8888/9997 onto those loopback ports (see deploy/pcmedia/README.md).
+[Unit]
+Description=7xen media tunnel to AWS
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/ssh -N -T -i %h/Downloads/AirBattleground.pem \
+  -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes \
+  -o StrictHostKeyChecking=accept-new -o BatchMode=yes \
+  -R 127.0.0.1:21935:127.0.0.1:1937 \
+  -R 127.0.0.1:28888:127.0.0.1:8890 \
+  -R 127.0.0.1:29997:127.0.0.1:9999 \
+  -L 127.0.0.1:14000:127.0.0.1:4000 \
+  ec2-user@3.105.50.231
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

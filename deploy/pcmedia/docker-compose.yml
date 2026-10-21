@@ -1,0 +1,13 @@
+# Production media server (MediaMTX) running on the studio PC instead of AWS. AWS forwards its media ports into an
+# SSH tunnel (deploy/pcmedia/7xen-tunnel.service) that ends here. Separate ports from the dev media server.
+#   docker-compose -p 7xen-pcmedia -f deploy/pcmedia/docker-compose.yml up -d
+#   RTMP :1937 · HLS :8890 · API :9999 · auth hook → AWS API through the tunnel (127.0.0.1:14000)
+name: 7xen-pcmedia
+services:
+  media:
+    image: bluenviron/mediamtx:1.9.3
+    container_name: 7xen-pcmedia
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro
