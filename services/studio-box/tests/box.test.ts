@@ -359,3 +359,32 @@ describe("recordings", () => {
     await expect(r.remove("../etc/passwd")).rejects.toMatchObject({ status: 404 });
   });
 });
+
+import { BoxSession } from "../src/session.js";
+import { boxAllowsWrite } from "@7xen/shared";
+describe("connect with key", () => {
+  it("trades the key for a session, caches it, and reports a removed key plainly", async () => {
+    let calls = 0;
+    let status = 200;
+    const fake = async () => {
+      calls++;
+      return { status, ok: status === 200, json: async () => ({ token: `tok${calls}`, expiresAt: "", manager: { id: "m", displayName: "M" } }) };
+    };
+    let t = 0;
+    const s = new BoxSession("https://x", "sw_key", fake, () => t);
+    expect(await s.token()).toBe("tok1");
+    expect(await s.token()).toBe("tok1");
+    expect(calls).toBe(1);
+    t += 11 * 60_000;
+    status = 401;
+    await expect(s.token()).rejects.toMatchObject({ status: 503 });
+  });
+  it("lets the box change only Studio things", () => {
+    expect(boxAllowsWrite("/api/manager/studio/shows/abc")).toBe(true);
+    expect(boxAllowsWrite("/api/manager/stream/destinations")).toBe(true);
+    expect(boxAllowsWrite("/api/manager/matches/abc123/screenshots")).toBe(true);
+    expect(boxAllowsWrite("/api/manager/matches/abc123/publish")).toBe(false);
+    expect(boxAllowsWrite("/api/manager/requests/x/approve")).toBe(false);
+    expect(boxAllowsWrite("/api/auth/logout")).toBe(false);
+  });
+});

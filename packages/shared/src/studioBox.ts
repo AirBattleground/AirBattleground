@@ -115,3 +115,20 @@ export interface BoxRecordings {
   items: BoxRecording[];
   disk: { freeBytes: number; totalBytes: number };
 }
+
+/**
+ * Phase 8c — the box connects with its key, not a login. The box asks the website for a session as the box's manager
+ * and attaches it (Authorization: Bearer) to everything it proxies, so whoever opens the box's Studio on the LAN is
+ * signed in as that manager. On the box, /api writes are limited to Studio things (BOX_WRITE_PREFIXES); reads are open.
+ *   POST /api/studio-worker/session   (X-Worker-Key)  → BoxSession
+ */
+export interface BoxSession {
+  token: string;
+  expiresAt: string;
+  manager: { id: string; displayName: string };
+}
+/** API paths the box lets the Studio change (POST/PUT/PATCH/DELETE); everything else is read-only through the box. */
+export const BOX_WRITE_PREFIXES = ["/api/manager/studio/", "/api/manager/stream/"] as const;
+/** plus match screenshots (Studio capture → match center) */
+export const BOX_WRITE_PATTERNS = [/^\/api\/manager\/matches\/[A-Za-z0-9]+\/screenshots$/] as const;
+export const boxAllowsWrite = (path: string) => BOX_WRITE_PREFIXES.some((p) => path.startsWith(p)) || BOX_WRITE_PATTERNS.some((re) => re.test(path));

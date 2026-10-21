@@ -10,6 +10,7 @@
  *   everything else       the web app build (SPA)
  */
 import type { Recordings } from "./recordings.js";
+import type { BoxSession } from "./session.js";
 import type { IncomingMessage, RequestListener, ServerResponse } from "node:http";
 import { Readable } from "node:stream";
 import type { ReadableStream as WebReadableStream } from "node:stream/web";
@@ -24,6 +25,7 @@ import {
   deviceStreamStopSchema,
   type BoxInfo,
   type BoxPollInfo,
+  boxAllowsWrite,
 } from "@7xen/shared";
 import type { ManagerAuth } from "./auth.js";
 import type { Devices } from "./devices.js";
@@ -48,6 +50,8 @@ export interface AppContext {
   recordings?: Recordings;
   media: Pick<MediaClient, "fetchHlsPath">;
   auth: Pick<ManagerAuth, "require">;
+  /** connect-with-key: the box's manager session (BOX_KEY). Set = no login on the box; /api writes limited to Studio things */
+  session?: Pick<BoxSession, "token">;
   /** skip the manager check (BOX_DEV_NO_AUTH, never in production) */
   devNoAuth?: boolean;
   proxy: RequestListener;
@@ -149,7 +153,8 @@ export function createApp(ctx: AppContext): RequestListener {
 
     const seg = sub.split("/");
     if (seg[0] !== "devices" && seg[0] !== "shows" && seg[0] !== "recordings") throw notFound();
-    if (!ctx.devNoAuth) await ctx.auth.require(header(req, "cookie"));
+    if (ctx.session) await ctx.session.token();
+    else if (!ctx.devNoAuth) await ctx.auth.require(header(req, "cookie"));
     const id = seg[1];
 
     if (seg[0] === "recordings") {
@@ -213,7 +218,18 @@ export function createApp(ctx: AppContext): RequestListener {
     const search = q < 0 ? "" : url.slice(q);
     const run = async () => {
       if (pathname.startsWith("/api/device/")) return deviceApi(req, res, pathname.slice("/api/device/".length));
-      if (pathname === "/api" || pathname.startsWith("/api/")) return ctx.proxy(req, res);
+      if (pathname === "/api" || pathname.startsWith("/api/")) {
+        if (ctx.session) {
+          const method = req.method ?? "GET";
+          // the box acts as its manager for anyone on the LAN: read everything, change only Studio things
+          if (!["GET", "HEAD", "OPTIONS"].includes(method) && !boxAllowsWrite(pathname)) {
+            throw new HttpError(403, "FORBIDDEN", "Do this on airbattleground.com — the Studio box can only change Studio things.");
+          }
+          req.headers.authorization = `Bearer ${await ctx.session.token()}`;
+          delete req.headers.cookie;
+        }
+        return ctx.proxy(req, res);
+      }
       if (pathname.startsWith("/box/")) return boxApi(req, res, pathname.slice("/box/".length).replace(/\/+$/, ""), search);
       return ctx.serveStatic(req, res);
     };

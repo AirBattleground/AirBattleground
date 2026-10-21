@@ -5,6 +5,7 @@
  */
 import { join } from "node:path";
 import { Recordings } from "./recordings.js";
+import { BoxSession } from "./session.js";
 import http from "node:http";
 import { ManagerAuth } from "./auth.js";
 import { loadConfig } from "./config.js";
@@ -35,6 +36,7 @@ const server = http.createServer(
     recordings: new Recordings(join(cfg.dataDir, "recordings")),
     media,
     auth: new ManagerAuth(cfg.apiUrl),
+    session: cfg.boxKey ? new BoxSession(cfg.apiUrl, cfg.boxKey) : undefined,
     devNoAuth: cfg.devNoAuth,
     proxy: makeApiProxy(cfg.apiUrl),
     serveStatic: makeStatic(cfg.webDist),
@@ -49,7 +51,7 @@ server.listen(cfg.port, "0.0.0.0", () => {
   log(`7XEN Studio box "${cfg.boxName}" on ${cfg.lanUrl}  (website ${cfg.apiUrl})`);
   log(`media: RTMP rtmp://${cfg.lanHost}:${cfg.mediaRtmpPort}/live · HLS ${cfg.mediaHlsUrl} · API ${cfg.mediaApiUrl}`);
   log(`web app: ${cfg.webDist}`);
-  if (!cfg.boxKey) log("BOX_KEY is empty — create a Studio box on the website and put its key here and in the Studio worker's .env");
+  if (!cfg.boxKey) log("BOX_KEY is empty — the Studio will ask for a sign-in. Put the Studio box key from the website here to connect with the key");
   if (cfg.devNoAuth) log("WARNING: BOX_DEV_NO_AUTH=1 — the Studio API is open to anyone on this network (development only)");
 });
 

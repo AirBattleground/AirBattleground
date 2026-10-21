@@ -36,6 +36,16 @@ afterAll(async () => {
 });
 
 describe("studio worker", () => {
+  it("box session: the key alone gets a manager session that works as a bearer token", async () => {
+    expect((await http().post("/api/studio-worker/session").set("X-Worker-Key", "sw_nope")).status).toBe(401);
+    const s = await http().post("/api/studio-worker/session").set("X-Worker-Key", key);
+    expect(s.status).toBe(200);
+    expect(s.body.manager.id).toBeTruthy();
+    const me = await http().get("/api/auth/me").set("Authorization", `Bearer ${s.body.token}`);
+    expect(me.status).toBe(200);
+    expect(me.body.user?.role ?? me.body.role).toBe("MANAGER");
+  });
+
   it("read token: the worker may read its own manager's phone streams, nothing else", async () => {
     const w = await prisma.studioWorker.findUniqueOrThrow({ where: { id: workerId } });
     const other = (await createManager(await adminAgent())).row as { id: string };

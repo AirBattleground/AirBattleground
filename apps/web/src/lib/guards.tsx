@@ -1,3 +1,4 @@
+import { useBox } from "@/features/studio/box";
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import type { Role, SessionUser } from "@7xen/shared";
@@ -39,6 +40,9 @@ export function RequireRole({ role, children }: { role: Role; children: ReactNod
 
 export function RedirectHome() {
   const { user, isLoading } = useAuth();
-  if (isLoading) return <FullPageLoader />;
+  // on a Studio Box the site is there for the Studio: the box signs in with its key as its manager
+  const box = useBox();
+  if (isLoading || !box.ready) return <FullPageLoader />;
+  if (box.isBox && user?.role === "MANAGER") return <Navigate to="/manager/studio" replace />;
   return <Navigate to={homeFor(user)} replace />;
 }
