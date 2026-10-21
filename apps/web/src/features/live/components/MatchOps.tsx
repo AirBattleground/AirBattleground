@@ -15,7 +15,7 @@ import { RoomCard, roomMessage, type MatchLabel } from "./RoomCard";
 export const MATCH_OPS_TOUR: TourStep[] = [
   { element: '[data-tour="match-kit"]', title: "Everything for this match", description: "Room, Studio and recordings sit in this one strip. Tap a tile to open it.", side: "bottom" },
   { element: '[data-tour="kit-room"]', title: "Room ID & password", description: "Add them here. Teams see them at the time you choose. Copy sends a ready-made WhatsApp message.", side: "bottom" },
-  { element: '[data-tour="match-studio"]', title: "Stream it from Studio", description: "Broadcast this match and grab the team list or results screenshots from the stream.", side: "bottom" },
+  { element: '[data-tour="match-studio"]', title: "Stream it with 7XEN Studio", description: "Stream and record this match with the 7XEN Studio app on your venue PC. This opens your connected studios.", side: "bottom" },
 ];
 
 type Panel = "room" | "recordings" | null;
@@ -77,7 +77,7 @@ function Tile({
 
 /**
  * Room, Studio and recordings for one match, in one compact strip (scrim or tournament match center).
- * Details open in a side sheet so the match steps stay at the top of the page. Streaming happens in the Studio.
+ * Details open in a side sheet so the match steps stay at the top of the page. Streaming happens in the 7XEN Studio app.
  */
 export function MatchOps({ matchId, label, readOnly }: { matchId: string; label: MatchLabel; readOnly?: boolean }) {
   const [panel, setPanel] = useState<Panel>(null);
@@ -113,8 +113,8 @@ export function MatchOps({ matchId, label, readOnly }: { matchId: string; label:
             tour="match-studio"
             icon={<Clapperboard className="size-4" />}
             label="Studio"
-            value="Stream & capture screenshots"
-            to={`/manager/studio?match=${encodeURIComponent(matchId)}&title=${encodeURIComponent(title)}`}
+            value="Stream & record this match in 7XEN Studio"
+            to="/manager/studio"
           />
         )}
         <Tile

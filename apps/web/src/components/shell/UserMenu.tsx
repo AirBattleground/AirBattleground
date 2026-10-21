@@ -1,4 +1,3 @@
-import { useBox } from "@/features/studio/box";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, LogOut, Smartphone, UserRound, Users } from "lucide-react";
 import { toast } from "sonner";
@@ -45,7 +44,6 @@ export function UserAvatar({ user, size = "sm" }: { user: SessionUser; size?: "s
 
 export function UserMenu() {
   const { user, logout } = useAuth();
-  const box = useBox();
   const navigate = useNavigate();
   const t = useT(userMenuMsg);
   const tc = useT(common);
@@ -103,13 +101,10 @@ export function UserMenu() {
             {t("manager_app")}
           </DropdownMenuItem>
         )}
-        {/* a Studio Box is connected with its key — there's no sign-in to leave */}
-        {!box.isBox && (
-          <DropdownMenuItem onSelect={() => void signOut()} className="cursor-pointer">
-            <LogOut />
-            {tc("sign_out")}
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem onSelect={() => void signOut()} className="cursor-pointer">
+          <LogOut />
+          {tc("sign_out")}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
