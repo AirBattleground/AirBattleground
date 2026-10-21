@@ -1,0 +1,17 @@
+# Studio worker on the studio PC (systemd --user). Settings live in services/studio-worker/.env
+# (WORKER_KEY, API_URL=https://airbattleground.com, PUBLISH_RTMP_BASE=rtmp://127.0.0.1:1937/live).
+#   cp deploy/pcmedia/7xen-studio-worker.service ~/.config/systemd/user/ && systemctl --user daemon-reload
+#   systemctl --user enable --now 7xen-studio-worker     (logs: journalctl --user -u 7xen-studio-worker -f)
+[Unit]
+Description=7xen Studio worker
+After=network-online.target 7xen-tunnel.service
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=%h/fun/7xen/services/studio-worker
+ExecStart=%h/.nvm/versions/node/v24.19.0/bin/node --env-file-if-exists=.env --import tsx src/index.ts
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
