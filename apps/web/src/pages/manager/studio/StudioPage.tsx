@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { formatDistanceToNow, parseISO } from "date-fns";
-import { Clapperboard, Loader2, Plus, Radio, Smartphone, Trash2, Tv, WifiOff } from "lucide-react";
+import { Clapperboard, Loader2, Plus, Smartphone, Trash2, Tv } from "lucide-react";
 import type { StudioShowRow } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -12,19 +12,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
-import { useDevices } from "@/features/devices/api";
 import { useUpcomingMatches } from "@/features/broadcast/api";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { useCreateShow, useDeleteShow, useShows } from "@/features/studio/api";
 import { WorkersSection } from "@/features/studio/components/WorkersSection";
+import { BoxPhonesList } from "@/features/studio/components/BoxPhones";
+import { useBox, useBoxDevices } from "@/features/studio/box";
 
 const TOUR: TourStep[] = [
   { title: "Studio", description: "Produce a live show like a TV broadcast: mix your phones, webcam, scorecard, MVP and intro videos, and switch between scenes." },
-  { element: '[data-tour="studio-sources"]', title: "Your sources", description: "Every phone you've added. A green dot means its video is reaching the server right now.", side: "bottom" },
   { element: '[data-tour="studio-new"]', title: "Create a show", description: "Give it a name and (optionally) the match — then open the studio console.", side: "bottom" },
-  { element: '[data-tour="studio-workers"]', title: "Studio workers", description: "Optional: a PC or server that runs your show instead of this browser, so closing the tab doesn't stop it. Add one, put its key on the computer, then pick it under “Runs on” in the console.", side: "bottom" },
+  { element: '[data-tour="studio-workers"]', title: "Studio boxes", description: "A PC at the venue that runs your phones and your show and sends it to YouTube. Add one, put its key on the PC, then use “Open Studio on …” to add phones and go live from there.", side: "bottom" },
   { element: '[data-tour="studio-shows"]', title: "Your shows", description: "Open a show to set up scenes and go live. You can reuse a show for many streams.", side: "top" },
+];
+
+/** On a Studio Box the page also lists the box's phones. */
+const BOX_TOUR: TourStep[] = [
+  TOUR[0]!,
+  { element: '[data-tour="studio-sources"]', title: "Phones on this box", description: "Add a phone, scan its QR in the 7XEN Stream app and start streaming. A green dot means its video is ready.", side: "bottom" },
+  ...TOUR.slice(1),
 ];
 
 const NO_MATCH = "none";
@@ -51,10 +58,11 @@ function useOpenForMatch(shows: StudioShowRow[] | undefined) {
 }
 
 export default function StudioPage() {
-  usePageTour("manager.studio", TOUR);
   const shows = useShows();
   const opening = useOpenForMatch(shows.data);
-  const devices = useDevices();
+  const box = useBox();
+  usePageTour("manager.studio", box.isBox ? BOX_TOUR : TOUR);
+  const boxDevices = useBoxDevices(box.isBox);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<StudioShowRow | null>(null);
   const del = useDeleteShow();
@@ -72,7 +80,7 @@ export default function StudioPage() {
       <PageHeader
         eyebrow="Broadcast"
         title="Studio"
-        description="Mix your device streams, webcam, scorecard and intro videos into one professional live show."
+        description="Mix your phones, webcam, scorecard and intro videos into one professional live show."
         actions={
           <Button size="lg" data-tour="studio-new" className="shadow-glow" onClick={() => setCreating(true)}>
             <Plus /> New show
@@ -80,36 +88,17 @@ export default function StudioPage() {
         }
       />
 
-      <section data-tour="studio-sources" className="mb-6 rounded-xl border bg-card p-4 shadow-sm">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 font-display text-xl font-bold">
-            <Smartphone className="size-5 text-primary" /> Device sources
-          </h2>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/manager/devices">Manage devices</Link>
-          </Button>
-        </div>
-        {!devices.data ? (
-          <Skeleton className="h-16 rounded-lg" />
-        ) : devices.data.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No devices yet. <Link to="/manager/devices" className="font-semibold text-primary hover:underline">Add an iPhone</Link> — its stream becomes a Studio source.
-          </p>
-        ) : (
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {devices.data.map((d) => (
-              <li key={d.id} className="flex items-center gap-3 rounded-lg border bg-background/50 px-3 py-2.5">
-                <span className={cn("size-2.5 shrink-0 rounded-full", d.videoReady ? "bg-success shadow-[0_0_8px_var(--success)]" : "bg-muted-foreground/40")} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate font-semibold">{d.name}</span>
-                  <span className="block text-xs text-muted-foreground">{d.videoReady ? "Streaming — ready to use" : d.status === "OFFLINE" ? "Offline" : "Connected, not streaming"}</span>
-                </span>
-                {d.videoReady ? <Radio className="size-4 text-success" /> : <WifiOff className="size-4 text-muted-foreground" />}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      {box.isBox && (
+        <section data-tour="studio-sources" className="mb-6 rounded-xl border bg-card p-4 shadow-sm">
+          <div className="mb-3">
+            <h2 className="flex items-center gap-2 font-display text-xl font-bold">
+              <Smartphone className="size-5 text-primary" /> Phones on this box
+            </h2>
+            <p className="text-sm text-muted-foreground">Phones stream over the venue Wi-Fi to {box.info?.name ?? "this box"}. A green dot means the video is ready to use.</p>
+          </div>
+          {!boxDevices.data ? <Skeleton className="h-16 rounded-lg" /> : <BoxPhonesList devices={boxDevices.data} />}
+        </section>
+      )}
 
       <WorkersSection shows={shows.data} />
 

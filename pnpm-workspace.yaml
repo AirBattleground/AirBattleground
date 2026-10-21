@@ -4,6 +4,7 @@ packages:
   - "packages/*"
   - "services/station"
   - "services/studio-worker"
+  - "services/studio-box"
 allowBuilds:
   "@prisma/client": true
   "@prisma/engines": true

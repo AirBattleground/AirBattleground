@@ -11,7 +11,7 @@ import { prisma } from "../db.js";
 import { signMobileToken } from "../lib/auth.js";
 import { notFound } from "../lib/errors.js";
 import { workerPublishToken, workerReadToken } from "./media.js";
-import { endShow, workerOnline, workerRunning } from "./studio.js";
+import { boxJobOutputs, endShow, workerOnline, workerRunning } from "./studio.js";
 import { publicUrl } from "./youtube.js";
 
 const hashKey = (key: string) => createHash("sha256").update(key).digest("hex");
@@ -27,6 +27,7 @@ function toRow(w: DbWorker): StudioWorkerRow {
     showId: w.showId,
     lastSeenAt: w.lastSeenAt?.toISOString() ?? null,
     error: w.error,
+    box: w.boxLanUrl ? { name: w.name, lanUrl: w.boxLanUrl, devices: w.boxDevices ?? 0, streaming: w.boxStreaming ?? 0 } : null,
   };
 }
 
@@ -102,6 +103,10 @@ export async function poll(worker: DbWorker, input: WorkerPollInput): Promise<Wo
       fps: input.fps,
       bitrateKbps: input.bitrateKbps,
       error: input.error,
+      // phase 8c: a Studio Box reports itself in every poll; a poll without `box` = a plain worker
+      boxLanUrl: input.box ? input.box.lanUrl.replace(/\/+$/, "") : null,
+      boxDevices: input.box?.devices ?? null,
+      boxStreaming: input.box?.streaming ?? null,
     },
   });
   const show = await prisma.studioShow.findFirst({
@@ -120,6 +125,13 @@ export async function poll(worker: DbWorker, input: WorkerPollInput): Promise<Wo
       fps: STUDIO_FPS,
       mediaReadToken: readTokenFor(worker.id),
     };
+    // phase 8c: a box renders from its own copy of the site (which proxies /api here) and pushes to the outputs itself
+    if (input.box) job.renderUrl = `${input.box.lanUrl.replace(/\/+$/, "")}/studio-render/${show.id}`;
+    const box = await boxJobOutputs(show.id, worker.id);
+    if (box) {
+      job.outputs = box.outputs;
+      job.sendToAws = show.publicListing && !box.youtube;
+    }
   }
   return { worker: { id: worker.id, name: worker.name }, job };
 }

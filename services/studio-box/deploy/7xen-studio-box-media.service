@@ -1,0 +1,15 @@
+# The box's media server through docker compose (systemd --user). Docker's own restart policy also works;
+# this unit just ties it to the box's lifecycle.
+[Unit]
+Description=7XEN Studio Box media server (MediaMTX)
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=%h/7xen/services/studio-box
+ExecStart=/usr/bin/docker compose -f docker-compose.yml up -d
+ExecStop=/usr/bin/docker compose -f docker-compose.yml down
+
+[Install]
+WantedBy=default.target

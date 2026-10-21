@@ -69,8 +69,33 @@ export function videoArgs(encoder: Encoder, o: VideoOpts): string[] {
   return [...codec, ...rate, ...gop, ...pix, ...size];
 }
 
+/** Escape one URL for the tee muxer's slave list (av_get_token: backslash escapes; `|` separates slaves). */
+export function escapeTeeUrl(url: string): string {
+  return url.replace(/[\\'|[\]]/g, (c) => `\\${c}`);
+}
+
+/**
+ * tee muxer filename publishing to every URL at once. onfail=ignore: one dead destination (a revoked stream key)
+ * doesn't take the others down; ffmpeg only stops when all of them failed.
+ */
+export function teeTarget(urls: string[]): string {
+  return urls.map((u) => `[f=flv:onfail=ignore:flvflags=no_duration_filesize]${escapeTeeUrl(u)}`).join("|");
+}
+
+/**
+ * Where the encoded show goes: one URL → plain FLV (unchanged phase-8b behaviour); several (or `tee: true`) → the
+ * tee muxer; none → encode only (null muxer — nowhere to send it, but the pipeline keeps running).
+ */
+export function outputArgs(outputs: string[], tee = false): string[] {
+  if (outputs.length === 0) return ["-f", "null", "-"];
+  if (outputs.length === 1 && !tee) return ["-flvflags", "no_duration_filesize", "-f", "flv", outputs[0]!];
+  // FLV wants the codec headers out of band; through tee ffmpeg can't detect that, so ask the encoders for it
+  return ["-flags", "+global_header", "-f", "tee", teeTarget(outputs)];
+}
+
 /** Full ffmpeg argument list: WebM (MediaRecorder chunks) on stdin → `output` (RTMP URL, or a local .flv in tests). */
-export function ffmpegArgs(encoder: Encoder, o: VideoOpts & { output: string }): string[] {
+export function ffmpegArgs(encoder: Encoder, o: VideoOpts & { output: string | string[]; tee?: boolean }): string[] {
+  const outputs = Array.isArray(o.output) ? o.output : [o.output];
   return [
     "-hide_banner", "-loglevel", "warning", "-nostats", "-y",
     "-fflags", "+genpts+discardcorrupt",
@@ -79,8 +104,7 @@ export function ffmpegArgs(encoder: Encoder, o: VideoOpts & { output: string }):
     ...videoArgs(encoder, o),
     "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-ac", "2",
     "-progress", "pipe:1", "-stats_period", "2",
-    "-flvflags", "no_duration_filesize",
-    "-f", "flv", o.output,
+    ...outputArgs(outputs, o.tee),
   ];
 }
 

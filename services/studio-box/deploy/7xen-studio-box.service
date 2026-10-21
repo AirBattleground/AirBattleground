@@ -1,0 +1,19 @@
+# 7XEN Studio Box (systemd --user). Settings: services/studio-box/.env
+#   cp services/studio-box/deploy/*.service ~/.config/systemd/user/ && systemctl --user daemon-reload
+#   systemctl --user enable --now 7xen-studio-box     (logs: journalctl --user -u 7xen-studio-box -f)
+#   loginctl enable-linger $USER                      (start at boot without logging in)
+# Adjust the node path (`which node`) and the repo path if yours differ.
+[Unit]
+Description=7XEN Studio Box
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=%h/7xen/services/studio-box
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node --env-file-if-exists=.env --import tsx src/index.ts
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

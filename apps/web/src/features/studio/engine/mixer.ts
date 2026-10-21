@@ -3,7 +3,7 @@
  * air with the host's mic, and — while live — records the result and sends it to the server in ~1 s chunks, in order.
  *
  * - The clock is a Web Worker timer, so the show keeps running when the tab is in the background (rAF would pause).
- * - Device streams come in through hls.js (same feed as the device page); props are local video files; the webcam and
+ * - Device streams come in through hls.js (the AWS device feed, or the box's own feed on a Studio Box — see `deviceUrl`); props are local video files; the webcam and
  *   mic come from getUserMedia.
  * - Audio: every source has a gain; sources on air are faded up, the rest down. Nothing plays on the speakers unless
  *   "monitor" is on (avoids echo into the host's mic).
@@ -98,6 +98,11 @@ export class StudioMixer {
   private transitionStart = 0;
   private transitionMs = 0;
   overlays: Overlays = { ...DEFAULT_OVERLAYS };
+  /**
+   * Where a device source's HLS comes from. Default: the AWS device feed. On a Studio Box (phase 8c) the console and
+   * the render page set it to the box's same-origin feed (BoxDevice.hlsUrl). Set it before sources are prepared.
+   */
+  deviceUrl: (id: string) => string = deviceLiveUrl;
   private overlayImg: HTMLImageElement | null = null;
   private match: MatchDetail | null = null;
   private orgName = "";
@@ -198,7 +203,7 @@ export class StudioMixer {
         src.gain.connect(this.monitor);
       }
       try {
-        if (ref.kind === "device") await this.attachHls(src, deviceLiveUrl(ref.id));
+        if (ref.kind === "device") await this.attachHls(src, this.deviceUrl(ref.id));
         else if (ref.kind === "prop") {
           const blob = await getPropBlob(ref.id);
           if (!blob) throw new Error("This prop video isn't in this browser any more");

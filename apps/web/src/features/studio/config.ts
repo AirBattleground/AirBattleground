@@ -1,11 +1,10 @@
-import type { DeviceRow } from "@7xen/shared";
 import { DEFAULT_OVERLAYS, type LayoutKind, type Scene, type SourceRef, type StudioConfigV1 } from "./engine/types";
 
 /** Short random id for scenes. */
 export const sid = () => Math.random().toString(36).slice(2, 9);
 
 /** A first setup for a new show: a slate, each phone, side by side, game + host, host, scorecard, MVP. */
-export function defaultConfig(devices: DeviceRow[]): StudioConfigV1 {
+export function defaultConfig(devices: { id: string; name: string }[]): StudioConfigV1 {
   const d = devices.map((x) => ({ kind: "device" as const, id: x.id }));
   const scenes: Scene[] = [
     { id: sid(), name: "Starting soon", layout: "full", slots: [{ kind: "slate" }] },

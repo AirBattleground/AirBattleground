@@ -9,11 +9,18 @@ export interface FfmpegOpts {
   fps: number;
   kbps: number;
   cores: number;
-  /** RTMP publish URL (or a local file path for the smoke test) */
-  output: string;
+  /** RTMP publish URL(s) (or a local file path for the smoke test); several → tee muxer, none → encode only */
+  output: string | string[];
+  /** tee muxer even for one output (box jobs) */
+  tee?: boolean;
+  /** display names of the outputs, same order (per-output health) */
+  outputNames?: string[];
   /** called once when the process ends for any reason */
   onExit: (reason: string) => void;
 }
+
+/** ffmpeg output line safe to log: stream keys / publish tokens after the RTMP app name are cut off. */
+export const redactKeys = (line: string) => line.replace(/(rtmps?:\/\/[^/\s]+\/[^/\s?']+\/)[^\s'|]+/g, "$1…");
 
 export class FfmpegPipe {
   private child: ChildProcessWithoutNullStreams;
@@ -22,17 +29,25 @@ export class FfmpegPipe {
   private stopping = false;
   private lastStderr = "";
   readonly meter = new ProgressMeter();
+  /** tee outputs that failed (their names); the others keep going */
+  readonly failedOutputs: string[] = [];
   bytesIn = 0;
 
   constructor(private readonly opts: FfmpegOpts) {
-    const args = ffmpegArgs(opts.encoder, { fps: opts.fps, kbps: opts.kbps, cores: opts.cores, output: opts.output });
-    log.debug("ffmpeg start", { args: args.join(" ").replace(/\?wtoken=[^\s]+/, "?wtoken=…") });
+    const args = ffmpegArgs(opts.encoder, { fps: opts.fps, kbps: opts.kbps, cores: opts.cores, output: opts.output, tee: opts.tee });
+    log.debug("ffmpeg start", { args: args.join(" ").replace(/\?wtoken=[^\s|]+/g, "?wtoken=…") });
     this.child = spawn(opts.ffmpegPath, args, { stdio: ["pipe", "pipe", "pipe"] });
     const warn = rateLimited(10, 30_000);
     this.child.stdout.setEncoding("utf8").on("data", (t: string) => this.meter.feed(t));
     this.child.stderr.setEncoding("utf8").on("data", (t: string) => {
-      for (const line of t.split("\n").map((l) => l.trim()).filter(Boolean)) {
+      for (const line of t.split("\n").map((l) => redactKeys(l.trim())).filter(Boolean)) {
         this.lastStderr = line;
+        const failed = /Slave muxer #(\d+) failed/.exec(line);
+        if (failed) {
+          const name = opts.outputNames?.[Number(failed[1])] ?? `output ${Number(failed[1]) + 1}`;
+          if (!this.failedOutputs.includes(name)) this.failedOutputs.push(name);
+          log.warn(`Stopped sending to ${name}: ${line.replace(/^.*failed:\s*/, "")}`);
+        }
         if (!this.stopping) warn((dropped) => log.warn(`ffmpeg: ${line}`, dropped ? { dropped } : undefined));
       }
     });

@@ -1,0 +1,23 @@
+{
+  "name": "@7xen/studio-box",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "7XEN Studio Box: a venue PC that pairs the phones, runs the media server and serves the Studio on the LAN",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env --import tsx src/index.ts",
+    "dev": "node --env-file-if-exists=.env --import tsx --watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@7xen/shared": "workspace:*",
+    "tsx": "^4.19.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

@@ -1,0 +1,20 @@
+# 7XEN Studio Box — media server (MediaMTX) on the host network.
+#   docker compose -f services/studio-box/docker-compose.yml up -d
+# Defaults: RTMP :1935 (phones, open in the firewall) · HLS 127.0.0.1:8888 · API 127.0.0.1:9997 · auth hook → box :4300.
+# On a DEV machine those ports are usually taken by the dev media server — override them, e.g.
+#   MEDIA_RTMP_PORT=1938 MEDIA_HLS_PORT=8891 MEDIA_API_PORT=9996 PORT=4301 docker compose -p 7xen-box-test -f services/studio-box/docker-compose.yml up -d
+# and set the same values in services/studio-box/.env (MEDIA_RTMP_PORT, MEDIA_HLS_URL, MEDIA_API_URL, PORT).
+name: 7xen-studio-box
+services:
+  media:
+    image: bluenviron/mediamtx:1.9.3
+    container_name: ${MEDIA_CONTAINER:-7xen-studio-box-media}
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      MTX_RTMPADDRESS: ":${MEDIA_RTMP_PORT:-1935}"
+      MTX_HLSADDRESS: "127.0.0.1:${MEDIA_HLS_PORT:-8888}"
+      MTX_APIADDRESS: "127.0.0.1:${MEDIA_API_PORT:-9997}"
+      MTX_AUTHHTTPADDRESS: "http://127.0.0.1:${PORT:-4300}/box/media/auth"
+    volumes:
+      - ./mediamtx.yml:/mediamtx.yml:ro

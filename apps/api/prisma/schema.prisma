@@ -869,6 +869,10 @@ model StudioWorker {
   fps         Float?
   bitrateKbps Float?
   error       String?
+  /// phase 8c: Studio Box info from the last poll (null = not a box)
+  boxLanUrl    String?
+  boxDevices   Int?
+  boxStreaming Int?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

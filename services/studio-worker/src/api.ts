@@ -1,5 +1,5 @@
 /** The worker's one API call: POST /api/studio-worker/poll (header X-Worker-Key). */
-import type { WorkerPollInput, WorkerPollResponse } from "@7xen/shared";
+import { boxPollInfoSchema, type BoxPollInfo, type WorkerPollInput, type WorkerPollResponse } from "@7xen/shared";
 
 export type PollResult =
   | { kind: "ok"; res: WorkerPollResponse }
@@ -27,6 +27,22 @@ export function makePoll(apiUrl: string, workerKey: string, timeoutMs = 10_000):
     } catch (err) {
       const e = err as Error & { cause?: { code?: string } };
       return { kind: "error", message: `${e.message}${e.cause?.code ? ` (${e.cause.code})` : ""}` };
+    }
+  };
+}
+
+/** phase 8c: what the Studio Box on this machine reports (GET <boxUrl>/box/worker-info); null when it doesn't answer. */
+export type BoxInfoSource = () => Promise<BoxPollInfo | null>;
+
+export function makeBoxInfo(boxUrl: string, timeoutMs = 1500): BoxInfoSource {
+  return async () => {
+    try {
+      const res = await fetch(`${boxUrl}/box/worker-info`, { signal: AbortSignal.timeout(timeoutMs) });
+      if (!res.ok) return null;
+      const r = boxPollInfoSchema.safeParse(await res.json());
+      return r.success ? r.data : null;
+    } catch {
+      return null;
     }
   };
 }

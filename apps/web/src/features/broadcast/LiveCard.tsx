@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
-import { Play, Radio } from "lucide-react";
+import { Play, Radio, Youtube } from "lucide-react";
 import type { LiveBroadcastCard } from "@7xen/shared";
 import { LiveBadge } from "@/features/station/components/HlsPlayer";
 import { MapChip } from "@/features/team/components/MapChips";
 import { useT } from "@/i18n/core";
+import { youtubeIdOf } from "./YouTubePlayer";
 import { liveMsg } from "@/i18n/live";
 
 /** One live broadcast: organiser art, LIVE timer, title, map and a Watch button. */
@@ -25,6 +26,11 @@ export function LiveCard({ b, to }: { b: LiveBroadcastCard; to: string }) {
           )}
         </div>
         <LiveBadge startedAt={b.startedAt} className="absolute top-3 left-3" />
+        {youtubeIdOf(b) && (
+          <span className="absolute top-3 right-3 inline-flex items-center gap-1 rounded-full bg-background/85 px-2 py-0.5 text-[11px] font-semibold text-foreground shadow-sm backdrop-blur-sm">
+            <Youtube className="size-3.5 text-destructive" /> YouTube
+          </span>
+        )}
         <span className="absolute right-3 bottom-3 flex size-11 items-center justify-center rounded-full bg-destructive text-white shadow-lg transition-transform group-hover:scale-110">
           <Play className="size-5 fill-current" />
         </span>

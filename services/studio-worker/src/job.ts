@@ -25,6 +25,8 @@ export interface Pipeline {
   kbps(): number | null;
   /** optional: the output is really going out (ffmpeg connected and writing) — "live" waits for it */
   flowing?(): boolean;
+  /** optional: a non-fatal problem to report (e.g. one of several destinations failed) */
+  warning?(): string | null;
   stop(): Promise<void>;
 }
 
@@ -85,7 +87,7 @@ export class JobRunner {
       showId: this.job?.showId ?? null,
       fps: this.pipeline ? this.pageFps : null,
       bitrateKbps: this.pipeline ? this.pipeline.kbps() : null,
-      error: (this.error ?? (this.pipeline ? this.pageError : null))?.slice(0, 300) ?? null,
+      error: (this.error ?? (this.pipeline ? (this.pageError ?? this.pipeline.warning?.() ?? null) : null))?.slice(0, 300) ?? null,
     };
   }
 

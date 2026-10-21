@@ -21,6 +21,13 @@ export interface Config {
    * then read from it directly (with the job's read token) instead of through the API. null = through the API.
    */
   localHlsBase: string | null;
+  /**
+   * phase 8c: this worker runs on a Studio Box — the box's local URL (e.g. http://127.0.0.1:4300). Before each poll the
+   * worker reads BOX_URL/box/worker-info and reports it as `box`, so the website lists it as a Studio box.
+   */
+  boxUrl: string | null;
+  /** phase 8c: RTMP base of the box's own media server (e.g. rtmp://127.0.0.1:1935/live) — a copy of the show goes there for the Studio preview */
+  boxPublishBase: string | null;
   version: string;
 }
 
@@ -48,6 +55,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     chromeArgs: (blank(env.CHROME_ARGS) ?? "").split(/\s+/).filter(Boolean),
     publishBase: blank(env.PUBLISH_RTMP_BASE)?.replace(/\/+$/, "") ?? null,
     localHlsBase: blank(env.LOCAL_HLS_BASE)?.replace(/\/+$/, "") ?? null,
+    boxUrl: blank(env.BOX_URL)?.replace(/\/+$/, "") ?? null,
+    boxPublishBase: blank(env.BOX_RTMP_BASE)?.replace(/\/+$/, "") ?? null,
     version: packageVersion(),
   };
 }

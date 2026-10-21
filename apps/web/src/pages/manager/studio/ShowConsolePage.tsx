@@ -28,7 +28,7 @@ import {
   Youtube,
 } from "lucide-react";
 import { toast } from "sonner";
-import { STUDIO_FPS, STUDIO_HEIGHT, STUDIO_WIDTH, type DeviceRow, type MatchDetail, type StudioShow, type StudioStatus, type StudioWorkerRow } from "@7xen/shared";
+import { STUDIO_FPS, STUDIO_HEIGHT, STUDIO_WIDTH, type BoxDevice, type BoxInfo, type MatchDetail, type StudioShow, type StudioStatus, type StudioWorkerRow } from "@7xen/shared";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/tooltip";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@7xen/ui/components/ui/dialog";
@@ -42,6 +42,8 @@ import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
 import { useDevices } from "@/features/devices/api";
+import { isThisBox, useBox, useBoxDevices, useMixerDeviceUrls } from "@/features/studio/box";
+import { BoxPhonesList } from "@/features/studio/components/BoxPhones";
 import { useUpcomingMatches } from "@/features/broadcast/api";
 import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { errorMessage } from "@/features/manager/api";
@@ -63,7 +65,7 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="studio-scenes"]', title: "Scenes", description: "Click a scene to preview it, then TAKE to put it on air (or double-click / press 1–9). Edit a scene to change its frame and sources.", side: "top" },
   { element: '[data-tour="studio-sources-panel"]', title: "Sources", description: "Phones, your webcam and mic, and prop videos (intro, break, outro) saved in this browser.", side: "right" },
   { element: '[data-tour="studio-capture"]', title: "Capture for the match", description: "With a match selected: put the team list or results screen on air, then tap Team list / Results. The screenshot goes to the match center and is read automatically.", side: "bottom" },
-  { element: '[data-tour="studio-runs-on"]', title: "Runs on", description: "Run the show in this browser, or on one of your Studio workers (a PC that renders and sends the show). On a worker the show keeps going even if you close this tab.", side: "bottom" },
+  { element: '[data-tour="studio-runs-on"]', title: "Runs on", description: "Run the show in this browser, or on one of your Studio boxes (a PC that renders and sends the show). On a box the show keeps going even if you close this tab.", side: "bottom" },
   { element: '[data-tour="studio-golive"]', title: "Go live", description: "Starts the broadcast. In this browser, keep the tab open while you're live; your intro scene is a good place to start.", side: "bottom" },
 ];
 
@@ -85,17 +87,27 @@ function saveRunOn(v: string) {
     /* private mode etc. */
   }
 }
+/** A phone the console can use as a source: an AWS device, or (on a Studio Box) a phone paired on the box. */
+type StudioDevice = { id: string; name: string; videoReady: boolean };
+type BoxCtx = { info: BoxInfo; devices: BoxDevice[] } | null;
+
 export default function ShowConsolePage() {
   const { showId } = useParams();
   const q = useShow(showId);
-  const devices = useDevices();
+  // on a Studio Box the phones come from the box (polled every 3 s), else from the website
+  const box = useBox();
+  const awsDevices = useDevices(box.ready && !box.isBox);
+  const boxDevices = useBoxDevices(box.isBox);
+  const devices = box.isBox ? boxDevices : awsDevices;
   if (q.isError) return <QueryError error={q.error} onRetry={() => void q.refetch()} title="We couldn't load this show" />;
-  if (!q.data || !devices.data) return <Skeleton className="aspect-video w-full rounded-xl" />;
-  return <WithMixer key={q.data.id} show={q.data} devices={devices.data} />;
+  if (devices.isError && !devices.data) return <QueryError error={devices.error} onRetry={() => void devices.refetch()} title="We couldn't load your phones" />;
+  if (!q.data || !box.ready || !devices.data) return <Skeleton className="aspect-video w-full rounded-xl" />;
+  const boxCtx: BoxCtx = box.info ? { info: box.info, devices: boxDevices.data ?? [] } : null;
+  return <WithMixer key={q.data.id} show={q.data} devices={devices.data} box={boxCtx} />;
 }
 
 /** One mixer per mount (created in the effect so React's dev double-mount gets a fresh, working one). */
-function WithMixer({ show, devices }: { show: StudioShow; devices: DeviceRow[] }) {
+function WithMixer({ show, devices, box }: { show: StudioShow; devices: StudioDevice[]; box: BoxCtx }) {
   const [mixer, setMixer] = useState<StudioMixer | null>(null);
   useEffect(() => {
     const m = new StudioMixer();
@@ -103,11 +115,13 @@ function WithMixer({ show, devices }: { show: StudioShow; devices: DeviceRow[] }
     return () => m.dispose();
   }, []);
   if (!mixer) return <Skeleton className="aspect-video w-full rounded-xl" />;
-  return <Console key={mixer.id} show={show} devices={devices} mixer={mixer} />;
+  return <Console key={mixer.id} show={show} devices={devices} mixer={mixer} box={box} />;
 }
 
-function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRow[]; mixer: StudioMixer }) {
+function Console({ show, devices, mixer, box }: { show: StudioShow; devices: StudioDevice[]; mixer: StudioMixer; box: BoxCtx }) {
   usePageTour("manager.studioConsole", TOUR);
+  // device sources play from the box itself when the console is opened on a Studio Box
+  useMixerDeviceUrls(mixer, !!box, box?.devices);
   const { user } = useAuth();
   const update = useUpdateShow(show.id);
   const [config, setConfig] = useState<StudioConfigV1>(() => asConfig(show.config) ?? defaultConfig(devices));
@@ -147,9 +161,12 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
   };
   const autoRunOn = useMemo(() => {
     const online = workerList.filter((w) => w.online);
+    // on a Studio Box the show runs on the box itself by default
+    const self = box ? online.find(isThisBox) : undefined;
+    if (self) return self.id;
     const saved = savedRunOn();
     return (online.find((w) => w.id === saved) ?? online[0])?.id ?? RUN_BROWSER;
-  }, [workerList]);
+  }, [workerList, box]);
   const runOn = choice ?? autoRunOn;
   const selectedWorker = runOn === RUN_BROWSER ? null : (workerList.find((w) => w.id === runOn) ?? null);
   const [workerLiveHint, setWorkerLiveHint] = useState(show.runOn === "worker" && show.state === "LIVE");
@@ -313,6 +330,11 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
         </Button>
         <Clapperboard className="size-5 text-primary" />
         <Input value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => title.trim().length >= 2 && title !== show.title && saveMeta({ title: title.trim() })} className="h-9 w-56 font-display text-lg font-bold" aria-label="Show name" />
+        {box && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary" title={box.info.lanUrl}>
+            <Server className="size-3.5" /> Studio box: {box.info.name}
+          </span>
+        )}
         <MatchPicker value={matchId} onChange={(m) => (setMatchId(m), saveMeta({ matchId: m }))} disabled={live} />
         <ToggleGroup type="single" variant="outline" size="sm" value={config.transition} onValueChange={(v) => v && setConfig((c) => ({ ...c, transition: v as "cut" | "fade" }))}>
           <ToggleGroupItem value="cut" className="px-3">
@@ -356,7 +378,7 @@ function Console({ show, devices, mixer }: { show: StudioShow; devices: DeviceRo
       </div>
 
       <div className="grid flex-1 gap-4 p-4 xl:grid-cols-[18rem_minmax(0,1fr)_17rem]">
-        <SourcesPanel mixer={mixer} devices={devices} props={props} setProps={setProps} config={config} setConfig={setConfig} />
+        <SourcesPanel mixer={mixer} devices={devices} box={box} props={props} setProps={setProps} config={config} setConfig={setConfig} />
 
         {/* monitors + scenes */}
         <div className="flex min-w-0 flex-col gap-4">
@@ -670,7 +692,7 @@ function RunsOnPicker({ value, workers, showId, onChange }: { value: string; wor
             <SelectItem key={w.id} value={w.id} disabled={!w.online}>
               <span className={cn("size-2 shrink-0 rounded-full", w.online ? "bg-success" : "bg-muted-foreground/40")} />
               <span className="truncate">{w.name}</span>
-              <span className="text-muted-foreground">{!w.online ? "· offline" : busy ? "· busy" : ""}</span>
+              <span className="text-muted-foreground">{!w.online ? "· offline" : busy ? "· busy" : isThisBox(w) ? "· this box" : ""}</span>
             </SelectItem>
           );
         })}
@@ -681,7 +703,7 @@ function RunsOnPicker({ value, workers, showId, onChange }: { value: string; wor
 
 // ---------------------------------------------------------------- scenes
 
-function sourceLabel(ref: SourceRef | null, devices: DeviceRow[], props: PropMeta[]): string {
+function sourceLabel(ref: SourceRef | null, devices: StudioDevice[], props: PropMeta[]): string {
   if (!ref) return "Empty";
   switch (ref.kind) {
     case "device":
@@ -710,7 +732,7 @@ function LayoutIcon({ layout, className }: { layout: LayoutKind; className?: str
   );
 }
 
-function SceneCard(props: { scene: Scene; index: number; devices: DeviceRow[]; props: PropMeta[]; onAir: boolean; selected: boolean; onSelect: () => void; onTake: () => void; onEdit: () => void }) {
+function SceneCard(props: { scene: Scene; index: number; devices: StudioDevice[]; props: PropMeta[]; onAir: boolean; selected: boolean; onSelect: () => void; onTake: () => void; onEdit: () => void }) {
   const { scene, index, onAir, selected } = props;
   return (
     <div
@@ -755,7 +777,7 @@ function valueToRef(v: string): SourceRef | null {
   return kind === "device" || kind === "prop" ? ({ kind, id } as SourceRef) : ({ kind } as SourceRef);
 }
 
-function SceneEditor({ scene, devices, props, onClose, onSave, onDelete }: { scene: Scene | null; devices: DeviceRow[]; props: PropMeta[]; onClose: () => void; onSave: (s: Scene) => void; onDelete: (s: Scene) => void }) {
+function SceneEditor({ scene, devices, props, onClose, onSave, onDelete }: { scene: Scene | null; devices: StudioDevice[]; props: PropMeta[]; onClose: () => void; onSave: (s: Scene) => void; onDelete: (s: Scene) => void }) {
   const [draft, setDraft] = useState<Scene | null>(scene);
   useEffect(() => setDraft(scene), [scene]);
   if (!draft) return null;
@@ -834,13 +856,15 @@ function SceneEditor({ scene, devices, props, onClose, onSave, onDelete }: { sce
 function SourcesPanel({
   mixer,
   devices,
+  box,
   props,
   setProps,
   config,
   setConfig,
 }: {
   mixer: StudioMixer;
-  devices: DeviceRow[];
+  devices: StudioDevice[];
+  box: BoxCtx;
   props: PropMeta[];
   setProps: (p: PropMeta[]) => void;
   config: StudioConfigV1;
@@ -872,6 +896,11 @@ function SourcesPanel({
 
   return (
     <aside data-tour="studio-sources-panel" className="flex flex-col gap-3">
+      {box ? (
+        <Panel title="Phones" icon={<Smartphone />}>
+          <BoxPhonesList devices={box.devices} />
+        </Panel>
+      ) : (
       <Panel title="Phones" icon={<Smartphone />}>
         {devices.length === 0 && <p className="text-xs text-muted-foreground">No devices yet.</p>}
         <ul className="space-y-1.5">
@@ -884,6 +913,7 @@ function SourcesPanel({
           ))}
         </ul>
       </Panel>
+      )}
 
       <Panel title="Host" icon={<Mic />}>
         <div className="space-y-2">

@@ -10,6 +10,7 @@ import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 import { liveHlsUrl, useTeamLive } from "@/features/station/api";
 import { HlsPlayer, type PlayerState } from "@/features/station/components/HlsPlayer";
+import { YouTubePlayer, youtubeIdOf } from "@/features/broadcast/YouTubePlayer";
 import { LiveOverlay } from "@/features/broadcast/LiveOverlay";
 import { useLiveBroadcasts } from "@/features/broadcast/live";
 import { useT } from "@/i18n/core";
@@ -135,24 +136,40 @@ export default function LiveViewerPage() {
         description={shown.subtitle || undefined}
       />
       <div data-tour="live-player" className="-mx-4 sm:mx-0">
-        <HlsPlayer
-          src={shown.hlsUrl || liveHlsUrl(shown.matchId)}
-          startedAt={shown.startedAt}
-          ended={ended}
-          onStateChange={setPlayerState}
-          showLiveBadge={!shown.overlayUrl}
-          dvr={!!shown.overlayUrl}
-          frameClassName="rounded-none border-x-0 sm:rounded-xl sm:border-x"
-          endedSlot={
-            <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
-              <MonitorOff className="mx-auto size-7 text-muted-foreground" />
-              <p className="text-sm font-medium">{t("ended_long")}</p>
-              <EndedActions />
-            </div>
-          }
-        >
-          {shown.overlayUrl && !ended && <LiveOverlay url={shown.overlayUrl} />}
-        </HlsPlayer>
+        {youtubeIdOf(shown) ? (
+          <YouTubePlayer
+            videoId={youtubeIdOf(shown)!}
+            title={shown.title}
+            ended={ended}
+            frameClassName="rounded-none border-x-0 sm:rounded-xl sm:border-x"
+            endedSlot={
+              <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
+                <MonitorOff className="mx-auto size-7 text-muted-foreground" />
+                <p className="text-sm font-medium">{t("ended_long")}</p>
+                <EndedActions />
+              </div>
+            }
+          />
+        ) : (
+          <HlsPlayer
+            src={shown.hlsUrl || liveHlsUrl(shown.matchId)}
+            startedAt={shown.startedAt}
+            ended={ended}
+            onStateChange={setPlayerState}
+            showLiveBadge={!shown.overlayUrl}
+            dvr={!!shown.overlayUrl}
+            frameClassName="rounded-none border-x-0 sm:rounded-xl sm:border-x"
+            endedSlot={
+              <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
+                <MonitorOff className="mx-auto size-7 text-muted-foreground" />
+                <p className="text-sm font-medium">{t("ended_long")}</p>
+                <EndedActions />
+              </div>
+            }
+          >
+            {shown.overlayUrl && !ended && <LiveOverlay url={shown.overlayUrl} />}
+          </HlsPlayer>
+        )}
       </div>
     </>
   );

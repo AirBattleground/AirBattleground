@@ -12,6 +12,7 @@ import { pollControl, useShow } from "@/features/studio/api";
 import { asConfig, fadeMsOf, resolveSceneForWorker } from "@/features/studio/config";
 import { StudioMixer } from "@/features/studio/engine/mixer";
 import { useOverlayImage } from "@/features/studio/overlayImage";
+import { useBox, useBoxDevices, useMixerDeviceUrls } from "@/features/studio/box";
 import type { SourceRef } from "@/features/studio/engine/types";
 
 declare global {
@@ -42,6 +43,8 @@ function toBase64(b: Blob): Promise<string> {
 export default function RenderPage() {
   const { showId = "" } = useParams();
   const [mixer, setMixer] = useState<StudioMixer | null>(null);
+  // on a Studio Box the phones play from the box itself — wait for that check before loading any source
+  const box = useBox();
   // one mixer per mount (created in the effect so StrictMode's double mount gets a fresh, working one)
   useEffect(() => {
     const m = new StudioMixer();
@@ -50,13 +53,15 @@ export default function RenderPage() {
   }, []);
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden bg-black">
-      {mixer && <Render key={mixer.id} showId={showId} mixer={mixer} />}
+      {mixer && box.ready && <Render key={mixer.id} showId={showId} mixer={mixer} isBox={box.isBox} />}
     </div>
   );
 }
 
-function Render({ showId, mixer }: { showId: string; mixer: StudioMixer }) {
+function Render({ showId, mixer, isBox }: { showId: string; mixer: StudioMixer; isBox: boolean }) {
   const { user } = useAuth();
+  const boxDevices = useBoxDevices(isBox);
+  useMixerDeviceUrls(mixer, isBox, boxDevices.data);
   const show = useShow(showId);
   const host = useRef<HTMLDivElement>(null);
   const [ctl, setCtl] = useState<ShowControlState | null>(null);

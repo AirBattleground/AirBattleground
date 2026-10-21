@@ -1,0 +1,17 @@
+# The Studio worker on a Studio Box (systemd --user). Settings: services/studio-worker/.env with
+#   WORKER_KEY=<the box key>  BOX_URL=http://127.0.0.1:4300  BOX_RTMP_BASE=rtmp://127.0.0.1:1935/live
+#   (leave PUBLISH_RTMP_BASE unset on a box: the AWS copy goes straight to the website)
+#   systemctl --user enable --now 7xen-studio-box-worker
+[Unit]
+Description=7XEN Studio worker (Studio Box)
+After=network-online.target 7xen-studio-box.service
+Wants=network-online.target 7xen-studio-box.service
+
+[Service]
+WorkingDirectory=%h/7xen/services/studio-worker
+ExecStart=/usr/bin/node --env-file-if-exists=.env --import tsx src/index.ts
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

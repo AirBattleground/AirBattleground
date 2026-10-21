@@ -17,6 +17,7 @@ import type { Prisma, StudioShow as DbShow } from "@prisma/client";
 import {
   WORKER_GONE_MS,
   WORKER_ONLINE_MS,
+  type BoxOutput,
   type CreateShowInput,
   type IngestQuery,
   type LiveBroadcastCard,
@@ -167,6 +168,10 @@ interface Runner {
   error: string | null;
   stopping: boolean;
   readyTimer: NodeJS.Timeout | null;
+  /** phase 8c: the worker is a Studio Box — it pushes to the outputs itself; this server runs no relays */
+  box: boolean;
+  /** box mode: outputs (relays map, proc never started) + site-YouTube broadcast are ready */
+  boxReady: Promise<void> | null;
 }
 
 const runners = new Map<string, Runner>();
@@ -277,6 +282,8 @@ function startRunner(showId: string, managerId: string, session: string, codec: 
     error: null,
     stopping: false,
     readyTimer: null,
+    box: false,
+    boxReady: null,
   };
   let tail = "";
   proc.stderr!.setEncoding("utf8");
@@ -314,8 +321,11 @@ async function teardown(r: Runner, end: boolean) {
   }
 }
 
-/** A worker-mode runner: no ingest, just relays once the worker's stream reaches MediaMTX. */
-function startWorkerRunner(showId: string, managerId: string, workerId: string): Runner {
+/**
+ * A worker-mode runner: no ingest, just relays once the worker's stream reaches MediaMTX. For a Studio Box (phase 8c)
+ * no relays at all: the box pushes to the outputs itself (prepared once here, handed out in every job).
+ */
+function startWorkerRunner(showId: string, managerId: string, workerId: string, box = false): Runner {
   const r: Runner = {
     showId,
     managerId,
@@ -332,11 +342,45 @@ function startWorkerRunner(showId: string, managerId: string, workerId: string):
     error: null,
     stopping: false,
     readyTimer: null,
+    box,
+    boxReady: null,
   };
   runners.set(showId, r);
-  watchReady(r);
+  if (box) r.boxReady = prepareBoxOutputs(r).catch((err) => logger.warn({ err, showId }, "studio box outputs failed"));
+  else watchReady(r);
   return r;
 }
+
+/** Box mode: the show's stream keys + (when on) the site-YouTube broadcast, created once per show start. */
+async function prepareBoxOutputs(r: Runner) {
+  const show = await prisma.studioShow.findUnique({ where: { id: r.showId } });
+  if (!show || r.stopping) return;
+  const targets = await destinationTargets(r.managerId, show.destinationIds);
+  for (const t of targets) r.relays.set(t.id, { id: t.id, name: t.name, target: t.target, ok: false, proc: null, retry: null });
+  if (show.siteYoutube) try {
+    const b = await startShowBroadcast({ title: show.title, matchId: show.matchId });
+    if (r.stopping) {
+      if (b) void endMatchBroadcast(b.broadcastId);
+      return;
+    }
+    r.yt = { broadcast: b, error: null };
+    if (b) r.relays.set("site-youtube", { id: "site-youtube", name: "AirBattleground YouTube", target: b.target, ok: false, proc: null, retry: null });
+  } catch (err) {
+    r.yt = { broadcast: null, error: err instanceof YoutubeError ? err.message : "Couldn't reach YouTube." };
+  }
+}
+
+/** Box mode: what the box's job carries (null = not a box show / not running). */
+export async function boxJobOutputs(showId: string, workerId: string): Promise<{ outputs: BoxOutput[]; youtube: boolean } | null> {
+  const r = runners.get(showId);
+  if (!r || !r.box || r.workerId !== workerId || r.stopping) return null;
+  await r.boxReady;
+  const outputs = [...r.relays.values()].map((x) => ({ id: x.id, name: x.name, url: x.target }));
+  return { outputs, youtube: !!r.yt?.broadcast };
+}
+
+/** Is this show running on a Studio Box (no server relays)? */
+export const showRunsOnBox = (showId: string) => !!runners.get(showId)?.box;
 
 export type IngestResult = { ok: true; live: boolean } | { restart: true };
 
@@ -413,7 +457,8 @@ export async function startWorkerShow(showId: string, managerId: string, workerI
     where: { id: showId },
     data: { runOn: "worker", workerId, state: "LIVE", liveSince: new Date(), controlVersion: { increment: 1 } },
   });
-  startWorkerRunner(showId, managerId, workerId);
+  const nr = startWorkerRunner(showId, managerId, workerId, !!w.boxLanUrl);
+  await nr.boxReady;
   wakeControl(showId);
   return showStatus(showId, managerId);
 }
@@ -421,7 +466,8 @@ export async function startWorkerShow(showId: string, managerId: string, workerI
 /** Boot: worker-run shows that were LIVE before a restart/deploy get their runner (and relays) back. */
 export async function resumeWorkerShows(): Promise<void> {
   const shows = await prisma.studioShow.findMany({ where: { state: "LIVE", runOn: "worker", workerId: { not: null } } });
-  for (const s of shows) if (!runners.has(s.id)) startWorkerRunner(s.id, s.managerId, s.workerId!);
+  const boxes = new Set((await prisma.studioWorker.findMany({ where: { boxLanUrl: { not: null } }, select: { id: true } })).map((w) => w.id));
+  for (const s of shows) if (!runners.has(s.id)) startWorkerRunner(s.id, s.managerId, s.workerId!, boxes.has(s.workerId!));
   if (shows.length) logger.info({ count: shows.length }, "studio worker shows resumed");
 }
 
@@ -502,18 +548,23 @@ export async function showControl(showId: string, managerId: string, since: numb
 export async function showStatus(showId: string, managerId: string): Promise<StudioStatus> {
   const s = await loadOwn(showId, managerId);
   const r = runners.get(showId);
+  const worker = await workerStatus(s.workerId);
+  // box mode: no relays here — the box pushes to its outputs; they count as ok while the box reports "live"
+  const boxLive = !!r?.box && !!worker?.online && worker.state === "live";
+  if (r?.box && boxLive) r.lastChunkAt = Date.now();
   const ago = r && r.lastChunkAt ? Math.round((Date.now() - r.lastChunkAt) / 1000) : null;
+  const okOf = (x: Relay | undefined) => (r?.box ? boxLive && !!x : (x?.ok ?? false));
   return {
     runOn: s.runOn as ShowRunOn,
-    worker: await workerStatus(s.workerId),
+    worker,
     state: s.state as ShowState,
     liveSince: s.liveSince?.toISOString() ?? null,
-    receiving: !!r && ago !== null && ago < 5,
+    receiving: r?.box ? boxLive : !!r && ago !== null && ago < 5,
     lastChunkAgo: ago,
-    destinations: r ? [...r.relays.values()].filter((x) => x.id !== "site-youtube").map((x) => ({ id: x.id, name: x.name, ok: x.ok })) : [],
+    destinations: r ? [...r.relays.values()].filter((x) => x.id !== "site-youtube").map((x) => ({ id: x.id, name: x.name, ok: okOf(x) })) : [],
     youtube: r?.yt
       ? r.yt.broadcast
-        ? { title: r.yt.broadcast.title, watchUrl: r.yt.broadcast.watchUrl, ok: r.relays.get("site-youtube")?.ok ?? false, error: null }
+        ? { title: r.yt.broadcast.title, watchUrl: r.yt.broadcast.watchUrl, ok: okOf(r.relays.get("site-youtube")), error: null }
         : r.yt.error
           ? { title: "AirBattleground YouTube", watchUrl: null, ok: false, error: r.yt.error }
           : null
@@ -570,6 +621,9 @@ export async function liveShows(ownerId?: string | null): Promise<LiveBroadcastC
   });
   const out: LiveBroadcastCard[] = [];
   for (const s of shows) {
+    const r = runners.get(s.id);
+    // box show on the site YouTube channel: the Live page embeds the YouTube video (the box sends no AWS copy)
+    const youtubeVideoId = r?.box ? r.yt?.broadcast?.broadcastId : undefined;
     const m = s.matchId ? await prisma.match.findUnique({ where: { id: s.matchId }, include: ownerInclude }) : null;
     const ctx = m ? matchContext(m) : null;
     out.push({
@@ -585,6 +639,7 @@ export async function liveShows(ownerId?: string | null): Promise<LiveBroadcastC
       organizer: { name: s.manager.orgName ?? s.manager.displayName, logoUrl: brandingUrl(s.manager.orgLogoKey) },
       tournamentId: m?.group?.stage.tournament.id ?? null,
       studio: true,
+      ...(youtubeVideoId ? { youtubeVideoId } : {}),
       ...(s.publicListing ? {} : { unlisted: true }),
     });
   }

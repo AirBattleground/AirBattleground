@@ -1,6 +1,6 @@
 /** The poll loop: report state every 2 s, apply the job the API answers with. */
 import { WORKER_GONE_MS, type WorkerPollInput } from "@7xen/shared";
-import type { Poll } from "./api.js";
+import type { BoxInfoSource, Poll } from "./api.js";
 import type { JobRunner } from "./job.js";
 import { log } from "./log.js";
 
@@ -12,6 +12,8 @@ export interface LoopDeps {
   runner: JobRunner;
   version: string;
   encoder: string;
+  /** phase 8c: the Studio Box on this machine (BOX_URL) — reported in every poll as `box` */
+  boxInfo?: BoxInfoSource;
   now?: () => number;
 }
 
@@ -21,9 +23,17 @@ export function makePollStep(d: LoopDeps) {
   let lastOkAt = now();
   let warnedOffline = false;
   let announced = false;
+  let boxDown = false;
 
   return async function step(): Promise<number> {
     const body: WorkerPollInput = { version: d.version, encoder: d.encoder, ...d.runner.snapshot() };
+    if (d.boxInfo) {
+      const box = await d.boxInfo();
+      if (box) body.box = box;
+      if (!box && !boxDown) log.warn("The Studio box on this computer isn't answering (BOX_URL) — is studio-box running?");
+      else if (box && boxDown) log.info("Studio box found", { lanUrl: box.lanUrl });
+      boxDown = !box;
+    }
     const r = await d.poll(body);
     if (r.kind === "ok") {
       lastOkAt = now();

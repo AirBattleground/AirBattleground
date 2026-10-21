@@ -31,6 +31,19 @@ Optional settings in `.env`:
 | `ENCODER` | (detected) | force one, e.g. `libx264` |
 | `CHROME_ARGS` | | extra Chrome flags |
 | `LOG_LEVEL` | `info` | `debug` for more |
+| `PUBLISH_RTMP_BASE` | | publish the show to this RTMP base instead of the job's host (media server on this PC) |
+| `LOCAL_HLS_BASE` | | read the phone feeds from a media server on this PC |
+| `BOX_URL` | | **Studio Box**: the box on this PC, e.g. `http://127.0.0.1:4300` — reported to the website in every poll |
+| `BOX_RTMP_BASE` | | **Studio Box**: the box's media server, e.g. `rtmp://127.0.0.1:1935/live` — a preview copy of the show goes there |
+
+### On a Studio Box (phase 8c)
+
+See `services/studio-box/README.md`. With `BOX_URL` set the worker reads `BOX_URL/box/worker-info` before each poll
+and sends it as `box` (the box never polls the website itself). For a box job the website sends `outputs` (stream keys,
+site-YouTube ingest) and `sendToAws`; ffmpeg then publishes to all of them at once with the tee muxer
+(`onfail=ignore`: one dead destination doesn't stop the others — it is reported as the worker's error), plus
+`publishUrl` when `sendToAws`, plus a copy to `BOX_RTMP_BASE`. With no destinations at all the show is still encoded
+(published to `BOX_RTMP_BASE`, or `PUBLISH_RTMP_BASE`, or nowhere). Jobs without `outputs` work exactly as before.
 
 ## Run
 

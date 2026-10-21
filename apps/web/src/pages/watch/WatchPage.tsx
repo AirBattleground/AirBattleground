@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth";
 import { useLiveBroadcasts } from "@/features/broadcast/live";
 import { LiveOverlay } from "@/features/broadcast/LiveOverlay";
 import { HlsPlayer, type PlayerState } from "@/features/station/components/HlsPlayer";
+import { YouTubePlayer, youtubeIdOf } from "@/features/broadcast/YouTubePlayer";
 import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 import { LiveCard } from "@/features/broadcast/LiveCard";
@@ -170,26 +171,44 @@ function WatchOne({ matchId }: { matchId: string }) {
         </Button>
       </div>
       <div className="-mx-4 sm:mx-0">
-        <HlsPlayer
-          src={shown.hlsUrl}
-          startedAt={shown.startedAt}
-          ended={ended}
-          onStateChange={setPlayerState}
-          showLiveBadge={!shown.overlayUrl}
-          dvr
-          frameClassName="rounded-none border-x-0 sm:rounded-xl sm:border-x"
-          endedSlot={
-            <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
-              <MonitorOff className="mx-auto size-7 text-muted-foreground" />
-              <p className="text-sm font-medium">{t("broadcast_ended")}</p>
-              <Button asChild>
-                <Link to="/watch">{t("see_live")}</Link>
-              </Button>
-            </div>
-          }
-        >
-          {shown.overlayUrl && !ended && <LiveOverlay url={shown.overlayUrl} />}
-        </HlsPlayer>
+        {youtubeIdOf(shown) ? (
+          <YouTubePlayer
+            videoId={youtubeIdOf(shown)!}
+            title={shown.title}
+            ended={ended}
+            frameClassName="rounded-none border-x-0 sm:rounded-xl sm:border-x"
+            endedSlot={
+              <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
+                <MonitorOff className="mx-auto size-7 text-muted-foreground" />
+                <p className="text-sm font-medium">{t("broadcast_ended")}</p>
+                <Button asChild>
+                  <Link to="/watch">{t("see_live")}</Link>
+                </Button>
+              </div>
+            }
+          />
+        ) : (
+          <HlsPlayer
+            src={shown.hlsUrl}
+            startedAt={shown.startedAt}
+            ended={ended}
+            onStateChange={setPlayerState}
+            showLiveBadge={!shown.overlayUrl}
+            dvr
+            frameClassName="rounded-none border-x-0 sm:rounded-xl sm:border-x"
+            endedSlot={
+              <div className="max-w-md space-y-3 rounded-xl border bg-card/95 p-4 text-center shadow-sm backdrop-blur-sm sm:p-5">
+                <MonitorOff className="mx-auto size-7 text-muted-foreground" />
+                <p className="text-sm font-medium">{t("broadcast_ended")}</p>
+                <Button asChild>
+                  <Link to="/watch">{t("see_live")}</Link>
+                </Button>
+              </div>
+            }
+          >
+            {shown.overlayUrl && !ended && <LiveOverlay url={shown.overlayUrl} />}
+          </HlsPlayer>
+        )}
       </div>
     </>
   );
