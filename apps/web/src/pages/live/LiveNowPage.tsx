@@ -6,17 +6,19 @@ import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useLiveBroadcasts } from "@/features/broadcast/live";
 import { LiveCard } from "@/features/broadcast/LiveCard";
+import { ChannelSection } from "@/features/broadcast/ChannelSection";
 import { QueryError } from "@/features/team/components/QueryError";
 import { useT } from "@/i18n/core";
 import { liveMsg } from "@/i18n/live";
 
-/** Live page for players (/team/live) and managers (/manager/live): every broadcast on right now. */
+/** Live page for players (/team/live) and managers (/manager/live): every broadcast on right now, then the site YouTube channel. */
 export default function LiveNowPage() {
   const t = useT(liveMsg);
   const tour = useMemo<TourStep[]>(
     () => [
       { title: t("now_tour_title"), description: t("now_tour_desc") },
       { element: '[data-tour="live-grid"]', title: t("now_tour_grid_title"), description: t("now_tour_grid_desc"), side: "top" },
+      { element: '[data-tour="live-channel"]', title: t("yt_tour_title"), description: t("yt_tour_desc"), side: "top" },
     ],
     [t],
   );
@@ -45,6 +47,7 @@ export default function LiveNowPage() {
           ))}
         </div>
       )}
+      <ChannelSection />
     </>
   );
 }

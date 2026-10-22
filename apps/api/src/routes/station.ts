@@ -35,6 +35,7 @@ import { fetchHls, fetchHlsPath, showPath } from "../services/media.js";
 import { liveBroadcasts, matchOverlayPng } from "../services/broadcast/viewer.js";
 import { pipeUpstream } from "./broadcast.js";
 import * as studio from "../services/studio.js";
+import { channelFeed } from "../services/youtube.js";
 
 const p = (v: unknown) => v as string;
 
@@ -184,6 +185,11 @@ export function liveRouter() {
     // phase 8: only Studio shows are broadcast (single-phone broadcasts were retired to save server CPU);
     // a signed-in manager also gets their own private (unlisted) show so "Open viewer" works for a test stream
     res.json({ items: await studio.liveShows(sessionUserIds(req)[0] ?? null) });
+  });
+  // the site YouTube channel's stats, streams and uploads for the Live page (public; cached in the service)
+  r.get("/channel", async (_req, res) => {
+    res.setHeader("Cache-Control", "public, max-age=60");
+    res.json(await channelFeed());
   });
   // phase 8: a live Studio show's HLS (public)
   r.get("/s/:showId/:file", async (req, res) => {

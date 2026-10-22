@@ -13,7 +13,9 @@ import {
   type GameMap,
   type UpdateYoutubeInput,
   type YoutubePrivacy,
+  type YoutubeChannelFeed,
   type YoutubeStatus,
+  type YoutubeVideo,
 } from "@7xen/shared";
 import { env } from "../env.js";
 import { prisma } from "../db.js";
@@ -157,6 +159,7 @@ export async function disconnectYoutube(): Promise<YoutubeStatus> {
     await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(decryptSecret(s.refreshTokenEnc))}`, { method: "POST" }).catch(() => undefined);
   }
   cached = null;
+  feed = null;
   return toStatus(await save({ refreshTokenEnc: null, channel: null, connectedAt: null, lastError: null }));
 }
 
@@ -287,6 +290,123 @@ export async function endMatchBroadcast(broadcastId: string): Promise<void> {
   await yt("POST", `/liveBroadcasts/transition?broadcastStatus=complete&id=${encodeURIComponent(broadcastId)}&part=status`).catch((err: Error) =>
     logger.info({ err: err.message, broadcastId }, "youtube transition to complete skipped"),
   );
+}
+
+// ---------------------------------------------------------------- channel feed (public Live page)
+
+const FEED_TTL_MS = 10 * 60_000;
+const FEED_RETRY_MS = 60_000;
+const FEED_VIDEOS = 50;
+const EMPTY_FEED: YoutubeChannelFeed = { connected: false, channel: null, streams: [], uploads: [], updatedAt: null };
+
+let feed: { channelId: string; data: YoutubeChannelFeed; until: number } | null = null;
+let feedLoading: Promise<YoutubeChannelFeed> | null = null;
+
+interface YtVideo {
+  id: string;
+  snippet: { title: string; publishedAt: string; liveBroadcastContent: "live" | "upcoming" | "none"; thumbnails?: Record<string, { url: string }> };
+  contentDetails?: { duration?: string };
+  statistics?: { viewCount?: string };
+  status?: { privacyStatus?: string };
+  liveStreamingDetails?: { actualStartTime?: string; actualEndTime?: string; scheduledStartTime?: string; concurrentViewers?: string };
+}
+
+/** "PT1H2M3S" → 3723; "P0D" (live) → null */
+function isoSeconds(d: string | undefined): number | null {
+  const m = d ? /^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/.exec(d) : null;
+  if (!m) return null;
+  const sec = Number(m[1] ?? 0) * 86400 + Number(m[2] ?? 0) * 3600 + Number(m[3] ?? 0) * 60 + Number(m[4] ?? 0);
+  return sec || null;
+}
+
+const num = (v: string | undefined) => (v === undefined ? null : Number(v));
+
+function toVideo(v: YtVideo): YoutubeVideo {
+  const live = v.liveStreamingDetails;
+  const kind: YoutubeVideo["kind"] =
+    v.snippet.liveBroadcastContent === "live" ? "live" : v.snippet.liveBroadcastContent === "upcoming" ? "upcoming" : live ? "past" : "video";
+  const t = v.snippet.thumbnails ?? {};
+  return {
+    id: v.id,
+    title: v.snippet.title,
+    thumbnailUrl: (t.maxres ?? t.standard ?? t.high ?? t.medium ?? t.default)?.url ?? null,
+    publishedAt: live?.actualStartTime ?? live?.scheduledStartTime ?? v.snippet.publishedAt,
+    durationSec: kind === "live" || kind === "upcoming" ? null : isoSeconds(v.contentDetails?.duration),
+    views: kind === "live" ? num(live?.concurrentViewers) : num(v.statistics?.viewCount),
+    kind,
+    url: `https://www.youtube.com/watch?v=${v.id}`,
+  };
+}
+
+async function readFeed(): Promise<YoutubeChannelFeed> {
+  const ch = await yt<{
+    items?: {
+      id: string;
+      snippet: { title: string; description?: string; customUrl?: string; thumbnails?: Record<string, { url: string }> };
+      statistics: { viewCount?: string; subscriberCount?: string; hiddenSubscriberCount?: boolean; videoCount?: string };
+      contentDetails: { relatedPlaylists: { uploads: string } };
+    }[];
+  }>("GET", "/channels?part=snippet,statistics,contentDetails&mine=true");
+  const c = ch.items?.[0];
+  if (!c) return EMPTY_FEED;
+  // uploads playlist (1 unit) + video details (1 unit) — search.list would cost 100 units a call
+  const list = await yt<{ items?: { contentDetails: { videoId: string } }[] }>(
+    "GET",
+    `/playlistItems?part=contentDetails&maxResults=${FEED_VIDEOS}&playlistId=${encodeURIComponent(c.contentDetails.relatedPlaylists.uploads)}`,
+  );
+  const ids = (list.items ?? []).map((i) => i.contentDetails.videoId);
+  const vids = ids.length
+    ? ((await yt<{ items?: YtVideo[] }>("GET", `/videos?part=snippet,contentDetails,statistics,status,liveStreamingDetails&id=${ids.map(encodeURIComponent).join(",")}`)).items ?? [])
+    : [];
+  // signed in as the owner, YouTube also lists private + unlisted videos: the Live page shows public ones only
+  const videos = vids.filter((v) => v.status?.privacyStatus === "public").map(toVideo);
+  const rank = { live: 0, upcoming: 1, past: 2, video: 3 } as const;
+  const byNewest = (a: YoutubeVideo, b: YoutubeVideo) => rank[a.kind] - rank[b.kind] || b.publishedAt.localeCompare(a.publishedAt);
+  const t = c.snippet.thumbnails ?? {};
+  return {
+    connected: true,
+    channel: {
+      id: c.id,
+      title: c.snippet.title,
+      description: (c.snippet.description ?? "").slice(0, 500),
+      thumbnailUrl: (t.high ?? t.medium ?? t.default)?.url ?? null,
+      url: c.snippet.customUrl ? `https://www.youtube.com/${c.snippet.customUrl}` : `https://www.youtube.com/channel/${c.id}`,
+      subscribers: c.statistics.hiddenSubscriberCount ? null : num(c.statistics.subscriberCount),
+      views: Number(c.statistics.viewCount ?? 0),
+      videos: Number(c.statistics.videoCount ?? 0),
+    },
+    streams: videos.filter((v) => v.kind !== "video").sort(byNewest),
+    uploads: videos.filter((v) => v.kind === "video").sort(byNewest),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * The connected channel's stats, live/past streams and uploads for the public Live page. Cached for 10 minutes; when
+ * YouTube can't be reached the last good copy is served (retried after a minute), else a plain error.
+ */
+export async function channelFeed(): Promise<YoutubeChannelFeed> {
+  const s = await load();
+  if (!s.refreshTokenEnc || !s.channel) return EMPTY_FEED;
+  const channelId = s.channel.id;
+  if (feed && feed.channelId === channelId && feed.until > Date.now()) return feed.data;
+  feedLoading ??= readFeed()
+    .then((data) => {
+      feed = { channelId, data, until: Date.now() + FEED_TTL_MS };
+      return data;
+    })
+    .catch((err: Error) => {
+      logger.warn({ err: err.message }, "youtube channel feed failed");
+      if (feed && feed.channelId === channelId) {
+        feed.until = Date.now() + FEED_RETRY_MS;
+        return feed.data;
+      }
+      throw new AppError("INTERNAL", "Couldn't load the YouTube channel. Try again in a minute.", undefined, 503);
+    })
+    .finally(() => {
+      feedLoading = null;
+    });
+  return feedLoading;
 }
 
 export { YoutubeError };

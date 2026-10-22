@@ -14,6 +14,10 @@
  * <PUBLIC_URL>/api/admin/youtube/callback) and PUBLIC_URL (e.g. https://airbattleground.com).
  *
  * DeviceOutput gains (optional) `youtube`: the match's YouTube broadcast while the output runs.
+ *
+ * PUBLIC (no sign-in) — the Live page's channel section
+ *   GET    /api/live/channel                                  → YoutubeChannelFeed  (connected: false when no channel;
+ *                                                               cached ~10 min on the server to spare the YouTube quota)
  */
 import { z } from "zod";
 
@@ -63,6 +67,42 @@ export interface OutputYoutube {
   /** false while YouTube couldn't be reached (error says why) */
   ok: boolean;
   error: string | null;
+}
+
+/** One public video of the site channel. */
+export interface YoutubeVideo {
+  id: string;
+  title: string;
+  thumbnailUrl: string | null;
+  /** ISO — when it went live (streams) or was published (uploads) */
+  publishedAt: string;
+  /** seconds; null while live / unknown */
+  durationSec: number | null;
+  views: number | null;
+  /** live = on air now · upcoming = scheduled · past = a finished live stream · video = a normal upload */
+  kind: "live" | "upcoming" | "past" | "video";
+  url: string;
+}
+
+export interface YoutubeChannelFeed {
+  connected: boolean;
+  channel: {
+    id: string;
+    title: string;
+    description: string;
+    thumbnailUrl: string | null;
+    url: string;
+    /** null when the channel hides it */
+    subscribers: number | null;
+    views: number;
+    videos: number;
+  } | null;
+  /** live + upcoming first, then past streams, newest first */
+  streams: YoutubeVideo[];
+  /** normal uploads (not live streams), newest first */
+  uploads: YoutubeVideo[];
+  /** ISO time the server last read YouTube */
+  updatedAt: string | null;
 }
 
 /** Fill a title template; result trimmed to YouTube's 100 characters. */
