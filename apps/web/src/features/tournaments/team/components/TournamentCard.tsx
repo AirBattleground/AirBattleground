@@ -168,13 +168,8 @@ export function TournamentCard({ t, chip, className }: TournamentCardProps) {
         </div>
       </div>
 
-      {/* CTA strip */}
-      <div
-        className={cn(
-          "relative z-10 flex items-center justify-between overflow-hidden border-t px-4 py-3 text-sm font-bold tracking-wide uppercase transition-colors duration-300 sm:px-5",
-          "bg-primary/[0.07] text-primary group-hover:bg-primary group-hover:text-primary-foreground",
-        )}
-      >
+      {/* CTA: the featured card's Register button (shape, sheen, chevrons) in the primary colour */}
+      <div className="arena-btn-cut relative z-10 mx-4 mb-4 flex h-12 items-center justify-center gap-3 overflow-hidden rounded-xl bg-primary px-6 text-sm font-bold tracking-wide text-primary-foreground uppercase shadow-glow transition-[filter] duration-300 group-hover:brightness-110 sm:mx-5 sm:mb-5">
         <span className="pointer-events-none absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-primary-foreground/25 to-transparent transition-transform duration-700 group-hover:translate-x-full" />
         <span className="relative">{open && !chip ? tl("view_register") : tl("open_tournament")}</span>
         <span className="tc-chev relative flex -space-x-2" aria-hidden>

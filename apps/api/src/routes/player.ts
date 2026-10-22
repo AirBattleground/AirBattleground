@@ -5,6 +5,7 @@ import {
   createJoinRequestSchema,
   createPlayerTeamSchema,
   inviteByBgmiSchema,
+  playerStatsQuerySchema,
   createSuggestionSchema,
   suggestionQuerySchema,
   transferLeaderSchema,
@@ -15,6 +16,7 @@ import { parseMultipart, singleImage } from "../lib/upload.js";
 import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import * as players from "../services/players.js";
+import { getPlayerStats } from "../services/playerStats.js";
 import * as suggestions from "../services/suggestions.js";
 
 export function playerRouter() {
@@ -28,6 +30,9 @@ export function playerRouter() {
   });
   r.patch("/me", async (req, res) => {
     res.json(await players.updateProfile(me(req), parse(updatePlayerProfileSchema, req.body)));
+  });
+  r.get("/stats", async (req, res) => {
+    res.json(await getPlayerStats(me(req), parse(playerStatsQuerySchema, req.query)));
   });
 
   // ---- own team ----

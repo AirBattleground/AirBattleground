@@ -3,6 +3,17 @@ import { defineMessages } from "./core";
 
 export const tHub = defineMessages({
   en: {
+    // redesign: hero + details tabs
+    prize_pool: "Prize pool",
+    organizer: "Organiser",
+    share: "Share",
+    link_copied: "Link copied — send it to your squad",
+    journey_desc: "Fight through the stages for the trophy. Spots are first come, first served.",
+    tab_points: "Points system",
+    tab_format: "Format",
+    tab_rules: "Rules",
+    points_desc: "Points come from your team's final position and finishes in each match.",
+    fact_time_ist: "{time} IST",
     // hub tour
     tour_hero_title: "The tournament",
     tour_hero_desc: "Prize, dates, organiser and how many teams have registered so far.",
@@ -115,6 +126,17 @@ export const tHub = defineMessages({
     sp_spots_of: "{left} of {cap} spots",
   },
   hi: {
+    // redesign: hero + details tabs
+    prize_pool: "इनामी राशि",
+    organizer: "आयोजक",
+    share: "शेयर",
+    link_copied: "लिंक कॉपी हो गया — अपने स्क्वॉड को भेजें",
+    journey_desc: "स्टेज पार करके ट्रॉफ़ी तक पहुँचें। जगहें पहले आओ, पहले पाओ।",
+    tab_points: "पॉइंट सिस्टम",
+    tab_format: "फ़ॉर्मेट",
+    tab_rules: "नियम",
+    points_desc: "हर मैच में टीम की फ़ाइनल पोज़िशन और फ़िनिश से पॉइंट मिलते हैं।",
+    fact_time_ist: "{time} IST",
     tour_hero_title: "टूर्नामेंट",
     tour_hero_desc: "प्राइज़, तारीख़ें, ऑर्गनाइज़र और अब तक कितनी टीमें रजिस्टर हुईं।",
     tour_watch_title: "लाइव देखें",
@@ -222,6 +244,17 @@ export const tHub = defineMessages({
     sp_spots_of: "{cap} में से {left} जगह",
   },
   hinglish: {
+    // redesign: hero + details tabs
+    prize_pool: "Prize pool",
+    organizer: "Organiser",
+    share: "Share",
+    link_copied: "Link copy ho gaya — squad ko bhej do",
+    journey_desc: "Stages jeet ke trophy tak pahuncho. Spots pehle aao, pehle pao.",
+    tab_points: "Points system",
+    tab_format: "Format",
+    tab_rules: "Rules",
+    points_desc: "Har match mein team ki final position aur finishes se points milte hain.",
+    fact_time_ist: "{time} IST",
     tour_hero_title: "Tournament",
     tour_hero_desc: "Prize, dates, organiser aur ab tak kitni teams register hui.",
     tour_watch_title: "Live dekho",

@@ -22,3 +22,4 @@ export * from "./studio";
 export * from "./studioWorker";
 export * from "./studioBox";
 export * from "./studioLink";
+export * from "./playerStats";

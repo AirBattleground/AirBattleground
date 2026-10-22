@@ -7,11 +7,10 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { useAuth } from "@/lib/auth";
-import { PointsLegend } from "@/features/results/components/Standings";
 import { QueryError } from "@/features/team/components/QueryError";
 import { StageFlow, StageFlowSkeleton } from "@/features/tournaments/shared/StageFlow";
 import { useTeamStage, useTeamTournament } from "@/features/tournaments/team/api";
-import { FormatSummary, OnFire, RulesSection, TournamentHero, ZoneLabel } from "@/features/tournaments/team/components/HubSections";
+import { DetailsTabs, OnFire, PanelTitle, PosterWash, TournamentHero } from "@/features/tournaments/team/components/HubSections";
 import { JourneyCard } from "@/features/tournaments/team/components/JourneyCard";
 import { RegistrationPanel } from "@/features/tournaments/team/components/RegistrationPanel";
 import { youFromMe } from "@/features/tournaments/team/journey";
@@ -105,7 +104,7 @@ export default function TournamentHubPage() {
   const stageHref = (s: { id: string }) => `/team/tournaments/${t.id}/stages/${s.id}`;
   return (
     <>
-      {back}
+      {/* the hero carries the back link + share; its poster runs up under the header */}
       <div className="space-y-6">
         <TournamentHero t={t} />
 
@@ -121,10 +120,11 @@ export default function TournamentHubPage() {
             {/* TeamLiveCard has no tournamentId — match by the next match or the tournament title */}
             <TeamLiveCards filter={(c) => c.matchId === t.me.nextMatch?.matchId || c.title === t.title} />
 
-            <section data-tour="stage-flow" aria-labelledby="flow-title" className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-              <ZoneLabel id="flow-title" className="mb-1">
+            <section data-tour="stage-flow" aria-labelledby="flow-title" className="relative isolate overflow-hidden rounded-2xl border bg-card p-4 shadow-sm sm:p-6">
+              <PosterWash url={t.posterUrl} className="-z-10 opacity-10 dark:opacity-15" />
+              <PanelTitle id="flow-title" desc={th("journey_desc")} className="mb-5 lg:mb-1">
                 {th("road")}
-              </ZoneLabel>
+              </PanelTitle>
               <StageFlow
                 stages={t.stages}
                 registration={{ open: regOpen, confirmed: t.confirmedCount, max: t.maxTeams }}
@@ -136,14 +136,7 @@ export default function TournamentHubPage() {
 
             {stageQ.data && <OnFire stage={stageQ.data} limit={3} href={stageHref(stageQ.data.stage)} />}
 
-            <section aria-labelledby="details-title" className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-              <ZoneLabel id="details-title">{th("details")}</ZoneLabel>
-              <PointsLegend ps={t.pointsSystem} className="rounded-none border-0 bg-transparent p-0 shadow-none" />
-              <div className="mt-3 divide-y border-t">
-                <FormatSummary t={t} />
-                {t.rules && <RulesSection rules={t.rules} />}
-              </div>
-            </section>
+            <DetailsTabs t={t} />
           </div>
         </div>
       </div>

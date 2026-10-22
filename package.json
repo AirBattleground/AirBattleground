@@ -12,6 +12,7 @@
     "db:up": "docker-compose up -d db",
     "db:migrate": "pnpm --filter @7xen/api db:migrate",
     "db:seed": "pnpm --filter @7xen/api db:seed",
+    "db:seed:stats": "pnpm --filter @7xen/api db:seed:stats",
     "db:studio": "pnpm --filter @7xen/api db:studio",
     "test": "pnpm -r --if-present test",
     "smoke": "node scripts/smoke.ts",

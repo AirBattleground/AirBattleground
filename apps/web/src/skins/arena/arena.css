@@ -132,6 +132,8 @@ html:root.dark[data-skin="arena"] {
 }
 :root[data-skin="arena"] .arena-btn-gold:hover { filter: brightness(1.06); transform: translateY(-1px); }
 :root[data-skin="arena"] .arena-btn-gold:active { transform: translateY(1px); }
+/* the same cut-corner shape without the gold (the colour comes from the element, e.g. bg-primary) */
+:root[data-skin="arena"] .arena-btn-cut { clip-path: polygon(0 0, 100% 0, 100% 68%, 94% 100%, 0 100%); }
 /* the active top tab underline glow */
 :root[data-skin="arena"] .arena-tab-on::after {
   content: "";

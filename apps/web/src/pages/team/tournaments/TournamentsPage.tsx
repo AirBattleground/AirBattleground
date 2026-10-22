@@ -123,11 +123,8 @@ export function TournamentsList({ mode }: { mode: TournamentMode }) {
 
   return (
     <>
-      <PageHeader
-        eyebrow={tl("eyebrow")}
-        title={mode === "TDM" ? tl("title_tdm") : tl("title_br")}
-        description={mode === "TDM" ? tl("desc_tdm") : tl("desc_br")}
-      />
+      {/* BR: the featured poster opens the page, so the heading is for screen readers only */}
+      {mode === "TDM" ? <PageHeader eyebrow={tl("eyebrow")} title={tl("title_tdm")} description={tl("desc_tdm")} /> : <h1 className="sr-only">{tl("title_br")}</h1>}
       {mode === "BR" && (featured.loading ? <FeaturedTournamentSkeleton className="mb-6" /> : featured.t && featured.t.mode !== "TDM" && <FeaturedTournamentBanner t={featured.t} className="mb-6" />)}
       <Tabs value={tab} onValueChange={(v) => setParams(v === "open" ? {} : { tab: v }, { replace: true })} className="gap-4">
         <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">

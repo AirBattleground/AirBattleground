@@ -75,6 +75,12 @@
 .tc-card:hover .tc-poster-zoom { transform: scale(1.06); }
 .tc-poster-zoom { transition: transform 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
 
+/* featured hero: the whole poster stays crisp, only the last strip melts into the rail */
+.ft-stage {
+  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+}
+
 /* scrim card: big poster in the top-left corner, feathered on its right + bottom edges */
 .sc-bleed {
   -webkit-mask-image: linear-gradient(to right, #000 45%, transparent 100%), linear-gradient(to bottom, #000 45%, transparent 100%);

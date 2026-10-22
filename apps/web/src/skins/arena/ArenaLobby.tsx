@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Crosshair, Play, Plus, Swords, Trophy } from "lucide-react";
 import { addDays, todayInAppTz, type TeamRegistration } from "@7xen/shared";
@@ -136,25 +136,39 @@ function CoinPanel() {
 function EventCard() {
   const tr = useT(arenaMsg);
   const featured = useFeaturedTournaments();
+  const [posterFailed, setPosterFailed] = useState(false);
   const t = featured.items.find((x) => x.mode !== "TDM") ?? featured.items[0];
   if (!t) return null;
   const open = t.status === "REGISTRATION_OPEN";
+  const poster = !!t.posterUrl && !posterFailed;
+  const copy = (
+    <>
+      <p className="arena-label" style={{ color: "var(--arena-gold)" }}>
+        {t.mode === "TDM" ? tr("tdm_battle") : tr("featured_cup")} · {open ? tr("reg_open") : t.status === "LIVE" ? tr("live") : tr("coming_up")}
+      </p>
+      <p className={cn("mt-1 font-display leading-[0.9] font-semibold uppercase", poster ? "truncate text-2xl" : "line-clamp-2 text-3xl")}>{t.title}</p>
+      {t.prize && <p className="mt-1.5 font-display text-2xl leading-none font-semibold text-warning drop-shadow-[0_0_14px_var(--arena-gold)]">{tr("prize", { prize: fmtPrize(t.prize) })}</p>}
+      {open && t.registrationClosesAt && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          {tr("closes_in")} <Countdown to={t.registrationClosesAt} className="font-display text-base font-semibold text-foreground" doneText={tr("moments")} />
+        </p>
+      )}
+    </>
+  );
+  // posters carry their own title/prize art: show the whole poster (25:9) and put the copy underneath, never on top
+  if (poster)
+    return (
+      <Link to={`/team/tournaments/${t.id}`} className="arena-hud arena-chamfer group relative block overflow-hidden border border-warning/30 bg-card">
+        <div className="relative aspect-[25/9] w-full overflow-hidden [mask-image:linear-gradient(to_bottom,#000_80%,transparent)]">
+          <img src={t.posterUrl!} alt="" onError={() => setPosterFailed(true)} className="size-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
+        </div>
+        <div className="relative px-4 pt-2 pb-4">{copy}</div>
+      </Link>
+    );
   return (
     <Link to={`/team/tournaments/${t.id}`} className="arena-hud arena-chamfer group relative block h-44 overflow-hidden border border-warning/30 bg-gradient-to-br from-destructive/40 to-background">
-      {t.posterUrl && <img src={t.posterUrl} alt="" className="absolute inset-0 size-full object-cover opacity-50 transition-transform duration-700 group-hover:scale-105" />}
       <div className="absolute inset-0 bg-gradient-to-r from-background via-background/70 to-transparent" />
-      <div className="relative p-4">
-        <p className="arena-label" style={{ color: "var(--arena-gold)" }}>
-          {t.mode === "TDM" ? tr("tdm_battle") : tr("featured_cup")} · {open ? tr("reg_open") : t.status === "LIVE" ? tr("live") : tr("coming_up")}
-        </p>
-        <p className="mt-1 line-clamp-2 font-display text-3xl leading-[0.9] font-semibold uppercase">{t.title}</p>
-        {t.prize && <p className="mt-1.5 font-display text-2xl leading-none font-semibold text-warning drop-shadow-[0_0_14px_var(--arena-gold)]">{tr("prize", { prize: fmtPrize(t.prize) })}</p>}
-        {open && t.registrationClosesAt && (
-          <p className="mt-2 text-xs text-muted-foreground">
-            {tr("closes_in")} <Countdown to={t.registrationClosesAt} className="font-display text-base font-semibold text-foreground" doneText={tr("moments")} />
-          </p>
-        )}
-      </div>
+      <div className="relative p-4">{copy}</div>
     </Link>
   );
 }

@@ -14,6 +14,7 @@
  * PLAYER (role PLAYER, cookie sx_app)
  *   GET    /api/player/me                                     → PlayerProfile
  *   PATCH  /api/player/me          UpdatePlayerProfileInput   → PlayerProfile   (409 BGMI_ID_TAKEN)
+ *   GET    /api/player/stats?scope=&period=                   → PlayerStats     (playerStats.ts)
  *   POST   /api/player/team        CreatePlayerTeamInput      → PlayerTeam (201) (400 BGMI_ID_REQUIRED · 409 ALREADY_IN_TEAM · 409 CONFLICT name taken, fields.name)
  *   GET    /api/player/team                                   → PlayerTeam      (404 NO_TEAM)
  *   PATCH  /api/player/team        UpdatePlayerTeamInput      → PlayerTeam      leader

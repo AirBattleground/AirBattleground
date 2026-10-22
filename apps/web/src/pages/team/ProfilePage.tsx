@@ -15,10 +15,12 @@ import { usePlayerSession } from "@/lib/auth";
 import { usePlayerProfile, useUpdateProfile } from "@/features/player/api";
 import { applyApiError, Field, useBgmiHint } from "@/features/player/forms";
 import { PlayerAvatar } from "@/features/player/components/PlayerAvatar";
+import { PlayerStatsSection } from "@/features/player/stats/PlayerStatsSection";
 import { LANGUAGE_META, useLocale, useT } from "@/i18n/core";
 import { common } from "@/i18n/common";
 import { playerFormMsg } from "@/i18n/onboarding";
 import { profileMsg } from "@/i18n/team";
+import { statsMsg } from "@/i18n/playerStats";
 
 const schema = z.object({ ign: ignSchema, bgmiId: z.union([bgmiIdSchema, z.literal("")]) });
 type Values = z.infer<typeof schema>;
@@ -58,6 +60,7 @@ export default function ProfilePage() {
   const t = useT(profileMsg);
   const tf = useT(playerFormMsg);
   const tc = useT(common);
+  const ts = useT(statsMsg);
   const bgmiHint = useBgmiHint();
   const steps = useMemo<TourStep[]>(
     () => [
@@ -66,8 +69,9 @@ export default function ProfilePage() {
       { element: '[data-tour="player-form"]', title: t("tour_form_title"), description: t("tour_form_desc"), side: "top" },
       { element: '[data-tour="profile-language"]', title: t("tour_language_title"), description: t("tour_language_desc"), side: "top" },
       { element: '[data-tour="profile-team"]', title: t("tour_team_title"), description: t("tour_team_desc"), side: "top" },
+      { element: '[data-tour="player-stats"]', title: ts("title"), description: ts("desc"), side: "top" },
     ],
-    [t],
+    [t, ts],
   );
   usePageTour("team.profile", steps);
   const { user, player, team } = usePlayerSession();
@@ -165,6 +169,8 @@ export default function ProfilePage() {
           <LanguageSetting />
         </div>
       </div>
+
+      <PlayerStatsSection />
     </div>
   );
 }

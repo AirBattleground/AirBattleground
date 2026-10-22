@@ -139,7 +139,7 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
 
       <div className="mt-5 flex flex-col gap-2">
         {!hasTeam ? (
-          <Button size="lg" className="h-12 w-full text-base shadow-glow" onClick={() => setNeedTeamOpen(true)} data-tour="register-btn">
+          <Button size="lg" className="arena-btn-gold h-12 w-full text-base shadow-glow" onClick={() => setNeedTeamOpen(true)} data-tour="register-btn">
             <UserPlus /> {full ? th("join_waitlist") : th("register_for")}
           </Button>
         ) : !isLeader ? (
@@ -149,7 +149,7 @@ export function RegistrationPanel({ t, className }: { t: TeamTournamentDetail; c
             <LeaderOnlyNote className="justify-center rounded-xl border border-dashed py-2.5">{th("leader_only")}</LeaderOnlyNote>
           )
         ) : canRegister ? (
-          <Button size="lg" className="h-12 w-full text-base shadow-glow" disabled={busy} onClick={() => register.mutate({ timePreferences: prefs })} data-tour="register-btn">
+          <Button size="lg" className="arena-btn-gold h-12 w-full text-base shadow-glow" disabled={busy} onClick={() => register.mutate({ timePreferences: prefs })} data-tour="register-btn">
             {register.isPending ? <Loader2 className="animate-spin" /> : <UserPlus />}
             {full ? th("join_waitlist") : me.state === "WITHDRAWN" ? th("register_again") : th("register_my_team")}
           </Button>
