@@ -1,5 +1,5 @@
 import { Router, type Request } from "express";
-import { APP_COOKIE, createRegistrationSchema, dateQuerySchema, dateString, registrationScopeSchema, saveRosterSchema } from "@7xen/shared";
+import { APP_COOKIE, createRegistrationSchema, dateQuerySchema, dateString, registrationScopeSchema, saveRosterSchema, scrimDetailQuerySchema, weeklyQuerySchema } from "@7xen/shared";
 import { AppError } from "../lib/errors.js";
 import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
@@ -11,6 +11,7 @@ import { teamRooms } from "../services/live.js";
 import { teamLive } from "../services/station.js";
 import { MSG } from "../services/players.js";
 import { coinLeaderboard, coinWallet } from "../services/coins.js";
+import { teamFinalsSlots, teamWeeklyBoard } from "../services/weekly.js";
 
 /** The player's team (phase 5: from their membership); 403 NO_TEAM when they aren't in one (dashboard + mutations). */
 function membership(req: Request) {
@@ -47,6 +48,10 @@ export function teamRouter() {
     const { date } = parse(dateQuerySchema, req.query);
     res.json({ items: await team.teamScrimsForDate(optTeamId(req), date) });
   });
+  r.get("/scrims/:scrimId", async (req, res) => {
+    const { date } = parse(scrimDetailQuerySchema, req.query);
+    res.json(await team.teamScrimDetail(optTeamId(req), req.params.scrimId, date));
+  });
 
   r.post("/registrations", async (req, res) => {
     const { scrimId, date } = parse(createRegistrationSchema, req.body);
@@ -82,6 +87,16 @@ export function teamRouter() {
     const id = leaderTeamId(req);
     parse(saveRosterSchema, req.body);
     res.json(await results.saveRoster(id));
+  });
+
+  // ---- Weekly Board (any player can see a scrim's board) + my team's Finals Slots ----
+  r.get("/scrims/:scrimId/weekly", async (req, res) => {
+    const { week } = parse(weeklyQuerySchema, req.query);
+    res.json(await teamWeeklyBoard(req.params.scrimId, week));
+  });
+  r.get("/finals-slots", async (req, res) => {
+    const id = optTeamId(req);
+    res.json({ items: id ? await teamFinalsSlots(id) : [] });
   });
 
   // ---- phase 3: tournaments ----

@@ -22,7 +22,7 @@ function HubSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-60 rounded-2xl" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_23rem]">
         <div className="rounded-2xl border bg-card p-5 lg:col-start-1 lg:row-start-1">
           <StageFlowSkeleton />
         </div>
@@ -108,7 +108,7 @@ export default function TournamentHubPage() {
       <div className="space-y-6">
         <TournamentHero t={t} />
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-start">
           {/* right zone (first on phones): your status + the one action */}
           <aside className="space-y-4 lg:col-start-2 lg:row-start-1" aria-label={th("zone_you")}>
             {inIt && <JourneyCard t={t} />}

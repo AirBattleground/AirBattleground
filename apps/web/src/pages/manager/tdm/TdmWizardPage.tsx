@@ -292,7 +292,7 @@ function TdmWizard({ existing }: { existing?: ManagerTournamentDetail }) {
 
       <WizardSteps steps={STEPS} step={step} onGo={(i) => void (i > step ? go(i) : setStep(i))} problems={problems} tour="tdm-steps" />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-w-0 space-y-6">
           {step === 0 && (
             <Section icon={<Type />} title="Basics" tour="tdm-basics">

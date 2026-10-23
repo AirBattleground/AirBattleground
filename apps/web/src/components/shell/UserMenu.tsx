@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronDown, LogOut, Smartphone, UserRound, Users } from "lucide-react";
+import { BarChart3, ChevronDown, LogOut, Medal, Smartphone, UserRound, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { SessionUser } from "@7xen/shared";
 import { TeamAvatar } from "@7xen/ui/components/brand/status";
@@ -11,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@7xen/ui/components/ui/dropdown-menu";
-import { useAuth } from "@/lib/auth";
+import { useAuth, usePlayerSession } from "@/lib/auth";
+import { usePlayerTeam } from "@/features/player/api";
 import { PlayerAvatar } from "@/features/player/components/PlayerAvatar";
 import { markExplicitLogout } from "@/lib/session";
 import { useT } from "@/i18n/core";
@@ -48,8 +49,12 @@ export function UserMenu() {
   const t = useT(userMenuMsg);
   const tc = useT(common);
   const roleOf = useRoleLabel();
+  // a leader's pending join requests: dot on the avatar + count next to "My team"
+  const { hasTeam, isLeader } = usePlayerSession();
+  const requests = usePlayerTeam({ enabled: hasTeam && isLeader }).data?.joinRequests.length ?? 0;
   if (!user) return null;
   const name = displayNameOf(user);
+  const go = (to: string) => () => navigate(to);
 
   const signOut = async () => {
     markExplicitLogout();
@@ -62,10 +67,13 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         className="flex items-center gap-2 rounded-xl border border-transparent p-1 pr-2 outline-none transition-colors hover:border-border hover:bg-card focus-visible:ring-[3px] focus-visible:ring-ring/50 data-[state=open]:border-border data-[state=open]:bg-card"
-        aria-label={t("account_menu", { name })}
+        aria-label={t("account_menu", { name }) + (requests ? ` (${requests})` : "")}
         data-tour="user-menu"
       >
-        <UserAvatar user={user} />
+        <span className="relative">
+          <UserAvatar user={user} />
+          {requests > 0 && <span className="absolute -top-0.5 -right-0.5 size-3 rounded-full bg-primary ring-2 ring-background" aria-hidden />}
+        </span>
         <span className="hidden min-w-0 text-left leading-tight md:block">
           <span className="block max-w-36 truncate text-sm font-semibold">{name}</span>
           <span className="block text-[11px] text-muted-foreground">{roleOf(user)}</span>
@@ -85,18 +93,32 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         {user.role === "PLAYER" && (
           <>
-            <DropdownMenuItem onSelect={() => navigate("/team/profile")} className="cursor-pointer">
+            <DropdownMenuItem onSelect={go("/team/profile")} className="cursor-pointer">
               <UserRound />
               {tc("my_profile")}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => navigate("/team/my-team")} className="cursor-pointer">
+            <DropdownMenuItem onSelect={go("/team/my-team")} className="cursor-pointer">
               <Users />
               {tc("nav_my_team")}
+              {requests > 0 && (
+                <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-primary-foreground">
+                  {requests > 99 ? "99+" : requests}
+                </span>
+              )}
             </DropdownMenuItem>
+            <DropdownMenuItem onSelect={go("/team/stats")} className="cursor-pointer">
+              <BarChart3 />
+              {tc("nav_stats")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={go("/team/results")} className="cursor-pointer">
+              <Medal />
+              {tc("nav_results")}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
           </>
         )}
         {user.role === "MANAGER" && (
-          <DropdownMenuItem onSelect={() => navigate("/manager/app")} className="cursor-pointer">
+          <DropdownMenuItem onSelect={go("/manager/app")} className="cursor-pointer">
             <Smartphone />
             {t("manager_app")}
           </DropdownMenuItem>

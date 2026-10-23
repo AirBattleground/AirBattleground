@@ -4,7 +4,7 @@
  */
 import { COIN_LEADERBOARD_SIZE, MAP_LABELS, type CoinLeaderboard, type CoinLeaderboardRow, type CoinTransaction, type CoinWallet, type GameMap } from "@7xen/shared";
 import { prisma, type Tx } from "../db.js";
-import { brandingUrl, dateToStr } from "../lib/serialize.js";
+import { avatarOf, brandingUrl, dateToStr } from "../lib/serialize.js";
 import { shortDate } from "./matchContext.js";
 
 const WALLET_TX_LIMIT = 200;
@@ -123,7 +123,7 @@ export async function coinLeaderboard(myTeamId: string | null): Promise<CoinLead
   const ids = [...new Set([...top.map((g) => g.teamId), ...(mine >= 0 ? [myTeamId!] : [])])];
   const teams = await prisma.team.findMany({
     where: { id: { in: ids } },
-    select: { id: true, name: true, tag: true, logoKey: true, leader: { select: { displayName: true, ign: true, avatarUrl: true } } },
+    select: { id: true, name: true, tag: true, logoKey: true, leader: { select: { displayName: true, ign: true, avatarUrl: true, avatarKey: true } } },
   });
   const byId = new Map(teams.map((t) => [t.id, t]));
 
@@ -140,7 +140,7 @@ export async function coinLeaderboard(myTeamId: string | null): Promise<CoinLead
     return {
       rank: rankOf(i),
       team: { id: t.id, name: t.name, tag: t.tag, logoUrl: brandingUrl(t.logoKey) },
-      leader: { displayName: t.leader.displayName, ign: t.leader.ign, avatarUrl: t.leader.avatarUrl },
+      leader: { displayName: t.leader.displayName, ign: t.leader.ign, avatarUrl: avatarOf(t.leader) },
       coins: g.coins,
       wins: g.wins,
     };

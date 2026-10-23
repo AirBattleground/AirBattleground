@@ -12,6 +12,7 @@ import { useIsDesktop } from "@/lib/use-media-query";
 import { EASE, SIDEBAR_FULL, SIDEBAR_RAIL, SidebarArt, SidebarContent } from "./Sidebar";
 import { MobileFab, MobileTabBar } from "./MobileTabBar";
 import { Topbar } from "./Topbar";
+import { headerItemOf } from "./LivePill";
 import { WelcomeDialog } from "./WelcomeDialog";
 import { useSessionExpiryToast } from "./useSessionExpiryToast";
 import { SkinSwitch } from "@/lib/skin";
@@ -126,6 +127,7 @@ function TealShell({ nav, homeHref, sidebarHeader, sidebarAction, mobileAction, 
           collapsed={collapsed}
           brandWidth={collapsed ? SIDEBAR_RAIL : SIDEBAR_FULL}
           search={search}
+          live={headerItemOf(nav)}
           notifications={notifications}
         />
 

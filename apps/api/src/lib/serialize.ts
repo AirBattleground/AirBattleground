@@ -47,12 +47,15 @@ export const scrimInclude = {
 export type ScrimWithManager = Prisma.ScrimGetPayload<{ include: typeof scrimInclude }>;
 
 /** phase 5: small player identity (PlayerSummary) */
-export const playerSummarySelect = { id: true, ign: true, displayName: true, avatarUrl: true } satisfies Prisma.UserSelect;
-export const toPlayerSummary = (u: { id: string; ign: string | null; displayName: string; avatarUrl: string | null }): PlayerSummary => ({
+/** A player's picture: the photo they uploaded, else their Google picture. */
+export const avatarOf = (u: { avatarUrl: string | null; avatarKey: string | null }): string | null => brandingUrl(u.avatarKey) ?? u.avatarUrl;
+
+export const playerSummarySelect = { id: true, ign: true, displayName: true, avatarUrl: true, avatarKey: true } satisfies Prisma.UserSelect;
+export const toPlayerSummary = (u: { id: string; ign: string | null; displayName: string; avatarUrl: string | null; avatarKey: string | null }): PlayerSummary => ({
   id: u.id,
   ign: u.ign,
   displayName: u.displayName,
-  avatarUrl: u.avatarUrl,
+  avatarUrl: avatarOf(u),
 });
 
 /** Team + its leader's IGN (shown where the old free-text captainName was). */
@@ -83,7 +86,7 @@ export function toSessionUser(u: UserWithTeam): SessionUser {
         ? {
             ign: u.ign,
             bgmiId: u.bgmiId,
-            avatarUrl: u.avatarUrl,
+            avatarUrl: avatarOf(u),
             email: u.email,
             team: m ? { ...toTeamSummary(m.team), role: m.role } : null,
             needsOnboarding: !u.ign,

@@ -153,6 +153,8 @@ model User {
   googleSub    String?   @unique
   /// Google profile picture
   avatarUrl    String?
+  /// photo the player uploaded (storage key under branding/); shown instead of the Google avatarUrl, which sign-in refreshes
+  avatarKey    String?
   /// in-game name (required after onboarding)
   ign          String?
   /// BGMI character id, digits only (required before creating/joining a team)
@@ -629,9 +631,14 @@ model TournamentEntry {
   registeredBy    User?       @relation("EntryRegisteredBy", fields: [registeredById], references: [id], onDelete: SetNull)
   registeredAt    DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
+  /// Finals Slot won on a scrim's Weekly Board: "weekly:<scrimId>:<monday YYYY-MM-DD>" (null = a plain invite)
+  awardKey        String?
+  /// shown on the team's Finals Slot card, e.g. "Night Royale · Weekly Board #1 · 19–23 Oct"
+  awardNote       String?
 
   @@unique([tournamentId, teamId])
   @@index([tournamentId, status, registeredAt])
+  @@index([awardKey])
 }
 
 model TournamentGroup {

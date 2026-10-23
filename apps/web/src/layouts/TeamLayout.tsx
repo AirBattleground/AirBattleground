@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Outlet } from "react-router-dom";
-import { CalendarSearch, Crosshair, Home, Medal, Megaphone, Radio, Search, Ticket, Trophy, Users } from "lucide-react";
+import { BarChart3, CalendarSearch, Crown, Crosshair, Home, Medal, Megaphone, Radio, Search, Ticket, Trophy, UserRound, Users } from "lucide-react";
 import { usePlayerSession } from "@/lib/auth";
 import { usePlayerTeam } from "@/features/player/api";
 import { AppShell, type NavItem, type ShellBrand, type SidebarSlot, type WelcomeStep } from "@/components/shell";
@@ -16,25 +16,21 @@ import { TeamSearch, type SearchPage } from "@/features/team/shell/TeamSearch";
 import { common } from "@/i18n/common";
 import { useT } from "@/i18n/core";
 
-const MY_TEAM_NAV: NavItem = { key: "my-team", to: "/team/my-team", label: "My team", short: "Team", icon: Users };
-
 /**
- * Phones: the bottom tab bar (6 items, +Live while a match is broadcast); the player profile lives in the avatar menu.
- * Desktop: the sidebar shows the same items (the team card at the top links to My team).
+ * Phones: the bottom tab bar (5 items; TDM battles sit inside Cups); Live shows as a pill in the header while a match is broadcast. Desktop: the sidebar shows the same items.
+ * My profile, My team, Statistics and Results live in the avatar menu (UserMenu); the sidebar team card links to My team.
  */
 const NAV: NavItem[] = [
   { key: "home", to: "/team", label: "Home", icon: Home, end: true },
   { key: "scrims", to: "/team/scrims", label: "Find scrims", short: "Scrims", icon: Search },
   { key: "tournaments", to: "/team/tournaments", label: "Tournaments", short: "Cups", icon: Trophy },
-  { key: "tdm", to: "/team/tdm", label: "TDM battles", short: "TDM", icon: Crosshair },
   { key: "registrations", to: "/team/registrations", label: "My registrations", short: "Slots", icon: Ticket },
-  { key: "results", to: "/team/results", label: "Results", icon: Medal },
-  // phones: in the tab bar only while something is live (the count is the badge)
-  { key: "live", to: "/team/live", label: "Live", icon: Radio, mobileOnlyWithBadge: true },
-  MY_TEAM_NAV,
+  { key: "rank", to: "/team/rank", label: "Rank", icon: Crown },
+  // phones: a LIVE pill in the header while something is live (the count is the badge), never a tab
+  { key: "live", to: "/team/live", label: "Live", icon: Radio, phoneHeaderWhileBadge: true },
 ];
 
-const SEGMENT_LABELS: Record<string, string> = { matches: "Match", standings: "Points table", "my-team": "My team", coins: "BG coins", tdm: "TDM battles" };
+const SEGMENT_LABELS: Record<string, string> = { matches: "Match", standings: "Points table", "my-team": "My team", coins: "BG coins", tdm: "TDM battles", stats: "Statistics", results: "Results", weekly: "Weekly Board" };
 
 const teamCard: SidebarSlot = (s) => (
   <div className="flex flex-col gap-3">
@@ -44,17 +40,16 @@ const teamCard: SidebarSlot = (s) => (
 );
 const alerts = <TeamAlerts />;
 /** NAV key → common.ts message key */
-const NAV_MSG: Record<string, string> = { home: "home", scrims: "scrims", tournaments: "tournaments", tdm: "tdm", registrations: "registrations", results: "results", live: "live", "my-team": "my_team" };
+const NAV_MSG: Record<string, string> = { home: "home", scrims: "scrims", tournaments: "tournaments", registrations: "registrations", rank: "rank", live: "live" };
 
 const BRAND: ShellBrand = { name: "AirBattleground", wordmark: wordmarkUrl, wordmarkInk: wordmarkInkUrl, mark: markUrl };
 
 export default function TeamLayout() {
   const tournamentLabels = useTeamTournamentCrumbLabels(SEGMENT_LABELS);
   const { hasTeam, isLeader } = usePlayerSession();
-  // leader badges: open "Ask my leader" suggestions on Home, pending join requests on My team
+  // leader badge: open "Ask my leader" suggestions on Home (pending join requests show on the avatar menu)
   const myTeam = usePlayerTeam({ enabled: hasTeam && isLeader });
   const suggestions = myTeam.data?.openSuggestions ?? 0;
-  const joinRequests = myTeam.data?.joinRequests.length ?? 0;
   const liveCount = useLiveBroadcasts().data?.length ?? 0;
   const t = useT(common);
   const nav = useMemo(
@@ -63,15 +58,9 @@ export default function TeamLayout() {
         const k = NAV_MSG[n.key];
         const label = k ? { label: t(`nav_${k}` as Parameters<typeof t>[0]), short: t(`nav_${k}_short` as Parameters<typeof t>[0]) } : {};
         const item = { ...n, ...label };
-        return n.key === "home"
-          ? { ...item, badge: isLeader ? suggestions : 0 }
-          : n.key === "my-team"
-            ? { ...item, badge: isLeader ? joinRequests : 0 }
-            : n.key === "live"
-              ? { ...item, badge: liveCount }
-              : item;
+        return n.key === "home" ? { ...item, badge: isLeader ? suggestions : 0 } : n.key === "live" ? { ...item, badge: liveCount } : item;
       }),
-    [isLeader, suggestions, joinRequests, liveCount, t],
+    [isLeader, suggestions, liveCount, t],
   );
   const welcomeSteps = useMemo<WelcomeStep[]>(
     () => [
@@ -82,7 +71,21 @@ export default function TeamLayout() {
     [t],
   );
   const search = useMemo(
-    () => <TeamSearch pages={[...nav.filter((n) => n.key !== "live"), { key: "profile", to: "/team/profile", label: t("nav_profile"), icon: Users }] satisfies SearchPage[]} />,
+    () => (
+      <TeamSearch
+        pages={
+          [
+            ...nav.filter((n) => n.key !== "live"),
+            { key: "tdm", to: "/team/tournaments/tdm", label: t("nav_tdm"), icon: Crosshair },
+            // avatar-menu pages
+            { key: "profile", to: "/team/profile", label: t("nav_profile"), icon: UserRound },
+            { key: "my-team", to: "/team/my-team", label: t("nav_my_team"), icon: Users },
+            { key: "stats", to: "/team/stats", label: t("nav_stats"), icon: BarChart3 },
+            { key: "results", to: "/team/results", label: t("nav_results"), icon: Medal },
+          ] satisfies SearchPage[]
+        }
+      />
+    ),
     [nav, t],
   );
   return (

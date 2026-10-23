@@ -48,7 +48,7 @@ export default function ManagerLayout() {
     { key: "tournaments", to: "/manager/tournaments", label: "Tournaments", short: "Cups", icon: Trophy },
     { key: "tdm", to: "/manager/tdm", label: "TDM battles", short: "TDM", icon: Crosshair },
     { key: "studio", to: "/manager/studio", label: "Studio", icon: Clapperboard },
-    { key: "live", to: "/manager/live", label: "Live", icon: Radio, badge: liveCount, mobileOnlyWithBadge: true },
+    { key: "live", to: "/manager/live", label: "Live", icon: Radio, badge: liveCount, phoneHeaderWhileBadge: true },
   ];
 
   return (

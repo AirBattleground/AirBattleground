@@ -15,6 +15,7 @@ import {
 import { parseMultipart, singleImage } from "../lib/upload.js";
 import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
+import * as branding from "../services/branding.js";
 import * as players from "../services/players.js";
 import { getPlayerStats } from "../services/playerStats.js";
 import * as suggestions from "../services/suggestions.js";
@@ -77,6 +78,15 @@ export function playerRouter() {
   });
   r.delete("/team/logo", async (req, res) => {
     res.json(await players.updateTeamLogo(me(req), null));
+  });
+
+  // ---- my photo (replaces the Google picture everywhere) ----
+  r.put("/avatar", async (req, res) => {
+    await parseMultipart(req, res);
+    res.json(await branding.setPlayerAvatar(me(req), singleImage(req)));
+  });
+  r.delete("/avatar", async (req, res) => {
+    res.json(await branding.setPlayerAvatar(me(req), null));
   });
 
   // ---- invite by BGMI ID (leader) + my invitations ----

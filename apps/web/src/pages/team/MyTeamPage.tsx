@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { type PlayerTeam, type TeamJoinRequestRow, type TeamMemberRow } from "@7xen/shared";
 import { PageHeader } from "@7xen/ui/components/brand/page";
+import { FinalsSlots } from "@/features/weekly/FinalsSlotCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -312,8 +313,9 @@ function MyTeamView() {
         className="mb-0"
       />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
         <div className="space-y-4">
+          <FinalsSlots />
           {leaderView && t.joinRequests.length > 0 && (
             <Section title={tr("join_requests")} count={t.joinRequests.length} tour="join-requests" className="border-warning/40">
               <ul className="divide-y">

@@ -168,6 +168,8 @@ export type CreateRegistrationInput = z.infer<typeof createRegistrationSchema>;
 
 // ---------- query params ----------
 export const dateQuerySchema = z.object({ date: dateString });
+/** scrim detail: a date it runs on (omitted = its next date that hasn't started) */
+export const scrimDetailQuerySchema = z.object({ date: dateString.optional() });
 export const searchQuerySchema = z.object({ q: z.string().trim().max(60).optional() });
 export const registrationScopeSchema = z.object({
   scope: z.enum(["upcoming", "past"]).default("upcoming"),

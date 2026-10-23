@@ -7,6 +7,7 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { useTour } from "@7xen/ui/tour";
 import { cn } from "@7xen/ui/lib/utils";
 import { UserMenu } from "@/components/shell/UserMenu";
+import { headerItemOf, LivePill } from "@/components/shell/LivePill";
 import type { NavItem, ShellBrand, SidebarSlot, SidebarSlotState } from "@/components/shell";
 import { LuxNav } from "./LuxNav";
 
@@ -83,6 +84,7 @@ export function LuxTopBar({ nav, homeHref, brand, compact, wide, xwide, sidebarH
       <div className="flex shrink-0 items-center gap-2">
         {!compact && sidebarHeader && <div className={cn("lux-sh-slot lux-sh-slot-header", xwide ? "w-56" : "w-[52px]")}>{sidebarHeader(headerSlot)}</div>}
         {!compact && sidebarAction && <div className={cn("lux-sh-slot lux-sh-slot-action", wide ? "w-40" : "w-[52px]")}>{sidebarAction(actionSlot)}</div>}
+        {compact && <LivePill item={headerItemOf(nav)} />}
         <TourButton iconOnly={compact || !wide} />
         <LanguageSwitch />
         <ThemeToggle />

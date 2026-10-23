@@ -9,7 +9,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@7xen/ui/components/ui/
 import { useTour } from "@7xen/ui/tour";
 import { cn } from "@7xen/ui/lib/utils";
 import { EASE } from "./Sidebar";
-import type { ShellBrand } from "./types";
+import { LivePill } from "./LivePill";
+import type { NavItem, ShellBrand } from "./types";
 import { UserMenu } from "./UserMenu";
 import { LanguageSwitch } from "@/i18n/LanguageSwitch";
 import { common } from "@/i18n/common";
@@ -58,6 +59,7 @@ export function Topbar({
   brandWidth,
   search,
   notifications,
+  live,
 }: {
   homeHref: string;
   compact: boolean;
@@ -66,6 +68,8 @@ export function Topbar({
   brandWidth?: number;
   search?: ReactNode;
   notifications?: ReactNode;
+  /** phones: the Live nav item, shown as a pill while something is on air */
+  live?: NavItem;
 }) {
   const tour = useTour();
   const t = useT(common);
@@ -85,15 +89,19 @@ export function Topbar({
         <div className={cn("flex min-w-0 flex-1 items-center", !compact && "pl-6 xl:pl-10")}>{search}</div>
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
+          {compact && <LivePill item={live} className="mr-1" />}
           {notifications}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={startTour} data-tour="tour-btn" aria-label={t("take_tour")} className="size-9 text-muted-foreground hover:text-primary">
-                <Compass className="size-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{t("take_tour")}</TooltipContent>
-          </Tooltip>
+          {/* phones: the LIVE pill takes the tour button's place while something is on air (no room for both) */}
+          {!(compact && (live?.badge ?? 0) > 0) && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" onClick={startTour} data-tour="tour-btn" aria-label={t("take_tour")} className="size-9 text-muted-foreground hover:text-primary">
+                  <Compass className="size-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{t("take_tour")}</TooltipContent>
+            </Tooltip>
+          )}
           <LanguageSwitch />
           <ThemeToggle />
           <span aria-hidden className="mx-1.5 hidden h-8 w-px bg-border sm:block" />

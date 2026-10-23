@@ -67,6 +67,8 @@
  * TEAM (role TEAM)
  *   GET    /api/team/dashboard                                   → TeamDashboard
  *   GET    /api/team/scrims?date=                                → ListResponse<TeamScrimOnDate> (ACTIVE scrims of all managers on that date)
+ *   GET    /api/team/scrims/:scrimId?date=                       → TeamScrimDetail (one scrim on one date; no date = its next date that
+ *                                                                   hasn't started; 404 NOT_FOUND when it doesn't run that day / is gone)
  *   POST   /api/team/registrations         CreateRegistrationInput → TeamRegistration (409 CONFLICT already registered; 409 REGISTRATION_CLOSED;
  *                                          re-registering after REJECTED/CANCELLED reuses the same registration id, back to PENDING)
  *   GET    /api/team/registrations?scope=upcoming|past           → ListResponse<TeamRegistration>
@@ -107,9 +109,13 @@
  * SITE YOUTUBE (youtube.ts): GET|PATCH|DELETE /api/admin/youtube · POST /api/admin/youtube/connect · GET …/callback
  *
  * SITE LOOK (skin.ts): GET /api/site/skin (public) → UiSkinResponse · PUT /api/admin/site/skin {skin} → UiSkinResponse
+ * WEEKLY BOARD (weekly.ts): GET /api/team/scrims/:scrimId/weekly · GET /api/team/finals-slots ·
+ *   GET /api/manager/scrims/:id/weekly · POST …/weekly/finals-slot · GET /api/manager/finals-targets
  */
 export const API_PREFIX = "/api";
 export const APP_COOKIE = "sx_app";
 export const ADMIN_COOKIE = "sx_admin";
 /** Max size of an org logo / poster upload. */
 export const MAX_BRANDING_IMAGE_BYTES = 5 * 1024 * 1024;
+/** a player's own photo (the web app crops + shrinks it to 512px WebP before uploading) */
+export const MAX_AVATAR_BYTES = 1024 * 1024;

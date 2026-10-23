@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Loader2, Lock, RotateCw, Swords, Timer } from "lucide-react";
 import type { TeamScrimOnDate } from "@7xen/shared";
@@ -91,7 +92,8 @@ function SlotMeter({ approved, total, className }: { approved: number; total: nu
   );
 }
 
-export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item: TeamScrimOnDate; rejectionReason?: string | null; tourAnchor?: boolean }) {
+/** `linkTitle`: the title opens the scrim page (off on that page itself). */
+export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle = true }: { item: TeamScrimOnDate; rejectionReason?: string | null; tourAnchor?: boolean; linkTitle?: boolean }) {
   const { scrim, date, startsAt, counts, myRegistration: my } = item;
   const t = useT(scrimUi);
   const now = useNow(15_000);
@@ -160,7 +162,13 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false }: { item:
             logoClassName="size-5 rounded-md"
           />
           <h3 className="line-clamp-2 font-display text-lg leading-tight font-extrabold tracking-tight uppercase transition-colors duration-300 group-hover:text-primary sm:text-xl">
-            {scrim.title}
+            {linkTitle ? (
+              <Link to={`/team/scrims/${scrim.id}?date=${date}`} className="rounded-sm outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
+                {scrim.title}
+              </Link>
+            ) : (
+              scrim.title
+            )}
           </h3>
           <p className="font-display text-2xl leading-none font-extrabold tabular-nums sm:text-3xl">
             {formatTime(scrim.startTime)} <span className="text-[10px] font-semibold tracking-widest text-muted-foreground sm:text-xs">IST</span>

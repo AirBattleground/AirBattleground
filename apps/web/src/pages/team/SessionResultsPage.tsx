@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ChevronRight, Lock } from "lucide-react";
+import { ArrowLeft, ChevronRight, Lock, Trophy } from "lucide-react";
 import { ApiError } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth";
 import { formatTime, useDayFormat } from "@/features/team/format";
 import { useT } from "@/i18n/core";
 import { resultsMsg } from "@/i18n/results";
+import { weeklyMsg } from "@/i18n/weekly";
 import { MapChip } from "@/features/team/components/MapChips";
 import { QueryError } from "@/features/team/components/QueryError";
 import { useTeamStandings } from "@/features/results/api";
@@ -17,6 +18,7 @@ import { PointsLegend, StandingsBoard, StandingsSkeleton, StandingsSummary } fro
 
 export default function SessionResultsPage() {
   const t = useT(resultsMsg);
+  const tw = useT(weeklyMsg);
   const { formatDate } = useDayFormat();
   const steps = useMemo<TourStep[]>(
     () => [
@@ -43,6 +45,13 @@ export default function SessionResultsPage() {
       <PageHeader
         eyebrow={s ? `${formatDate(s.date)} · ${formatTime(s.scrim.startTime)} IST` : t("points_table")}
         title={s?.scrim.title ?? t("points_table")}
+        actions={
+          <Button asChild variant="outline">
+            <Link to={`/team/weekly/${scrimId}?week=${date}`}>
+              <Trophy /> {tw("open_board")}
+            </Link>
+          </Button>
+        }
       />
       {q.isError ? (
         q.error instanceof ApiError && (q.error.status === 403 || q.error.status === 404) ? (

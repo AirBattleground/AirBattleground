@@ -105,7 +105,7 @@ export default function MyRegistrationsPage() {
   return (
     <div className="space-y-6">
       <PageHeader title={t("title")} className="mb-0" />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         {/* key facts + the one action; first on phones, right column on desktop */}
         <NextMatchPanel regs={upcoming.data} loading={upcoming.isLoading} pending={pending} today={today} />
 

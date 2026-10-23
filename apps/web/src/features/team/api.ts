@@ -7,6 +7,7 @@ import {
   type RegistrationStatus,
   type TeamDashboard,
   type TeamRegistration,
+  type TeamScrimDetail,
   type TeamScrimOnDate,
 } from "@7xen/shared";
 import { api } from "@/lib/api";
@@ -21,6 +22,9 @@ const teamKeys = {
   scrims: (date: string) => ["team", "scrims", date] as const,
   registrationsAll: ["team", "registrations"] as const,
   registrations: (scope: RegistrationScope) => ["team", "registrations", scope] as const,
+  // not under "scrims": register/cancel rewrite those cached lists in place
+  scrimDetailAll: ["team", "scrim-detail"] as const,
+  scrimDetail: (scrimId: string, date: string) => ["team", "scrim-detail", scrimId, date] as const,
 };
 
 /** How often approvals are polled so they show up without a refresh. */
@@ -112,6 +116,15 @@ export function useMyRegistrations(scope: RegistrationScope, opts: { poll?: bool
   });
 }
 
+/** Scrim detail page: one scrim on one date ("" = its next date). Polled like the lists so approvals and rooms show up. */
+export function useTeamScrimDetail(scrimId: string, date: string) {
+  return useQuery({
+    queryKey: teamKeys.scrimDetail(scrimId, date),
+    queryFn: () => api.get<TeamScrimDetail>(`/api/team/scrims/${scrimId}${date ? `?date=${date}` : ""}`),
+    refetchInterval: POLL_MS,
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Mutations
 // ---------------------------------------------------------------------------
@@ -119,6 +132,7 @@ function invalidateTeam(qc: QueryClient) {
   void qc.invalidateQueries({ queryKey: teamKeys.dashboard });
   void qc.invalidateQueries({ queryKey: teamKeys.registrationsAll });
   void qc.invalidateQueries({ queryKey: teamKeys.scrimsAll });
+  void qc.invalidateQueries({ queryKey: teamKeys.scrimDetailAll });
 }
 
 /** Phase 5: the player isn't in a team / isn't its leader (the session refreshes itself; see lib/query). */

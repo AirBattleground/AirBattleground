@@ -3,10 +3,10 @@
  * Stored under STORAGE_DIR as "branding/<random id>.<ext>" and served to any signed-in user via
  * GET /api/media/branding/:file. Replacing or removing an image deletes the old file.
  */
-import { MAX_BRANDING_IMAGE_BYTES, type ImageUrlResponse } from "@7xen/shared";
+import { MAX_AVATAR_BYTES, MAX_BRANDING_IMAGE_BYTES, type ImageUrlResponse } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { AppError, notFound } from "../lib/errors.js";
-import { brandingUrl } from "../lib/serialize.js";
+import { avatarOf, brandingUrl } from "../lib/serialize.js";
 import { deleteKey, newFileId, saveBuffer } from "../lib/storage.js";
 import type { UploadedImage } from "../lib/upload.js";
 import type { Actor } from "./tournaments/core.js";
@@ -81,4 +81,18 @@ export async function setTeamLogo(teamId: string, img: UploadedImage | null): Pr
   const t = await prisma.team.findUnique({ where: { id: teamId }, select: { logoKey: true } });
   if (!t) throw notFound("Team not found");
   return swap(t.logoKey, img, (logoKey) => prisma.team.update({ where: { id: teamId }, data: { logoKey } }));
+}
+
+// ---------------------------------------------------------------- player photo
+
+/** A player's own photo (null = back to their Google picture) → the picture everyone now sees. */
+export async function setPlayerAvatar(userId: string, img: UploadedImage | null): Promise<ImageUrlResponse> {
+  if (img && img.buffer.length > MAX_AVATAR_BYTES) {
+    throw new AppError("VALIDATION_ERROR", "The photo must be 1 MB or smaller", { file: "Max 1 MB" }, 413);
+  }
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { avatarKey: true } });
+  if (!u) throw notFound("Player not found");
+  await swap(u.avatarKey, img, (avatarKey) => prisma.user.update({ where: { id: userId }, data: { avatarKey } }));
+  const now = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { avatarUrl: true, avatarKey: true } });
+  return { url: avatarOf(now) };
 }

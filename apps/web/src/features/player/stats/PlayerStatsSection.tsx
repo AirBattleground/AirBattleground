@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { format, parseISO } from "date-fns";
-import { BarChart3, Crosshair, Hexagon, Map as MapIcon, Medal, Trophy, Users } from "lucide-react";
+import { BarChart3, Crosshair, Hexagon, Map as MapIcon, Trophy, Users } from "lucide-react";
 import {
   MAP_LABELS,
   MIN_RATED_MATCHES,
@@ -178,7 +178,7 @@ function StatRow({ icon, items }: { icon: ReactNode; items: { label: string; val
 
 function StatsSkeleton() {
   return (
-    <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
       <Skeleton className="h-[26rem] rounded-2xl" />
       <div className="space-y-3">
         <Skeleton className="h-28 rounded-2xl" />
@@ -190,7 +190,7 @@ function StatsSkeleton() {
 
 // ---------------------------------------------------------------- section
 
-/** Player statistics report (profile page): grade + radar / form on the left, the numbers on the right, maps + recent below. */
+/** Player statistics report (profile page): grade + radar / form on the left, the numbers on the right, maps below. */
 export function PlayerStatsSection({ className }: { className?: string }) {
   const t = useT(statsMsg);
   const [scope, setScope] = useState<PlayerStatsScope>("ALL");
@@ -323,59 +323,30 @@ export function PlayerStatsSection({ className }: { className?: string }) {
             </div>
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-2">
-            {/* maps: kills per match as a thin bar, one hue */}
-            <section className="rounded-2xl border p-4" aria-labelledby="stats-maps">
-              <h3 id="stats-maps" className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-                <MapIcon className="size-3.5" /> {t("maps_title")}
-              </h3>
-              <ul className="space-y-3">
-                {s.maps.map((m) => {
-                  const kpm = m.matches ? m.kills / m.matches : 0;
-                  const maxKpm = Math.max(...s.maps.map((x) => (x.matches ? x.kills / x.matches : 0)), 1);
-                  return (
-                    <li key={m.map}>
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="font-display text-base font-bold">{mapName(m.map)}</span>
-                        <span className="text-xs text-muted-foreground tabular-nums">{m.avgPlacement != null ? t("avg_place_short", { place: m.avgPlacement.toFixed(1) }) : ""}</span>
-                      </div>
-                      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
-                        <div className="h-full rounded-full bg-primary" style={{ width: `${(kpm / maxKpm) * 100}%` }} />
-                      </div>
-                      <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">{t("map_row", { matches: m.matches, wins: m.wins, kpm: kpm.toFixed(1) })}</p>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-
-            <section className="rounded-2xl border p-4" aria-labelledby="stats-recent">
-              <h3 id="stats-recent" className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-                <Medal className="size-3.5" /> {t("recent_title")}
-              </h3>
-              <ol className="divide-y">
-                {s.recent.map((m) => (
-                  <li key={m.matchId} className="flex items-center gap-3 py-2">
-                    <span
-                      className={cn(
-                        "flex size-9 shrink-0 items-center justify-center rounded-lg font-display text-base font-bold tabular-nums",
-                        m.placement === 1 ? "bg-warning/20 text-warning-foreground dark:text-warning" : "bg-muted",
-                      )}
-                    >
-                      {m.placement != null ? `#${m.placement}` : "—"}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{m.eventTitle}</p>
-                      <p className="truncate text-xs text-muted-foreground">
-                        {day(m.playedAt)} · {mapName(m.map)}
-                      </p>
+          {/* maps: kills per match as a thin bar, one hue */}
+          <section className="rounded-2xl border p-4" aria-labelledby="stats-maps">
+            <h3 id="stats-maps" className="mb-3 flex items-center gap-1.5 text-[11px] font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+              <MapIcon className="size-3.5" /> {t("maps_title")}
+            </h3>
+            <ul className="grid gap-x-6 gap-y-3 sm:grid-cols-2 xl:grid-cols-3">
+              {s.maps.map((m) => {
+                const kpm = m.matches ? m.kills / m.matches : 0;
+                const maxKpm = Math.max(...s.maps.map((x) => (x.matches ? x.kills / x.matches : 0)), 1);
+                return (
+                  <li key={m.map}>
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="font-display text-base font-bold">{mapName(m.map)}</span>
+                      <span className="text-xs text-muted-foreground tabular-nums">{m.avgPlacement != null ? t("avg_place_short", { place: m.avgPlacement.toFixed(1) }) : ""}</span>
                     </div>
-                    <span className="shrink-0 font-display text-base font-bold tabular-nums">{t.plural("kills_n", m.kills)}</span>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${(kpm / maxKpm) * 100}%` }} />
+                    </div>
+                    <p className="mt-1 text-[11px] text-muted-foreground tabular-nums">{t("map_row", { matches: m.matches, wins: m.wins, kpm: kpm.toFixed(1) })}</p>
                   </li>
-                ))}
-              </ol>
-            </section>
-          </div>
+                );
+              })}
+            </ul>
+          </section>
         </div>
       </div>
     );

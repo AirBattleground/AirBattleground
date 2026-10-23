@@ -68,7 +68,7 @@ export default function DashboardPage() {
       {q.isError ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
           <Zone
             label="Today"
             data-tour="today"

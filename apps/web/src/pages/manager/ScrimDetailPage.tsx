@@ -133,6 +133,13 @@ function Detail({ scrim }: { scrim: Scrim }) {
         actions={
           <>
             {scrim.status !== "ACTIVE" && <ScrimStatusPill status={scrim.status} />}
+            {scrim.recurrence !== "ONCE" && (
+              <Button asChild variant="outline">
+                <Link to={`/manager/scrims/${scrim.id}/weekly`}>
+                  <Trophy /> Weekly Board
+                </Link>
+              </Button>
+            )}
             <Button asChild variant="outline">
               <Link to={`/manager/scrims/${scrim.id}/edit`}>
                 <Pencil /> Edit
@@ -362,7 +369,7 @@ function Session({ s }: { s: SessionDetail }) {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:items-start">
         <div className="space-y-4">
           {/* Requests */}
           <Zone
@@ -512,7 +519,7 @@ function SessionSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-28 rounded-xl" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)]">
         <div className="space-y-2">
           {Array.from({ length: 3 }, (_, i) => (
             <Skeleton key={i} className="h-20 rounded-xl" />

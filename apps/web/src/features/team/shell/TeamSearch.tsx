@@ -113,7 +113,8 @@ export function TeamSearch({ pages }: { pages: SearchPage[] }) {
         <Search className="size-5" />
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen} title={t("search")} description={t("search_desc")}>
-        <CommandInput placeholder={t("search_placeholder")} />
+        {/* 16px on phones: iOS zooms into smaller fields and stays zoomed, sliding the fixed header / tab bar off screen */}
+        <CommandInput placeholder={t("search_placeholder")} className="text-base md:text-sm" />
         {open && <Results pages={pages} go={go} />}
       </CommandDialog>
     </>

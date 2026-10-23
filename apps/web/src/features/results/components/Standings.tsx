@@ -91,12 +91,12 @@ export function PointsLegend({ ps, action, className }: { ps: PointsSystem; acti
   );
 }
 
-function MatchHead({ m, href }: { m: Match; href?: string }) {
+function MatchHead({ m, href, label }: { m: Match; href?: string; label: string }) {
   const t = useT(resultsMsg);
   const published = m.status === "PUBLISHED";
   const inner = (
     <span className={cn("flex flex-col items-center gap-1", !published && "opacity-60")}>
-      <span className="font-display text-sm font-bold">M{m.number}</span>
+      <span className="font-display text-sm font-bold whitespace-nowrap">{label}</span>
       <MapChip map={m.map} className="px-1.5 py-0.5 text-[10px]" />
     </span>
   );
@@ -127,10 +127,12 @@ interface StandingsBoardProps {
   highlightTeamId?: string;
   /** link a match column header somewhere (match center / scorecard); undefined = no link */
   matchHref?: (m: Match) => string | undefined;
+  /** column heading (default "M1", "M2", …; the Weekly Board uses the night) */
+  matchLabel?: (m: Match) => string;
 }
 
 /** Points table: desktop table with per-match columns, cards on mobile. */
-export function StandingsBoard({ standings: s, highlightTeamId, matchHref }: StandingsBoardProps) {
+export function StandingsBoard({ standings: s, highlightTeamId, matchHref, matchLabel = (m) => `M${m.number}` }: StandingsBoardProps) {
   const t = useT(resultsMsg);
   const ord = useOrdinal();
   const published = s.matches.filter((m) => m.status === "PUBLISHED").length;
@@ -155,7 +157,7 @@ export function StandingsBoard({ standings: s, highlightTeamId, matchHref }: Sta
                 <th className="border-b px-3 py-2 text-left font-semibold">{t("col_team")}</th>
                 {s.matches.map((m) => (
                   <th key={m.id} className="border-b px-2 py-2 text-center font-semibold normal-case tracking-normal">
-                    <MatchHead m={m} href={matchHref?.(m)} />
+                    <MatchHead m={m} href={matchHref?.(m)} label={matchLabel(m)} />
                   </th>
                 ))}
                 <th className="border-b px-2 py-2 text-center font-semibold" title={t("col_wins_title")}>{t("col_wins")}</th>
@@ -250,7 +252,7 @@ export function StandingsBoard({ standings: s, highlightTeamId, matchHref }: Sta
                     const v = r.perMatch[m.number];
                     return (
                       <div key={m.id} className="flex min-w-12 flex-col items-center rounded-md bg-muted/50 px-1.5 py-0.5 text-center">
-                        <span className="text-[10px] font-semibold text-muted-foreground">M{m.number}</span>
+                        <span className="text-[10px] font-semibold whitespace-nowrap text-muted-foreground">{matchLabel(m)}</span>
                         {v ? (
                           <>
                             <span className="font-display text-sm font-bold tabular-nums">{v.totalPoints}</span>

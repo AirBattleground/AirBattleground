@@ -214,7 +214,8 @@ function TeamHome() {
           )}
         </div>
         <TeamLiveCards />
-        <NextRoomCard />
+        {/* Arena shows the room in the "next" strip above Find match */}
+        {!isArena && <NextRoomCard />}
       </div>
 
       {!isArena && <LiveNowStrip />}

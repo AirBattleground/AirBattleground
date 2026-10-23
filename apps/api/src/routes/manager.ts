@@ -8,6 +8,8 @@ import {
   dateString,
   rejectRegistrationSchema,
   updateScrimSchema,
+  giveFinalsSlotSchema,
+  weeklyQuerySchema,
 } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { toTeamSummary } from "../lib/serialize.js";
@@ -18,6 +20,7 @@ import { approveRegistration, rejectRegistration } from "../services/registratio
 import * as branding from "../services/branding.js";
 import * as matches from "../services/matches.js";
 import * as scrims from "../services/scrims.js";
+import * as weekly from "../services/weekly.js";
 import { checkAvailability } from "../services/players.js";
 import { mountMatchCenter } from "./matchCenter.js";
 import { tournamentManageRouter } from "./tournaments.js";
@@ -99,6 +102,18 @@ export function managerRouter() {
     res.json(await matches.managerStandings(req.params.id, currentUser(req).id, date));
   });
   mountMatchCenter(r, false);
+
+  // ---- Weekly Board + Finals Slot ----
+  r.get("/scrims/:id/weekly", async (req, res) => {
+    const { week } = parse(weeklyQuerySchema, req.query);
+    res.json(await weekly.managerWeeklyBoard(req.params.id, currentUser(req).id, week));
+  });
+  r.post("/scrims/:id/weekly/finals-slot", async (req, res) => {
+    res.json(await weekly.giveFinalsSlot(req.params.id, currentUser(req).id, parse(giveFinalsSlotSchema, req.body)));
+  });
+  r.get("/finals-targets", async (req, res) => {
+    res.json({ items: await weekly.finalsTargets(currentUser(req).id) });
+  });
 
   // ---- phase 3: tournaments ----
   r.use("/tournaments", tournamentManageRouter(false));

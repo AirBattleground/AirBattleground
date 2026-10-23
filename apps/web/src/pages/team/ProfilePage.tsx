@@ -14,13 +14,12 @@ import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { usePlayerSession } from "@/lib/auth";
 import { usePlayerProfile, useUpdateProfile } from "@/features/player/api";
 import { applyApiError, Field, useBgmiHint } from "@/features/player/forms";
-import { PlayerAvatar } from "@/features/player/components/PlayerAvatar";
-import { PlayerStatsSection } from "@/features/player/stats/PlayerStatsSection";
+import { PlayerAvatarEditor } from "@/features/player/components/PlayerAvatarEditor";
+import { FinalsSlots } from "@/features/weekly/FinalsSlotCard";
 import { LANGUAGE_META, useLocale, useT } from "@/i18n/core";
 import { common } from "@/i18n/common";
 import { playerFormMsg } from "@/i18n/onboarding";
 import { profileMsg } from "@/i18n/team";
-import { statsMsg } from "@/i18n/playerStats";
 
 const schema = z.object({ ign: ignSchema, bgmiId: z.union([bgmiIdSchema, z.literal("")]) });
 type Values = z.infer<typeof schema>;
@@ -60,7 +59,6 @@ export default function ProfilePage() {
   const t = useT(profileMsg);
   const tf = useT(playerFormMsg);
   const tc = useT(common);
-  const ts = useT(statsMsg);
   const bgmiHint = useBgmiHint();
   const steps = useMemo<TourStep[]>(
     () => [
@@ -69,9 +67,8 @@ export default function ProfilePage() {
       { element: '[data-tour="player-form"]', title: t("tour_form_title"), description: t("tour_form_desc"), side: "top" },
       { element: '[data-tour="profile-language"]', title: t("tour_language_title"), description: t("tour_language_desc"), side: "top" },
       { element: '[data-tour="profile-team"]', title: t("tour_team_title"), description: t("tour_team_desc"), side: "top" },
-      { element: '[data-tour="player-stats"]', title: ts("title"), description: ts("desc"), side: "top" },
     ],
-    [t, ts],
+    [t],
   );
   usePageTour("team.profile", steps);
   const { user, player, team } = usePlayerSession();
@@ -100,44 +97,47 @@ export default function ProfilePage() {
     <div className="space-y-6">
       <PageHeader eyebrow={t("eyebrow")} title={tc("my_profile")} className="mb-0" />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-        <section className="rounded-2xl border bg-card shadow-sm">
-          <div className="flex items-center gap-4 p-4 sm:p-5" data-tour="player-card">
-            <PlayerAvatar name={shownName} url={player?.avatarUrl} size="xl" className="size-16 rounded-2xl shadow-glow" />
-            <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-2 truncate font-display text-2xl leading-tight font-bold sm:text-3xl">
-                <span className="truncate">{shownName}</span>
-                {team && <span className="shrink-0 font-mono text-sm tracking-[0.2em] text-primary">[{team.tag}]</span>}
-              </p>
-              <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground" title={t("google_account")}>
-                <Mail className="size-3.5 shrink-0" /> <span className="truncate">{player?.email ?? p?.email ?? "—"}</span>
-              </p>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+        <div className="space-y-4">
+          <section className="rounded-2xl border bg-card shadow-sm">
+            <div className="flex items-center gap-4 p-4 sm:p-5" data-tour="player-card">
+              <PlayerAvatarEditor name={shownName} url={player?.avatarUrl} />
+              <div className="min-w-0 flex-1">
+                <p className="flex items-center gap-2 truncate font-display text-2xl leading-tight font-bold sm:text-3xl">
+                  <span className="truncate">{shownName}</span>
+                  {team && <span className="shrink-0 font-mono text-sm tracking-[0.2em] text-primary">[{team.tag}]</span>}
+                </p>
+                <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground" title={t("google_account")}>
+                  <Mail className="size-3.5 shrink-0" /> <span className="truncate">{player?.email ?? p?.email ?? "—"}</span>
+                </p>
+              </div>
             </div>
-          </div>
 
-          <form onSubmit={onSubmit} noValidate className="border-t p-4 sm:p-5" data-tour="player-form">
-            <Label>{t("game_details")}</Label>
-            <div className="mt-3 grid gap-4 sm:grid-cols-2">
-              <Field id="ign" label={tf("ign_label")} error={formState.errors.ign?.message}>
-                <div className="relative">
-                  <Gamepad2 aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="ign" className="h-11 pl-9" aria-invalid={!!formState.errors.ign} {...register("ign")} />
-                </div>
-              </Field>
-              <Field id="bgmiId" label={tf("bgmi_id")} error={formState.errors.bgmiId?.message} hint={bgmiHint}>
-                <div className="relative">
-                  <Hash aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input id="bgmiId" inputMode="numeric" placeholder="5123456789" className="h-11 pl-9 font-mono tracking-wider" aria-invalid={!!formState.errors.bgmiId} {...register("bgmiId")} />
-                </div>
-              </Field>
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Button type="submit" disabled={!formState.isDirty || formState.isSubmitting} className="w-full sm:w-auto">
-                {formState.isSubmitting ? <Loader2 className="animate-spin" /> : <Save />} {formState.isDirty ? t("save_changes") : t("saved")}
-              </Button>
-            </div>
-          </form>
-        </section>
+            <form onSubmit={onSubmit} noValidate className="border-t p-4 sm:p-5" data-tour="player-form">
+              <Label>{t("game_details")}</Label>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <Field id="ign" label={tf("ign_label")} error={formState.errors.ign?.message}>
+                  <div className="relative">
+                    <Gamepad2 aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input id="ign" className="h-11 pl-9" aria-invalid={!!formState.errors.ign} {...register("ign")} />
+                  </div>
+                </Field>
+                <Field id="bgmiId" label={tf("bgmi_id")} error={formState.errors.bgmiId?.message} hint={bgmiHint}>
+                  <div className="relative">
+                    <Hash aria-hidden className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input id="bgmiId" inputMode="numeric" placeholder="5123456789" className="h-11 pl-9 font-mono tracking-wider" aria-invalid={!!formState.errors.bgmiId} {...register("bgmiId")} />
+                  </div>
+                </Field>
+              </div>
+              <div className="mt-4 flex justify-end">
+                <Button type="submit" disabled={!formState.isDirty || formState.isSubmitting} className="w-full sm:w-auto">
+                  {formState.isSubmitting ? <Loader2 className="animate-spin" /> : <Save />} {formState.isDirty ? t("save_changes") : t("saved")}
+                </Button>
+              </div>
+            </form>
+          </section>
+          <FinalsSlots enabled={!!team} />
+        </div>
 
         <div className="space-y-4">
           <section className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm sm:p-5" data-tour="profile-team">
@@ -169,8 +169,6 @@ export default function ProfilePage() {
           <LanguageSetting />
         </div>
       </div>
-
-      <PlayerStatsSection />
     </div>
   );
 }

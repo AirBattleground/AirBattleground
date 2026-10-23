@@ -185,6 +185,27 @@ export interface TeamScrimOnDate extends ScrimOnDate {
   mySuggestion?: { id: string; fromIgn: string | null } | null;
 }
 
+/** Scrim detail page: one scrim on one date, for players. */
+export interface TeamScrimDetail extends TeamScrimOnDate {
+  /** the night's matches in play order; `room` only for my approved team, once the organiser reveals it */
+  matches: {
+    number: number;
+    map: GameMap;
+    /** set when the organiser scheduled it (match 1 defaults to the scrim's start) */
+    startsAt: string | null;
+    published: boolean;
+    room: { roomId: string; password: string } | null;
+    /** the room exists and appears at this time (null = not created yet, or already shown) */
+    revealAt: string | null;
+  }[];
+  /** approved teams by slot */
+  lobby: { slotNumber: number; team: TeamSummary }[];
+  /** the next dates it runs (this one included when upcoming), at most 7 — to switch day */
+  dates: string[];
+  /** published matches that day (the points table has something once > 0) */
+  publishedMatches: number;
+}
+
 export interface Registration {
   id: string;
   status: RegistrationStatus;

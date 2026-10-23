@@ -291,6 +291,27 @@ export function useTeamLogo() {
   return { upload, remove, pending: upload.isPending || remove.isPending };
 }
 
+/** My photo (replaces the Google picture everywhere): the session, my team and every list re-read it. */
+export function useAvatar() {
+  const qc = useQueryClient();
+  const settle = (ok: string) => {
+    void qc.invalidateQueries({ queryKey: ME_KEY });
+    void qc.invalidateQueries({ queryKey: playerKeys.all });
+    toast.success(ok);
+  };
+  const upload = useMutation({
+    mutationFn: (file: File) => uploadImage("/api/player/avatar", file),
+    onSuccess: () => settle(tr("photo_updated")),
+    onError: failToast(tr("photo_fail")),
+  });
+  const remove = useMutation({
+    mutationFn: () => api.del<ImageUrlResponse>("/api/player/avatar"),
+    onSuccess: () => settle(tr("photo_removed")),
+    onError: failToast(tr("photo_remove_fail")),
+  });
+  return { upload, remove, pending: upload.isPending || remove.isPending };
+}
+
 // ---------------------------------------------------------------------------
 // Invite by BGMI ID
 // ---------------------------------------------------------------------------

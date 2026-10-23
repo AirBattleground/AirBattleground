@@ -13,8 +13,8 @@ export interface NavItem {
   end?: boolean;
   /** Short label for the mobile bottom tab bar (defaults to `label`). */
   short?: string;
-  /** Phones: show in the bottom tab bar only while `badge` > 0 (e.g. "Live"); always in the sidebar. */
-  mobileOnlyWithBadge?: boolean;
+  /** Phones: never in the bottom tab bar — a pill in the header (LivePill) while `badge` > 0 (e.g. "Live"). Desktop: always in the nav. */
+  phoneHeaderWhileBadge?: boolean;
 }
 
 /** Image logo that replaces the default AirBattleground mark + wordmark in the sidebar and phone topbar. */

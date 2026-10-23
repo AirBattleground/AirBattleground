@@ -5,7 +5,7 @@ import type { MobileAction, NavItem } from "@/components/shell";
 
 /** Lux bottom navigation for phones/tablets (below lg). Same filtering + tour targets as the Teal MobileTabBar. */
 export function LuxTabBar({ nav: all }: { nav: NavItem[] }) {
-  const nav = all.filter((i) => !i.mobileOnlyWithBadge || (i.badge ?? 0) > 0);
+  const nav = all.filter((i) => !i.phoneHeaderWhileBadge);
   return (
     <nav aria-label="Main" className="lux-sh-tabbar fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur-xl" style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <span aria-hidden className="lux-sh-hazard absolute inset-x-0 -top-px h-[2px]" />

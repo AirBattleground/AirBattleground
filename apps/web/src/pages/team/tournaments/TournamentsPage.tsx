@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, NavLink, useSearchParams } from "react-router-dom";
 import { Crosshair, Flag, Radio, Search, Ticket, Trophy } from "lucide-react";
 import type { TournamentMode, TournamentSummary } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@7xen/ui/components/ui/tabs";
+import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
 import { NoTeamHint } from "@/features/player/components/NoTeamHint";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
@@ -43,7 +44,7 @@ function TournamentGrid({ scope, mineIds, mode }: { scope: TournamentScope; mine
   const q = { ...raw, data: raw.data?.filter((t) => (t.mode ?? "BR") === mode) };
   const ep = mode === "TDM" ? "tdm_empty_" : "empty_";
   const empty = { title: tl(`${ep}${scope}_title` as `empty_${TournamentScope}_title`), description: tl(`${ep}${scope}_desc` as `empty_${TournamentScope}_desc`) };
-  const base = mode === "TDM" ? "/team/tdm" : "/team/tournaments";
+  const base = mode === "TDM" ? TDM_PATH : "/team/tournaments";
   if (q.isError) return <QueryError error={q.error} onRetry={() => void q.refetch()} title={mode === "TDM" ? tl("err_tdm") : tl("err_tournaments")} />;
   if (q.isLoading || !q.data)
     return (
@@ -89,6 +90,34 @@ function TournamentGrid({ scope, mineIds, mode }: { scope: TournamentScope; mine
   );
 }
 
+/** TDM battles live under the Cups tab (no tab of their own); /team/tdm redirects here. */
+export const TDM_PATH = "/team/tournaments/tdm";
+
+/** Tournaments | TDM battles — the two kinds of cup, one tab. */
+function ModeSwitch() {
+  const tl = useT(tList);
+  const item = (to: string, label: string, Icon: typeof Trophy) => (
+    <NavLink
+      to={to}
+      end
+      className={({ isActive }: { isActive: boolean }) =>
+        cn(
+          "flex h-11 flex-1 items-center justify-center gap-2 rounded-lg font-display text-base font-bold tracking-wide uppercase outline-none transition-colors focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-none sm:px-6",
+          isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+        )
+      }
+    >
+      <Icon className="size-4" /> {label}
+    </NavLink>
+  );
+  return (
+    <nav aria-label={tl("eyebrow")} data-tour="t-mode" className="mb-5 flex gap-1 rounded-xl border bg-card p-1 shadow-sm sm:inline-flex">
+      {item("/team/tournaments", tl("title_br"), Trophy)}
+      {item(TDM_PATH, tl("title_tdm"), Crosshair)}
+    </nav>
+  );
+}
+
 export default function TournamentsPage() {
   return <TournamentsList mode="BR" />;
 }
@@ -101,11 +130,13 @@ export function TournamentsList({ mode }: { mode: TournamentMode }) {
       mode === "TDM"
         ? [
             { title: tl("tdm_tour_title"), description: tl("tdm_tour_desc") },
+            { element: '[data-tour="t-mode"]', title: tl("mode_tour_title"), description: tl("mode_tour_desc"), side: "bottom" },
             { element: '[data-tour="t-tabs"]', title: tl("tour_tabs_title"), description: tl("tdm_tour_tabs_desc"), side: "bottom" },
             { element: '[data-tour="t-card"]', title: tl("tdm_tour_card_title"), description: tl("tdm_tour_card_desc"), side: "bottom" },
           ]
         : [
             { title: tl("tour_title"), description: tl("tour_desc") },
+            { element: '[data-tour="t-mode"]', title: tl("mode_tour_title"), description: tl("mode_tour_desc"), side: "bottom" },
             { element: '[data-tour="t-featured"]', title: tl("tour_featured_title"), description: tl("tour_featured_desc"), side: "bottom" },
             { element: '[data-tour="t-tabs"]', title: tl("tour_tabs_title"), description: tl("tour_tabs_desc"), side: "bottom" },
             { element: '[data-tour="t-card"]', title: tl("tour_card_title"), description: tl("tour_card_desc"), side: "bottom" },
@@ -123,6 +154,7 @@ export function TournamentsList({ mode }: { mode: TournamentMode }) {
 
   return (
     <>
+      <ModeSwitch />
       {/* BR: the featured poster opens the page, so the heading is for screen readers only */}
       {mode === "TDM" ? <PageHeader eyebrow={tl("eyebrow")} title={tl("title_tdm")} description={tl("desc_tdm")} /> : <h1 className="sr-only">{tl("title_br")}</h1>}
       {mode === "BR" && (featured.loading ? <FeaturedTournamentSkeleton className="mb-6" /> : featured.t && featured.t.mode !== "TDM" && <FeaturedTournamentBanner t={featured.t} className="mb-6" />)}

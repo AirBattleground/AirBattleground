@@ -27,6 +27,9 @@
  *   POST   /api/player/team/join-requests/:id/reject          → PlayerTeam      leader
  *   PUT    /api/player/team/logo   multipart file             → ImageUrlResponse leader (png/jpg/webp ≤ MAX_BRANDING_IMAGE_BYTES)
  *   DELETE /api/player/team/logo                              → ImageUrlResponse leader ({ url: null })
+ *   PUT    /api/player/avatar      multipart file             → ImageUrlResponse my photo (png/jpg/webp ≤ MAX_AVATAR_BYTES); every
+ *                                                                avatarUrl (session, PlayerSummary, …) shows it instead of the Google picture
+ *   DELETE /api/player/avatar                                 → ImageUrlResponse back to the Google picture ({ url } may be null)
  *   POST   /api/player/team/invites  InviteByBgmiInput        → PlayerTeam (201) leader: invite a player by BGMI ID
  *                                   (404 NOT_FOUND no such BGMI ID · 409 ALREADY_IN_TEAM · 409 TEAM_FULL · 409 CONFLICT already invited / already asked to join)
  *   DELETE /api/player/team/invites/:id                       → PlayerTeam      leader: take back a pending invite

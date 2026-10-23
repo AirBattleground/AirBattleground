@@ -4,7 +4,7 @@ import { cn } from "@7xen/ui/lib/utils";
 
 const SIZES = { sm: "size-8", md: "size-10", lg: "size-14", xl: "size-20" } as const;
 
-/** Google profile picture, falling back to gradient initials. */
+/** The player's photo (uploaded, or their Google picture), falling back to gradient initials. */
 export function PlayerAvatar({
   name,
   url,
@@ -16,15 +16,15 @@ export function PlayerAvatar({
   size?: keyof typeof SIZES;
   className?: string;
 }) {
-  const [failed, setFailed] = useState(false);
-  if (url && !failed) {
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  if (url && failedUrl !== url) {
     return (
       <img
         src={url}
         alt=""
         referrerPolicy="no-referrer"
         loading="lazy"
-        onError={() => setFailed(true)}
+        onError={() => setFailedUrl(url)}
         className={cn("shrink-0 rounded-xl object-cover ring-1 ring-border", SIZES[size], className)}
       />
     );

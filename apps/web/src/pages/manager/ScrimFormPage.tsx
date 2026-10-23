@@ -616,7 +616,7 @@ function FormSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-10 w-64" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-6">
           {Array.from({ length: 4 }, (_, i) => (
             <Skeleton key={i} className="h-56 rounded-xl" />

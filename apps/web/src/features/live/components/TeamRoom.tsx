@@ -22,7 +22,7 @@ function upcoming(items: TeamRoomCard[] | undefined): TeamRoomCard[] {
 }
 
 /** Team rooms query that also refetches the moment a room is due to be revealed. */
-function useRooms() {
+export function useRooms() {
   const q = useTeamRooms();
   const { refetch } = q;
   const nextReveal = (q.data ?? [])

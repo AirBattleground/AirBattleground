@@ -34,7 +34,7 @@ function toRoomDetails(m: RoomFields): RoomDetails | null {
 }
 
 /** Teams may see the room once revealAt has passed (null = immediately). */
-const roomRevealed = (m: RoomFields, now = new Date()) => !!m.roomId && (!m.roomRevealAt || m.roomRevealAt <= now);
+export const roomRevealed = (m: RoomFields, now = new Date()) => !!m.roomId && (!m.roomRevealAt || m.roomRevealAt <= now);
 
 export async function getRoom(matchId: string, managerId: string, bypass = false): Promise<RoomDetails | null> {
   return toRoomDetails(await loadOwnMatch(matchId, managerId, bypass));

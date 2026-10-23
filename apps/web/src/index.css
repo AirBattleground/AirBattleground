@@ -4,6 +4,15 @@
 @import "./skins/arena/arena.css";
 @source "./";
 
+/* phones: keep the fixed header and tab bar in place.
+   - no double-tap zoom (a quick second tap on a card or text zoomed the page, sliding them out of view); pinch still works
+   - no rubber-band bounce: browsers read overscroll-behavior for the page scroll from <html> only (globals.css sets it on
+     <body>, which they ignore), and in-app browsers (Instagram, WhatsApp) drag fixed bars along with the bounce */
+html { touch-action: manipulation; overscroll-behavior-y: none; }
+/* - never pan sideways: anything wider than the screen is cut off instead of widening the page (which slid the whole
+     screen, fixed bars included). clip, not hidden, so the page stays the scroller and sticky elements keep working */
+body { overflow-x: clip; }
+
 /* AirBattleground logo images follow the brand colour (SVG filter #sx-brand-ink in index.html) */
 .brand-ink { filter: url(#sx-brand-ink); }
 

@@ -8,12 +8,13 @@ import { useTeamScrims } from "../api";
 import { ScrimCard, ScrimCardSkeleton } from "../components/ScrimCard";
 import { StaggerItem, StaggerList } from "../components/Stagger";
 import { SectionHeader } from "./SectionHeader";
+import { RAIL, RAIL_ITEM } from "./TournamentRail";
 import { common } from "@/i18n/common";
 import { useT } from "@/i18n/core";
 import { homeMsg } from "@/i18n/home";
 
-const GRID = "grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,21rem),1fr))]";
-const SHOW = 3;
+/** a sideways rail like the tournaments, so more scrims fit without making Home longer */
+const SHOW = 8;
 
 /** Scrims worth showing on home: still taking teams, or ones the team already asked for. */
 function joinable(items: TeamScrimOnDate[] | undefined): TeamScrimOnDate[] {
@@ -71,10 +72,12 @@ export function ScrimShowcase({ data }: { data: ReturnType<typeof useHomeScrims>
       </div>
 
       {day.loading ? (
-        <div className={GRID}>
-          <ScrimCardSkeleton />
-          <ScrimCardSkeleton />
-          <ScrimCardSkeleton />
+        <div className="home-rail -mx-4 flex gap-4 overflow-hidden px-4 sm:mx-0 sm:px-0">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className={RAIL_ITEM}>
+              <ScrimCardSkeleton />
+            </div>
+          ))}
         </div>
       ) : items.length === 0 ? (
         <div className="relative flex flex-col items-center gap-3 overflow-hidden rounded-2xl border border-dashed bg-card/60 p-6 text-center sm:flex-row sm:text-left">
@@ -91,9 +94,9 @@ export function ScrimShowcase({ data }: { data: ReturnType<typeof useHomeScrims>
           </Button>
         </div>
       ) : (
-        <StaggerList key={tab} className={GRID}>
+        <StaggerList key={tab} className={RAIL}>
           {items.map((s) => (
-            <StaggerItem key={s.scrim.id} className="h-full">
+            <StaggerItem key={s.scrim.id} className={RAIL_ITEM}>
               <ScrimCard item={s} />
             </StaggerItem>
           ))}

@@ -58,7 +58,7 @@ export default function ResultsPage() {
     <div className="space-y-6">
       <PageHeader eyebrow={t("eyebrow")} title={t("title")} />
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
         <section className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5 lg:order-2" data-tour="results-stats">
           <PanelLabel>{t("tour_stats_title")}</PanelLabel>
           <div className="mt-2 grid grid-cols-4 gap-2 lg:grid-cols-2 lg:gap-4">

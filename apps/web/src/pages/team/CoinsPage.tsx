@@ -62,7 +62,7 @@ export default function CoinsPage() {
       ) : !hasTeam ? (
         <NoTeamHint icon={<BgCoin className="size-6" />}>{t("no_team")}</NoTeamHint>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[22rem_minmax(0,1fr)] lg:items-start">
           <WalletPanel w={w} />
           <History w={w} />
         </div>

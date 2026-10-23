@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MessageSquareWarning } from "lucide-react";
 import type { TeamRegistration } from "@7xen/shared";
@@ -71,7 +72,12 @@ export function RegistrationCard({
 
       {/* scrim */}
       <div className="min-w-0 space-y-0.5">
-        <p className="truncate font-display text-base leading-tight font-bold sm:text-lg">{reg.scrim.title}</p>
+        <p className="truncate font-display text-base leading-tight font-bold sm:text-lg">
+          {/* stretched link: the whole card opens the scrim page */}
+          <Link to={`/team/scrims/${reg.scrim.id}?date=${reg.date}`} className="outline-none after:absolute after:inset-0 after:content-[''] hover:text-primary focus-visible:underline">
+            {reg.scrim.title}
+          </Link>
+        </p>
         <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           <OrganizerBadge manager={reg.scrim.manager} className="min-w-0 shrink" />
           {!compact && reg.scrim.maps.length > 0 && <MapDots maps={reg.scrim.maps} className="hidden md:flex" />}
@@ -95,7 +101,7 @@ export function RegistrationCard({
           </div>
         )}
         {canCancel && (
-          <Button variant="ghost" className="ml-auto h-10 px-3 text-muted-foreground hover:text-destructive sm:ml-0" onClick={() => setOpen(true)} {...tour("reg-cancel")}>
+          <Button variant="ghost" className="relative z-10 ml-auto h-10 px-3 text-muted-foreground hover:text-destructive sm:ml-0" onClick={() => setOpen(true)} {...tour("reg-cancel")}>
             {reg.status === "APPROVED" ? t("cancel") : t("cancel_request")}
           </Button>
         )}

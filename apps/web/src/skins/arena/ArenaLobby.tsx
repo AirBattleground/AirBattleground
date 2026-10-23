@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Crosshair, Play, Plus, Swords, Trophy } from "lucide-react";
+import { Lock, Play, Plus } from "lucide-react";
 import { addDays, todayInAppTz, type TeamRegistration } from "@7xen/shared";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
@@ -8,6 +8,10 @@ import { usePlayerTeam } from "@/features/player/api";
 import { PlayerAvatar } from "@/features/player/components/PlayerAvatar";
 import { TeamLogo } from "@/features/player/components/TeamLogo";
 import { useLiveBroadcasts } from "@/features/broadcast/live";
+import { RoomValue } from "@/features/live/components/RoomValue";
+import { useRooms } from "@/features/live/components/TeamRoom";
+import { fmtClock } from "@/features/live/format";
+import { useNow } from "@/features/team/useNow";
 import { BgCoin } from "@/features/coins/components/BgCoin";
 import { useCoinLeaderboard } from "@/features/coins/components/CoinLeaderboard";
 import { useTeamScrimsForDays } from "@/features/team/api";
@@ -19,6 +23,7 @@ import squadUrl from "./squad.webp";
 import mapUrl from "./erangel.webp";
 import { useDateFormat, useT } from "@/i18n/core";
 import { arenaMsg } from "@/i18n/home";
+import { liveMsg } from "@/i18n/live";
 
 const WEEK = 7;
 /** "Sat, 8:00 PM" in the current language */
@@ -79,36 +84,6 @@ function SquadPanel() {
         ))}
       </div>
       {free > 0 && isLeader && <p className="mt-2.5 text-xs text-muted-foreground">{tr.plural("invite_more", free)} → <Link to="/team/my-team" className="text-primary hover:underline">{tr("share_invite")}</Link></p>}
-    </Panel>
-  );
-}
-
-function ModePanel({ scrims, cups, tdm }: { scrims: number | null; cups: number | null; tdm: number | null }) {
-  const tr = useT(arenaMsg);
-  const modes = [
-    { to: "/team/scrims", label: tr("mode_scrim"), n: scrims, icon: <Swords /> },
-    { to: "/team/tournaments", label: tr("mode_cup"), n: cups, icon: <Trophy /> },
-    { to: "/team/tdm", label: tr("mode_tdm"), n: tdm, icon: <Crosshair /> },
-  ];
-  return (
-    <Panel>
-      <span className="arena-label">{tr("game_mode")}</span>
-      <div className="mt-2.5 grid grid-cols-3 gap-1.5">
-        {modes.map((m) => (
-          <Link key={m.label} to={m.to} className="group flex flex-col items-center gap-1 border border-border bg-background/40 py-2.5 transition-colors hover:border-primary hover:bg-primary/10 [&_svg]:size-5 [&_svg]:text-primary">
-            {m.icon}
-            <span className="font-display text-lg leading-none font-semibold tracking-[0.12em] uppercase">{m.label}</span>
-            <span className="text-[11px] text-muted-foreground">{m.n == null ? "…" : tr("n_open", { count: m.n })}</span>
-          </Link>
-        ))}
-      </div>
-      <div className="mt-3 flex items-center gap-3">
-        <img src={mapUrl} alt="" className="h-12 w-20 border border-primary object-cover" />
-        <div>
-          <p className="font-display text-xl leading-none font-semibold uppercase">Erangel · Miramar · TDM</p>
-          <p className="text-xs text-muted-foreground">{tr("every_map")}</p>
-        </div>
-      </div>
     </Panel>
   );
 }
@@ -212,16 +187,46 @@ function LivePanel() {
   );
 }
 
+/** The strip keeps showing a match this long after it starts (room still needed if it runs late), then moves on. */
+const HOLD_MS = 5 * 60_000;
+
+/**
+ * The next match strip + Find match. The strip shows the team's next match (from the rooms feed, so scrims and cups,
+ * each match in turn) with its room ID / password to copy, or when the room appears; 5 minutes after a match starts
+ * it moves on to the next one. No room entry → the booked registration; nothing booked → scrims open this week.
+ */
 function FindMatch({ next, openThisWeek }: { next: TeamRegistration | null; openThisWeek: number | null }) {
   const tr = useT(arenaMsg);
+  const tl = useT(liveMsg);
   const when = useWhen();
+  const now = useNow(30_000);
+  const rooms = useRooms().data;
+  const card =
+    (rooms ?? [])
+      .filter((c) => c.startsAt && new Date(c.startsAt).getTime() + HOLD_MS > now)
+      .sort((a, b) => a.startsAt!.localeCompare(b.startsAt!))[0] ?? null;
+  const match = card ? { title: card.title, startsAt: card.startsAt!, slot: card.slotNumber } : next ? { title: next.scrim.title, startsAt: next.startsAt, slot: next.slotNumber } : null;
   return (
     <div data-tour="find-scrim">
       <div className="arena-panel border-b-0 px-4 py-2.5 text-sm text-muted-foreground [clip-path:polygon(14px_0,100%_0,100%_100%,0_100%,0_14px)]">
-        {next ? (
+        {match ? (
           <>
-            {tr("next")} · <b className="text-foreground">{next.scrim.title}</b> · {when(next.startsAt)}
-            {next.slotNumber != null && <b className="ml-1 text-warning">· {tr("slot", { slot: String(next.slotNumber).padStart(2, "0") })}</b>}
+            <p>
+              {tr("next")} · <b className="text-foreground">{match.title}</b> · {when(match.startsAt)}
+              {match.slot != null && <b className="ml-1 whitespace-nowrap text-warning">· {tr("slot", { slot: String(match.slot).padStart(2, "0") })}</b>}
+            </p>
+            {card &&
+              (card.room ? (
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+                  <RoomValue label={tr("room_id_short")} value={card.room.roomId} copyLabel={tl("copy_room_id")} />
+                  <RoomValue label={tr("room_pass_short")} value={card.room.password} copyLabel={tl("copy_password")} />
+                </div>
+              ) : (
+                <p className="mt-1 flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase">
+                  <Lock className="size-3.5 text-primary" />
+                  {card.revealAt ? tr("room_at", { time: fmtClock(card.revealAt) }) : tr("room_not_out")}
+                </p>
+              ))}
           </>
         ) : (
           <>{openThisWeek == null ? tr("finding") : tr.plural("open_week", openThisWeek)}</>
@@ -272,8 +277,6 @@ export default function ArenaLobby({ next }: { next: TeamRegistration | null }) 
   const now = Date.now();
   const openScrims = days.isLoading ? null : week.flatMap((d) => days.byDate.get(d) ?? []).filter((s) => s.registrationOpen && new Date(s.startsAt).getTime() > now).length;
   const open = useTeamTournaments("open");
-  const cups = open.data ? open.data.filter((t) => t.mode !== "TDM").length : null;
-  const tdm = open.data ? open.data.filter((t) => t.mode === "TDM").length : null;
   const live = useLiveBroadcasts().data ?? [];
   const name = player?.ign ?? user?.displayName ?? tr("player");
 
@@ -308,7 +311,6 @@ export default function ArenaLobby({ next }: { next: TeamRegistration | null }) 
         {/* left column */}
         <div className="order-3 flex flex-col gap-4 lg:order-none lg:pt-2">
           <SquadPanel />
-          <ModePanel scrims={openScrims} cups={cups} tdm={tdm} />
           <CoinPanel />
         </div>
 

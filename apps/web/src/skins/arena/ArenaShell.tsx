@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { useIsDesktop } from "@/lib/use-media-query";
 import type { AppShellProps } from "@/components/shell";
 import { MobileFab, MobileTabBar } from "@/components/shell/MobileTabBar";
+import { headerItemOf, LivePill } from "@/components/shell/LivePill";
 import { UserMenu } from "@/components/shell/UserMenu";
 import { WelcomeDialog } from "@/components/shell/WelcomeDialog";
 import { useSessionExpiryToast } from "@/components/shell/useSessionExpiryToast";
@@ -123,6 +124,7 @@ export default function ArenaShell({ nav, homeHref, mobileAction, welcomeSteps, 
 
             <div className={cn("flex shrink-0 items-center gap-1.5", !isDesktop && "ml-auto")}>
               {isDesktop && search && <div className="hidden w-56 2xl:block">{search}</div>}
+              {!isDesktop && <LivePill item={headerItemOf(nav)} />}
               {player && <CoinPill compact={!isDesktop} />}
               {notifications}
               {isDesktop && (

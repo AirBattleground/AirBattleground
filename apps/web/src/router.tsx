@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ComponentType } from "react";
-import { createBrowserRouter, Navigate, useParams, type RouteObject } from "react-router-dom";
+import { createBrowserRouter, Navigate, useLocation, useParams, type RouteObject } from "react-router-dom";
 import { FullPageLoader } from "@7xen/ui/components/brand/page";
 import { RedirectHome, RequireRole } from "@/lib/guards";
 import { RouteError } from "@/lib/chunkReload";
@@ -40,6 +40,12 @@ function TeamTournamentRedirect() {
   return <Navigate replace to={`/team/tournaments/${id}`} />;
 }
 
+/** A moved page: same query string (e.g. ?tab=mine) at its new address. */
+function KeepQueryRedirect({ to }: { to: string }) {
+  const { search } = useLocation();
+  return <Navigate replace to={to + search} />;
+}
+
 // the login page is what visitors land on: part of the main bundle (no extra round trip), lazy() is created once
 const LoginPage = LoginPageComponent;
 const notFound = page(() => import("@/pages/NotFoundPage"));
@@ -75,6 +81,7 @@ const routes: RouteObject[] = [
       { path: "scrims/new", element: page(() => import("@/pages/manager/ScrimFormPage")) },
       { path: "scrims/:scrimId", element: page(() => import("@/pages/manager/ScrimDetailPage")) },
       { path: "scrims/:scrimId/edit", element: page(() => import("@/pages/manager/ScrimFormPage")) },
+      { path: "scrims/:scrimId/weekly", element: page(() => import("@/pages/manager/WeeklyBoardPage")) },
       { path: "scrims/:scrimId/:date", element: <SessionRedirect area="manager" /> },
       { path: "scrims/:scrimId/:date/matches", element: <SessionRedirect area="manager" /> },
       { path: "scrims/:scrimId/:date/matches/:matchId", element: page(() => import("@/pages/manager/MatchCenterPage")) },
@@ -105,16 +112,22 @@ const routes: RouteObject[] = [
     children: [
       { index: true, element: page(() => import("@/pages/team/DashboardPage")) },
       { path: "scrims", element: page(() => import("@/pages/team/BrowseScrimsPage")) },
+      { path: "scrims/:scrimId", element: page(() => import("@/pages/team/ScrimDetailPage")) },
       { path: "registrations", element: page(() => import("@/pages/team/MyRegistrationsPage")) },
       { path: "profile", element: page(() => import("@/pages/team/ProfilePage")) },
+      { path: "stats", element: page(() => import("@/pages/team/StatsPage")) },
+      { path: "rank", element: page(() => import("@/pages/team/RankPage")) },
       { path: "my-team", element: page(() => import("@/pages/team/MyTeamPage")) },
       { path: "results", element: page(() => import("@/pages/team/ResultsPage")) },
       { path: "results/:scrimId", element: <Navigate replace to="/team/results" /> },
+      { path: "weekly/:scrimId", element: page(() => import("@/pages/team/WeeklyBoardPage")) },
       { path: "results/:scrimId/:date", element: page(() => import("@/pages/team/SessionResultsPage")) },
       { path: "results/:scrimId/:date/matches", element: <SessionRedirect area="team" /> },
       { path: "results/:scrimId/:date/matches/:matchId", element: page(() => import("@/pages/team/MatchScorecardPage")) },
       { path: "tournaments", element: page(() => import("@/pages/team/tournaments/TournamentsPage")) },
-      { path: "tdm", element: page(() => import("@/pages/team/tdm/TdmBattlesPage")) },
+      // TDM battles sit under the Cups tab; the old address keeps working
+      { path: "tdm", element: <KeepQueryRedirect to="/team/tournaments/tdm" /> },
+      { path: "tournaments/tdm", element: page(() => import("@/pages/team/tdm/TdmBattlesPage")) },
       { path: "coins", element: page(() => import("@/pages/team/CoinsPage")) },
       { path: "tournaments/:id", element: page(() => import("@/pages/team/tournaments/TournamentHubPage")) },
       { path: "tournaments/:id/stages", element: <TeamTournamentRedirect /> },

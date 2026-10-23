@@ -13,7 +13,9 @@ import { tJourney } from "@/i18n/tournaments";
 
 const ACTIVE = new Set(["REGISTRATION_OPEN", "REGISTRATION_CLOSED", "LIVE"]);
 const ORDER: Record<string, number> = { LIVE: 0, REGISTRATION_OPEN: 1, REGISTRATION_CLOSED: 2, COMPLETED: 3 };
-const RAIL_ITEM = "w-[min(20rem,82vw)] shrink-0 snap-start sm:w-[21rem] xl:w-[calc((100%-2rem)/3)] 2xl:w-[calc((100%-3rem)/4)] min-[1920px]:w-[calc((100%-4rem)/5)]";
+/** Home rails (tournaments, scrims): one row that scrolls sideways, snapping card by card; the page stays short. */
+export const RAIL = "home-rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pt-1 pb-3 sm:mx-0 sm:scroll-px-0 sm:px-0";
+export const RAIL_ITEM = "w-[min(20rem,82vw)] shrink-0 snap-start sm:w-[21rem] xl:w-[calc((100%-2rem)/3)] 2xl:w-[calc((100%-3rem)/4)] min-[1920px]:w-[calc((100%-4rem)/5)]";
 
 function MineCard({ t }: { t: TournamentSummary }) {
   const tr = useT(homeMsg);
@@ -68,7 +70,7 @@ export function TournamentRail({ items, mineIds, loading }: ReturnType<typeof us
           </p>
         </div>
       ) : (
-        <StaggerList className="home-rail -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-px-4 px-4 pt-1 pb-3 sm:mx-0 sm:scroll-px-0 sm:px-0">
+        <StaggerList className={RAIL}>
           {items.slice(0, 8).map((t) => (
             <StaggerItem key={t.id} className={cn(RAIL_ITEM, "[&>.tc-card]:shadow-xl [&>.tc-card]:shadow-background/60")}>
               {mineIds.has(t.id) ? <MineCard t={t} /> : <TournamentCard t={t} />}

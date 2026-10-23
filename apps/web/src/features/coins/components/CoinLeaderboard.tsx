@@ -85,7 +85,7 @@ export function CoinLeaderboard() {
       {q.isError && !d ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("lb_error")} className="rounded-2xl border bg-card py-8" />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
           <div className="relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
             <div className="pointer-events-none absolute -top-16 -right-16 size-48 rounded-full bg-warning/20 blur-3xl" />
             <div className="pointer-events-none absolute inset-0 bg-grid opacity-30" />
