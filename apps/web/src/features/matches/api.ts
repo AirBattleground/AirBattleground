@@ -7,6 +7,7 @@ import {
   type MatchDetail,
   type MatchSummary,
   type SaveLineupInput,
+  type LiveAutoInput,
   type SaveLiveTeamInput,
   type SaveResultsInput,
   type ScreenshotKind,
@@ -268,5 +269,19 @@ export function useSaveLiveTeam(matchId: string) {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
       toast.error("Couldn't update the player", { description: errorMessage(err) });
     },
+  });
+}
+
+export function useSetAutoPaused(matchId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: LiveAutoInput) => api.patch<StudioLinkLive>(`/api/manager/matches/${matchId}/team-status/auto`, input),
+    onSuccess: (d, input) => {
+      qc.setQueryData(matchKeys.live(matchId), d);
+      toast.success(input.paused ? "Auto updates paused" : "Auto updates back on", {
+        description: input.paused ? "Captures still arrive, but only your taps change the board." : undefined,
+      });
+    },
+    onError: (err) => toast.error("Couldn't change auto updates", { description: errorMessage(err) }),
   });
 }

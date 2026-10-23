@@ -18,6 +18,8 @@ vi.mock("../src/services/youtube.js", async (importOriginal) => {
 });
 
 const { showRunsOnBox } = await import("../src/services/studio.js");
+const { extractor } = await import("../src/lib/extractor.js");
+const { runLiveCaptureOnce, sweepLiveCaptures } = await import("../src/services/liveCapture.js");
 const { adminAgent, createAdminUser, createManager, createScrim, createTeam, http, joinTeam, playerAgent, prisma, resetDb, server, yesterday } = await import(
   "./helpers.js"
 );
@@ -302,6 +304,187 @@ describe("studio link", () => {
       const limited = all.find((x) => x.status === 429);
       expect(limited).toBeDefined();
       expect(Number(limited!.headers["retry-after"])).toBeGreaterThanOrEqual(1);
+    });
+
+    describe("auto capture", () => {
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      let seq = 0;
+      const uuid = () => crypto.randomUUID();
+      const SESSION = "0f4c2a8e-1d2b-4c3a-8e9f-7a6b5c4d3e2f";
+      type Read = Awaited<ReturnType<typeof extractor.readLive>>;
+      const read = (teams: Read["teams"], screen: Read["screen"] = "spectator_hud"): Read => ({ screen, teams, warnings: [], modelVersion: "test", ms: 5 });
+      const team = (slot: number | null, name: string | null, players: Read["teams"][number]["players"], confidence = 0.97) => ({ slot, name, players, confidence });
+
+      async function capture(matchId: string, over: Record<string, string> = {}, file = fakePng(`cap-${++seq}`), k = key) {
+        let req = http().post(`/api/studio-link/matches/${matchId}/screenshots`).set("X-Studio-Key", k);
+        const fields = { kind: "LIVE_STATUS", captureId: uuid(), capturedAt: new Date().toISOString(), sequence: String(seq), sessionId: SESSION, sceneName: "Game Play", ...over };
+        for (const [f, v] of Object.entries(fields)) if (v !== "") req = req.field(f, v);
+        return req.attach("files", file, { filename: "capture.png", contentType: "image/png" });
+      }
+      /** upload one capture the reader will see as `r`, then run the worker */
+      async function applied(matchId: string, r: Read, over: Record<string, string> = {}) {
+        await sleep(200); // stay under the per-match upload rate
+        const spy = vi.spyOn(extractor, "readLive").mockResolvedValueOnce(r);
+        const up = await capture(matchId, over);
+        expect(up.status).toBe(202);
+        expect(await runLiveCaptureOnce()).toBe(1);
+        spy.mockRestore();
+        return up.body;
+      }
+      const board = async (matchId: string) => (await get(`/matches/${matchId}/live`)).body;
+
+      it("rejects bad uploads: fields, kind, size, not live, other manager, unknown match", async () => {
+        const { matchId } = await liveSetup();
+        expect((await capture(matchId)).status).toBe(409); // lineup not confirmed yet
+        await confirmLineup(matchId);
+        const missing = await capture(matchId, { captureId: "" });
+        expect(missing.status).toBe(400);
+        expect(missing.body.error.message).toEqual(expect.any(String));
+        expect((await capture(matchId, { kind: "SELFIE" })).status).toBe(400);
+        expect((await capture(matchId, { capturedAt: "yesterday" })).status).toBe(400);
+        expect((await capture(matchId, {}, Buffer.concat([fakePng("big"), Buffer.alloc(2 * 1024 * 1024)]))).status).toBe(413);
+        expect((await capture("nope")).status).toBe(404);
+        const other = (await createManager(await adminAgent())).agent;
+        const k2 = (await other.post("/api/manager/studio/workers").send({ name: "Other" })).body.key;
+        expect((await capture(matchId, {}, fakePng("x"), k2)).status).toBe(403);
+        expect((await capture(matchId, {}, fakePng("y"), "sw_nope")).status).toBe(401);
+        expect(await prisma.liveCapture.count()).toBe(0);
+      });
+
+      it("a capture is queued (202), read and applied; repeats are ignored; too fast → 429", async () => {
+        const { matchId, soul, solo } = await liveSetup();
+        await confirmLineup(matchId);
+        const before = await board(matchId);
+        expect(before.autoCapture).toMatchObject({ active: false, paused: false, lastCaptureAt: null, lastError: null });
+
+        const spy = vi.spyOn(extractor, "readLive").mockResolvedValue(
+          read([team(3, "SOUL", ["alive", "alive", "knocked", "eliminated"]), team(null, "solo", ["eliminated"])]),
+        );
+        const captureId = uuid();
+        const up = await capture(matchId, { captureId });
+        expect(up.status).toBe(202);
+        expect(up.body).toEqual({ captureId, accepted: true, queuePosition: 0, nextIntervalSeconds: 5 });
+        const again = await capture(matchId, { captureId });
+        expect(again.status).toBe(200);
+        expect(again.body).toEqual({ captureId, accepted: false, duplicate: true });
+        const fast = await capture(matchId);
+        expect(fast.status).toBe(429);
+        expect(Number(fast.headers["retry-after"])).toBeGreaterThanOrEqual(1);
+
+        expect(await runLiveCaptureOnce()).toBe(1);
+        expect(spy).toHaveBeenCalledWith(expect.any(Buffer), "image/png", [
+          { slot: 3, name: "SOUL", tag: expect.any(String) },
+          { slot: 4, name: "SOLO", tag: expect.any(String) },
+        ]);
+        spy.mockRestore();
+        const row = await prisma.liveCapture.findFirstOrThrow({ where: { captureId } });
+        expect(row).toMatchObject({ status: "APPLIED", changes: 3, storageKey: `matches/${matchId}/captures/${SESSION}/${row.sequence}.png` });
+
+        const after = await board(matchId);
+        expect(after.version).toBeGreaterThan(before.version);
+        expect(after.teams[0]).toMatchObject({ id: soul, status: 2 });
+        expect(after.teams[0].players.map((p: { state: string }) => p.state)).toEqual(["alive", "alive", "knocked", "eliminated"]);
+        expect(after.teams[0].players[3]).toMatchObject({ source: "auto", updatedAt: expect.any(String) });
+        expect(after.teams[0].players[0].source).toBeUndefined();
+        expect(after.teams[1]).toMatchObject({ id: solo, status: 0 });
+        expect(after.autoCapture).toMatchObject({ active: true, lastCaptureAt: expect.any(String), lastAppliedAt: expect.any(String), lastError: null });
+        expect(after.autoCapture.latestImageUrl).toBeUndefined(); // studio view
+
+        // the Match Center gets a link to the image the reader saw
+        const mc = await mgr.get(`/api/manager/matches/${matchId}/team-status`);
+        expect(mc.body.autoCapture.latestImageUrl).toBe(`/api/manager/matches/${matchId}/captures/${row.id}/image`);
+        const img = await mgr.get(mc.body.autoCapture.latestImageUrl);
+        expect(img.status).toBe(200);
+        expect(img.headers["content-type"]).toBe("image/png");
+
+        // the same reading again changes nothing → no new version
+        await applied(matchId, read([team(3, "SOUL", ["alive", "alive", "knocked", "eliminated"])]));
+        expect((await board(matchId)).version).toBe(after.version);
+      });
+
+      it("precedence: manager edits lock for 60 s, eliminated is sticky, low confidence is ignored", async () => {
+        const { matchId, soul } = await liveSetup();
+        await confirmLineup(matchId);
+        await applied(matchId, read([team(3, null, ["alive", "alive", "alive", "eliminated"])]));
+        const states = async () => (await board(matchId)).teams[0].players.map((p: { state: string; source?: string }) => `${p.state}:${p.source ?? "-"}`);
+        expect(await states()).toEqual(["alive:-", "alive:-", "alive:-", "eliminated:auto"]);
+
+        // auto never revives an eliminated player
+        await applied(matchId, read([team(3, null, ["alive", "alive", "alive", "alive"])]));
+        expect(await states()).toEqual(["alive:-", "alive:-", "alive:-", "eliminated:auto"]);
+
+        // the manager revives them (a mistake) and knocks player 1: both locked against the next capture
+        await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: ["knocked", "alive", "alive", "alive"] });
+        expect(await states()).toEqual(["knocked:manager", "alive:-", "alive:-", "alive:manager"]);
+        await applied(matchId, read([team(3, null, ["alive", "alive", "eliminated", "eliminated"])]));
+        // two eliminations read: the unlocked alive players take them (last first), locked ones keep the manager's state
+        expect(await states()).toEqual(["knocked:manager", "eliminated:auto", "eliminated:auto", "alive:manager"]);
+
+        // the lock expires after 60 s
+        const row = await prisma.match.findUniqueOrThrow({ where: { id: matchId } });
+        const aged = Object.fromEntries(
+          Object.entries(row.liveTeams as Record<string, { source?: string; at?: string }[]>).map(([id, ps]) => [
+            id,
+            ps.map((p) => (p.source === "manager" ? { ...p, at: "2020-01-01T00:00:00.000Z" } : p)),
+          ]),
+        );
+        await prisma.match.update({ where: { id: matchId }, data: { liveTeams: aged } });
+        await applied(matchId, read([team(3, null, ["eliminated", "eliminated", "eliminated", "knocked"])]));
+        expect(await states()).toEqual(["eliminated:auto", "eliminated:auto", "eliminated:auto", "knocked:auto"]);
+
+        // low confidence: logged, not applied
+        await applied(matchId, read([team(3, null, ["eliminated", "eliminated", "eliminated", "eliminated"], 0.6)]));
+        expect((await states())[3]).toBe("knocked:auto");
+      });
+
+      it("ordering: only the newest queued capture is read; older than the last applied → skipped", async () => {
+        const { matchId } = await liveSetup();
+        await confirmLineup(matchId);
+        const t0 = Date.now();
+        await applied(matchId, read([team(3, null, ["alive", "alive", "alive", "knocked"])]), { capturedAt: new Date(t0).toISOString() });
+
+        // a late frame from before the applied one
+        const late = await applied(matchId, read([team(3, null, ["eliminated", "eliminated", "eliminated", "eliminated"])]), {
+          capturedAt: new Date(t0 - 10_000).toISOString(),
+        });
+        expect(await prisma.liveCapture.findFirstOrThrow({ where: { captureId: late.captureId } })).toMatchObject({ status: "SKIPPED" });
+        expect((await board(matchId)).teams[0].status).toBe(3);
+
+        // two frames queued before the worker runs: the newer one wins, the older is skipped unread
+        await sleep(200);
+        const a = await capture(matchId, { capturedAt: new Date(t0 + 1_000).toISOString() });
+        await sleep(200);
+        const b = await capture(matchId, { capturedAt: new Date(t0 + 2_000).toISOString() });
+        const spy = vi.spyOn(extractor, "readLive").mockResolvedValue(read([team(3, null, ["alive", "alive", "knocked", "knocked"])]));
+        expect(await runLiveCaptureOnce()).toBe(1);
+        expect(spy).toHaveBeenCalledTimes(1);
+        spy.mockRestore();
+        expect(await prisma.liveCapture.findFirstOrThrow({ where: { captureId: a.body.captureId } })).toMatchObject({ status: "SKIPPED" });
+        expect(await prisma.liveCapture.findFirstOrThrow({ where: { captureId: b.body.captureId } })).toMatchObject({ status: "APPLIED" });
+        expect(await runLiveCaptureOnce()).toBe(0);
+      });
+
+      it("pause: captures accepted, nothing applied; no panel on the frame → lastError; 24 h sweep", async () => {
+        const { matchId } = await liveSetup();
+        await confirmLineup(matchId);
+        const paused = await mgr.patch(`/api/manager/matches/${matchId}/team-status/auto`).send({ paused: true });
+        expect(paused.status).toBe(200);
+        expect(paused.body.autoCapture.paused).toBe(true);
+        const body = await applied(matchId, read([team(3, null, ["eliminated", "eliminated", "eliminated", "eliminated"])]));
+        expect(body.nextIntervalSeconds).toBe(15);
+        expect(await prisma.liveCapture.findFirstOrThrow({ where: { captureId: body.captureId } })).toMatchObject({ status: "SKIPPED", error: "auto updates paused" });
+        expect((await board(matchId)).teams[0].status).toBe(4);
+        await mgr.patch(`/api/manager/matches/${matchId}/team-status/auto`).send({ paused: false });
+
+        await applied(matchId, read([], "other"));
+        expect((await board(matchId)).autoCapture.lastError).toMatch(/spectator view/);
+        await applied(matchId, read([team(3, null, ["alive", "alive", "alive", "knocked"])]));
+        expect((await board(matchId)).autoCapture.lastError).toBeNull();
+
+        expect(await sweepLiveCaptures(Date.now() + 25 * 3600_000)).toBe(3);
+        expect(await prisma.liveCapture.count()).toBe(0);
+        expect((await mgr.get(`/api/manager/matches/${matchId}/team-status`)).body.autoCapture.latestImageUrl).toBeNull();
+      });
     });
   });
 });

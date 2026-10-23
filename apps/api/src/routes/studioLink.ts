@@ -2,18 +2,28 @@
 import { Router, type Request } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
-import { SCREENSHOT_KINDS, STUDIO_LINK_KEY_HEADER, studioLinkBroadcastSchema, studioLinkHeartbeatSchema } from "@7xen/shared";
+import {
+  LIVE_CAPTURE_KIND,
+  SCREENSHOT_KINDS,
+  STUDIO_LINK_KEY_HEADER,
+  liveCaptureFieldsSchema,
+  studioLinkBroadcastSchema,
+  studioLinkHeartbeatSchema,
+} from "@7xen/shared";
 import { isTest } from "../env.js";
-import { AppError, forbidden } from "../lib/errors.js";
-import { parseMultipart, uploadedImages } from "../lib/upload.js";
+import { AppError } from "../lib/errors.js";
+import { parseMultipart, singleImage, uploadedImages } from "../lib/upload.js";
 import { parse } from "../lib/validate.js";
+import { acceptCapture, captureWait } from "../services/liveCapture.js";
 import { boardForStudio } from "../services/liveStatus.js";
 import * as link from "../services/studioLink.js";
 import { workerByKey } from "../services/studioWorkers.js";
 import { WORKER_KEY_HEADER } from "./studioWorker.js";
 
 const kindSchema = z.object({
-  kind: z.enum(SCREENSHOT_KINDS, { errorMap: () => ({ message: "Choose what the screenshot shows: team list or results" }) }),
+  kind: z.enum([...SCREENSHOT_KINDS, LIVE_CAPTURE_KIND], {
+    errorMap: () => ({ message: "Choose what the screenshot shows: SLOT_LIST, RESULTS or LIVE_STATUS" }),
+  }),
 });
 
 async function studioOf(req: Request) {
@@ -81,7 +91,6 @@ export function studioLinkRouter() {
   r.get("/matches/:id/live", livePollLimit, async (req, res) => {
     const worker = await studioOf(req);
     const board = await boardForStudio(p(req.params.id), worker.managerId);
-    if (!board) throw forbidden("This match isn't on the AirBattleground account this studio is connected to.");
     res.setHeader("ETag", `"${board.version}"`);
     if (ifNoneMatch(req.get("If-None-Match")).includes(String(board.version))) {
       res.status(304).end();
@@ -93,6 +102,18 @@ export function studioLinkRouter() {
     const worker = await studioOf(req);
     await parseMultipart(req, res);
     const { kind } = parse(kindSchema, req.body);
+    if (kind === LIVE_CAPTURE_KIND) {
+      // auto capture: one frame → queued for the live team status reader
+      const matchId = p(req.params.id);
+      const fields = parse(liveCaptureFieldsSchema, req.body);
+      const r = await acceptCapture(worker, matchId, fields, singleImage(req, "files"), () => captureWait(worker.id, matchId));
+      if (r.status === 429) {
+        res.setHeader("Retry-After", String(r.retryAfter));
+        throw new AppError("RATE_LIMITED", "Auto capture is sending too fast for this match. It will slow down by itself.");
+      }
+      res.status(r.status).json(r.body);
+      return;
+    }
     const images = uploadedImages(req, ["files", "files[]", "file"]);
     res.status(201).json(await link.screenshots(worker, p(req.params.id), kind, images));
   });

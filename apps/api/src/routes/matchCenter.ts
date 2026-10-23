@@ -4,11 +4,12 @@
  */
 import type { Router } from "express";
 import { z } from "zod";
-import { SCREENSHOT_KINDS, saveLineupSchema, saveLiveTeamSchema, saveResultsSchema } from "@7xen/shared";
+import { SCREENSHOT_KINDS, liveAutoSchema, saveLineupSchema, saveLiveTeamSchema, saveResultsSchema } from "@7xen/shared";
 import { sendStoredFile } from "../lib/storage.js";
 import { parseMultipart, uploadedImages } from "../lib/upload.js";
 import { parse } from "../lib/validate.js";
 import { currentUser } from "../middleware/requireAuth.js";
+import { liveCaptureFile } from "../services/liveCapture.js";
 import * as live from "../services/liveStatus.js";
 import * as matches from "../services/matches.js";
 
@@ -54,6 +55,13 @@ export function mountMatchCenter(r: Router, bypass: boolean) {
   });
   r.patch("/matches/:matchId/team-status", async (req, res) => {
     res.json(await live.saveLiveTeam(req.params.matchId as string, currentUser(req).id, parse(saveLiveTeamSchema, req.body), bypass));
+  });
+  r.patch("/matches/:matchId/team-status/auto", async (req, res) => {
+    res.json(await live.setAutoPaused(req.params.matchId as string, currentUser(req).id, parse(liveAutoSchema, req.body).paused, bypass));
+  });
+  r.get("/matches/:matchId/captures/:id/image", async (req, res) => {
+    const f = await liveCaptureFile(req.params.matchId as string, req.params.id as string, currentUser(req).id, bypass);
+    await sendStoredFile(res, f.storageKey, f.mimeType);
   });
   r.post("/matches/:matchId/publish", async (req, res) => {
     res.json(await matches.publishMatch(req.params.matchId as string, currentUser(req).id, bypass));

@@ -421,39 +421,44 @@ model Registration {
 
 /// One match (map) of a scrim session. Created from scrim.maps when the manager opens the session.
 model Match {
-  id            String           @id @default(cuid())
+  id             String           @id @default(cuid())
   /// a match belongs to a scrim session OR a tournament group (exactly one is set)
-  sessionId     String?
-  session       ScrimSession?    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  groupId       String?
-  group         TournamentGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  scheduledAt   DateTime?
-  lobbyIndex    Int?
+  sessionId      String?
+  session        ScrimSession?    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  groupId        String?
+  group          TournamentGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  scheduledAt    DateTime?
+  lobbyIndex     Int?
   /// phase 4: custom room details shared with teams (revealed at roomRevealAt; null = immediately)
-  roomId        String?
-  roomPassword  String?
-  roomRevealAt  DateTime?
-  roomUpdatedAt DateTime?
-  number        Int
-  map           String
-  status        MatchStatus      @default(SCHEDULED)
-  publishedAt   DateTime?
+  roomId         String?
+  roomPassword   String?
+  roomRevealAt   DateTime?
+  roomUpdatedAt  DateTime?
+  number         Int
+  map            String
+  status         MatchStatus      @default(SCHEDULED)
+  publishedAt    DateTime?
   /// TDM: both teams had the same kills, so the manager picked the winner — their reason (shown to teams)
-  tieNote       String?
-  /// live team status for the studio Team Status board: { "<teamId>": ["alive" | "knocked" | "eliminated", …] }
-  liveTeams     Json?
+  tieNote        String?
+  /// live team status for the studio Team Status board: { "<teamId>": [{ state, source, at }, …] } (services/liveStatus.ts)
+  liveTeams      Json?
+  /// the manager paused auto capture updates (captures are still accepted)
+  liveAutoPaused Boolean          @default(false)
+  /// capturedAt of the newest applied auto capture (older ones are dropped)
+  liveAutoAt     DateTime?
   /// the board payload's version (= ETag); bumped whenever liveHash (a hash of the payload) changes
-  liveVersion   Int              @default(0)
-  liveHash      String?
-  liveUpdatedAt DateTime?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  liveVersion    Int              @default(0)
+  liveHash       String?
+  liveUpdatedAt  DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
   screenshots Screenshot[]
   teams       MatchTeam[]
   recordings  MatchRecording[]
   devices     Device[]
   coinAward   CoinAward?
+  captures    LiveCapture[]
 
   @@unique([sessionId, number])
   @@unique([groupId, number])
@@ -461,6 +466,48 @@ model Match {
 }
 
 /// An uploaded screenshot; read asynchronously by the extractor (worker in apps/api).
+enum LiveCaptureStatus {
+  QUEUED
+  PROCESSING
+  /// read and applied (possibly with no changes)
+  APPLIED
+  /// not applied: superseded by a newer capture, match not live, or auto updates paused
+  SKIPPED
+  FAILED
+}
+
+/// An auto capture from 7XEN Studio (kind=LIVE_STATUS): a scene image read for live team status. Kept 24 h.
+model LiveCapture {
+  id          String            @id @default(cuid())
+  matchId     String
+  match       Match             @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  /// the studio (StudioWorker) that sent it
+  workerId    String
+  /// the studio's id for the image (idempotency)
+  captureId   String
+  sessionId   String
+  sequence    Int
+  capturedAt  DateTime
+  sceneId     String?
+  sceneName   String?
+  storageKey  String
+  mimeType    String
+  width       Int?
+  height      Int?
+  status      LiveCaptureStatus @default(QUEUED)
+  /// what the reader saw (LiveReadResult) + what was applied
+  result      Json?
+  /// players changed by this capture
+  changes     Int?
+  error       String?
+  createdAt   DateTime          @default(now())
+  processedAt DateTime?
+
+  @@unique([workerId, captureId])
+  @@index([matchId, capturedAt])
+  @@index([status, createdAt])
+}
+
 model Screenshot {
   id           String           @id @default(cuid())
   matchId      String

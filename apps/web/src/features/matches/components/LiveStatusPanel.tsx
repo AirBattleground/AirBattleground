@@ -1,9 +1,12 @@
-import { Radio } from "lucide-react";
-import { LIVE_PLAYER_STATES, type LivePlayerState, type StudioLinkLiveTeam } from "@7xen/shared";
+import { formatDistanceToNowStrict, parseISO } from "date-fns";
+import { Camera, ImageIcon, Radio } from "lucide-react";
+import { LIVE_PLAYER_STATES, type LiveAutoCapture, type LivePlayerState, type StudioLinkLiveTeam } from "@7xen/shared";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
+import { Switch } from "@7xen/ui/components/ui/switch";
 import { cn } from "@7xen/ui/lib/utils";
 import { QueryError } from "@/features/manager/components/QueryError";
-import { useLiveStatus, useSaveLiveTeam } from "../api";
+import { useNow } from "@/features/manager/components/useNow";
+import { useLiveStatus, useSaveLiveTeam, useSetAutoPaused } from "../api";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const next = (s: LivePlayerState): LivePlayerState => LIVE_PLAYER_STATES[(LIVE_PLAYER_STATES.indexOf(s) + 1) % LIVE_PLAYER_STATES.length]!;
@@ -34,6 +37,8 @@ export function LiveStatusPanel({ matchId }: { matchId: string }) {
         </div>
       </div>
 
+      {q.data?.autoCapture && <AutoCaptureBar matchId={matchId} auto={q.data.autoCapture} />}
+
       {q.isError ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} title="We couldn't load the live status" />
       ) : !q.data ? (
@@ -59,14 +64,21 @@ export function LiveStatusPanel({ matchId }: { matchId: string }) {
                     key={i}
                     type="button"
                     onClick={() => tap(t, i)}
-                    title={`${p.name ?? `Player ${i + 1}`}: ${LABEL[p.state]} — tap to change`}
+                    title={`${p.name ?? `Player ${i + 1}`}: ${LABEL[p.state]}${p.source ? ` (set by ${p.source === "auto" ? "auto capture" : "you"})` : ""} — tap to change`}
                     className={cn(
-                      "min-w-0 rounded-lg border px-2 py-1.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-primary",
+                      "relative min-w-0 rounded-lg border px-2 py-1.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-primary",
                       TONE[p.state],
                     )}
                   >
                     <span className="block truncate text-sm font-semibold">{p.name ?? `Player ${i + 1}`}</span>
-                    <span className="block text-[11px] font-semibold uppercase tracking-wider opacity-80">{LABEL[p.state]}</span>
+                    <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider opacity-80">
+                      {LABEL[p.state]}
+                      {p.source && (
+                        <span className="rounded bg-background/60 px-1 text-[10px] font-medium normal-case tracking-normal text-muted-foreground no-underline">
+                          {p.source}
+                        </span>
+                      )}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -75,5 +87,44 @@ export function LiveStatusPanel({ matchId }: { matchId: string }) {
         </ul>
       )}
     </section>
+  );
+}
+
+/** Auto capture from 7XEN Studio: live / last capture / last error, the reader's latest image, and the pause switch. */
+function AutoCaptureBar({ matchId, auto }: { matchId: string; auto: LiveAutoCapture }) {
+  useNow(5_000); // re-render so "x seconds ago" stays current
+  const pause = useSetAutoPaused(matchId);
+  const ago = (iso: string) => formatDistanceToNowStrict(parseISO(iso), { addSuffix: true });
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border bg-background/50 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-2">
+        <Camera className={cn("size-4 shrink-0", auto.active && !auto.paused ? "text-success" : "text-muted-foreground")} />
+        <div className="min-w-0">
+          <p className="font-semibold">
+            Auto capture{" "}
+            <span className={cn("font-normal", auto.active && !auto.paused ? "text-success" : "text-muted-foreground")}>
+              {auto.paused ? "· paused" : auto.active ? "· on" : "· off"}
+            </span>
+          </p>
+          <p className="truncate text-xs text-muted-foreground">
+            {auto.lastCaptureAt ? `Last capture ${ago(auto.lastCaptureAt)}` : "Turn on Auto capture on a scene in 7XEN Studio to fill this in for you."}
+            {auto.lastAppliedAt && ` · last read ${ago(auto.lastAppliedAt)}`}
+          </p>
+          {auto.lastError && <p className="text-xs text-destructive">{auto.lastError}</p>}
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-4">
+        {auto.latestImageUrl && (
+          <a href={auto.latestImageUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+            <ImageIcon className="size-3.5" /> Latest capture
+          </a>
+        )}
+        <label className="flex items-center gap-2 text-xs font-medium">
+          <Switch checked={auto.paused} disabled={pause.isPending} onCheckedChange={(paused) => pause.mutate({ paused })} />
+          Pause auto updates
+        </label>
+      </div>
+    </div>
   );
 }

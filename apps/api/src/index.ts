@@ -3,6 +3,7 @@ import { attachStationStream } from "./lib/stationStream.js";
 import { prisma } from "./db.js";
 import { env } from "./env.js";
 import { logger } from "./logger.js";
+import { startLiveCaptureWorker } from "./services/liveCapture.js";
 import { startScreenshotWorker } from "./services/screenshotWorker.js";
 import { ensureDefaultRecipes } from "./services/recipes.js";
 import { startRetentionSweeper } from "./services/recordings.js";
@@ -17,6 +18,8 @@ const server = app.listen(env.PORT, () => {
 attachStationStream(server); // live view/control WebSocket of the station's BlueStacks device
 
 const stopWorker = env.SCREENSHOT_WORKER ? startScreenshotWorker() : () => {};
+// auto captures from 7XEN Studio → live team status (same reader as the screenshots)
+const stopLiveWorker = env.SCREENSHOT_WORKER ? startLiveCaptureWorker() : () => {};
 // phase 4: built-in recipe checklists + daily video retention sweep
 void ensureDefaultRecipes().catch((err) => logger.error({ err }, "could not create the default recipes"));
 const stopSweeper = startRetentionSweeper();
@@ -30,6 +33,7 @@ void resumeWorkerShows().catch((err) => logger.error({ err }, "could not resume 
 function shutdown(signal: string) {
   logger.info(`${signal} received, shutting down`);
   stopWorker();
+  stopLiveWorker();
   stopSweeper();
   void shutdownOutputs();
   void shutdownStudio();

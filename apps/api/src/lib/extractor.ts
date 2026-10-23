@@ -9,7 +9,7 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
-import type { ExtractedPlayer, ExtractionResult, ScreenshotKind } from "@7xen/shared";
+import { LIVE_PLAYER_STATES, type ExtractedPlayer, type ExtractionResult, type LivePlayerState, type ScreenshotKind } from "@7xen/shared";
 import { env } from "../env.js";
 import { AppError } from "./errors.js";
 
@@ -47,6 +47,8 @@ export interface RosterSlot {
 }
 
 const EXTRACT_TIMEOUT_MS = 180_000;
+/** a live capture older than this is useless: the next one supersedes it */
+const LIVE_TIMEOUT_MS = 30_000;
 const STATUS_TIMEOUT_MS = 10_000;
 /** names Claude flags as unsure get this, so the review screen highlights them (< 0.85) */
 const UNSURE_CONFIDENCE = 0.6;
@@ -269,6 +271,70 @@ function majoritySlot(players: ExtractedPlayer[]): number | null {
   return best;
 }
 
+// ---------------------------------------------------------------- live status (auto capture)
+
+const LIVE_SYSTEM_PROMPT = `You read live Battlegrounds Mobile India (BGMI) broadcast frames for an esports scrim app and return structured data.
+Read only what the game itself shows; ignore broadcast graphics, borders and captions. Only report what is fully visible.`;
+
+const LIVE_PROMPT = `This is a frame from a live BGMI esports broadcast, captured every few seconds. Find the game's own
+SPECTATOR/OBSERVER team status panel: a list of teams (usually down one side of the screen), each row with a slot or rank number,
+a team name or tag, and up to 4 small bars or icons — one per player.
+- A bright/solid/filled bar = "alive". A red, flashing, half-filled or cross-marked bar = "knocked" (down but not out).
+  A grey, dark, empty or skull bar = "eliminated". A whole row greyed out or struck through = every player eliminated.
+- Return every fully visible team row in order: its slot number (integer, null if none is shown), its name or tag exactly as shown
+  (null if none), and one state per bar in the order shown. Set "unsure": true for a row whose bars you can't read clearly.
+- Ignore every broadcast graphic drawn on top of the game, ESPECIALLY a team status / "alive" board added by the broadcaster:
+  it mirrors data we already have and must never be read. Read only the game's own HUD.
+- If there is no spectator team panel (lobby, map, results, a replay, a camera shot), set "screen" to "other" and return no teams.`;
+
+const LIVE_SCHEMA = {
+  type: "object",
+  properties: {
+    screen: { type: "string", enum: ["spectator_hud", "other"] },
+    teams: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          slot: { type: ["integer", "null"] },
+          name: { type: ["string", "null"] },
+          players: { type: "array", items: { type: "string", enum: LIVE_PLAYER_STATES } },
+          unsure: { type: "boolean" },
+        },
+        required: ["slot", "name", "players", "unsure"],
+      },
+    },
+    warnings: { type: "array", items: { type: "string" } },
+  },
+  required: ["screen", "teams", "warnings"],
+};
+
+/** What the reader saw on a live capture. */
+export interface LiveReadResult {
+  screen: "spectator_hud" | "other";
+  teams: { slot: number | null; name: string | null; players: LivePlayerState[]; confidence: number }[];
+  warnings: string[];
+  modelVersion: string;
+  ms: number;
+}
+
+export function toLiveReadResult(raw: unknown, model: string, ms = 0): LiveReadResult {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Obj;
+  const states = new Set<string>(LIVE_PLAYER_STATES);
+  return {
+    screen: r.screen === "spectator_hud" ? "spectator_hud" : "other",
+    teams: arr(r.teams).map((t) => ({
+      slot: intOrNull(t.slot),
+      name: str(t.name).trim() || null,
+      players: (Array.isArray(t.players) ? t.players : []).filter((p): p is LivePlayerState => typeof p === "string" && states.has(p)).slice(0, 4),
+      confidence: t.unsure === true ? UNSURE_CONFIDENCE : SURE_CONFIDENCE,
+    })),
+    warnings: Array.isArray(r.warnings) ? r.warnings.filter((w): w is string => typeof w === "string" && w.trim() !== "") : [],
+    modelVersion: `claude-${model}`,
+    ms,
+  };
+}
+
 // ---------------------------------------------------------------- calls
 
 const AUTH_ERROR = /log ?in|logged|api key|auth|credential|401|403/i;
@@ -281,65 +347,79 @@ interface ExtractorHealth {
   vlmEnabled: boolean;
 }
 
+/** One `claude -p` call with an image: the structured output, the model and how long it took. */
+async function ask(image: Buffer, mime: string, system: string, prompt: string, schema: object, timeoutMs: number): Promise<{ structured: unknown; model: string; ms: number }> {
+  const model = env.CLAUDE_MODEL;
+  const message = {
+    type: "user",
+    message: {
+      role: "user",
+      content: [
+        { type: "image", source: { type: "base64", media_type: mime, data: image.toString("base64") } },
+        { type: "text", text: prompt },
+      ],
+    },
+  };
+  const args = [
+    "-p",
+    "--input-format", "stream-json",
+    "--output-format", "stream-json",
+    "--verbose",
+    "--model", model,
+    "--tools", "",
+    "--system-prompt", system,
+    "--json-schema", JSON.stringify(schema),
+    "--no-session-persistence",
+    "--strict-mcp-config",
+  ];
+  const started = Date.now();
+  let out: RunResult;
+  try {
+    out = await run(args, JSON.stringify(message) + "\n", timeoutMs);
+  } catch (e) {
+    throw new ExtractorOfflineError(e); // ENOENT: claude not installed / not on PATH
+  }
+  if (out.timedOut) throw new ExtractorHttpError(504, "took too long");
+
+  let result: Obj | null = null;
+  for (const line of out.stdout.split("\n")) {
+    if (!line.trim()) continue;
+    try {
+      const o = JSON.parse(line) as Obj;
+      if (o.type === "result") result = o;
+    } catch {
+      /* non-JSON noise */
+    }
+  }
+  const detail = (result && str(result.result)) || out.stderr.trim().split("\n").pop() || `claude exited with code ${out.code}`;
+  if (!result || result.is_error === true || result.subtype !== "success") {
+    if (AUTH_ERROR.test(detail)) throw new ExtractorOfflineError(new Error(detail));
+    throw new ExtractorHttpError(502, detail.slice(0, 200));
+  }
+  let structured = result.structured_output;
+  if (structured == null && typeof result.result === "string") {
+    try {
+      structured = JSON.parse(result.result);
+    } catch {
+      throw new ExtractorHttpError(502, "reader returned no data");
+    }
+  }
+  return { structured, model, ms: Date.now() - started };
+}
+
 export const extractor = {
   /** Read one screenshot. `roster` lets Claude map names to registered players (slot → known names). */
   async extract(image: Buffer, mime: string, kind: ScreenshotKind, roster?: RosterSlot[], _filename = "image"): Promise<ExtractionResult> {
-    const model = env.CLAUDE_MODEL;
-    const message = {
-      type: "user",
-      message: {
-        role: "user",
-        content: [
-          { type: "image", source: { type: "base64", media_type: mime, data: image.toString("base64") } },
-          { type: "text", text: promptText(kind, roster) },
-        ],
-      },
-    };
-    const args = [
-      "-p",
-      "--input-format", "stream-json",
-      "--output-format", "stream-json",
-      "--verbose",
-      "--model", model,
-      "--tools", "",
-      "--system-prompt", SYSTEM_PROMPT,
-      "--json-schema", JSON.stringify(SCHEMAS[kind]),
-      "--no-session-persistence",
-      "--strict-mcp-config",
-    ];
-    const started = Date.now();
-    let out: RunResult;
-    try {
-      out = await run(args, JSON.stringify(message) + "\n", EXTRACT_TIMEOUT_MS);
-    } catch (e) {
-      throw new ExtractorOfflineError(e); // ENOENT: claude not installed / not on PATH
-    }
-    if (out.timedOut) throw new ExtractorHttpError(504, "took too long");
+    const { structured, model, ms } = await ask(image, mime, SYSTEM_PROMPT, promptText(kind, roster), SCHEMAS[kind], EXTRACT_TIMEOUT_MS);
+    return toExtractionResult(structured, kind, model, roster, ms);
+  },
 
-    let result: Obj | null = null;
-    for (const line of out.stdout.split("\n")) {
-      if (!line.trim()) continue;
-      try {
-        const o = JSON.parse(line) as Obj;
-        if (o.type === "result") result = o;
-      } catch {
-        /* non-JSON noise */
-      }
-    }
-    const detail = (result && str(result.result)) || out.stderr.trim().split("\n").pop() || `claude exited with code ${out.code}`;
-    if (!result || result.is_error === true || result.subtype !== "success") {
-      if (AUTH_ERROR.test(detail)) throw new ExtractorOfflineError(new Error(detail));
-      throw new ExtractorHttpError(502, detail.slice(0, 200));
-    }
-    let structured = result.structured_output;
-    if (structured == null && typeof result.result === "string") {
-      try {
-        structured = JSON.parse(result.result);
-      } catch {
-        throw new ExtractorHttpError(502, "reader returned no data");
-      }
-    }
-    return toExtractionResult(structured, kind, model, roster, Date.now() - started);
+  /** Read a live auto capture: each team's player states from the spectator HUD. `teams` = registered slots + names. */
+  async readLive(image: Buffer, mime: string, teams: { slot: number; name: string; tag: string }[]): Promise<LiveReadResult> {
+    const list = teams.map((t) => `slot ${t.slot}: ${JSON.stringify(t.name)} (tag ${JSON.stringify(t.tag)})`).join("\n");
+    const prompt = teams.length ? `${LIVE_PROMPT}\n\nRegistered teams:\n${list}` : LIVE_PROMPT;
+    const { structured, model, ms } = await ask(image, mime, LIVE_SYSTEM_PROMPT, prompt, LIVE_SCHEMA, LIVE_TIMEOUT_MS);
+    return toLiveReadResult(structured, model, ms);
   },
 
   /** Is the CLI installed and logged in? Never throws. */

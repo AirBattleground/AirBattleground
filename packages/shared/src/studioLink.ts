@@ -13,6 +13,9 @@
  *   POST   /api/studio-link/broadcasts/:id/heartbeat   StudioLinkHeartbeatInput → { stop: boolean }
  *   POST   /api/studio-link/broadcasts/:id/stop        → 204
  *   POST   /api/studio-link/matches/:id/screenshots    multipart `files` + `kind` (SLOT_LIST | RESULTS) → { count }
+ *          kind=LIVE_STATUS (auto capture): one image ≤ 2 MB + captureId, capturedAt, sequence, sessionId
+ *          [, sceneId, sceneName, width, height] → 202 LiveCaptureAccepted (200 + duplicate for a repeat captureId).
+ *          409 = match not live; 413 = over 2 MB; 429 + Retry-After above 1 upload per 2 s per studio per match.
  *   GET    /api/studio-link/matches/:id/live           → StudioLinkLive  (Team Status board; poll every ~3 s)
  *          ETag = `version`; If-None-Match equal to it → 304. 403 = another manager's match, 404 = unknown match,
  *          429 + Retry-After above 1 request/s per studio key.
@@ -20,6 +23,8 @@
  * LIVE TEAM STATUS (Match Center, cookie auth; also under /api/admin for any match)
  *   GET    /api/manager/matches/:matchId/team-status   → StudioLinkLive
  *   PATCH  /api/manager/matches/:matchId/team-status   SaveLiveTeamInput → StudioLinkLive  (only while the match is LIVE)
+ *   PATCH  /api/manager/matches/:matchId/team-status/auto  { paused } → StudioLinkLive  (pause auto capture updates)
+ *   GET    /api/manager/matches/:matchId/captures/:id/image → the captured image (kept 24 h)
  */
 import { z } from "zod";
 
@@ -107,10 +112,16 @@ export const LIVE_TEAM_SIZE = 4;
 /** scheduled = lineup not confirmed yet; live = lineup confirmed; finished = results being reviewed or published */
 export type StudioLinkLiveState = "scheduled" | "live" | "finished";
 
+export type LiveStateSource = "manager" | "auto";
+
 export interface StudioLinkLivePlayer {
   /** the player's IGN (omitted when unknown) */
   name?: string;
   state: LivePlayerState;
+  /** who set the state last (omitted = never changed) */
+  source?: LiveStateSource;
+  /** ISO instant of that change */
+  updatedAt?: string;
 }
 
 export interface StudioLinkLiveTeam {
@@ -130,6 +141,8 @@ export interface StudioLinkLive {
   version: number;
   /** ISO instant (UTC, Z) of the last change */
   updatedAt: string;
+  /** auto capture from the studio (not part of `version`: it changes on every capture) */
+  autoCapture?: LiveAutoCapture;
   match: { id: string; title: string; state: StudioLinkLiveState; map: string };
   /** every registered team (eliminated ones too), sorted by slot */
   teams: StudioLinkLiveTeam[];
@@ -144,3 +157,52 @@ export const saveLiveTeamSchema = z.object({
     .max(LIVE_TEAM_SIZE),
 });
 export type SaveLiveTeamInput = z.infer<typeof saveLiveTeamSchema>;
+
+// ---------------------------------------------------------------- auto capture (kind=LIVE_STATUS)
+
+export const LIVE_CAPTURE_KIND = "LIVE_STATUS";
+export const MAX_LIVE_CAPTURE_BYTES = 2 * 1024 * 1024;
+/** auto updates only apply values read with at least this confidence */
+export const LIVE_MIN_CONFIDENCE = 0.8;
+/** a manager edit locks that player against auto updates for this long */
+export const LIVE_MANAGER_LOCK_MS = 60_000;
+/** auto capture counts as active while captures keep arriving within this window */
+export const LIVE_CAPTURE_ACTIVE_MS = 30_000;
+
+export interface LiveAutoCapture {
+  /** a capture arrived in the last 30 s */
+  active: boolean;
+  /** the manager paused auto updates (captures are accepted, nothing is applied) */
+  paused: boolean;
+  lastCaptureAt: string | null;
+  lastAppliedAt: string | null;
+  /** the newest capture failed to read (cleared by the next good one) */
+  lastError: string | null;
+  /** Match Center only: the newest captured image (cookie auth) */
+  latestImageUrl?: string | null;
+}
+
+export const liveCaptureFieldsSchema = z.object({
+  captureId: z.string({ required_error: "captureId is required" }).uuid("captureId must be a UUID"),
+  capturedAt: z.string({ required_error: "capturedAt is required" }).datetime({ message: "capturedAt must be an ISO 8601 UTC time" }),
+  sequence: z.coerce.number({ required_error: "sequence is required" }).int().min(0),
+  sessionId: z.string({ required_error: "sessionId is required" }).uuid("sessionId must be a UUID"),
+  sceneId: z.string().trim().max(100).optional(),
+  sceneName: z.string().trim().max(100).optional(),
+  width: z.coerce.number().int().min(1).max(10_000).optional(),
+  height: z.coerce.number().int().min(1).max(10_000).optional(),
+});
+export type LiveCaptureFields = z.infer<typeof liveCaptureFieldsSchema>;
+
+export interface LiveCaptureAccepted {
+  captureId: string;
+  accepted: boolean;
+  duplicate?: true;
+  /** captures of other matches waiting ahead of this one */
+  queuePosition?: number;
+  /** seconds until the studio's next upload (2..30) */
+  nextIntervalSeconds?: number;
+}
+
+export const liveAutoSchema = z.object({ paused: z.boolean() });
+export type LiveAutoInput = z.infer<typeof liveAutoSchema>;
