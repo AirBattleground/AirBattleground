@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { format, parseISO } from "date-fns";
-import { BarChart3, Crosshair, Hexagon, Map as MapIcon, Trophy, Users } from "lucide-react";
+import { BarChart3, Crosshair, Hexagon, Map as MapIcon, Swords, Trophy, Users } from "lucide-react";
 import {
   MAP_LABELS,
   MIN_RATED_MATCHES,
@@ -21,6 +21,7 @@ import { QueryError } from "@/features/team/components/QueryError";
 import { useT, type T as Translator } from "@/i18n/core";
 import { statsMsg } from "@/i18n/playerStats";
 import { usePlayerStats } from "./api";
+import { TdmResults } from "./TdmResults";
 
 type T = Translator<typeof statsMsg.en>;
 
@@ -190,9 +191,11 @@ function StatsSkeleton() {
 
 // ---------------------------------------------------------------- section
 
-/** Player statistics report (profile page): grade + radar / form on the left, the numbers on the right, maps below. */
+/** Player statistics report (profile page): grade + radar / form on the left, the numbers on the right, maps below.
+ * TDM battles have their own tab (TDM Results) and never count in the battle royale numbers. */
 export function PlayerStatsSection({ className }: { className?: string }) {
   const t = useT(statsMsg);
+  const [mode, setMode] = useState<"BR" | "TDM">("BR");
   const [scope, setScope] = useState<PlayerStatsScope>("ALL");
   const [period, setPeriod] = useState<PlayerStatsPeriod>("ALL_TIME");
   const [view, setView] = useState<"radar" | "form">("radar");
@@ -202,18 +205,20 @@ export function PlayerStatsSection({ className }: { className?: string }) {
 
   const filters = (
     <div className="flex flex-wrap gap-2">
-      <Select value={scope} onValueChange={(v) => setScope(v as PlayerStatsScope)}>
-        <SelectTrigger className="h-10 min-w-36 gap-2 font-semibold tracking-wide uppercase" aria-label={t("scope_ALL")}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {PLAYER_STATS_SCOPES.map((v) => (
-            <SelectItem key={v} value={v}>
-              {t(`scope_${v}`)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {mode === "BR" && (
+        <Select value={scope} onValueChange={(v) => setScope(v as PlayerStatsScope)}>
+          <SelectTrigger className="h-10 min-w-36 gap-2 font-semibold tracking-wide uppercase" aria-label={t("scope_ALL")}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {PLAYER_STATS_SCOPES.map((v) => (
+              <SelectItem key={v} value={v}>
+                {t(`scope_${v}`)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       <Select value={period} onValueChange={(v) => setPeriod(v as PlayerStatsPeriod)}>
         <SelectTrigger className="h-10 min-w-36 gap-2 font-semibold tracking-wide uppercase" aria-label={t("period_ALL_TIME")}>
           <SelectValue />
@@ -230,7 +235,8 @@ export function PlayerStatsSection({ className }: { className?: string }) {
   );
 
   let body: ReactNode;
-  if (q.isError) body = <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_err")} />;
+  if (mode === "TDM") body = <TdmResults period={period} />;
+  else if (q.isError) body = <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("load_err")} />;
   else if (!s) body = <StatsSkeleton />;
   else if (s.matches === 0) body = <EmptyState icon={<BarChart3 />} title={t("empty_title")} description={filtered ? t("empty_filter") : t("empty_desc")} />;
   else {
@@ -362,6 +368,28 @@ export function PlayerStatsSection({ className }: { className?: string }) {
           <p className="mt-0.5 text-sm text-muted-foreground">{t("desc")}</p>
         </div>
         {filters}
+      </div>
+      <div role="tablist" aria-label={t("title")} className="mb-4 grid w-full grid-cols-2 overflow-hidden rounded-lg border sm:w-80">
+        {(
+          [
+            ["BR", Trophy, t("mode_BR")],
+            ["TDM", Swords, t("mode_TDM")],
+          ] as const
+        ).map(([v, Icon, label]) => (
+          <button
+            key={v}
+            type="button"
+            role="tab"
+            aria-selected={mode === v}
+            onClick={() => setMode(v)}
+            className={cn(
+              "flex h-10 items-center justify-center gap-2 text-xs font-semibold tracking-wide uppercase transition-colors outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:ring-inset",
+              mode === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/40",
+            )}
+          >
+            <Icon className="size-4" /> {label}
+          </button>
+        ))}
       </div>
       {body}
     </section>

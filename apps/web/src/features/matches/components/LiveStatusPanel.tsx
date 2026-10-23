@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import { formatDistanceToNowStrict, parseISO } from "date-fns";
-import { Camera, ImageIcon, Radio } from "lucide-react";
-import { LIVE_PLAYER_STATES, type LiveAutoCapture, type LivePlayerState, type StudioLinkLiveTeam } from "@7xen/shared";
+import { Camera, ImageIcon, Radio, RotateCcw, Skull } from "lucide-react";
+import { LIVE_PLAYER_STATES, type LiveAutoCapture, type LivePlayerState, type SaveLiveTeamInput, type StudioLinkLiveTeam } from "@7xen/shared";
+import { Button } from "@7xen/ui/components/ui/button";
+import { Input } from "@7xen/ui/components/ui/input";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { Switch } from "@7xen/ui/components/ui/switch";
 import { cn } from "@7xen/ui/lib/utils";
@@ -17,13 +20,17 @@ const TONE: Record<LivePlayerState, string> = {
   eliminated: "border-border bg-muted text-muted-foreground line-through",
 };
 
-/** Match Center, while the match is live: tap a player to cycle alive → knocked → out. Feeds the studio's Team Status board. */
+/**
+ * Match Center, while the match is live: tap a player to cycle alive → knocked → out, or knock out / reset the whole
+ * team; type the team's finishes and points. Feeds the studio's Team Status board.
+ */
 export function LiveStatusPanel({ matchId }: { matchId: string }) {
   const q = useLiveStatus(matchId);
   const save = useSaveLiveTeam(matchId);
 
   const tap = (t: StudioLinkLiveTeam, i: number) =>
     save.mutate({ teamId: t.id, players: t.players.map((p, j) => (j === i ? next(p.state) : p.state)) });
+  const setAll = (t: StudioLinkLiveTeam, state: LivePlayerState) => save.mutate({ teamId: t.id, players: t.players.map(() => state) });
 
   return (
     <section className="space-y-3 rounded-xl border bg-card p-4 sm:p-5" data-tour="live-status">
@@ -33,7 +40,10 @@ export function LiveStatusPanel({ matchId }: { matchId: string }) {
         </span>
         <div>
           <h3 className="font-display text-lg font-bold">Who's still in?</h3>
-          <p className="text-sm text-muted-foreground">Tap a player when they're knocked, tap again when they're out. Your stream's Team Status board updates within a few seconds.</p>
+          <p className="text-sm text-muted-foreground">
+            Tap a player when they're knocked, tap again when they're out. Type each team's finishes and points. Your stream's Team Status board updates
+            within a few seconds.
+          </p>
         </div>
       </div>
 
@@ -82,11 +92,50 @@ export function LiveStatusPanel({ matchId }: { matchId: string }) {
                   </button>
                 ))}
               </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <ScoreField label="FIN." value={t.kills} onSave={(kills) => save.mutate({ teamId: t.id, kills })} />
+                <ScoreField label="PTS." value={t.totalPoints} onSave={(totalPoints) => save.mutate({ teamId: t.id, totalPoints })} />
+                {t.status === 0 ? (
+                  <Button type="button" size="icon" variant="ghost" title="Reset: everyone alive" aria-label={`Reset ${t.name}`} onClick={() => setAll(t, "alive")}>
+                    <RotateCcw className="size-4" />
+                  </Button>
+                ) : (
+                  <Button type="button" size="icon" variant="ghost" title="Eliminate team" aria-label={`Eliminate ${t.name}`} onClick={() => setAll(t, "eliminated")}>
+                    <Skull className="size-4" />
+                  </Button>
+                )}
+              </div>
             </li>
           ))}
         </ul>
       )}
     </section>
+  );
+}
+
+/** A small number box that saves on blur / Enter (only when the number changed). */
+function ScoreField({ label, value, onSave }: { label: string; value: number; onSave: (v: NonNullable<SaveLiveTeamInput["kills"]>) => void }) {
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
+  const commit = () => {
+    const n = Number(draft);
+    if (draft.trim() === "" || !Number.isInteger(n) || n < 0) return setDraft(String(value));
+    if (n !== value) onSave(n);
+  };
+  return (
+    <label className="flex flex-col items-center gap-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      {label}
+      <Input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+        className="h-8 w-14 px-1 text-center font-display text-sm text-foreground"
+      />
+    </label>
   );
 }
 

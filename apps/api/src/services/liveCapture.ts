@@ -10,7 +10,7 @@
  *
  * Queue: one capture in flight per match. Manual captures go first, oldest first, and are never skipped (results
  * pages sent back to back all count); otherwise the newest auto capture wins and older queued auto frames are
- * skipped, so a slow reader never falls behind. Images and rows are deleted after 24 h, except captures whose
+ * skipped, so a slow reader never falls behind; an auto frame arriving while one is being read is dropped ("busy"). Images and rows are deleted after 24 h, except captures whose
  * operator hint disagrees with what was detected — those are kept to train the reader.
  */
 import { Prisma, type StudioWorker as DbWorker } from "@prisma/client";
@@ -31,7 +31,7 @@ import { ExtractorHttpError, ExtractorOfflineError, OFFLINE_MESSAGE, extractor }
 import { deleteKey, readBuffer, saveBuffer } from "../lib/storage.js";
 import type { UploadedImage } from "../lib/upload.js";
 import { logger } from "../logger.js";
-import { applyCapture, registeredTeams, studioMatch } from "./liveStatus.js";
+import { applyCapture, matchControl, registeredTeams, studioMatch } from "./liveStatus.js";
 import { adoptScreenshot, loadOwnMatch, rosterForMatch } from "./matches.js";
 
 const DEFAULT_INTERVAL_S = 5;
@@ -95,6 +95,14 @@ export async function acceptCapture(
   const seen = await prisma.liveCapture.findUnique({ where: { workerId_captureId: { workerId: worker.id, captureId: fields.captureId } }, select: { id: true } });
   if (seen) return duplicate(fields.captureId);
   if (m.status === "PUBLISHED") throw conflict("The results of this match are published. Pick the next match in 7XEN Studio.");
+  if (fields.hint && fields.hint !== "lobby") {
+    const c = await matchControl(m);
+    if (c.state === "locked") throw conflict(`Match is still locked: ${c.reason}. Only lobby screenshots are read until then.`);
+  }
+  // an interval frame while the previous one is still being read: drop it, the next one is seconds away
+  if (fields.trigger === "auto" && (await prisma.liveCapture.count({ where: { matchId, status: "PROCESSING" } }))) {
+    return { status: 200, body: { captureId: fields.captureId, accepted: false, reason: "busy" } };
+  }
   const retryAfter = wait();
   if (retryAfter > 0) return { status: 429, retryAfter };
 

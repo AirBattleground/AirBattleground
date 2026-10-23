@@ -6,6 +6,7 @@ import {
   createPlayerTeamSchema,
   inviteByBgmiSchema,
   playerStatsQuerySchema,
+  tdmStatsQuerySchema,
   createSuggestionSchema,
   suggestionQuerySchema,
   transferLeaderSchema,
@@ -17,7 +18,7 @@ import { parse } from "../lib/validate.js";
 import { currentUser, requireAuth } from "../middleware/requireAuth.js";
 import * as branding from "../services/branding.js";
 import * as players from "../services/players.js";
-import { getPlayerStats } from "../services/playerStats.js";
+import { getPlayerStats, getTdmStats } from "../services/playerStats.js";
 import * as suggestions from "../services/suggestions.js";
 
 export function playerRouter() {
@@ -34,6 +35,9 @@ export function playerRouter() {
   });
   r.get("/stats", async (req, res) => {
     res.json(await getPlayerStats(me(req), parse(playerStatsQuerySchema, req.query)));
+  });
+  r.get("/stats/tdm", async (req, res) => {
+    res.json(await getTdmStats(me(req), parse(tdmStatsQuerySchema, req.query)));
   });
 
   // ---- own team ----

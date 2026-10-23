@@ -1,7 +1,7 @@
 /**
  * In-process screenshot worker. Polls QUEUED screenshots (SELECT … FOR UPDATE SKIP LOCKED, so several
  * API instances can share the queue), sends each to the extractor with the session roster, and merges the
- * result into the match draft. Max 2 in flight. Transient failures retry with backoff (3 attempts);
+ * result into the match draft. Max 4 in flight. Transient failures retry with backoff (3 attempts);
  * an unreachable extractor fails the screenshot straight away with a plain message the manager can act on.
  */
 import { prisma } from "../db.js";
@@ -10,7 +10,7 @@ import { readBuffer } from "../lib/storage.js";
 import { logger } from "../logger.js";
 import { applyExtraction, rosterForScreenshot } from "./matches.js";
 
-const WORKER_CONCURRENCY = 2;
+const WORKER_CONCURRENCY = 4;
 const MAX_ATTEMPTS = 3;
 const POLL_MS = 2_000;
 const backoffMs = (attempt: number) => Math.min(60_000, 5_000 * 2 ** (attempt - 1));

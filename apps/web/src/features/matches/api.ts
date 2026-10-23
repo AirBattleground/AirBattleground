@@ -250,15 +250,17 @@ export function useSaveLiveTeam(matchId: string) {
         d
           ? {
               ...d,
-              teams: d.teams.map((t) =>
-                t.id === input.teamId
-                  ? {
-                      ...t,
-                      status: input.players.filter((s) => s === "alive").length,
-                      players: t.players.map((p, i) => ({ ...p, state: input.players[i] ?? p.state })),
-                    }
-                  : t,
-              ),
+              teams: d.teams.map((t) => {
+                if (t.id !== input.teamId) return t;
+                const players = input.players ? t.players.map((p, i) => ({ ...p, state: input.players![i] ?? p.state })) : t.players;
+                return {
+                  ...t,
+                  players,
+                  status: players.filter((p) => p.state === "alive").length,
+                  kills: input.kills ?? t.kills,
+                  totalPoints: input.totalPoints ?? t.totalPoints,
+                };
+              }),
             }
           : d,
       );
@@ -267,7 +269,7 @@ export function useSaveLiveTeam(matchId: string) {
     onSuccess: (d) => qc.setQueryData(key, d),
     onError: (err, _input, ctx) => {
       if (ctx?.prev) qc.setQueryData(key, ctx.prev);
-      toast.error("Couldn't update the player", { description: errorMessage(err) });
+      toast.error("Couldn't update the team", { description: errorMessage(err) });
     },
   });
 }

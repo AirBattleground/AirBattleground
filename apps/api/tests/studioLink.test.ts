@@ -218,11 +218,23 @@ describe("studio link", () => {
       expect(res.body).toMatchObject({
         version: 1,
         updatedAt: expect.stringMatching(/Z$/),
-        match: { id: matchId, title: "Test Scrim - Match 1", state: "scheduled", map: "Erangel" },
+        match: {
+          id: matchId,
+          title: "Test Scrim - Match 1",
+          state: "scheduled",
+          startsAt: `${yesterday()}T15:30:00.000Z`, // 9:00 PM IST
+          liveAt: null,
+          round: null,
+          matchNumber: 1,
+          map: "Erangel",
+        },
       });
+      expect(res.body.summary).toBeUndefined();
+      expect(res.body.winner).toBeUndefined();
+      // before the match every team shows a full squad, all alive, no score
       expect(res.body.teams).toEqual([
-        { id: soul, slot: 3, name: "SOUL", status: 4, players: NAMES.map((name) => ({ name, state: "alive" })) },
-        { id: solo, slot: 4, name: "SOLO", status: 1, players: [{ name: "SoloOne", state: "alive" }] },
+        { id: soul, slot: 3, name: "SOUL", status: 4, kills: 0, totalPoints: 0, players: NAMES.map((name) => ({ name, state: "alive" })) },
+        { id: solo, slot: 4, name: "SOLO", status: 4, kills: 0, totalPoints: 0, players: [{ name: "SoloOne", state: "alive" }, { state: "alive" }, { state: "alive" }, { state: "alive" }] },
       ]);
       expect(res.headers.etag).toBe('"1"');
       expect((await get(`/matches/${matchId}/live`).set("If-None-Match", '"1"')).status).toBe(304);
@@ -249,6 +261,7 @@ describe("studio link", () => {
       const saved = await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: ["alive", "alive", "knocked", "eliminated"] });
       expect(saved.status).toBe(200);
       expect(saved.body.match.state).toBe("live");
+      expect(saved.body.match.liveAt).toEqual(expect.stringMatching(/Z$/));
       expect(saved.body.version).toBeGreaterThan(v1);
 
       const res = await get(`/matches/${matchId}/live`).set("If-None-Match", `"${v1}"`);
@@ -280,22 +293,57 @@ describe("studio link", () => {
       expect(grown.body.teams.map((t: { slot: number }) => t.slot)).toEqual([3, 4, 5]);
       expect(grown.body.teams[2]).toMatchObject({ name: "LATE", status: 1 });
 
+      // kills (FIN.) and total points: points follow the kills until the manager sets them, null goes back
+      const fin = await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, kills: 5 });
+      expect(fin.status).toBe(200);
+      expect(fin.body.teams[0]).toMatchObject({ kills: 5, totalPoints: 5, status: 2 });
+      expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, totalPoints: 12 })).body.teams[0]).toMatchObject({ kills: 5, totalPoints: 12 });
+      const lateFin = await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: late.row.id, kills: 2 }); // no lineup row yet
+      expect(lateFin.body.teams[2]).toMatchObject({ kills: 2, totalPoints: 2 });
+      const back = await get(`/matches/${matchId}/live`);
+      expect(back.body.version).toBeGreaterThan(grown.body.version);
+      expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, totalPoints: null })).body.teams[0]).toMatchObject({ totalPoints: 5 });
+
       // bad input
+      expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul })).status).toBe(400);
+      expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, kills: -1 })).status).toBe(400);
       expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: "nope", players: ["alive"] })).status).toBe(404);
       expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: ["dead"] })).status).toBe(400);
       expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: [] })).status).toBe(400);
     });
 
-    it("after the match: final state served as finished, no more changes", async () => {
+    it("after the match: summary (+ MVP) while results are reviewed, winner once published; final state stays", async () => {
       const { matchId, soul } = await liveSetup();
       await confirmLineup(matchId);
       await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: ["alive", "eliminated", "eliminated", "eliminated"] });
-      const r = await mgr.put(`/api/manager/matches/${matchId}/results`).send({ teams: [{ slotNumber: 3, placement: 1, kills: 9 }] });
+      const r = await mgr.put(`/api/manager/matches/${matchId}/results`).send({
+        teams: [
+          { slotNumber: 3, placement: 2, kills: null, players: [{ position: 1, kills: 6 }, { position: 2, kills: 3 }] },
+          { slotNumber: 4, placement: 1, kills: 4, players: [{ position: 1, kills: 4 }] },
+        ],
+      });
       expect(r.status).toBe(200);
       const res = await get(`/matches/${matchId}/live`);
-      expect(res.body.match.state).toBe("finished");
-      expect(res.body.teams[0]).toMatchObject({ status: 1 });
+      expect(res.body.match.state).toBe("summary");
+      expect(res.body.control.state).toBe("ended");
+      expect(res.body.teams[0]).toMatchObject({ status: 1, kills: 9, totalPoints: 15 }); // #2 = 6 + 9 kills
+      expect(res.body.summary).toEqual({
+        teams: [
+          { slot: 3, name: "SOUL", kills: 9, placement: 2, placementPoints: 6, killPoints: 9, totalPoints: 15 },
+          { slot: 4, name: "SOLO", kills: 4, placement: 1, placementPoints: 10, killPoints: 4, totalPoints: 14 },
+        ],
+        mvp: { name: "SoulMortal", team: "SOUL", kills: 6 },
+      });
+      expect(res.body.winner).toBeUndefined();
       expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: ["alive"] })).status).toBe(409);
+
+      expect((await mgr.post(`/api/manager/matches/${matchId}/publish`)).status).toBe(200);
+      const done = await get(`/matches/${matchId}/live`);
+      expect(done.body.match.state).toBe("finished");
+      expect(done.body.control.state).toBe("published");
+      expect(done.body.winner).toEqual({ slot: 4, name: "SOLO", kills: 4, totalPoints: 14, players: [{ name: "SoloOne", kills: 4 }] });
+      expect(done.body.summary.teams).toHaveLength(2);
+      expect((await get(`/matches/${matchId}/live`).set("If-None-Match", `"${done.body.version}"`)).status).toBe(304);
     });
 
     it("polling faster than allowed gets 429 with Retry-After", async () => {
@@ -421,6 +469,8 @@ describe("studio link", () => {
         expect(img.status).toBe(200);
         expect(img.headers["content-type"]).toBe("image/png");
 
+        expect(after.autoCapture.lastDetected).toBe("in_game");
+
         // the same reading again changes nothing → no new version
         await applied(matchId, read([team(3, "SOUL", ["alive", "alive", "knocked", "eliminated"])]));
         expect((await board(matchId)).version).toBe(after.version);
@@ -459,6 +509,22 @@ describe("studio link", () => {
         // low confidence: logged, not applied
         await applied(matchId, read([team(3, null, ["eliminated", "eliminated", "eliminated", "eliminated"], 0.6)]));
         expect((await states())[3]).toBe("knocked:auto");
+      });
+
+      it("busy: an auto frame while the previous one is being read is dropped; manual frames still queue", async () => {
+        const { matchId } = await liveSetup();
+        await confirmLineup(matchId);
+        const first = await capture(matchId);
+        expect(first.status).toBe(202);
+        await prisma.liveCapture.updateMany({ where: { captureId: first.body.captureId }, data: { status: "PROCESSING" } });
+        await sleep(200);
+        const id = uuid();
+        const busy = await capture(matchId, { captureId: id });
+        expect(busy.status).toBe(200);
+        expect(busy.body).toEqual({ captureId: id, accepted: false, reason: "busy" });
+        expect(await prisma.liveCapture.count({ where: { captureId: id } })).toBe(0);
+        await sleep(200);
+        expect((await capture(matchId, { trigger: "manual" })).status).toBe(202);
       });
 
       it("ordering: only the newest queued capture is read; older than the last applied → skipped", async () => {
@@ -538,6 +604,12 @@ describe("studio link", () => {
           const early = await post(`/matches/${matchId}/start`);
           expect(early.status).toBe(409);
           expect(early.body.error.message).toMatch(/Registration is open until 9:00 PM/);
+          // while locked only lobby frames are taken
+          const notLobby = await capture(matchId, { kind: "", hint: "results", trigger: "manual" });
+          expect(notLobby.status).toBe(409);
+          expect(notLobby.body.error.message).toMatch(/locked/);
+          await sleep(200);
+          expect((await capture(matchId, { kind: "", hint: "lobby", trigger: "manual" })).status).toBe(202);
 
           for (const l of leaders.slice(1)) await l.agent.post("/api/team/registrations").send({ scrimId: scrim.id, date: tomorrow() });
           expect(await control()).toEqual({ state: "ready", unlocksAt: null, reason: null, teams: 4, slots: 4 });
