@@ -13,6 +13,7 @@ import { QueryError } from "@/features/manager/components/QueryError";
 import { screenshotUrl, useMatch, useSessionMatches, useUnpublishMatch } from "@/features/matches/api";
 import { Lightbox, type LightboxImage } from "@/features/matches/components/Lightbox";
 import { emptyLineupDraft, LineupStep, lineupDirty, type LineupDraft } from "@/features/matches/components/LineupStep";
+import { LiveStatusPanel } from "@/features/matches/components/LiveStatusPanel";
 import { MatchStepper, stepForStatus, type StepKey } from "@/features/matches/components/MatchStepper";
 import { emptyResultsDraft, ResultsStep, resultsDirty, type ResultsDraft } from "@/features/matches/components/ResultsStep";
 import { ScreenshotUploader } from "@/features/matches/components/ScreenshotUploader";
@@ -26,6 +27,7 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="uploader"]', title: "Upload screenshots", description: "Drag them in, click to choose, or copy a screenshot and press Ctrl+V. You can add several at once." },
   { element: '[data-tour="lineup-grid"]', title: "Check what was read", description: "One card per slot. Names in amber need a second look — the hint shows what was read. Fix anything by typing." },
   { element: '[data-tour="lineup-confirm"]', title: "Confirm", description: "When names look right, confirm the lineup. Confirmed names help AirBattleground read the results." },
+  { element: '[data-tour="live-status"]', title: "Who's still in?", description: "While the match is on, tap a player when they're knocked or out. Your stream's Team Status board follows along." },
   { element: '[data-tour="results-table"]', title: "Ranks & finishes", description: "Pick each team's rank and finishes. Points are worked out for you as you type." },
   { element: '[data-tour="results-publish"]', title: "Publish", description: "Publishing shows the scorecard to every team and updates the points table." },
 ];
@@ -205,6 +207,7 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
             />
             {lineupConfirmed ? (
               <>
+                {status === "LIVE" && <LiveStatusPanel matchId={m.match.id} />}
                 {!published && (
                   <ScreenshotUploader
                     matchId={m.match.id}

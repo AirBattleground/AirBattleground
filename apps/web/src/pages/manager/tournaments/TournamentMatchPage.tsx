@@ -12,6 +12,7 @@ import { QueryError } from "@/features/manager/components/QueryError";
 import { screenshotUrl, useMatch, useUnpublishMatch } from "@/features/matches/api";
 import { Lightbox, type LightboxImage } from "@/features/matches/components/Lightbox";
 import { emptyLineupDraft, LineupStep, lineupDirty, type LineupDraft } from "@/features/matches/components/LineupStep";
+import { LiveStatusPanel } from "@/features/matches/components/LiveStatusPanel";
 import { MatchStatusPill } from "@/features/matches/components/MatchStatusPill";
 import { MatchStepper, stepForStatus, type StepKey } from "@/features/matches/components/MatchStepper";
 import { emptyResultsDraft, ResultsStep, resultsDirty, type ResultsDraft } from "@/features/matches/components/ResultsStep";
@@ -206,6 +207,7 @@ function Center({ m, stage, back, base }: { m: MatchDetail; stage?: StageDetail;
             />
             {lineupConfirmed ? (
               <>
+                {status === "LIVE" && <LiveStatusPanel matchId={m.match.id} />}
                 {!published && (
                   <ScreenshotUploader
                     matchId={m.match.id}

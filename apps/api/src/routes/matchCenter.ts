@@ -4,11 +4,12 @@
  */
 import type { Router } from "express";
 import { z } from "zod";
-import { SCREENSHOT_KINDS, saveLineupSchema, saveResultsSchema } from "@7xen/shared";
+import { SCREENSHOT_KINDS, saveLineupSchema, saveLiveTeamSchema, saveResultsSchema } from "@7xen/shared";
 import { sendStoredFile } from "../lib/storage.js";
 import { parseMultipart, uploadedImages } from "../lib/upload.js";
 import { parse } from "../lib/validate.js";
 import { currentUser } from "../middleware/requireAuth.js";
+import * as live from "../services/liveStatus.js";
 import * as matches from "../services/matches.js";
 
 const screenshotKindSchema = z.object({
@@ -46,6 +47,13 @@ export function mountMatchCenter(r: Router, bypass: boolean) {
   });
   r.put("/matches/:matchId/results", async (req, res) => {
     res.json(await matches.saveResults(req.params.matchId as string, currentUser(req).id, parse(saveResultsSchema, req.body), bypass));
+  });
+  // live team status for the studio's Team Status board
+  r.get("/matches/:matchId/team-status", async (req, res) => {
+    res.json(await live.getLive(req.params.matchId as string, currentUser(req).id, bypass));
+  });
+  r.patch("/matches/:matchId/team-status", async (req, res) => {
+    res.json(await live.saveLiveTeam(req.params.matchId as string, currentUser(req).id, parse(saveLiveTeamSchema, req.body), bypass));
   });
   r.post("/matches/:matchId/publish", async (req, res) => {
     res.json(await matches.publishMatch(req.params.matchId as string, currentUser(req).id, bypass));

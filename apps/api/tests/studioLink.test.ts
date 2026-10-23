@@ -18,7 +18,9 @@ vi.mock("../src/services/youtube.js", async (importOriginal) => {
 });
 
 const { showRunsOnBox } = await import("../src/services/studio.js");
-const { adminAgent, createAdminUser, createManager, createScrim, http, prisma, resetDb, server } = await import("./helpers.js");
+const { adminAgent, createAdminUser, createManager, createScrim, createTeam, http, joinTeam, playerAgent, prisma, resetDb, server, yesterday } = await import(
+  "./helpers.js"
+);
 type TestAgent = Awaited<ReturnType<typeof createManager>>["agent"];
 
 function fakePng(salt: string, w = 1600, h = 720): Buffer {
@@ -182,5 +184,124 @@ describe("studio link", () => {
       .attach("files", fakePng("link-b"), { filename: "slots.png", contentType: "image/png" });
     expect(no.status).toBe(404);
   });
-});
 
+  describe("live team status", () => {
+    const NAMES = ["SoulMortal", "SoulRegal", "SoulViper", "SoulOwais"];
+
+    /** Scrim match with team SOUL (4 members) on slot 3 and team SOLO (leader only) on slot 4. */
+    async function liveSetup() {
+      const scrim = await createScrim(mgr);
+      const soul = await createTeam(null, "SOUL", NAMES[0]);
+      for (const ign of NAMES.slice(1)) await joinTeam(soul, await playerAgent(ign));
+      const solo = await createTeam(null, "SOLO", "SoloOne");
+      const session = await prisma.scrimSession.create({ data: { scrimId: scrim.id, date: new Date(`${yesterday()}T00:00:00.000Z`) } });
+      await prisma.registration.create({ data: { sessionId: session.id, teamId: solo.row.id, status: "APPROVED", slotNumber: 4 } });
+      await prisma.registration.create({ data: { sessionId: session.id, teamId: soul.row.id, status: "APPROVED", slotNumber: 3 } });
+      const list = await mgr.get(`/api/manager/scrims/${scrim.id}/sessions/${yesterday()}/matches`);
+      return { matchId: list.body.items[0].id as string, soul: soul.row.id, solo: solo.row.id, sessionId: session.id };
+    }
+    const confirmLineup = (matchId: string) =>
+      mgr.put(`/api/manager/matches/${matchId}/lineup`).send({
+        confirm: true,
+        teams: [
+          { slotNumber: 3, players: NAMES.map((name, i) => ({ position: i + 1, name })) },
+          { slotNumber: 4, players: [{ position: 1, name: "SoloOne" }] },
+        ],
+      });
+
+    it("before the match: every team alive, sorted by slot; ETag + 304; 404 unknown, 403 another manager's match", async () => {
+      const { matchId, soul, solo } = await liveSetup();
+      const res = await get(`/matches/${matchId}/live`);
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        version: 1,
+        updatedAt: expect.stringMatching(/Z$/),
+        match: { id: matchId, title: "Test Scrim - Match 1", state: "scheduled", map: "Erangel" },
+      });
+      expect(res.body.teams).toEqual([
+        { id: soul, slot: 3, name: "SOUL", status: 4, players: NAMES.map((name) => ({ name, state: "alive" })) },
+        { id: solo, slot: 4, name: "SOLO", status: 1, players: [{ name: "SoloOne", state: "alive" }] },
+      ]);
+      expect(res.headers.etag).toBe('"1"');
+      expect((await get(`/matches/${matchId}/live`).set("If-None-Match", '"1"')).status).toBe(304);
+      expect((await get(`/matches/${matchId}/live`).set("If-None-Match", "1")).status).toBe(304);
+      expect((await get(`/matches/${matchId}/live`).set("If-None-Match", "0")).status).toBe(200);
+
+      expect((await get("/matches/nope/live")).status).toBe(404);
+      const other = (await createManager(await adminAgent())).agent;
+      const k2 = (await other.post("/api/manager/studio/workers").send({ name: "Other" })).body.key;
+      const no = await get(`/matches/${matchId}/live`, k2);
+      expect(no.status).toBe(403);
+      expect(no.body.error.message).toEqual(expect.any(String));
+      expect((await get(`/matches/${matchId}/live`, "sw_nope")).status).toBe(401);
+
+      // marking players needs a confirmed team list
+      expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: ["knocked"] })).status).toBe(409);
+    });
+
+    it("during the match: the manager marks players, the board follows; eliminated teams stay; new teams appear", async () => {
+      const { matchId, soul, solo, sessionId } = await liveSetup();
+      const v1 = (await get(`/matches/${matchId}/live`)).body.version as number;
+      expect((await confirmLineup(matchId)).status).toBe(200);
+
+      const saved = await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: ["alive", "alive", "knocked", "eliminated"] });
+      expect(saved.status).toBe(200);
+      expect(saved.body.match.state).toBe("live");
+      expect(saved.body.version).toBeGreaterThan(v1);
+
+      const res = await get(`/matches/${matchId}/live`).set("If-None-Match", `"${v1}"`);
+      expect(res.status).toBe(200);
+      expect(res.body.version).toBe(saved.body.version);
+      expect(res.body.teams[0]).toMatchObject({
+        id: soul,
+        status: 2,
+        players: [
+          { name: "SoulMortal", state: "alive" },
+          { name: "SoulRegal", state: "alive" },
+          { name: "SoulViper", state: "knocked" },
+          { name: "SoulOwais", state: "eliminated" },
+        ],
+      });
+
+      // whole team out: row stays, status 0
+      await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: solo, players: ["eliminated"] });
+      const out = await get(`/matches/${matchId}/live`);
+      expect(out.body.teams).toHaveLength(2);
+      expect(out.body.teams[1]).toMatchObject({ id: solo, status: 0, players: [{ name: "SoloOne", state: "eliminated" }] });
+
+      // a team registered mid-match shows up on the next poll, with a new version
+      const late = await createTeam(null, "LATE", "LateOne");
+      await prisma.registration.create({ data: { sessionId, teamId: late.row.id, status: "APPROVED", slotNumber: 5 } });
+      const grown = await get(`/matches/${matchId}/live`).set("If-None-Match", `"${out.body.version}"`);
+      expect(grown.status).toBe(200);
+      expect(grown.body.version).toBe(out.body.version + 1);
+      expect(grown.body.teams.map((t: { slot: number }) => t.slot)).toEqual([3, 4, 5]);
+      expect(grown.body.teams[2]).toMatchObject({ name: "LATE", status: 1 });
+
+      // bad input
+      expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: "nope", players: ["alive"] })).status).toBe(404);
+      expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: ["dead"] })).status).toBe(400);
+      expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: [] })).status).toBe(400);
+    });
+
+    it("after the match: final state served as finished, no more changes", async () => {
+      const { matchId, soul } = await liveSetup();
+      await confirmLineup(matchId);
+      await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: ["alive", "eliminated", "eliminated", "eliminated"] });
+      const r = await mgr.put(`/api/manager/matches/${matchId}/results`).send({ teams: [{ slotNumber: 3, placement: 1, kills: 9 }] });
+      expect(r.status).toBe(200);
+      const res = await get(`/matches/${matchId}/live`);
+      expect(res.body.match.state).toBe("finished");
+      expect(res.body.teams[0]).toMatchObject({ status: 1 });
+      expect((await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, players: ["alive"] })).status).toBe(409);
+    });
+
+    it("polling faster than allowed gets 429 with Retry-After", async () => {
+      const { matchId } = await liveSetup();
+      const all = await Promise.all(Array.from({ length: 15 }, () => get(`/matches/${matchId}/live`)));
+      const limited = all.find((x) => x.status === 429);
+      expect(limited).toBeDefined();
+      expect(Number(limited!.headers["retry-after"])).toBeGreaterThanOrEqual(1);
+    });
+  });
+});

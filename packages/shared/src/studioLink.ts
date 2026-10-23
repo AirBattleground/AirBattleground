@@ -13,6 +13,13 @@
  *   POST   /api/studio-link/broadcasts/:id/heartbeat   StudioLinkHeartbeatInput → { stop: boolean }
  *   POST   /api/studio-link/broadcasts/:id/stop        → 204
  *   POST   /api/studio-link/matches/:id/screenshots    multipart `files` + `kind` (SLOT_LIST | RESULTS) → { count }
+ *   GET    /api/studio-link/matches/:id/live           → StudioLinkLive  (Team Status board; poll every ~3 s)
+ *          ETag = `version`; If-None-Match equal to it → 304. 403 = another manager's match, 404 = unknown match,
+ *          429 + Retry-After above 1 request/s per studio key.
+ *
+ * LIVE TEAM STATUS (Match Center, cookie auth; also under /api/admin for any match)
+ *   GET    /api/manager/matches/:matchId/team-status   → StudioLinkLive
+ *   PATCH  /api/manager/matches/:matchId/team-status   SaveLiveTeamInput → StudioLinkLive  (only while the match is LIVE)
  */
 import { z } from "zod";
 
@@ -89,3 +96,51 @@ export interface StudioLinkHeartbeatResponse {
 export interface StudioLinkScreenshotsResponse {
   count: number;
 }
+
+// ---------------------------------------------------------------- live team status (Team Status board)
+
+export const LIVE_PLAYER_STATES = ["alive", "knocked", "eliminated"] as const;
+export type LivePlayerState = (typeof LIVE_PLAYER_STATES)[number];
+/** bars per team on the board */
+export const LIVE_TEAM_SIZE = 4;
+
+/** scheduled = lineup not confirmed yet; live = lineup confirmed; finished = results being reviewed or published */
+export type StudioLinkLiveState = "scheduled" | "live" | "finished";
+
+export interface StudioLinkLivePlayer {
+  /** the player's IGN (omitted when unknown) */
+  name?: string;
+  state: LivePlayerState;
+}
+
+export interface StudioLinkLiveTeam {
+  id: string;
+  slot: number;
+  name: string;
+  /** absolute URL (omitted when the team has no logo) */
+  logo?: string;
+  /** players alive, 0..4 (= players with state "alive") */
+  status: number;
+  /** up to 4, always in the same order (the confirmed lineup, else the team's roster) */
+  players: StudioLinkLivePlayer[];
+}
+
+export interface StudioLinkLive {
+  /** bumped whenever anything below changes; also the ETag */
+  version: number;
+  /** ISO instant (UTC, Z) of the last change */
+  updatedAt: string;
+  match: { id: string; title: string; state: StudioLinkLiveState; map: string };
+  /** every registered team (eliminated ones too), sorted by slot */
+  teams: StudioLinkLiveTeam[];
+}
+
+export const saveLiveTeamSchema = z.object({
+  teamId: z.string().trim().min(1).max(60),
+  /** the team's players in board order */
+  players: z
+    .array(z.enum(LIVE_PLAYER_STATES, { errorMap: () => ({ message: "Each player is alive, knocked or eliminated" }) }))
+    .min(1)
+    .max(LIVE_TEAM_SIZE),
+});
+export type SaveLiveTeamInput = z.infer<typeof saveLiveTeamSchema>;

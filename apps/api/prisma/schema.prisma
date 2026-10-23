@@ -440,6 +440,12 @@ model Match {
   publishedAt   DateTime?
   /// TDM: both teams had the same kills, so the manager picked the winner — their reason (shown to teams)
   tieNote       String?
+  /// live team status for the studio Team Status board: { "<teamId>": ["alive" | "knocked" | "eliminated", …] }
+  liveTeams     Json?
+  /// the board payload's version (= ETag); bumped whenever liveHash (a hash of the payload) changes
+  liveVersion   Int              @default(0)
+  liveHash      String?
+  liveUpdatedAt DateTime?
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 

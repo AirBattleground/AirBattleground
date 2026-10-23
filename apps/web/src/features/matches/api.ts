@@ -7,9 +7,11 @@ import {
   type MatchDetail,
   type MatchSummary,
   type SaveLineupInput,
+  type SaveLiveTeamInput,
   type SaveResultsInput,
   type ScreenshotKind,
   type ScreenshotRow,
+  type StudioLinkLive,
 } from "@7xen/shared";
 import { api } from "@/lib/api";
 import { queryClient } from "@/lib/query";
@@ -19,6 +21,7 @@ export const matchKeys = {
   all: ["manager", "matches"] as const,
   session: (scrimId: string, date: string) => ["manager", "matches", "session", scrimId, date] as const,
   detail: (matchId: string) => ["manager", "matches", "detail", matchId] as const,
+  live: (matchId: string) => ["manager", "matches", "live", matchId] as const,
   standingsAll: ["manager", "standings"] as const,
   standings: (scrimId: string, date: string) => ["manager", "standings", scrimId, date] as const,
 };
@@ -46,6 +49,16 @@ export function useMatch(matchId: string | undefined) {
     enabled: !!matchId,
     // poll every 2s while the reader is still working on a screenshot
     refetchInterval: (q) => (q.state.data?.screenshots.some(isWorking) ? 2_000 : false),
+  });
+}
+
+/** Live team status (what the studio's Team Status board shows). Polls so a second device stays in step. */
+export function useLiveStatus(matchId: string, enabled = true) {
+  return useQuery({
+    queryKey: matchKeys.live(matchId),
+    queryFn: () => api.get<StudioLinkLive>(`/api/manager/matches/${matchId}/team-status`),
+    enabled,
+    refetchInterval: 5_000,
   });
 }
 
@@ -221,5 +234,39 @@ export function useUnpublishMatch(matchId: string) {
       toast.success("Results hidden from teams", { description: "Fix what you need, then publish again." });
     },
     onError: (err) => toast.error("Couldn't unpublish", { description: errorMessage(err) }),
+  });
+}
+
+export function useSaveLiveTeam(matchId: string) {
+  const qc = useQueryClient();
+  const key = matchKeys.live(matchId);
+  return useMutation({
+    mutationFn: (input: SaveLiveTeamInput) => api.patch<StudioLinkLive>(`/api/manager/matches/${matchId}/team-status`, input),
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<StudioLinkLive>(key);
+      qc.setQueryData<StudioLinkLive>(key, (d) =>
+        d
+          ? {
+              ...d,
+              teams: d.teams.map((t) =>
+                t.id === input.teamId
+                  ? {
+                      ...t,
+                      status: input.players.filter((s) => s === "alive").length,
+                      players: t.players.map((p, i) => ({ ...p, state: input.players[i] ?? p.state })),
+                    }
+                  : t,
+              ),
+            }
+          : d,
+      );
+      return { prev };
+    },
+    onSuccess: (d) => qc.setQueryData(key, d),
+    onError: (err, _input, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
+      toast.error("Couldn't update the player", { description: errorMessage(err) });
+    },
   });
 }

@@ -80,6 +80,7 @@
  * DTOs in the header of ./phase2.ts. Summary:
  *   MANAGER  GET  /api/manager/scrims/:id/sessions/:date/matches | /standings
  *            GET  /api/manager/matches/:matchId · PUT …/lineup · PUT …/results · POST …/publish · POST …/unpublish
+ *            GET|PATCH /api/manager/matches/:matchId/team-status  (live team status for the studio Team Status board; studioLink.ts)
  *            POST /api/manager/matches/:matchId/screenshots (multipart files[] + kind)
  *                 → 201 { items: ScreenshotRow[], skipped: number }   (skipped = duplicates by sha256)
  *            GET  /api/manager/screenshots/:id/image · POST …/retry · DELETE /api/manager/screenshots/:id
