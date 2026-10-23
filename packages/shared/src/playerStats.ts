@@ -4,9 +4,12 @@
  *
  * PLAYER (role PLAYER, cookie sx_app)
  *   GET    /api/player/stats?scope=ALL|SCRIMS|TOURNAMENTS&period=ALL_TIME|LAST_30_DAYS|LAST_7_DAYS → PlayerStats
+ *   GET    /api/player/stats/tdm?period=ALL_TIME|LAST_30_DAYS|LAST_7_DAYS                           → TdmPlayerStats
  *
  * Only what results record is used: placement + team kills (MatchTeam) and the player's own kills (MatchPlayer).
  * The radar axes and the rating are derived from those (see PLAYER_RATING); every axis is 0–100.
+ *
+ * TDM battles never count in PlayerStats (rating, wins, kills, maps) — they have their own report (TDM Results).
  */
 import { z } from "zod";
 
@@ -206,5 +209,96 @@ export function computePlayerStats(rows: PlayerMatchRow[], scope: PlayerStatsSco
     maps,
     recent: sorted.slice(-10).reverse().map(toRecent),
     trend: sorted.slice(-20).map((r) => ({ playedAt: r.playedAt, kills: r.kills ?? 0, placement: r.placement })),
+  };
+}
+
+// ---------------------------------------------------------------- TDM Results
+
+export const tdmStatsQuerySchema = z.object({ period: z.enum(PLAYER_STATS_PERIODS).default("ALL_TIME") });
+export type TdmStatsQuery = z.infer<typeof tdmStatsQuerySchema>;
+
+/** One published TDM battle the player played in (input of computeTdmStats). */
+export interface TdmMatchRow {
+  matchId: string;
+  playedAt: string;
+  map: string;
+  /** tournament title */
+  eventTitle: string;
+  teamName: string | null;
+  opponentName: string | null;
+  /** rank 1 = won the battle */
+  placement: number | null;
+  kills: number | null;
+  teamKills: number | null;
+  opponentKills: number | null;
+}
+
+export interface TdmBattle {
+  matchId: string;
+  playedAt: string;
+  map: string;
+  eventTitle: string;
+  teamName: string | null;
+  opponentName: string | null;
+  /** null when the result has no rank */
+  won: boolean | null;
+  kills: number;
+  teamKills: number | null;
+  opponentKills: number | null;
+}
+
+export interface TdmPlayerStats {
+  period: PlayerStatsPeriod;
+  battles: number;
+  wins: number;
+  losses: number;
+  /** 0–1, over battles with a result */
+  winRate: number;
+  kills: number;
+  killsPerBattle: number;
+  /** 0–1 share of the team's kills; null when team kills are unknown */
+  killShare: number | null;
+  best: TdmBattle | null;
+  /** newest first, at most 10 */
+  recent: TdmBattle[];
+}
+
+const toBattle = (r: TdmMatchRow): TdmBattle => ({
+  matchId: r.matchId,
+  playedAt: r.playedAt,
+  map: r.map,
+  eventTitle: r.eventTitle,
+  teamName: r.teamName,
+  opponentName: r.opponentName,
+  won: r.placement == null ? null : r.placement === 1,
+  kills: r.kills ?? 0,
+  teamKills: r.teamKills,
+  opponentKills: r.opponentKills,
+});
+
+/** The player's TDM report from their battle rows (any order). Pure. */
+export function computeTdmStats(rows: TdmMatchRow[], period: PlayerStatsPeriod = "ALL_TIME"): TdmPlayerStats {
+  const sorted = [...rows].sort((a, b) => a.playedAt.localeCompare(b.playedAt));
+  const n = sorted.length;
+  const decided = sorted.filter((r) => r.placement != null);
+  const wins = decided.filter((r) => r.placement === 1).length;
+  const kills = sorted.reduce((s, r) => s + (r.kills ?? 0), 0);
+  const withTeamKills = sorted.filter((r) => r.teamKills != null && r.teamKills > 0);
+  const teamKills = withTeamKills.reduce((s, r) => s + r.teamKills!, 0);
+  const best = sorted.reduce<TdmMatchRow | null>(
+    (b, r) => (!b || (r.kills ?? 0) > (b.kills ?? 0) || ((r.kills ?? 0) === (b.kills ?? 0) && r.playedAt > b.playedAt) ? r : b),
+    null,
+  );
+  return {
+    period,
+    battles: n,
+    wins,
+    losses: decided.length - wins,
+    winRate: decided.length ? wins / decided.length : 0,
+    kills,
+    killsPerBattle: n ? round1(kills / n) : 0,
+    killShare: teamKills ? withTeamKills.reduce((s, r) => s + (r.kills ?? 0), 0) / teamKills : null,
+    best: best ? toBattle(best) : null,
+    recent: sorted.slice(-10).reverse().map(toBattle),
   };
 }

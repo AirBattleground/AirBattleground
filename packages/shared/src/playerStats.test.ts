@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computePlayerStats, gradeFor, MIN_RATED_MATCHES, type PlayerMatchRow } from "./playerStats";
+import { computePlayerStats, computeTdmStats, gradeFor, MIN_RATED_MATCHES, type PlayerMatchRow, type TdmMatchRow } from "./playerStats";
 
 const row = (i: number, placement: number | null, kills: number | null, teamKills: number | null = 8, map = "ERANGEL"): PlayerMatchRow => ({
   matchId: `m${i}`,
@@ -50,5 +50,32 @@ describe("computePlayerStats", () => {
 
   it("grades by rating bands", () => {
     expect([95, 85, 72, 60, 45, 10].map(gradeFor)).toEqual(["SS", "S", "A", "B", "C", "D"]);
+  });
+});
+
+describe("computeTdmStats", () => {
+  const battle = (i: number, placement: number | null, kills: number | null, teamKills: number | null = 40): TdmMatchRow => ({
+    matchId: `b${i}`,
+    playedAt: new Date(Date.UTC(2026, 9, 1 + i)).toISOString(),
+    map: "WAREHOUSE",
+    eventTitle: "TDM Night",
+    teamName: "Phoenix Raiders",
+    opponentName: "Rivals",
+    placement,
+    kills,
+    teamKills,
+    opponentKills: 30,
+  });
+
+  it("is empty with no battles", () => {
+    expect(computeTdmStats([])).toMatchObject({ battles: 0, wins: 0, losses: 0, winRate: 0, kills: 0, killsPerBattle: 0, killShare: null, best: null, recent: [] });
+  });
+
+  it("counts wins and losses over decided battles, kills over all, best = most kills", () => {
+    const s = computeTdmStats([battle(1, 1, 10), battle(2, 2, 20), battle(3, null, 6, null)]);
+    expect(s).toMatchObject({ battles: 3, wins: 1, losses: 1, winRate: 0.5, kills: 36, killsPerBattle: 12 });
+    expect(s.killShare).toBeCloseTo(30 / 80);
+    expect(s.best?.matchId).toBe("b2");
+    expect(s.recent.map((b) => [b.matchId, b.won])).toEqual([["b3", null], ["b2", false], ["b1", true]]);
   });
 });

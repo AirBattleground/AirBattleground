@@ -17,19 +17,21 @@
  *          Both 409 with a message when the match's control.state doesn't allow it. The manager publishes results.
  *   POST   /api/studio-link/matches/:id/screenshots    multipart: one image ≤ 2 MB + captureId, capturedAt, sequence,
  *          sessionId [, kind=AUTO, trigger, hint, sceneId, sceneName, width, height] → 202 LiveCaptureAccepted
- *          (200 + duplicate for a repeat captureId). The server detects what it shows — lobby (fills the team list,
+ *          (200 + duplicate for a repeat captureId; 200 + reason "busy" for an auto frame while the previous one is read). The server detects what it shows — lobby (fills the team list,
  *          before Start), in_game (live team status), results (fills ranks; while live this ends the match) — and
  *          ignores anything else. kind=LIVE_STATUS means the same as AUTO. kind=SLOT_LIST | RESULTS (old builds):
  *          multipart `files` → 201 { count }, read as that kind.
- *          409 = match published; 413 = over 2 MB; 429 + Retry-After above 1 upload per 2 s per studio per match.
+ *          409 = match published, or locked and the hint isn't lobby; 413 = over 2 MB; 429 + Retry-After above 1 upload per 2 s per studio per match.
  *   GET    /api/studio-link/matches/:id/captures/:captureId → StudioCaptureStatus  (what the reader made of it)
- *   GET    /api/studio-link/matches/:id/live           → StudioLinkLive  (Team Status board; poll every ~3 s)
+ *   GET    /api/studio-link/matches/:id/live           → StudioLinkLive  (Team Status board, on-screen texts, summary,
+ *          winner; poll every ~3 s; the final state stays available after the match)
  *          ETag = `version`; If-None-Match equal to it → 304. 403 = another manager's match, 404 = unknown match,
  *          429 + Retry-After above 1 request/s per studio key.
  *
  * LIVE TEAM STATUS (Match Center, cookie auth; also under /api/admin for any match)
  *   GET    /api/manager/matches/:matchId/team-status   → StudioLinkLive
- *   PATCH  /api/manager/matches/:matchId/team-status   SaveLiveTeamInput → StudioLinkLive  (only while the match is LIVE)
+ *   PATCH  /api/manager/matches/:matchId/team-status   SaveLiveTeamInput → StudioLinkLive  (players / kills / points;
+ *          only while the match is LIVE)
  *   PATCH  /api/manager/matches/:matchId/team-status/auto  { paused } → StudioLinkLive  (pause auto capture updates)
  *   GET    /api/manager/matches/:matchId/captures/:id/image → the captured image (kept 24 h)
  */
@@ -134,8 +136,8 @@ export type LivePlayerState = (typeof LIVE_PLAYER_STATES)[number];
 /** bars per team on the board */
 export const LIVE_TEAM_SIZE = 4;
 
-/** scheduled = lineup not confirmed yet; live = lineup confirmed; finished = results being reviewed or published */
-export type StudioLinkLiveState = "scheduled" | "live" | "finished";
+/** scheduled = lineup not confirmed yet; live = lineup confirmed; summary = results being reviewed; finished = published */
+export type StudioLinkLiveState = "scheduled" | "live" | "summary" | "finished";
 
 export type LiveStateSource = "manager" | "auto";
 
@@ -157,8 +159,48 @@ export interface StudioLinkLiveTeam {
   logo?: string;
   /** players alive, 0..4 (= players with state "alive") */
   status: number;
-  /** up to 4, always in the same order (the confirmed lineup, else the team's roster) */
+  /** finishes (the board's FIN. column); 0 before the match */
+  kills: number;
+  /** the board's TOT. PTS. column: placement + kill points once placed, else kill points (or the manager's figure) */
+  totalPoints: number;
+  /** up to 4, always in the same order (the confirmed lineup, else the team's roster padded to 4 before the match) */
   players: StudioLinkLivePlayer[];
+}
+
+export interface StudioLinkSummaryTeam {
+  slot: number;
+  name: string;
+  logo?: string;
+  kills: number;
+  /** null = not placed (yet) */
+  placement: number | null;
+  placementPoints: number;
+  killPoints: number;
+  totalPoints: number;
+}
+
+export interface StudioLinkMvp {
+  name: string;
+  team: string;
+  kills: number;
+  /** absolute URL of the player's photo (omitted when none) */
+  photo?: string;
+}
+
+export interface StudioLinkSummary {
+  /** every team of the match, sorted by totalPoints desc, then kills desc */
+  teams: StudioLinkSummaryTeam[];
+  /** the player with the most kills (null = no kills read yet) */
+  mvp: StudioLinkMvp | null;
+}
+
+export interface StudioLinkWinner {
+  slot: number;
+  name: string;
+  logo?: string;
+  kills: number;
+  totalPoints: number;
+  players: { name: string; kills: number }[];
 }
 
 export interface StudioLinkLive {
@@ -170,19 +212,42 @@ export interface StudioLinkLive {
   autoCapture?: LiveAutoCapture;
   /** what the studio may do with this match (same as on GET /matches) */
   control?: StudioMatchControl;
-  match: { id: string; title: string; state: StudioLinkLiveState; map: string };
+  match: {
+    id: string;
+    title: string;
+    state: StudioLinkLiveState;
+    /** ISO instant the match is planned to start (null = not scheduled) */
+    startsAt: string | null;
+    /** ISO instant the match went live (null = not yet) */
+    liveAt: string | null;
+    /** tournament stage (e.g. "Grand Finals"); null for scrims */
+    round: string | null;
+    matchNumber: number;
+    map: string;
+  };
   /** every registered team (eliminated ones too), sorted by slot */
   teams: StudioLinkLiveTeam[];
+  /** once the match ended (state summary / finished) */
+  summary?: StudioLinkSummary;
+  /** once results are published (state finished) */
+  winner?: StudioLinkWinner;
 }
 
-export const saveLiveTeamSchema = z.object({
-  teamId: z.string().trim().min(1).max(60),
-  /** the team's players in board order */
-  players: z
-    .array(z.enum(LIVE_PLAYER_STATES, { errorMap: () => ({ message: "Each player is alive, knocked or eliminated" }) }))
-    .min(1)
-    .max(LIVE_TEAM_SIZE),
-});
+export const saveLiveTeamSchema = z
+  .object({
+    teamId: z.string().trim().min(1).max(60),
+    /** the team's players in board order */
+    players: z
+      .array(z.enum(LIVE_PLAYER_STATES, { errorMap: () => ({ message: "Each player is alive, knocked or eliminated" }) }))
+      .min(1)
+      .max(LIVE_TEAM_SIZE)
+      .optional(),
+    /** finishes so far (FIN.) */
+    kills: z.number({ invalid_type_error: "Kills must be a number" }).int("Kills must be a whole number").min(0, "Kills can't be negative").max(99).optional(),
+    /** total points so far (TOT. PTS.); null = work it out from the kills again */
+    totalPoints: z.number({ invalid_type_error: "Points must be a number" }).int("Points must be a whole number").min(0, "Points can't be negative").max(999).nullable().optional(),
+  })
+  .refine((v) => v.players !== undefined || v.kills !== undefined || v.totalPoints !== undefined, { message: "Nothing to change", path: ["players"] });
 export type SaveLiveTeamInput = z.infer<typeof saveLiveTeamSchema>;
 
 // ---------------------------------------------------------------- auto capture (kind=LIVE_STATUS)
@@ -207,6 +272,8 @@ export interface LiveAutoCapture {
   paused: boolean;
   lastCaptureAt: string | null;
   lastAppliedAt: string | null;
+  /** what the newest read capture showed (null = none read yet) */
+  lastDetected: CaptureDetected | null;
   /** the newest capture failed to read (cleared by the next good one) */
   lastError: string | null;
   /** Match Center only: the newest captured image (cookie auth) */
@@ -233,9 +300,11 @@ export interface LiveCaptureAccepted {
   captureId: string;
   accepted: boolean;
   duplicate?: true;
+  /** "busy" = the previous frame of this match is still being read; this one was dropped (auto captures only) */
+  reason?: "busy";
   /** captures of other matches waiting ahead of this one */
   queuePosition?: number;
-  /** seconds until the studio's next upload (2..30) */
+  /** seconds until the studio's next upload (5..30) */
   nextIntervalSeconds?: number;
 }
 

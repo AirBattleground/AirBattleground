@@ -5,6 +5,7 @@
 import { Prisma, type MatchStatus as DbMatchStatus } from "@prisma/client";
 import {
   MAX_ROSTER_PLAYERS,
+  matchIgn,
   type ExtractionResult,
   type GameMap,
   type MatchDetail,
@@ -127,7 +128,7 @@ async function matchSlots(owner: { sessionId: string | null; groupId: string | n
 }
 
 /** Points system for a match: the scrim's or the tournament's. */
-const matchPointsSystem = (m: Pick<MatchWithOwner, "session" | "group">) =>
+export const matchPointsSystem = (m: Pick<MatchWithOwner, "session" | "group">) =>
   pointsSystemOf(m.session?.scrim.pointsSystem ?? m.group?.stage.tournament.pointsSystem);
 
 // ---------------------------------------------------------------- DTO mapping
@@ -493,7 +494,7 @@ export async function saveLineup(matchId: string, managerId: string, input: Save
       let status: DbMatchStatus = m.status;
       if (input.confirm && STATUS_ORDER[m.status] < STATUS_ORDER.LIVE) status = "LIVE";
       else if (m.status === "SCHEDULED" && input.teams.length) status = "LINEUP_REVIEW";
-      if (status !== m.status) await tx.match.update({ where: { id: matchId }, data: { status } });
+      if (status !== m.status) await tx.match.update({ where: { id: matchId }, data: { status, ...(status === "LIVE" ? { liveAt: new Date() } : {}) } });
     },
     { maxWait: 10_000, timeout: 20_000 },
   );
@@ -574,17 +575,32 @@ export async function adoptScreenshot(
   return { screenshotId: id, changed };
 }
 
-/** phase 5: link confirmed lineup names to player accounts (name = a member's IGN, case-insensitive). */
+/**
+ * Link a match's player rows to accounts: a read name links to a member of THAT slot's team (matchIgn, ≥95% after
+ * normalising) who was in the team when the match started — someone who joins later never gets an old match.
+ * A link to a player who has since left the team is kept (their past matches stay theirs); a name nobody matches stays
+ * unknown (the kills still count for the team). One account per slot.
+ */
 export async function linkMatchPlayers(matchId: string) {
+  const m = await prisma.match.findUniqueOrThrow({ where: { id: matchId }, select: { liveAt: true, scheduledAt: true } });
+  const startedAt = m.liveAt ?? m.scheduledAt ?? new Date();
   const teams = await prisma.matchTeam.findMany({
     where: { matchId },
-    include: { players: true, team: { select: { members: { select: { userId: true, user: { select: { ign: true } } } } } } },
+    include: {
+      players: { orderBy: { position: "asc" } },
+      team: { select: { members: { select: { userId: true, joinedAt: true, user: { select: { ign: true } } } } } },
+    },
   });
   for (const t of teams) {
-    const byIgn = new Map<string, string>();
-    for (const m of t.team?.members ?? []) if (m.user.ign) byIgn.set(m.user.ign.trim().toLowerCase(), m.userId);
+    const members = t.team?.members ?? [];
+    const memberIds = new Set(members.map((x) => x.userId));
+    const eligible = members.filter((x) => x.user.ign && x.joinedAt <= startedAt).map((x) => ({ userId: x.userId, ign: x.user.ign! }));
+    const used = new Set<string>();
     for (const p of t.players) {
-      const userId = byIgn.get(p.name.trim().toLowerCase()) ?? null;
+      let userId = matchIgn(p.name, eligible)?.userId ?? null;
+      if (!userId && p.userId && !memberIds.has(p.userId)) userId = p.userId;
+      if (userId && used.has(userId)) userId = null;
+      if (userId) used.add(userId);
       if (p.userId !== userId) await prisma.matchPlayer.update({ where: { id: p.id }, data: { userId } });
     }
   }
@@ -833,6 +849,10 @@ export async function applyExtraction(screenshotId: string, result: ExtractionRe
           create: { matchId: m.id, slotNumber: slot, teamId: t.teamId, placement: t.placement, kills: t.kills },
           update: { teamId: t.teamId, placement: t.placement, kills: t.kills },
         });
+        // a re-read keeps each name's account link (linkMatchPlayers re-checks it on publish)
+        const linked = new Map(
+          (m.teams.find((x) => x.slotNumber === slot)?.players ?? []).flatMap((p) => (p.userId ? [[p.name.trim().toLowerCase(), p.userId] as const] : [])),
+        );
         await tx.matchPlayer.deleteMany({ where: { matchTeamId: mt.id } });
         if (t.players.length) {
           await tx.matchPlayer.createMany({
@@ -843,6 +863,7 @@ export async function applyExtraction(screenshotId: string, result: ExtractionRe
               ocrName: p.ocrName,
               ocrConfidence: p.ocrConfidence,
               kills: p.kills,
+              userId: linked.get(p.name.slice(0, 60).trim().toLowerCase()) ?? null,
             })),
           });
         }

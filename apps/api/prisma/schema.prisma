@@ -437,6 +437,8 @@ model Match {
   number         Int
   map            String
   status         MatchStatus      @default(SCHEDULED)
+  /// when the match went live (lineup confirmed / 7XEN Studio Start)
+  liveAt         DateTime?
   publishedAt    DateTime?
   /// TDM: both teams had the same kills, so the manager picked the winner — their reason (shown to teams)
   tieNote        String?

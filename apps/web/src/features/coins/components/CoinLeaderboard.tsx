@@ -65,7 +65,7 @@ function Row({ r, mine }: { r: CoinLeaderboardRow; mine: boolean }) {
   );
 }
 
-/** Home: total BG coins distributed and the top 10 teams by coins earned. */
+/** Home: total BG coins distributed and the top 10 teams by coins earned (one compact card until any are awarded). */
 export function CoinLeaderboard() {
   const t = useT(coinsMsg);
   const q = useCoinLeaderboard();
@@ -84,6 +84,15 @@ export function CoinLeaderboard() {
       <SectionHeader eyebrow={t("lb_eyebrow")} title={t("lb_title")} icon={<Coins />} description={t("lb_text")} />
       {q.isError && !d ? (
         <QueryError error={q.error} onRetry={() => void q.refetch()} title={t("lb_error")} className="rounded-2xl border bg-card py-8" />
+      ) : d && d.top.length === 0 ? (
+        // nothing awarded yet: one compact card instead of a "0" total beside an empty list
+        <div className="flex items-center gap-4 rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
+          <BgCoin className="size-10 shrink-0 opacity-60 grayscale" />
+          <div className="min-w-0">
+            <p className="font-semibold">{t("none_title")}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">{t("none_text")}</p>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
           <div className="relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm sm:p-6">
@@ -115,12 +124,6 @@ export function CoinLeaderboard() {
                 {Array.from({ length: 5 }, (_, i) => (
                   <Skeleton key={i} className="h-12 rounded-xl" />
                 ))}
-              </div>
-            ) : d.top.length === 0 ? (
-              <div className="flex h-full min-h-40 flex-col items-center justify-center gap-2 p-6 text-center">
-                <BgCoin className="size-10 opacity-60 grayscale" />
-                <p className="font-semibold">{t("none_title")}</p>
-                <p className="max-w-sm text-sm text-muted-foreground">{t("none_text")}</p>
               </div>
             ) : (
               <ol className="space-y-1">

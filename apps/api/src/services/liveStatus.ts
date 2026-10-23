@@ -5,7 +5,10 @@
  *
  * Rows = the teams registered on the match (approved registrations / group teams), so a team added mid-match shows up
  * on the next poll. Players = the confirmed lineup (first 4 by position), else the team's roster; a player with no
- * stored state is alive. Before the lineup is confirmed every player is alive.
+ * stored state is alive. Before the lineup is confirmed every team shows 4 players (roster padded), all alive, 0 kills.
+ * Kills / points come from the match's results rows (MatchTeam): the manager's live figures while the match runs,
+ * then what the results screenshots / results form say. Once it ends the body carries `summary` (+ MVP), once
+ * published `winner`.
  * The payload is hashed: when the hash changes, liveVersion is bumped — the board's `version` and ETag. `autoCapture`
  * is left out of the hash (it changes on every capture).
  *
@@ -21,7 +24,9 @@ import {
   LIVE_MIN_CONFIDENCE,
   LIVE_TEAM_SIZE,
   MAP_LABELS,
+  matchPoints,
   type GameMap,
+  type PointsSystem,
   type LiveAutoCapture,
   type LivePlayerState,
   type LiveStateSource,
@@ -30,12 +35,17 @@ import {
   type StudioLinkLive,
   type StudioLinkLiveState,
   type StudioLinkLiveTeam,
+  type StudioLinkMvp,
+  type StudioLinkSummary,
+  type StudioLinkSummaryTeam,
+  type StudioLinkWinner,
   type StudioMatchControl,
 } from "@7xen/shared";
 import { prisma, type Tx } from "../db.js";
 import { conflict, forbidden, notFound } from "../lib/errors.js";
-import { brandingUrl, dateToStr } from "../lib/serialize.js";
-import { loadOwnMatch, ownerInclude, ownerManagerId, type MatchWithOwner } from "./matches.js";
+import { avatarOf, brandingUrl, dateToStr } from "../lib/serialize.js";
+import { matchContext } from "./matchContext.js";
+import { loadOwnMatch, matchPointsSystem, ownerInclude, ownerManagerId, type MatchWithOwner } from "./matches.js";
 import { startsAtOf } from "./schedule.js";
 import { publicUrl } from "./youtube.js";
 
@@ -55,7 +65,8 @@ const lineupPending = (s: MatchStatus) => s === "SCHEDULED" || s === "LINEUP_REV
 
 function liveState(s: MatchStatus): StudioLinkLiveState {
   if (s === "LIVE") return "live";
-  if (s === "RESULTS_REVIEW" || s === "PUBLISHED") return "finished";
+  if (s === "RESULTS_REVIEW") return "summary";
+  if (s === "PUBLISHED") return "finished";
   return "scheduled";
 }
 
@@ -161,33 +172,127 @@ export function storedTeams(v: Prisma.JsonValue | null): LiveTeams {
   return out;
 }
 
+/** Our own media paths → absolute URLs for the studio; external URLs (Google avatars) as they are. */
+const absolute = (url: string | null) => (url ? (url.startsWith("/") ? `${publicUrl()}${url}` : url) : null);
+
+type ResultRow = Prisma.MatchTeamGetPayload<{
+  select: {
+    teamId: true;
+    placement: true;
+    kills: true;
+    totalPoints: true;
+    players: { select: { name: true; kills: true; user: { select: { avatarUrl: true; avatarKey: true } } } };
+  };
+}>;
+
+/** The match's results rows by team id (lineup / live figures / results). */
+async function resultRows(matchId: string): Promise<Map<string, ResultRow>> {
+  const rows = await prisma.matchTeam.findMany({
+    where: { matchId, teamId: { not: null } },
+    select: {
+      teamId: true,
+      placement: true,
+      kills: true,
+      totalPoints: true,
+      players: { orderBy: { position: "asc" }, select: { name: true, kills: true, user: { select: { avatarUrl: true, avatarKey: true } } } },
+    },
+  });
+  return new Map(rows.map((r) => [r.teamId!, r]));
+}
+
+/** A team's score: placement + kill points once placed, else kill points (or the manager's live total). */
+function scoreOf(r: ResultRow | undefined, ps: PointsSystem): Omit<StudioLinkSummaryTeam, "slot" | "name" | "logo"> {
+  const kills = r?.kills ?? 0;
+  if (r?.placement != null) return { kills, placement: r.placement, ...matchPoints(ps, r.placement, kills) };
+  const killPoints = kills * ps.killPoints;
+  return { kills, placement: null, placementPoints: 0, killPoints, totalPoints: r?.totalPoints ?? killPoints };
+}
+
+/** The player with the most kills; ties go to the better-placed team. */
+function mvpOf(teams: StudioLinkSummaryTeam[], slots: SlotTeam[], results: Map<string, ResultRow>): StudioLinkMvp | null {
+  let best: { mvp: StudioLinkMvp; placement: number } | null = null;
+  for (const { slotNumber, team } of slots) {
+    const placement = teams.find((t) => t.slot === slotNumber)?.placement ?? Infinity;
+    for (const p of results.get(team.id)?.players ?? []) {
+      const kills = p.kills ?? 0;
+      if (kills <= 0 || (best && (kills < best.mvp.kills || (kills === best.mvp.kills && placement >= best.placement)))) continue;
+      const photo = p.user ? absolute(avatarOf(p.user)) : null;
+      best = { mvp: { name: p.name, team: team.name, kills, ...(photo ? { photo } : {}) }, placement };
+    }
+  }
+  return best?.mvp ?? null;
+}
+
 async function buildBody(m: MatchWithOwner): Promise<Body> {
   const state = liveState(m.status);
   const slots = await registeredTeams(m);
-  const names = await playerNames(m.id, slots);
+  const [names, results] = await Promise.all([playerNames(m.id, slots), state === "scheduled" ? new Map<string, ResultRow>() : resultRows(m.id)]);
   const stored = state === "scheduled" ? {} : storedTeams(m.liveTeams);
+  const ps = matchPointsSystem(m);
+  const logos = new Map(slots.map(({ team }) => [team.id, absolute(brandingUrl(team.logoKey))]));
 
   const teams = slots.map(({ slotNumber, team }): StudioLinkLiveTeam => {
     const saved = stored[team.id] ?? [];
-    const players = names.get(team.id)!.map((name, i) => {
+    const roster = names.get(team.id)!;
+    // before the match every team shows a full squad, all alive
+    const shown = state === "scheduled" ? [...roster, ...Array<null>(Math.max(0, LIVE_TEAM_SIZE - roster.length)).fill(null)] : roster;
+    const players = shown.map((name, i) => {
       const p = saved[i];
       return { ...(name ? { name } : {}), state: p?.state ?? ("alive" as const), ...(p?.source ? { source: p.source } : {}), ...(p?.at ? { updatedAt: p.at } : {}) };
     });
-    const logo = brandingUrl(team.logoKey);
+    const logo = logos.get(team.id);
+    const { kills, totalPoints } = scoreOf(results.get(team.id), ps);
     return {
       id: team.id,
       slot: slotNumber,
       name: team.name,
-      ...(logo ? { logo: `${publicUrl()}${logo}` } : {}),
+      ...(logo ? { logo } : {}),
       status: players.filter((p) => p.state === "alive").length,
+      kills,
+      totalPoints,
       players,
     };
   });
+
+  let summary: StudioLinkSummary | undefined;
+  let winner: StudioLinkWinner | undefined;
+  if (state === "summary" || state === "finished") {
+    const rows = slots.map(({ slotNumber, team }): StudioLinkSummaryTeam => {
+      const logo = logos.get(team.id);
+      return { slot: slotNumber, name: team.name, ...(logo ? { logo } : {}), ...scoreOf(results.get(team.id), ps) };
+    });
+    rows.sort((a, b) => b.totalPoints - a.totalPoints || b.kills - a.kills || (a.placement ?? Infinity) - (b.placement ?? Infinity) || a.slot - b.slot);
+    summary = { teams: rows, mvp: mvpOf(rows, slots, results) };
+    const top = state === "finished" ? (rows.find((r) => r.placement === 1) ?? rows[0]) : undefined;
+    const topTeam = top && slots.find((s) => s.slotNumber === top.slot)!.team;
+    if (top && topTeam) {
+      winner = {
+        slot: top.slot,
+        name: top.name,
+        ...(top.logo ? { logo: top.logo } : {}),
+        kills: top.kills,
+        totalPoints: top.totalPoints,
+        players: (results.get(topTeam.id)?.players ?? []).map((p) => ({ name: p.name, kills: p.kills ?? 0 })),
+      };
+    }
+  }
+
   return {
     // in the hashed body: a locked match unlocking (or a team joining) bumps the version
     control: controlOf(m, slots.length),
-    match: { id: m.id, title: matchTitle(m), state, map: MAP_LABELS[m.map as GameMap] ?? m.map },
+    match: {
+      id: m.id,
+      title: matchTitle(m),
+      state,
+      startsAt: matchContext(m).startsAt?.toISOString() ?? null,
+      liveAt: m.liveAt?.toISOString() ?? null,
+      round: m.group?.stage.name ?? null,
+      matchNumber: m.number,
+      map: MAP_LABELS[m.map as GameMap] ?? m.map,
+    },
     teams,
+    ...(summary ? { summary } : {}),
+    ...(winner ? { winner } : {}),
   };
 }
 
@@ -206,11 +311,13 @@ async function autoCapture(m: { id: string; liveAutoPaused: boolean }, imagePref
       select: { status: true, error: true, detected: true, message: true },
     }),
   ]);
+  const lastDetected = (processed?.detected as LiveAutoCapture["lastDetected"] | undefined) ?? null;
   return {
     active: !!last && now - last.createdAt.getTime() < LIVE_CAPTURE_ACTIVE_MS,
     paused: m.liveAutoPaused,
     lastCaptureAt: last?.createdAt.toISOString() ?? null,
     lastAppliedAt: applied?.processedAt?.toISOString() ?? null,
+    lastDetected,
     lastError: processed?.status === "FAILED" ? processed.error : processed?.detected === "other" ? processed.message : null,
     ...(imagePrefix ? { latestImageUrl: last ? `${imagePrefix}/matches/${m.id}/captures/${last.id}/image` : null } : {}),
   };
@@ -260,7 +367,10 @@ export async function getLive(matchId: string, managerId: string, bypass = false
   return stamped(matchId, imagePrefix(bypass));
 }
 
-/** Match Center: set one team's player states (only while the match is live). Changed players lock against auto. */
+/**
+ * Match Center: set one team's player states and/or its kills and total points (only while the match is live).
+ * Changed players lock against auto. Kills / points go on the team's results row, which the results later overwrite.
+ */
 export async function saveLiveTeam(matchId: string, managerId: string, input: SaveLiveTeamInput, bypass = false): Promise<StudioLinkLive> {
   const m = await loadOwnMatch(matchId, managerId, bypass);
   if (m.status !== "LIVE") {
@@ -268,16 +378,27 @@ export async function saveLiveTeam(matchId: string, managerId: string, input: Sa
       lineupPending(m.status) ? "Confirm the team list first — that starts the match." : "This match has ended. Live status can't be changed any more.",
     );
   }
-  if (!(await registeredTeams(m)).some((s) => s.team.id === input.teamId)) throw notFound("That team isn't in this match");
+  const slot = (await registeredTeams(m)).find((s) => s.team.id === input.teamId);
+  if (!slot) throw notFound("That team isn't in this match");
 
   await prisma.$transaction(async (tx) => {
     await tx.$queryRaw`SELECT id FROM "Match" WHERE id = ${matchId} FOR UPDATE`;
-    const row = await tx.match.findUniqueOrThrow({ where: { id: matchId }, select: { liveTeams: true } });
-    const teams = storedTeams(row.liveTeams);
-    const at = new Date().toISOString();
-    const cur = teams[input.teamId] ?? [];
-    teams[input.teamId] = input.players.map((state, i) => (cur[i]?.state === state ? cur[i]! : { state, source: "manager", at }));
-    await tx.match.update({ where: { id: matchId }, data: { liveTeams: teams as unknown as Prisma.InputJsonValue } });
+    if (input.players) {
+      const row = await tx.match.findUniqueOrThrow({ where: { id: matchId }, select: { liveTeams: true } });
+      const teams = storedTeams(row.liveTeams);
+      const at = new Date().toISOString();
+      const cur = teams[input.teamId] ?? [];
+      teams[input.teamId] = input.players.map((state, i) => (cur[i]?.state === state ? cur[i]! : { state, source: "manager", at }));
+      await tx.match.update({ where: { id: matchId }, data: { liveTeams: teams as unknown as Prisma.InputJsonValue } });
+    }
+    if (input.kills !== undefined || input.totalPoints !== undefined) {
+      const score = { kills: input.kills, totalPoints: input.totalPoints };
+      await tx.matchTeam.upsert({
+        where: { matchId_slotNumber: { matchId, slotNumber: slot.slotNumber } },
+        create: { matchId, slotNumber: slot.slotNumber, teamId: input.teamId, ...score },
+        update: score,
+      });
+    }
   });
   return stamped(matchId, imagePrefix(bypass));
 }
