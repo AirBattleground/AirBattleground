@@ -86,12 +86,15 @@ export async function startBroadcast(worker: DbWorker, input: Required<StudioLin
     ? await prisma.studioShow.findFirst({ where: { managerId, matchId: input.matchId, studioLink: true, state: "IDLE" }, orderBy: { updatedAt: "desc" } })
     : null;
   const showId = reuse?.id ?? (await createShow(managerId, { title: input.title, matchId: input.matchId })).id;
+  // public streams are visible to everyone: a show going out on the (public) site YouTube channel is always listed on
+  // the Live page — it plays the YouTube video there — even when the studio switched the Live page output off
+  const onSiteYoutube = input.siteYoutube && !!(await studioOutputs(managerId)).siteYoutube;
   await prisma.studioShow.update({
     where: { id: showId },
     data: {
       title: input.title,
       matchId: input.matchId,
-      publicListing: input.livePage,
+      publicListing: input.livePage || onSiteYoutube,
       siteYoutube: input.siteYoutube,
       destinationIds: input.destinationIds,
       recordLocal: false,

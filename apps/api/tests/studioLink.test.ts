@@ -14,6 +14,10 @@ vi.mock("../src/services/youtube.js", async (importOriginal) => {
       yt.on ? { broadcastId: "yt_link1", title: show.title, watchUrl: "https://youtu.be/yt_link1", target: "rtmp://a.rtmp.youtube.com/live2/yt-ingest-key" } : orig.startShowBroadcast(show),
     ),
     endMatchBroadcast: vi.fn(async (id: string) => void yt.ended.push(id)),
+    getYoutubeStatus: vi.fn(async () => {
+      const real = await orig.getYoutubeStatus();
+      return yt.on ? { ...real, connected: true, autoStream: true, channel: { ...(real.channel ?? {}), title: "Test channel", url: "https://youtube.com/@test" } } : real;
+    }),
   };
 });
 
@@ -154,6 +158,25 @@ describe("studio link", () => {
     expect(live.body.items[0]).toMatchObject({ matchId: `s_${res.body.id}`, youtubeVideoId: "yt_link1" });
     expect((await post(`/broadcasts/${res.body.id}/stop`)).status).toBe(204);
     expect(yt.ended).toEqual(["yt_link1"]);
+  });
+
+  it("public streams are visible to all: on the site YouTube channel it's listed on Live even with the Live page off", async () => {
+    yt.on = true;
+    const res = await post("/broadcasts", { matchId: null, title: "Public YT show", livePage: false, siteYoutube: true, destinationIds: [] });
+    expect(res.status).toBe(201);
+    expect(res.body.targets.map((t: { id: string }) => t.id)).toEqual(["site-youtube"]);
+    // signed out: anyone can see it, playing the YouTube video
+    const live = await http().get("/api/live/");
+    expect(live.body.items).toEqual([expect.objectContaining({ matchId: `s_${res.body.id}`, youtubeVideoId: "yt_link1" })]);
+    expect((await post(`/broadcasts/${res.body.id}/stop`)).status).toBe(204);
+  });
+
+  it("without YouTube and with the Live page off, the broadcast stays off the public Live page", async () => {
+    yt.on = false;
+    const res = await post("/broadcasts", { matchId: null, title: "Private show", livePage: false, siteYoutube: false, destinationIds: [] });
+    expect(res.status).toBe(201);
+    expect((await http().get("/api/live/")).body.items).toEqual([]);
+    expect((await post(`/broadcasts/${res.body.id}/stop`)).status).toBe(204);
   });
 
   it("broadcast of another manager's match is refused; their broadcasts are 404", async () => {
