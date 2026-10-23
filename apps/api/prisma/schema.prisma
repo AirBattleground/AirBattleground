@@ -476,7 +476,9 @@ enum LiveCaptureStatus {
   FAILED
 }
 
-/// An auto capture from 7XEN Studio (kind=LIVE_STATUS): a scene image read for live team status. Kept 24 h.
+/// A screenshot from 7XEN Studio (kind AUTO / LIVE_STATUS): the reader decides whether it's the lobby, in-game or
+/// results and applies it (services/liveCapture.ts). Kept 24 h — except ones whose operator hint disagrees with what
+/// was detected (kept for training the reader).
 model LiveCapture {
   id          String            @id @default(cuid())
   matchId     String
@@ -494,6 +496,17 @@ model LiveCapture {
   mimeType    String
   width       Int?
   height      Int?
+  /// "auto" (interval capture) | "manual" (operator pressed Send screenshot; never skipped as superseded)
+  trigger     String            @default("auto")
+  /// what the operator said it shows (lobby | results | in_game) — a training label, not used to route
+  hint        String?
+  /// what the reader found: lobby | results | in_game | other
+  detected    String?
+  confidence  Float?
+  /// one line for the operator, e.g. "Read 14 teams from the lobby"
+  message     String?
+  /// the Match Center screenshot it became (lobby / results)
+  screenshotId String?
   status      LiveCaptureStatus @default(QUEUED)
   /// what the reader saw (LiveReadResult) + what was applied
   result      Json?

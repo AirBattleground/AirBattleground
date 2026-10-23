@@ -3,8 +3,8 @@ import { Router, type Request } from "express";
 import rateLimit from "express-rate-limit";
 import { z } from "zod";
 import {
-  LIVE_CAPTURE_KIND,
   SCREENSHOT_KINDS,
+  STUDIO_CAPTURE_KINDS,
   STUDIO_LINK_KEY_HEADER,
   liveCaptureFieldsSchema,
   studioLinkBroadcastSchema,
@@ -14,16 +14,19 @@ import { isTest } from "../env.js";
 import { AppError } from "../lib/errors.js";
 import { parseMultipart, singleImage, uploadedImages } from "../lib/upload.js";
 import { parse } from "../lib/validate.js";
-import { acceptCapture, captureWait } from "../services/liveCapture.js";
+import { acceptCapture, captureStatus, captureWait } from "../services/liveCapture.js";
 import { boardForStudio } from "../services/liveStatus.js";
 import * as link from "../services/studioLink.js";
 import { workerByKey } from "../services/studioWorkers.js";
 import { WORKER_KEY_HEADER } from "./studioWorker.js";
 
+/** No kind (or AUTO / LIVE_STATUS): the server detects what it shows. SLOT_LIST / RESULTS: older studio builds. */
 const kindSchema = z.object({
-  kind: z.enum([...SCREENSHOT_KINDS, LIVE_CAPTURE_KIND], {
-    errorMap: () => ({ message: "Choose what the screenshot shows: SLOT_LIST, RESULTS or LIVE_STATUS" }),
-  }),
+  kind: z
+    .enum([...SCREENSHOT_KINDS, ...STUDIO_CAPTURE_KINDS], {
+      errorMap: () => ({ message: "kind must be AUTO (or left out); SLOT_LIST and RESULTS are still accepted" }),
+    })
+    .default("AUTO"),
 });
 
 async function studioOf(req: Request) {
@@ -55,7 +58,8 @@ export function studioLinkRouter() {
   r.use(
     rateLimit({
       windowMs: 60_000,
-      limit: isTest ? 10_000 : 120,
+      // the studio polls /live (~3 s) and capture status (~1–2 s after a send) besides uploading and heartbeats
+      limit: isTest ? 10_000 : 300,
       standardHeaders: "draft-7",
       legacyHeaders: false,
       handler: (_req, res) => {
@@ -98,18 +102,28 @@ export function studioLinkRouter() {
     }
     res.json(board);
   });
+  // the studio runs the match: Start (lineup confirmed, match live) and Stop (results next; the manager publishes)
+  r.post("/matches/:id/start", async (req, res) => {
+    res.json(await link.startMatch(await studioOf(req), p(req.params.id)));
+  });
+  r.post("/matches/:id/stop", async (req, res) => {
+    res.json(await link.stopMatch(await studioOf(req), p(req.params.id)));
+  });
+  r.get("/matches/:id/captures/:captureId", async (req, res) => {
+    res.json(await captureStatus(await studioOf(req), p(req.params.id), p(req.params.captureId)));
+  });
   r.post("/matches/:id/screenshots", async (req, res) => {
     const worker = await studioOf(req);
     await parseMultipart(req, res);
     const { kind } = parse(kindSchema, req.body);
-    if (kind === LIVE_CAPTURE_KIND) {
-      // auto capture: one frame → queued for the live team status reader
+    if (kind === "AUTO" || kind === "LIVE_STATUS") {
+      // one frame → queued; the reader decides whether it's the lobby, in-game or results
       const matchId = p(req.params.id);
       const fields = parse(liveCaptureFieldsSchema, req.body);
       const r = await acceptCapture(worker, matchId, fields, singleImage(req, "files"), () => captureWait(worker.id, matchId));
       if (r.status === 429) {
         res.setHeader("Retry-After", String(r.retryAfter));
-        throw new AppError("RATE_LIMITED", "Auto capture is sending too fast for this match. It will slow down by itself.");
+        throw new AppError("RATE_LIMITED", "Screenshots are coming too fast for this match. Wait a moment and send again.");
       }
       res.status(r.status).json(r.body);
       return;

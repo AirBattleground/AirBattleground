@@ -5,7 +5,6 @@ import {
   type CreateScrimInput,
   type ListResponse,
   type ManagerDashboard,
-  type PendingRequest,
   type Registration,
   type Scrim,
   type ScrimOnDate,
@@ -13,7 +12,6 @@ import {
   type UpdateScrimInput,
 } from "@7xen/shared";
 import { api } from "@/lib/api";
-import { slotLabel } from "./format";
 
 const managerKeys = {
   all: ["manager"] as const,
@@ -24,7 +22,6 @@ const managerKeys = {
   schedule: (date: string) => ["manager", "schedule", date] as const,
   sessionAll: ["manager", "session"] as const,
   session: (scrimId: string, date: string) => ["manager", "session", scrimId, date] as const,
-  requests: ["manager", "requests"] as const,
 };
 
 export function errorMessage(err: unknown): string {
@@ -76,21 +73,12 @@ export function useSession(scrimId: string | undefined, date: string | undefined
   });
 }
 
-export function useRequests(opts: { refetchInterval?: number } = {}) {
-  return useQuery({
-    queryKey: managerKeys.requests,
-    queryFn: async () => (await api.get<ListResponse<PendingRequest>>("/api/manager/requests")).items,
-    refetchInterval: opts.refetchInterval,
-  });
-}
-
 // ---------- scrim mutations ----------
 function invalidateScrimViews(qc: QueryClient) {
   void qc.invalidateQueries({ queryKey: managerKeys.scrims });
   void qc.invalidateQueries({ queryKey: managerKeys.dashboard });
   void qc.invalidateQueries({ queryKey: managerKeys.scheduleAll });
   void qc.invalidateQueries({ queryKey: managerKeys.sessionAll });
-  void qc.invalidateQueries({ queryKey: managerKeys.requests });
 }
 
 export function useCreateScrim() {
@@ -117,18 +105,12 @@ export function useUpdateScrim() {
   });
 }
 
-// ---------- registration decisions (optimistic) ----------
+// ---------- removing a team from a session (optimistic) ----------
 type Snapshot = [readonly unknown[], unknown][];
 
 async function snapshotDecisionViews(qc: QueryClient): Promise<Snapshot> {
-  await Promise.all([
-    qc.cancelQueries({ queryKey: managerKeys.sessionAll }),
-    qc.cancelQueries({ queryKey: managerKeys.requests }),
-  ]);
-  return [
-    ...qc.getQueriesData({ queryKey: managerKeys.sessionAll }),
-    ...qc.getQueriesData({ queryKey: managerKeys.requests }),
-  ];
+  await qc.cancelQueries({ queryKey: managerKeys.sessionAll });
+  return qc.getQueriesData({ queryKey: managerKeys.sessionAll });
 }
 
 function restore(qc: QueryClient, snap: Snapshot | undefined) {
@@ -138,7 +120,6 @@ function restore(qc: QueryClient, snap: Snapshot | undefined) {
 function settleDecision(qc: QueryClient) {
   void qc.invalidateQueries({ queryKey: managerKeys.dashboard });
   void qc.invalidateQueries({ queryKey: managerKeys.scheduleAll });
-  void qc.invalidateQueries({ queryKey: managerKeys.requests });
   void qc.invalidateQueries({ queryKey: managerKeys.sessionAll });
 }
 
@@ -154,111 +135,16 @@ function patchSessions(
   });
 }
 
-/** Remove a request from the inbox and adjust sibling counts for that session. */
-function patchRequestsRemove(qc: QueryClient, id: string, approvedDelta: number) {
-  qc.setQueryData<PendingRequest[]>(managerKeys.requests, (list) => {
-    if (!list) return list;
-    const target = list.find((r) => r.registration.id === id);
-    if (!target) return list;
-    return list
-      .filter((r) => r.registration.id !== id)
-      .map((r) =>
-        r.scrim.id === target.scrim.id && r.date === target.date
-          ? {
-              ...r,
-              counts: {
-                approved: r.counts.approved + approvedDelta,
-                slotsLeft: Math.max(0, r.counts.slotsLeft - approvedDelta),
-              },
-            }
-          : r,
-      );
-  });
-}
-
-interface DecisionVars {
+interface RemoveVars {
   id: string;
   teamName: string;
-  /** suppress the per-item toast (bulk actions show their own summary) */
-  silent?: boolean;
-}
-
-export function useApproveRegistration() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id }: DecisionVars) => api.post<Registration>(`/api/manager/registrations/${id}/approve`),
-    onMutate: async ({ id }) => {
-      const snap = await snapshotDecisionViews(qc);
-      patchSessions(qc, id, (s, reg) => {
-        if (reg.status === "APPROVED") return s;
-        const free = s.slots.find((sl) => !sl.team);
-        if (!free) return s;
-        const slotNumber = free.slotNumber;
-        return {
-          ...s,
-          registrations: s.registrations.map((r) =>
-            r.id === id ? { ...r, status: "APPROVED", slotNumber, decidedAt: new Date().toISOString() } : r,
-          ),
-          slots: s.slots.map((sl) =>
-            sl.slotNumber === slotNumber
-              ? { ...sl, team: { id: reg.team.id, name: reg.team.name, tag: reg.team.tag }, registrationId: id }
-              : sl,
-          ),
-          counts: {
-            pending: Math.max(0, s.counts.pending - (reg.status === "PENDING" ? 1 : 0)),
-            approved: s.counts.approved + 1,
-            slotsLeft: Math.max(0, s.counts.slotsLeft - 1),
-          },
-        };
-      });
-      patchRequestsRemove(qc, id, 1);
-      return { snap };
-    },
-    onError: (err, vars, ctx) => {
-      restore(qc, ctx?.snap);
-      const msg = errorMessage(err);
-      if (!vars.silent) {
-        toast.error(err instanceof ApiError && err.code === "SLOTS_FULL" ? "All slots are taken" : `Couldn't approve ${vars.teamName}`, {
-          description: msg,
-        });
-      }
-    },
-    onSuccess: (reg, vars) => {
-      // reconcile the optimistic slot with the real one
-      patchSessions(qc, reg.id, (s) => {
-        const slots = s.slots.map((sl) =>
-          sl.registrationId === reg.id && sl.slotNumber !== reg.slotNumber ? { ...sl, team: null, registrationId: null } : sl,
-        );
-        return {
-          ...s,
-          registrations: s.registrations.map((r) => (r.id === reg.id ? reg : r)),
-          slots: slots.map((sl) =>
-            sl.slotNumber === reg.slotNumber
-              ? { ...sl, team: { id: reg.team.id, name: reg.team.name, tag: reg.team.tag }, registrationId: reg.id }
-              : sl,
-          ),
-        };
-      });
-      if (!vars.silent) {
-        toast.success(
-          reg.slotNumber != null
-            ? `Approved — ${reg.team.name} got Slot ${slotLabel(reg.slotNumber)}`
-            : `Approved — ${reg.team.name}`,
-        );
-      }
-    },
-    onSettled: () => settleDecision(qc),
-  });
-}
-
-interface RejectVars extends DecisionVars {
   reason?: string;
 }
 
 export function useRejectRegistration() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, reason }: RejectVars) =>
+    mutationFn: ({ id, reason }: RemoveVars) =>
       api.post<Registration>(`/api/manager/registrations/${id}/reject`, reason ? { reason } : {}),
     onMutate: async ({ id, reason }) => {
       const snap = await snapshotDecisionViews(qc);
@@ -280,52 +166,16 @@ export function useRejectRegistration() {
           },
         };
       });
-      patchRequestsRemove(qc, id, 0);
       return { snap, wasApproved };
     },
     onError: (err, vars, ctx) => {
       restore(qc, ctx?.snap);
-      if (!vars.silent) toast.error(`Couldn't update ${vars.teamName}`, { description: errorMessage(err) });
+      toast.error(`Couldn't remove ${vars.teamName}`, { description: errorMessage(err) });
     },
     onSuccess: (_reg, vars, ctx) => {
-      if (vars.silent) return;
-      toast.success(ctx?.wasApproved ? `Removed ${vars.teamName} — their slot is free again` : `Rejected ${vars.teamName}`);
+      toast.success(ctx?.wasApproved ? `Removed ${vars.teamName} — their slot is free again` : `Removed ${vars.teamName}`);
     },
     onSettled: () => settleDecision(qc),
   });
 }
 
-/**
- * Approve registrations one after another. When a session runs out of slots, the rest
- * of that session's items (same `group`) are skipped; other sessions continue.
- */
-export function useBulkApprove() {
-  const approve = useApproveRegistration();
-  const run = async (items: { id: string; teamName: string; group?: string }[]) => {
-    let approved = 0;
-    let failed = 0;
-    const fullGroups = new Set<string>();
-    for (const it of items) {
-      const group = it.group ?? "_";
-      if (fullGroups.has(group)) continue;
-      try {
-        await approve.mutateAsync({ id: it.id, teamName: it.teamName, silent: true });
-        approved++;
-      } catch (err) {
-        if (err instanceof ApiError && err.code === "SLOTS_FULL") fullGroups.add(group);
-        else failed++;
-      }
-    }
-    const full = fullGroups.size > 0;
-    if (approved) {
-      toast.success(`Approved ${approved} team${approved === 1 ? "" : "s"}`, {
-        description: full ? "Slots ran out — the rest are still waiting." : undefined,
-      });
-    } else if (full) {
-      toast.error("All slots are taken", { description: "Remove a team or add slots to approve more." });
-    }
-    if (failed) toast.error(`${failed} request${failed === 1 ? "" : "s"} couldn't be approved`, { description: "Please try those again." });
-    return { approved, full, failed };
-  };
-  return { run, isPending: approve.isPending };
-}

@@ -72,7 +72,8 @@ const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: page(() => import("@/pages/manager/DashboardPage")) },
-      { path: "requests", element: page(() => import("@/pages/manager/RequestsPage")) },
+      // scrims need no approvals any more: old links land on the dashboard
+      { path: "requests", element: <Navigate to="/manager" replace /> },
       { path: "app", element: page(() => import("@/pages/manager/AppPage")) },
       { path: "studio", element: page(() => import("@/pages/manager/studio/StudioPage")) },
       { path: "live", element: page(() => import("@/pages/live/LiveNowPage")) },

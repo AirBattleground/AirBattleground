@@ -12,12 +12,12 @@ import { AircraftFlyover, HudFrame, RadarScope, TacticalBackdrop, Ticker } from 
  * Data comes from the page's useDashboard().
  */
 export default function LuxManagerHero({ name, greeting, data }: { name: string; greeting: string; data: ManagerDashboard | undefined }) {
-  const pending = data?.pendingCount ?? 0;
+  const confirmed = data?.upcomingApproved ?? 0;
   const line = !data
     ? "Checking your scrims…"
-    : pending > 0
-      ? `${pending} team${pending === 1 ? " is" : "s are"} waiting for your approval.`
-      : "No teams waiting right now. You're all caught up.";
+    : confirmed > 0
+      ? `${confirmed} team${confirmed === 1 ? " is" : "s are"} in your upcoming scrims.`
+      : "No teams in your upcoming scrims yet.";
   const sessions = data ? [...data.todaySessions].sort((a, b) => a.startsAt.localeCompare(b.startsAt)) : [];
   const ticker = sessions.map((s) => (
     <span key={s.scrim.id}>

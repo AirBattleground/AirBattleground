@@ -92,10 +92,21 @@ function checkPreferences(t: TournamentFull, prefs: string[]) {
   });
 }
 
+/** Tournaments (not TDM battles) need a full team: at least `teamSize` members. The reason it's blocked, or null. */
+async function rosterShortReason(t: { mode: string; teamSize: number }, teamId: string): Promise<string | null> {
+  if (t.mode === "TDM") return null;
+  const n = await prisma.teamMember.count({ where: { teamId } });
+  return n < t.teamSize
+    ? `Tournaments need a full team of ${t.teamSize} players — yours has ${n}. Invite your players from the My team page, then register.`
+    : null;
+}
+
 export async function registerForTournament(teamId: string, id: string, input: RegisterTournamentInput, registeredById: string | null = null): Promise<MyTournamentStatus> {
   const t = await loadVisible(id);
   const closed = registrationClosedReason(t);
   if (closed) throw new AppError("REGISTRATION_CLOSED", closed);
+  const short = await rosterShortReason(t, teamId);
+  if (short) throw new AppError("ROSTER_INCOMPLETE", short);
   checkPreferences(t, input.timePreferences);
 
   await prisma.$transaction(async (tx) => {
@@ -164,14 +175,14 @@ async function myStatus(t: TournamentFull, teamId: string | null): Promise<MyTou
   const closed = registrationClosedReason(t);
   const active = entry && (entry.status === "CONFIRMED" || entry.status === "WAITLISTED");
   const removed = entry?.status === "REMOVED";
-  const canRegister = !closed && !active && !removed;
-  const registerBlockedReason = active ? null : removed ? "The organiser removed your team from this tournament" : closed;
+  // a BR tournament needs a full team to register (TDM battles don't)
+  const short = await rosterShortReason(t, teamId);
+  const canRegister = !closed && !active && !removed && !short;
+  const registerBlockedReason = active ? null : removed ? "The organiser removed your team from this tournament" : (closed ?? short);
   const entryRow = entry ? toEntryRow(entry, await waitlistPosition(entry)) : null;
 
-  // soft warning: fewer team members than the tournament's team size (phase 5: roster = team members)
-  const rosterSize = await prisma.teamMember.count({ where: { teamId } });
-  const rosterWarning =
-    rosterSize < t.teamSize ? `Your team has ${rosterSize} player${rosterSize === 1 ? "" : "s"}; this tournament plays ${t.teamSize}-player teams. Invite your players from the My team page.` : null;
+  // a registered team that later lost players: still in, but warned (blocked teams see registerBlockedReason instead)
+  const rosterWarning = active && short ? short.replace(", then register.", " before your first match.") : null;
 
   const base = { ...NONE, entry: entryRow, canRegister, registerBlockedReason, rosterWarning };
   const s1 = t.stages[0];

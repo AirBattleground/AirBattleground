@@ -8,5 +8,6 @@ coverage
 *.tsbuildinfo
 storage/
 backups/
+tools/
 
 .claude/settings.local.json

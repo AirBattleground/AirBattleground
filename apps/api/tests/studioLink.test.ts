@@ -20,7 +20,7 @@ vi.mock("../src/services/youtube.js", async (importOriginal) => {
 const { showRunsOnBox } = await import("../src/services/studio.js");
 const { extractor } = await import("../src/lib/extractor.js");
 const { runLiveCaptureOnce, sweepLiveCaptures } = await import("../src/services/liveCapture.js");
-const { adminAgent, createAdminUser, createManager, createScrim, createTeam, http, joinTeam, playerAgent, prisma, resetDb, server, yesterday } = await import(
+const { adminAgent, createAdminUser, createManager, createScrim, createTeam, http, joinTeam, playerAgent, prisma, resetDb, server, tomorrow, yesterday } = await import(
   "./helpers.js"
 );
 type TestAgent = Awaited<ReturnType<typeof createManager>>["agent"];
@@ -314,6 +314,28 @@ describe("studio link", () => {
       type Read = Awaited<ReturnType<typeof extractor.readLive>>;
       const read = (teams: Read["teams"], screen: Read["screen"] = "spectator_hud"): Read => ({ screen, teams, warnings: [], modelVersion: "test", ms: 5 });
       const team = (slot: number | null, name: string | null, players: Read["teams"][number]["players"], confidence = 0.97) => ({ slot, name, players, confidence });
+      type Extraction = Awaited<ReturnType<typeof extractor.extract>>;
+      const player = (name: string, kills: number | null = null) => ({ name, confidence: 0.97, source: "claude", rosterMatch: name, matchedSlot: null, kills, killsConfidence: kills == null ? null : 0.97 });
+      /** what the team-list / results reader returns */
+      const extraction = (screen: string, part: Partial<Extraction> = {}): Extraction => ({
+        imageId: "",
+        kind: "SLOT_LIST",
+        modelVersion: "test",
+        teams: [],
+        rows: [],
+        needsReview: false,
+        warnings: [],
+        timingsMs: {},
+        screen,
+        ...part,
+      });
+      const lobby = (teams: Record<number, string[]>): Extraction =>
+        extraction("custom_lobby", { teams: Object.entries(teams).map(([slot, names]) => ({ slot: Number(slot), slotConfidence: 0.97, players: names.map((n) => player(n)) })) });
+      const results = (rows: [rank: number, slot: number, names: string[]][]): Extraction =>
+        extraction("custom_results", {
+          kind: "RESULTS",
+          rows: rows.map(([rank, slot, names]) => ({ rank, rankConfidence: 0.97, inferredSlot: slot, players: names.map((n) => player(n, 1)) })),
+        });
 
       async function capture(matchId: string, over: Record<string, string> = {}, file = fakePng(`cap-${++seq}`), k = key) {
         let req = http().post(`/api/studio-link/matches/${matchId}/screenshots`).set("X-Studio-Key", k);
@@ -321,21 +343,23 @@ describe("studio link", () => {
         for (const [f, v] of Object.entries(fields)) if (v !== "") req = req.field(f, v);
         return req.attach("files", file, { filename: "capture.png", contentType: "image/png" });
       }
-      /** upload one capture the reader will see as `r`, then run the worker */
-      async function applied(matchId: string, r: Read, over: Record<string, string> = {}) {
+      /** upload one capture the live reader sees as `r` (and the team-list/results reader as `ex`), run the worker */
+      async function applied(matchId: string, r: Read, over: Record<string, string> = {}, ex: Extraction = extraction("other")) {
         await sleep(200); // stay under the per-match upload rate
-        const spy = vi.spyOn(extractor, "readLive").mockResolvedValueOnce(r);
+        const live = vi.spyOn(extractor, "readLive").mockResolvedValue(r);
+        const other = vi.spyOn(extractor, "extract").mockResolvedValue(ex);
         const up = await capture(matchId, over);
         expect(up.status).toBe(202);
         expect(await runLiveCaptureOnce()).toBe(1);
-        spy.mockRestore();
+        live.mockRestore();
+        other.mockRestore();
         return up.body;
       }
+      const status = async (matchId: string, captureId: string) => (await get(`/matches/${matchId}/captures/${captureId}`)).body;
       const board = async (matchId: string) => (await get(`/matches/${matchId}/live`)).body;
 
-      it("rejects bad uploads: fields, kind, size, not live, other manager, unknown match", async () => {
+      it("rejects bad uploads: fields, kind, size, other manager, unknown match", async () => {
         const { matchId } = await liveSetup();
-        expect((await capture(matchId)).status).toBe(409); // lineup not confirmed yet
         await confirmLineup(matchId);
         const missing = await capture(matchId, { captureId: "" });
         expect(missing.status).toBe(400);
@@ -472,7 +496,7 @@ describe("studio link", () => {
         expect(paused.body.autoCapture.paused).toBe(true);
         const body = await applied(matchId, read([team(3, null, ["eliminated", "eliminated", "eliminated", "eliminated"])]));
         expect(body.nextIntervalSeconds).toBe(15);
-        expect(await prisma.liveCapture.findFirstOrThrow({ where: { captureId: body.captureId } })).toMatchObject({ status: "SKIPPED", error: "auto updates paused" });
+        expect(await status(matchId, body.captureId)).toMatchObject({ status: "ignored", detected: "in_game", message: expect.stringMatching(/auto updates paused/) });
         expect((await board(matchId)).teams[0].status).toBe(4);
         await mgr.patch(`/api/manager/matches/${matchId}/team-status/auto`).send({ paused: false });
 
@@ -484,6 +508,139 @@ describe("studio link", () => {
         expect(await sweepLiveCaptures(Date.now() + 25 * 3600_000)).toBe(3);
         expect(await prisma.liveCapture.count()).toBe(0);
         expect((await mgr.get(`/api/manager/matches/${matchId}/team-status`)).body.autoCapture.latestImageUrl).toBeNull();
+      });
+
+      describe("the studio runs the match: one screenshot type, Start / Stop", () => {
+        /** the match status in the database */
+        const dbStatus = async (matchId: string) => (await prisma.match.findUniqueOrThrow({ where: { id: matchId } })).status;
+        /** upload a frame (no kind: the server detects it), run the worker, return what the studio is told */
+        async function send(matchId: string, ex: Extraction, over: Record<string, string> = {}, r: Read = read([], "other")) {
+          const up = await applied(matchId, r, { kind: "", ...over }, ex);
+          return status(matchId, up.captureId);
+        }
+
+        it("a match is locked until registration closes or every slot is filled; Start needs it unlocked", async () => {
+          const scrim = await createScrim(mgr); // 4 slots (3..6), 9:00 PM, runs daily
+          const list = await mgr.get(`/api/manager/scrims/${scrim.id}/sessions/${tomorrow()}/matches`);
+          const matchId = list.body.items[0].id as string;
+          const leaders = [];
+          for (let i = 0; i < 4; i++) leaders.push(await createTeam(null, `Lock ${i}`, `lock${i}`));
+          expect((await leaders[0]!.agent.post("/api/team/registrations").send({ scrimId: scrim.id, date: tomorrow() })).status).toBe(201);
+
+          const control = async () => ((await get("/matches")).body.items as { id: string; control: unknown }[]).find((m) => m.id === matchId)!.control;
+          expect(await control()).toEqual({
+            state: "locked",
+            unlocksAt: expect.any(String),
+            reason: "Registration is open until 9:00 PM (1/4 slots filled)",
+            teams: 1,
+            slots: 4,
+          });
+          const early = await post(`/matches/${matchId}/start`);
+          expect(early.status).toBe(409);
+          expect(early.body.error.message).toMatch(/Registration is open until 9:00 PM/);
+
+          for (const l of leaders.slice(1)) await l.agent.post("/api/team/registrations").send({ scrimId: scrim.id, date: tomorrow() });
+          expect(await control()).toEqual({ state: "ready", unlocksAt: null, reason: null, teams: 4, slots: 4 });
+          const started = await post(`/matches/${matchId}/start`);
+          expect(started.status).toBe(200);
+          expect(started.body.control).toMatchObject({ state: "live" });
+          expect(started.body.match.state).toBe("live");
+          expect((await post(`/matches/${matchId}/start`)).status).toBe(409);
+        });
+
+        it("before Start a lobby frame fills the team list; Start confirms it (unseen teams get their roster)", async () => {
+          const { matchId } = await liveSetup(); // yesterday's session: unlocked
+          expect((await get(`/matches/${matchId}/live`)).body.control).toMatchObject({ state: "ready", teams: 2, slots: 4 });
+
+          const st = await send(matchId, lobby({ 3: ["MortalX", "RegalX", "ViperX", "OwaisX"] }));
+          expect(st).toEqual({ captureId: expect.any(String), status: "applied", detected: "lobby", confidence: 0.97, message: "Lobby ✓ 1 team" });
+          expect(await dbStatus(matchId)).toBe("LINEUP_REVIEW"); // filled, not started
+          const shots = (await mgr.get(`/api/manager/matches/${matchId}`)).body.screenshots;
+          expect(shots).toEqual([expect.objectContaining({ kind: "SLOT_LIST", source: "STUDIO_AUTO", status: "DONE" })]);
+
+          // the same lobby again adds nothing and isn't kept
+          expect((await send(matchId, lobby({ 3: ["MortalX", "RegalX", "ViperX", "OwaisX"] }))).message).toBe("Lobby ✓ 1 team (nothing new)");
+          expect((await mgr.get(`/api/manager/matches/${matchId}`)).body.screenshots).toHaveLength(1);
+          // a results screen before Start is ignored, with a hint for the operator
+          expect(await send(matchId, results([[1, 3, ["MortalX"]]]))).toMatchObject({ status: "ignored", detected: "results", message: expect.stringMatching(/Press Start first/) });
+          expect(await send(matchId, extraction("other"))).toMatchObject({ status: "ignored", detected: "other" });
+
+          const started = await post(`/matches/${matchId}/start`);
+          expect(started.status).toBe(200);
+          expect(await dbStatus(matchId)).toBe("LIVE");
+          const lineup = (await mgr.get(`/api/manager/matches/${matchId}`)).body.teams.map((t: { slotNumber: number; players: { name: string }[] }) => [
+            t.slotNumber,
+            t.players.map((p) => p.name),
+          ]);
+          expect(lineup).toEqual([
+            [3, ["MortalX", "RegalX", "ViperX", "OwaisX"]],
+            [4, ["SoloOne"]],
+          ]);
+        });
+
+        it("while live: the HUD updates the board, a results screen ends the match; Stop; published → 409", async () => {
+          const { matchId } = await liveSetup();
+          await post(`/matches/${matchId}/start`);
+          expect(await send(matchId, extraction("other"), {}, read([team(3, null, ["alive", "alive", "alive", "knocked"])]))).toMatchObject({
+            status: "applied",
+            detected: "in_game",
+            message: "In-game ✓ 1 player change",
+          });
+          // a manual results screenshot while live: read, and the match ends
+          const st = await send(matchId, results([[1, 3, NAMES], [2, 4, ["SoloOne"]]]), { trigger: "manual", hint: "results" });
+          expect(st).toMatchObject({ status: "applied", detected: "results", message: "Results ✓ 2 ranks — the match has ended" });
+          expect(await dbStatus(matchId)).toBe("RESULTS_REVIEW");
+          expect((await get(`/matches/${matchId}/live`)).body.control.state).toBe("ended");
+          const detail = (await mgr.get(`/api/manager/matches/${matchId}`)).body;
+          expect(detail.teams.map((t: { slotNumber: number; placement: number | null }) => [t.slotNumber, t.placement])).toEqual([
+            [3, 1],
+            [4, 2],
+          ]);
+          expect((await post(`/matches/${matchId}/stop`)).status).toBe(409); // already ended
+
+          // the manager publishes; the studio can't send any more
+          expect((await mgr.post(`/api/manager/matches/${matchId}/publish`)).status).toBe(200);
+          expect((await get(`/matches/${matchId}/live`)).body.control.state).toBe("published");
+          await sleep(200);
+          expect((await capture(matchId, { kind: "" })).status).toBe(409);
+        });
+
+        it("Stop ends a live match; results pages sent back to back are all read; a later auto frame doesn't skip them", async () => {
+          const { matchId } = await liveSetup();
+          expect((await post(`/matches/${matchId}/stop`)).status).toBe(409); // not live yet
+          await post(`/matches/${matchId}/start`);
+          const stopped = await post(`/matches/${matchId}/stop`);
+          expect(stopped.status).toBe(200);
+          expect(stopped.body.control.state).toBe("ended");
+
+          const ids: string[] = [];
+          for (const over of [{ trigger: "manual" }, { trigger: "manual" }, { trigger: "auto" }]) {
+            await sleep(200);
+            const up = await capture(matchId, { kind: "", ...over });
+            expect(up.status).toBe(202);
+            ids.push(up.body.captureId);
+          }
+          const pages = [results([[1, 3, NAMES]]), results([[2, 4, ["SoloOne"]]]), extraction("other")];
+          const spy = vi.spyOn(extractor, "extract").mockImplementation(async () => pages.shift()!);
+          for (let i = 0; i < 3; i++) expect(await runLiveCaptureOnce()).toBe(1);
+          spy.mockRestore();
+          expect((await status(matchId, ids[0]!)).message).toBe("Results ✓ 1 rank");
+          expect((await status(matchId, ids[1]!)).message).toBe("Results ✓ 1 rank");
+          expect(await status(matchId, ids[2]!)).toMatchObject({ status: "ignored", detected: "other" });
+          const placed = (await mgr.get(`/api/manager/matches/${matchId}`)).body.teams.map((t: { placement: number | null }) => t.placement);
+          expect(placed).toEqual([1, 2]);
+          expect((await get(`/matches/${matchId}/captures/nope`)).status).toBe(404);
+        });
+
+        it("an operator hint that disagrees with what was detected is kept past 24 h (training material)", async () => {
+          const { matchId } = await liveSetup();
+          const kept = await applied(matchId, read([], "other"), { kind: "", hint: "results", trigger: "manual" }, lobby({ 3: NAMES }));
+          await applied(matchId, read([], "other"), { kind: "", hint: "lobby" }, lobby({ 4: ["SoloOne"] }));
+          expect(await sweepLiveCaptures(Date.now() + 25 * 3600_000)).toBe(1);
+          expect(await prisma.liveCapture.findMany({ select: { captureId: true, hint: true, detected: true } })).toEqual([
+            { captureId: kept.captureId, hint: "results", detected: "lobby" },
+          ]);
+        });
       });
     });
   });

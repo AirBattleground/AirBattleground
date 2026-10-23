@@ -12,10 +12,17 @@
  *   POST   /api/studio-link/broadcasts                 StudioLinkBroadcastInput → StudioLinkBroadcast  (409 when busy)
  *   POST   /api/studio-link/broadcasts/:id/heartbeat   StudioLinkHeartbeatInput → { stop: boolean }
  *   POST   /api/studio-link/broadcasts/:id/stop        → 204
- *   POST   /api/studio-link/matches/:id/screenshots    multipart `files` + `kind` (SLOT_LIST | RESULTS) → { count }
- *          kind=LIVE_STATUS (auto capture): one image ≤ 2 MB + captureId, capturedAt, sequence, sessionId
- *          [, sceneId, sceneName, width, height] → 202 LiveCaptureAccepted (200 + duplicate for a repeat captureId).
- *          409 = match not live; 413 = over 2 MB; 429 + Retry-After above 1 upload per 2 s per studio per match.
+ *   POST   /api/studio-link/matches/:id/start          → StudioLinkLive  (confirms the lineup; the match goes live)
+ *   POST   /api/studio-link/matches/:id/stop           → StudioLinkLive  (the match ends; results screenshots next)
+ *          Both 409 with a message when the match's control.state doesn't allow it. The manager publishes results.
+ *   POST   /api/studio-link/matches/:id/screenshots    multipart: one image ≤ 2 MB + captureId, capturedAt, sequence,
+ *          sessionId [, kind=AUTO, trigger, hint, sceneId, sceneName, width, height] → 202 LiveCaptureAccepted
+ *          (200 + duplicate for a repeat captureId). The server detects what it shows — lobby (fills the team list,
+ *          before Start), in_game (live team status), results (fills ranks; while live this ends the match) — and
+ *          ignores anything else. kind=LIVE_STATUS means the same as AUTO. kind=SLOT_LIST | RESULTS (old builds):
+ *          multipart `files` → 201 { count }, read as that kind.
+ *          409 = match published; 413 = over 2 MB; 429 + Retry-After above 1 upload per 2 s per studio per match.
+ *   GET    /api/studio-link/matches/:id/captures/:captureId → StudioCaptureStatus  (what the reader made of it)
  *   GET    /api/studio-link/matches/:id/live           → StudioLinkLive  (Team Status board; poll every ~3 s)
  *          ETag = `version`; If-None-Match equal to it → 304. 403 = another manager's match, 404 = unknown match,
  *          429 + Retry-After above 1 request/s per studio key.
@@ -50,6 +57,24 @@ export interface StudioLinkMatch {
   /** ISO instant (null = not scheduled) */
   startsAt: string | null;
   status: StudioLinkMatchStatus;
+  /** what the studio may do with this match */
+  control: StudioMatchControl;
+}
+
+/**
+ * locked = registration still open and slots not full (Start disabled); ready = the studio may Start;
+ * live = running (Stop); ended = stopped, waiting for results screenshots; published = read-only.
+ */
+export type StudioControlState = "locked" | "ready" | "live" | "ended" | "published";
+export interface StudioMatchControl {
+  state: StudioControlState;
+  /** when a locked match unlocks (registration closes); null once unlocked */
+  unlocksAt: string | null;
+  /** why it's locked, for the operator (null otherwise) */
+  reason: string | null;
+  /** teams in the match / slots */
+  teams: number;
+  slots: number;
 }
 
 export interface StudioLinkOutputs {
@@ -143,6 +168,8 @@ export interface StudioLinkLive {
   updatedAt: string;
   /** auto capture from the studio (not part of `version`: it changes on every capture) */
   autoCapture?: LiveAutoCapture;
+  /** what the studio may do with this match (same as on GET /matches) */
+  control?: StudioMatchControl;
   match: { id: string; title: string; state: StudioLinkLiveState; map: string };
   /** every registered team (eliminated ones too), sorted by slot */
   teams: StudioLinkLiveTeam[];
@@ -160,7 +187,11 @@ export type SaveLiveTeamInput = z.infer<typeof saveLiveTeamSchema>;
 
 // ---------------------------------------------------------------- auto capture (kind=LIVE_STATUS)
 
-export const LIVE_CAPTURE_KIND = "LIVE_STATUS";
+/** "AUTO": the server decides what the screenshot shows. LIVE_STATUS (older name) means the same. */
+export const STUDIO_CAPTURE_KINDS = ["AUTO", "LIVE_STATUS"] as const;
+/** what the reader found on a studio screenshot */
+export const CAPTURE_DETECTED = ["lobby", "results", "in_game", "other"] as const;
+export type CaptureDetected = (typeof CAPTURE_DETECTED)[number];
 export const MAX_LIVE_CAPTURE_BYTES = 2 * 1024 * 1024;
 /** auto updates only apply values read with at least this confidence */
 export const LIVE_MIN_CONFIDENCE = 0.8;
@@ -191,6 +222,10 @@ export const liveCaptureFieldsSchema = z.object({
   sceneName: z.string().trim().max(100).optional(),
   width: z.coerce.number().int().min(1).max(10_000).optional(),
   height: z.coerce.number().int().min(1).max(10_000).optional(),
+  /** auto = interval capture (the newest wins when the reader is busy); manual = operator pressed Send (always read) */
+  trigger: z.enum(["auto", "manual"], { errorMap: () => ({ message: "trigger is auto or manual" }) }).default("auto"),
+  /** what the operator says it shows — stored as a training label; the server still decides */
+  hint: z.enum(["lobby", "results", "in_game"], { errorMap: () => ({ message: "hint is lobby, results or in_game" }) }).optional(),
 });
 export type LiveCaptureFields = z.infer<typeof liveCaptureFieldsSchema>;
 
@@ -206,3 +241,15 @@ export interface LiveCaptureAccepted {
 
 export const liveAutoSchema = z.object({ paused: z.boolean() });
 export type LiveAutoInput = z.infer<typeof liveAutoSchema>;
+
+export type StudioCaptureState = "queued" | "reading" | "applied" | "ignored" | "failed";
+export interface StudioCaptureStatus {
+  captureId: string;
+  status: StudioCaptureState;
+  /** null until read (or when it was skipped unread) */
+  detected: CaptureDetected | null;
+  /** rough: ~0.97 when the reader was sure, ~0.6 when it flagged something */
+  confidence: number | null;
+  /** one line for the operator, e.g. "Lobby ✓ 14 teams" */
+  message: string | null;
+}

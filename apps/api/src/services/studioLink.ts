@@ -10,6 +10,7 @@ import type {
   StudioLinkBroadcastInput,
   StudioLinkHeartbeatInput,
   StudioLinkHeartbeatResponse,
+  StudioLinkLive,
   StudioLinkMatch,
   StudioLinkMatchStatus,
   StudioLinkMe,
@@ -23,7 +24,8 @@ import { prisma } from "../db.js";
 import { conflict, notFound } from "../lib/errors.js";
 import type { UploadedImage } from "../lib/upload.js";
 import { liveToday } from "./live.js";
-import { uploadScreenshots } from "./matches.js";
+import { boardForStudio, controlOf, studioMatch, teamCounts } from "./liveStatus.js";
+import { ownerInclude, ownerManagerId, saveLineup, startLineup, uploadScreenshots } from "./matches.js";
 import { boxJobOutputs, createShow, endShow, startWorkerShow, studioOutputs, workerRunning } from "./studio.js";
 import { publishTokenFor } from "./studioWorkers.js";
 import { publicUrl } from "./youtube.js";
@@ -52,10 +54,15 @@ function linkStatus(s: MatchStatus): StudioLinkMatchStatus {
 
 const ORDER: Record<StudioLinkMatchStatus, number> = { live: 0, upcoming: 1, done: 2 };
 
-/** Recent + upcoming matches: live first, then upcoming (soonest first), then done (latest first). */
-export async function matches(worker: DbWorker): Promise<StudioLinkMatch[]> {
-  const cards = await liveToday(worker.managerId, MATCHES_AHEAD_DAYS, new Date(), MATCHES_BACK_DAYS);
-  const items = cards.map((c) => ({ id: c.matchId, title: c.title, subtitle: c.subtitle, startsAt: c.startsAt, status: linkStatus(c.status) }));
+/** Recent + upcoming matches: live first, then upcoming (soonest first), then done (latest first); each with its control. */
+export async function matches(worker: DbWorker, now = new Date()): Promise<StudioLinkMatch[]> {
+  const cards = await liveToday(worker.managerId, MATCHES_AHEAD_DAYS, now, MATCHES_BACK_DAYS);
+  const rows = await prisma.match.findMany({ where: { id: { in: cards.map((c) => c.matchId) } }, include: ownerInclude });
+  const counts = await teamCounts(rows);
+  const control = new Map(rows.map((m) => [m.id, controlOf(m, counts.get(m.id) ?? 0, now)]));
+  const items = cards
+    .filter((c) => control.has(c.matchId))
+    .map((c) => ({ id: c.matchId, title: c.title, subtitle: c.subtitle, startsAt: c.startsAt, status: linkStatus(c.status), control: control.get(c.matchId)! }));
   items.sort((a, b) => {
     if (a.status !== b.status) return ORDER[a.status] - ORDER[b.status];
     const cmp = (a.startsAt ?? "9999").localeCompare(b.startsAt ?? "9999");
@@ -142,6 +149,27 @@ export async function stopBroadcast(worker: DbWorker, showId: string): Promise<v
 }
 
 export async function screenshots(worker: DbWorker, matchId: string, kind: "SLOT_LIST" | "RESULTS", images: UploadedImage[]): Promise<{ count: number }> {
-  const { items } = await uploadScreenshots(matchId, worker.managerId, kind, images, false, "WEB");
+  const { items } = await uploadScreenshots(matchId, worker.managerId, kind, images, false, "STUDIO");
   return { count: items.length };
+}
+
+// ---------------------------------------------------------------- start / stop (the studio runs the match)
+
+/** Start: confirm the lineup (what was read from the lobby + registered rosters) — the match goes live. */
+export async function startMatch(worker: DbWorker, matchId: string, now = new Date()): Promise<StudioLinkLive> {
+  const m = await studioMatch(matchId, worker.managerId);
+  const c = controlOf(m, (await teamCounts([m])).get(m.id) ?? 0, now);
+  if (c.state === "locked") throw conflict(`Not yet — ${c.reason}. The match unlocks when registration closes or every slot is filled.`);
+  if (c.state === "live") throw conflict("This match is already live.");
+  if (c.state !== "ready") throw conflict("This match has ended. Pick the next match.");
+  await saveLineup(matchId, ownerManagerId(m)!, await startLineup(matchId), true);
+  return boardForStudio(matchId, worker.managerId);
+}
+
+/** Stop: the match ends and waits for results screenshots; the manager publishes. */
+export async function stopMatch(worker: DbWorker, matchId: string): Promise<StudioLinkLive> {
+  const m = await studioMatch(matchId, worker.managerId);
+  const { count } = await prisma.match.updateMany({ where: { id: matchId, status: "LIVE" }, data: { status: "RESULTS_REVIEW" } });
+  if (count === 0) throw conflict(m.status === "LIVE" ? "This match just changed. Try again." : "This match isn't live.");
+  return boardForStudio(matchId, worker.managerId);
 }

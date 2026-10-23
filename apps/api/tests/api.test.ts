@@ -215,97 +215,83 @@ describe("registrations & slots", () => {
     return { admin, mgr, teams, scrim };
   }
 
-  it("team registers (PENDING), sees it, and can't double-register", async () => {
+  it("team joins confirmed on the lowest free slot (no approval), sees it, and can't double-register", async () => {
     const { mgr, teams, scrim } = await setup(1);
     const [t] = teams;
     const res = await register(t!.agent, scrim.id);
     expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ status: "PENDING", slotNumber: null, date: tomorrow(), scrim: { id: scrim.id, firstSlot: 3 } });
+    expect(res.body).toMatchObject({ status: "APPROVED", slotNumber: 3, date: tomorrow(), scrim: { id: scrim.id, firstSlot: 3 } });
 
     const again = await register(t!.agent, scrim.id);
     expect(again.status).toBe(409);
     expect(again.body.error).toEqual({ code: "CONFLICT", message: "You're already registered for this scrim" });
 
     const list = await t!.agent.get("/api/team/scrims").query({ date: tomorrow() });
-    expect(list.body.items[0]).toMatchObject({ myRegistration: { id: res.body.id, status: "PENDING" }, counts: { pending: 1 } });
+    expect(list.body.items[0]).toMatchObject({ myRegistration: { id: res.body.id, status: "APPROVED", slotNumber: 3 }, counts: { pending: 0, approved: 1 } });
 
     const upcoming = await t!.agent.get("/api/team/registrations").query({ scope: "upcoming" });
     expect(upcoming.body.items.map((r: { id: string }) => r.id)).toEqual([res.body.id]);
 
-    const requests = await mgr.get("/api/manager/requests");
-    expect(requests.body.items).toHaveLength(1);
-    expect(requests.body.items[0]).toMatchObject({ date: tomorrow(), counts: { approved: 0, slotsLeft: 4 } });
+    // nothing waits for the manager any more
+    expect((await mgr.get("/api/manager/requests")).body.items).toEqual([]);
   });
 
-  it("approve assigns the lowest free slot; reject frees it and the next approve reuses it", async () => {
+  it("the manager removes a team: its slot is freed for the next team, and it can't rejoin by itself", async () => {
     const { mgr, teams, scrim } = await setup(3);
-    const regs = [];
-    for (const t of teams) regs.push((await register(t.agent, scrim.id)).body);
+    const r0 = (await register(teams[0]!.agent, scrim.id)).body;
+    const r1 = (await register(teams[1]!.agent, scrim.id)).body;
+    expect([r0.slotNumber, r1.slotNumber]).toEqual([3, 4]);
 
-    const a1 = await mgr.post(`/api/manager/registrations/${regs[0].id}/approve`);
-    expect(a1.status).toBe(200);
-    expect(a1.body).toMatchObject({ status: "APPROVED", slotNumber: 3 });
-    const a2 = await mgr.post(`/api/manager/registrations/${regs[1].id}/approve`);
-    expect(a2.body.slotNumber).toBe(4);
+    const rem = await mgr.post(`/api/manager/registrations/${r0.id}/reject`).send({ reason: "No-show last time" });
+    expect(rem.body).toMatchObject({ status: "REJECTED", slotNumber: null, rejectionReason: "No-show last time" });
 
-    // approving twice is a no-op
-    expect((await mgr.post(`/api/manager/registrations/${regs[0].id}/approve`)).body.slotNumber).toBe(3);
-
-    const rej = await mgr.post(`/api/manager/registrations/${regs[0].id}/reject`).send({ reason: "No-show last time" });
-    expect(rej.body).toMatchObject({ status: "REJECTED", slotNumber: null, rejectionReason: "No-show last time" });
-
-    const a3 = await mgr.post(`/api/manager/registrations/${regs[2].id}/approve`);
-    expect(a3.body.slotNumber).toBe(3);
+    const r2 = (await register(teams[2]!.agent, scrim.id)).body;
+    expect(r2.slotNumber).toBe(3);
 
     const detail = await mgr.get(`/api/manager/scrims/${scrim.id}/sessions/${tomorrow()}`);
     expect(detail.status).toBe(200);
     expect(detail.body.counts).toEqual({ pending: 0, approved: 2, slotsLeft: 2 });
     expect(detail.body.slots.map((s: { slotNumber: number; registrationId: string | null }) => [s.slotNumber, s.registrationId])).toEqual([
-      [3, regs[2].id],
-      [4, regs[1].id],
+      [3, r2.id],
+      [4, r1.id],
       [5, null],
       [6, null],
     ]);
-    expect(detail.body.registrations.map((r: { status: string }) => r.status)).toEqual(["APPROVED", "APPROVED", "REJECTED"]);
 
-    // rejected team can register again → back to PENDING
-    const again = await register(teams[0]!.agent, scrim.id);
-    expect(again.status).toBe(201);
-    expect(again.body).toMatchObject({ id: regs[0].id, status: "PENDING", rejectionReason: null });
+    const back = await register(teams[0]!.agent, scrim.id);
+    expect(back.status).toBe(403);
+    expect(back.body.error).toEqual({ code: "FORBIDDEN", message: "The organiser removed your team from this scrim" });
+    // the old approve endpoint still works (older clients): it puts the removed team back
+    expect((await mgr.post(`/api/manager/registrations/${r0.id}/approve`)).body).toMatchObject({ status: "APPROVED", slotNumber: 5 });
   });
 
-  it("concurrent approvals never hand out duplicate slots", async () => {
-    const { mgr, teams, scrim } = await setup(10, { slotCount: 5, firstSlot: 1 });
-    const regs = await Promise.all(teams.map((t) => register(t.agent, scrim.id)));
-    const results = await Promise.all(regs.map((r) => mgr.post(`/api/manager/registrations/${r.body.id}/approve`)));
+  it("teams joining at the same time never share a slot", async () => {
+    const { teams, scrim } = await setup(10, { slotCount: 5, firstSlot: 1 });
+    const results = await Promise.all(teams.map((t) => register(t.agent, scrim.id)));
 
-    const ok = results.filter((r) => r.status === 200);
+    const ok = results.filter((r) => r.status === 201);
     const full = results.filter((r) => r.status === 409);
     expect(ok).toHaveLength(5);
     expect(full).toHaveLength(5);
     for (const r of full) expect(r.body.error.code).toBe("SLOTS_FULL");
     expect(ok.map((r) => r.body.slotNumber).sort()).toEqual([1, 2, 3, 4, 5]);
-
-    const approved = await prisma.registration.count({ where: { status: "APPROVED" } });
-    expect(approved).toBe(5);
+    expect(await prisma.registration.count({ where: { status: "APPROVED" } })).toBe(5);
   });
 
   it("SLOTS_FULL message when the scrim is full", async () => {
-    const { mgr, teams, scrim } = await setup(3, { slotCount: 2 });
-    const regs = [];
-    for (const t of teams) regs.push((await register(t.agent, scrim.id)).body);
-    await mgr.post(`/api/manager/registrations/${regs[0].id}/approve`).expect(200);
-    await mgr.post(`/api/manager/registrations/${regs[1].id}/approve`).expect(200);
-    const res = await mgr.post(`/api/manager/registrations/${regs[2].id}/approve`);
+    const { teams, scrim } = await setup(3, { slotCount: 2 });
+    expect((await register(teams[0]!.agent, scrim.id)).status).toBe(201);
+    expect((await register(teams[1]!.agent, scrim.id)).status).toBe(201);
+    const res = await register(teams[2]!.agent, scrim.id);
     expect(res.status).toBe(409);
-    expect(res.body.error).toEqual({ code: "SLOTS_FULL", message: "All slots are taken. Reject a team or add more slots." });
+    expect(res.body.error).toEqual({ code: "SLOTS_FULL", message: "This scrim is full — every slot is taken" });
   });
 
-  it("team cancels; slot is freed; cancelled team can re-register", async () => {
+  it("team cancels; slot is freed; cancelled team can join again", async () => {
     const { mgr, teams, scrim } = await setup(2);
     const r1 = (await register(teams[0]!.agent, scrim.id)).body;
     const r2 = (await register(teams[1]!.agent, scrim.id)).body;
-    await mgr.post(`/api/manager/registrations/${r1.id}/approve`).expect(200);
+    expect([r1.slotNumber, r2.slotNumber]).toEqual([3, 4]);
 
     // can't cancel someone else's
     expect((await teams[1]!.agent.delete(`/api/team/registrations/${r1.id}`)).status).toBe(404);
@@ -315,14 +301,11 @@ describe("registrations & slots", () => {
     expect(row).toMatchObject({ status: "CANCELLED", slotNumber: null });
     expect((await teams[0]!.agent.delete(`/api/team/registrations/${r1.id}`)).status).toBe(409);
 
-    // manager can't approve a cancelled registration
+    // the old approve endpoint can't bring back a cancelled registration
     expect((await mgr.post(`/api/manager/registrations/${r1.id}/approve`)).status).toBe(409);
 
-    const a2 = await mgr.post(`/api/manager/registrations/${r2.id}/approve`);
-    expect(a2.body.slotNumber).toBe(3);
-
     const again = await register(teams[0]!.agent, scrim.id);
-    expect(again.body).toMatchObject({ id: r1.id, status: "PENDING" });
+    expect(again.body).toMatchObject({ id: r1.id, status: "APPROVED", slotNumber: 3 });
   });
 
   it("registration closes once the session has started", async () => {
@@ -364,10 +347,9 @@ describe("registrations & slots", () => {
     const { mgr, teams, scrim } = await setup(2);
     const r1 = (await register(teams[0]!.agent, scrim.id)).body;
     await register(teams[1]!.agent, scrim.id);
-    await mgr.post(`/api/manager/registrations/${r1.id}/approve`).expect(200);
 
     const md = await mgr.get("/api/manager/dashboard");
-    expect(md.body).toMatchObject({ today: today(), pendingCount: 1, activeScrims: 1, upcomingApproved: 1 });
+    expect(md.body).toMatchObject({ today: today(), pendingCount: 0, activeScrims: 1, upcomingApproved: 2 });
 
     const td = await teams[0]!.agent.get("/api/team/dashboard");
     expect(td.body.nextMatch).toMatchObject({ id: r1.id, slotNumber: 3, status: "APPROVED" });

@@ -1,9 +1,9 @@
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addDays, todayInAppTz, type ExtractionResult } from "@7xen/shared";
+import { addDays, tdmStages, TDM_POINTS, todayInAppTz, type ExtractionResult } from "@7xen/shared";
 import { extractor } from "../src/lib/extractor.js";
 import { runWorkerOnce } from "../src/services/screenshotWorker.js";
 import { createDemoTournament } from "../src/services/tournaments/demo.js";
-import { adminAgent, createAdminUser, createManager, createTeam, playerAgent, prisma, resetDb, server, type TestAgent } from "./helpers.js";
+import { adminAgent, createAdminUser, createManager, createTeam, joinTeam, playerAgent, prisma, resetDb, server, type TestAgent } from "./helpers.js";
 
 beforeEach(async () => {
   await resetDb();
@@ -35,7 +35,8 @@ const tournamentBody = (over: Record<string, unknown> = {}) => ({
   title: "Monsoon Cup",
   prize: "₹10,000",
   maxTeams: 8,
-  teamSize: 4,
+  // test teams are a leader alone; the full-team rule has its own test ("full team")
+  teamSize: 1,
   firstSlot: 1,
   pointsSystem: { placement: [10, 6, 5, 4], killPoints: 1 },
   stages: [
@@ -266,8 +267,8 @@ describe("registration", () => {
     const upd = await teams[0]!.agent.put(`/api/team/tournaments/${t2.id}/entry`).send({ timePreferences: [t2.slotOptions[0]!.id, t2.slotOptions[1]!.id] });
     expect(upd.status).toBe(200);
     expect(upd.body.entry.timePreferences).toEqual([t2.slotOptions[0]!.id, t2.slotOptions[1]!.id]);
-    // phase 5: roster = team members (just the leader here)
-    expect(upd.body.rosterWarning).toMatch(/1 player;/);
+    // a full team (teamSize 1 in these tests) gets no roster warning
+    expect(upd.body.rosterWarning).toBeNull();
 
     const detail = await teams[1]!.agent.get(`/api/team/tournaments/${t2.id}`);
     expect(detail.body.slotOptions.find((o: { id: string }) => o.id === t2.slotOptions[0]!.id).taken).toBe(1);
@@ -611,5 +612,40 @@ describe("manager team search", () => {
     const res = await mgr.get("/api/manager/teams").query({ q: "hyd" });
     expect(res.status).toBe(200);
     expect(res.body.items.map((t: { name: string }) => t.name)).toEqual(["Hydra Esports"]);
+  });
+});
+
+describe("full team", () => {
+  it("a tournament needs a full team to register; a TDM battle doesn't", async () => {
+    const { mgr, teams } = await world(2);
+    const cup = await createPublished(mgr, { teamSize: 4 });
+
+    const me = await teams[0]!.agent.get(`/api/team/tournaments/${cup.id}`);
+    expect(me.body.me).toMatchObject({ canRegister: false, registerBlockedReason: expect.stringMatching(/full team of 4 players — yours has 1/) });
+    const short = await register(teams[0]!, cup.id);
+    expect(short.status).toBe(409);
+    expect(short.body.error.code).toBe("ROSTER_INCOMPLETE");
+
+    // three more players join → registers straight away (no approval)
+    const full = await createTeam(null, "Full Squad", "fullLead");
+    for (const ign of ["FullTwo", "FullThree", "FullFour"]) await joinTeam(full, await playerAgent(ign));
+    const ok = await full.agent.post(`/api/team/tournaments/${cup.id}/entry`).send({ timePreferences: [] });
+    expect(ok.status).toBe(201);
+    expect(ok.body).toMatchObject({ state: "CONFIRMED", rosterWarning: null });
+
+    // TDM battle: a one-player team joins
+    const tdm = await mgr.post("/api/manager/tournaments").send({
+      title: "TDM Night",
+      mode: "TDM",
+      maxTeams: 4,
+      teamSize: 4,
+      firstSlot: 1,
+      pointsSystem: TDM_POINTS,
+      stages: tdmStages({ teams: 4, bestOf: 1, maps: ["WAREHOUSE"], date: addDays(todayInAppTz(), 3), startTime: "12:00", parallel: 2 }),
+    });
+    expect(tdm.status, JSON.stringify(tdm.body)).toBe(201);
+    expect((await mgr.post(`/api/manager/tournaments/${tdm.body.id}/publish`)).status).toBe(200);
+    const joined = await register(teams[1]!, tdm.body.id);
+    expect(joined.status, JSON.stringify(joined.body)).toBe(201);
   });
 });

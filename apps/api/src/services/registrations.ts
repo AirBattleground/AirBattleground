@@ -57,8 +57,20 @@ async function loadManagedRegistration(registrationId: string, managerId: string
   return reg;
 }
 
+/** Lowest free slot of a session (call inside a transaction holding the session lock), or SLOTS_FULL. */
+async function lowestFreeSlot(tx: Prisma.TransactionClient, sessionId: string, firstSlot: number, slotCount: number, full: string): Promise<number> {
+  const taken = await tx.registration.findMany({ where: { sessionId, status: "APPROVED", slotNumber: { not: null } }, select: { slotNumber: true } });
+  const used = new Set(taken.map((t) => t.slotNumber));
+  const slot = slotRange(firstSlot, slotCount).find((n) => !used.has(n));
+  if (slot === undefined) throw new AppError("SLOTS_FULL", full);
+  return slot;
+}
+
+const lockSession = (tx: Prisma.TransactionClient, sessionId: string) => tx.$queryRaw`SELECT id FROM "ScrimSession" WHERE id = ${sessionId} FOR UPDATE`;
+
 /**
- * Approve a registration and allot the lowest free slot.
+ * Approve a registration and allot the lowest free slot. (Teams now join confirmed — registerTeam — so this only
+ * matters for older clients; kept for compatibility.)
  * Serialised per session with SELECT ... FOR UPDATE so concurrent approvals never share a slot
  * (the unique (sessionId, slotNumber) index is the last line of defence).
  */
@@ -67,7 +79,7 @@ export async function approveRegistration(registrationId: string, managerId: str
 
   const updated = await prisma.$transaction(
     async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "ScrimSession" WHERE id = ${sessionId} FOR UPDATE`;
+      await lockSession(tx, sessionId);
 
       const reg = await tx.registration.findUniqueOrThrow({
         where: { id: registrationId },
@@ -76,16 +88,8 @@ export async function approveRegistration(registrationId: string, managerId: str
       if (reg.status === "APPROVED") return reg;
       if (reg.status === "CANCELLED") throw conflict("This team cancelled their registration");
 
-      const taken = await tx.registration.findMany({
-        where: { sessionId, status: "APPROVED", slotNumber: { not: null } },
-        select: { slotNumber: true },
-      });
-      const used = new Set(taken.map((t) => t.slotNumber));
       const { firstSlot, slotCount } = reg.session.scrim;
-      const slot = slotRange(firstSlot, slotCount).find((n) => !used.has(n));
-      if (slot === undefined) {
-        throw new AppError("SLOTS_FULL", "All slots are taken. Reject a team or add more slots.");
-      }
+      const slot = await lowestFreeSlot(tx, sessionId, firstSlot, slotCount, "All slots are taken. Remove a team or add more slots.");
 
       const res = await tx.registration.updateMany({
         where: { id: registrationId, status: { in: ["PENDING", "REJECTED"] } },
@@ -151,6 +155,11 @@ export async function ensureSession(scrimId: string, date: string) {
 
 const ALREADY = "You're already registered for this scrim";
 
+/**
+ * A team joins a scrim session: confirmed straight away on the lowest free slot (no manager approval, no roster
+ * requirement). Serialised per session like approvals, so two teams never share a slot. A team the manager removed
+ * (REJECTED) can't rejoin that session by itself.
+ */
 export async function registerTeam(teamId: string, scrimId: string, date: string, now = new Date(), registeredById: string | null = null): Promise<TeamRegistration> {
   const scrim = await prisma.scrim.findUnique({ where: { id: scrimId }, include: { ...scrimInclude, manager: { select: { ...organizerSelect, isActive: true } } } });
   if (!scrim || !scrim.manager.isActive || scrim.status === "ARCHIVED") throw notFound("Scrim not found");
@@ -161,36 +170,22 @@ export async function registerTeam(teamId: string, scrimId: string, date: string
   }
 
   const session = await ensureSession(scrim.id, date);
-  const existing = await prisma.registration.findUnique({
-    where: { sessionId_teamId: { sessionId: session.id, teamId } },
-  });
-
-  let id: string;
-  if (existing) {
-    if (existing.status === "PENDING" || existing.status === "APPROVED") throw conflict(ALREADY);
-    const res = await prisma.registration.updateMany({
-      where: { id: existing.id, status: { in: ["REJECTED", "CANCELLED"] } },
-      data: {
-        status: "PENDING",
-        slotNumber: null,
-        rejectionReason: null,
-        decidedAt: null,
-        decidedById: null,
-        registeredById,
-        createdAt: now,
-      },
-    });
-    if (res.count === 0) throw conflict(ALREADY);
-    id = existing.id;
-  } else {
-    try {
-      const created = await prisma.registration.create({ data: { sessionId: session.id, teamId, status: "PENDING", registeredById } });
-      id = created.id;
-    } catch (e) {
-      if (isUniqueViolation(e)) throw conflict(ALREADY);
-      throw e;
-    }
-  }
+  const id = await prisma.$transaction(
+    async (tx) => {
+      await lockSession(tx, session.id);
+      const existing = await tx.registration.findUnique({ where: { sessionId_teamId: { sessionId: session.id, teamId } } });
+      if (existing && (existing.status === "PENDING" || existing.status === "APPROVED")) throw conflict(ALREADY);
+      if (existing?.status === "REJECTED") throw new AppError("FORBIDDEN", "The organiser removed your team from this scrim");
+      const slotNumber = await lowestFreeSlot(tx, session.id, scrim.firstSlot, scrim.slotCount, "This scrim is full — every slot is taken");
+      const data = { status: "APPROVED" as const, slotNumber, rejectionReason: null, decidedAt: now, decidedById: null, registeredById };
+      if (existing) {
+        await tx.registration.update({ where: { id: existing.id }, data: { ...data, createdAt: now } });
+        return existing.id;
+      }
+      return (await tx.registration.create({ data: { sessionId: session.id, teamId, ...data } })).id;
+    },
+    { maxWait: 10_000, timeout: 15_000 },
+  );
   await markSuggestionsDone(teamId, { scrimId: scrim.id, date });
   const row = await prisma.registration.findUniqueOrThrow({ where: { id }, include: teamRegistrationInclude });
   return toTeamRegistration(row);

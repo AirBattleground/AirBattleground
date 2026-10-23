@@ -157,7 +157,13 @@ function registerErrorToast(err: unknown) {
         toast.error("Registration closed", { description: err.message || "This scrim is no longer taking teams." });
         return;
       case "CONFLICT":
-        toast.error("Already registered", { description: err.message || "Your team already has a request for this scrim." });
+        toast.error("Already registered", { description: err.message || "Your team is already in this scrim." });
+        return;
+      case "SLOTS_FULL":
+        toast.error("Scrim is full", { description: err.message || "Every slot is taken. Try another scrim." });
+        return;
+      case "FORBIDDEN":
+        toast.error("Can't join this scrim", { description: err.message });
         return;
       case "NOT_FOUND":
         toast.error("Scrim not found", { description: err.message || "This scrim may have been removed by the organiser." });
@@ -174,27 +180,8 @@ export function useRegister() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (input: CreateRegistrationInput) => api.post<TeamRegistration>("/api/team/registrations", input),
-    onMutate: async (input) => {
-      const key = teamKeys.scrims(input.date);
-      await qc.cancelQueries({ queryKey: key });
-      const previous = qc.getQueryData<TeamScrimOnDate[]>(key);
-      qc.setQueryData<TeamScrimOnDate[]>(key, (list) =>
-        list?.map((s) =>
-          s.scrim.id === input.scrimId
-            ? {
-                ...s,
-                myRegistration: { id: `optimistic-${input.scrimId}`, status: "PENDING", slotNumber: null, rejectionReason: null },
-                counts: { ...s.counts, pending: s.counts.pending + 1 },
-              }
-            : s,
-        ),
-      );
-      return { previous, key };
-    },
-    onError: (err, _input, ctx) => {
-      if (ctx) qc.setQueryData(ctx.key, ctx.previous);
-      registerErrorToast(err);
-    },
+    // no optimistic row: the slot number comes from the server, which hands it out straight away
+    onError: (err) => registerErrorToast(err),
     onSuccess: (reg, input) => {
       lastSeen.set(reg.id, reg.status);
       qc.setQueryData<TeamScrimOnDate[]>(teamKeys.scrims(input.date), (list) =>
@@ -202,8 +189,8 @@ export function useRegister() {
           s.scrim.id === input.scrimId ? { ...s, myRegistration: { id: reg.id, status: reg.status, slotNumber: reg.slotNumber, rejectionReason: reg.rejectionReason } } : s,
         ),
       );
-      toast.success("Registered! Waiting for the manager to approve.", {
-        description: "We'll let you know here as soon as you get a slot.",
+      toast.success(reg.slotNumber != null ? `You're in! Slot #${String(reg.slotNumber).padStart(2, "0")}` : "You're in!", {
+        description: "See you in the lobby.",
       });
       invalidateSuggestions(qc);
     },

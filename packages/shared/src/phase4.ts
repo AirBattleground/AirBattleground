@@ -176,7 +176,8 @@ export interface UploadState {
   complete: boolean;
 }
 /** DEVICE (phase 6): captured from a streaming iPhone in Match Center */
-export type ScreenshotSource = "WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION" | "DEVICE";
+/** STUDIO = uploaded by 7XEN Studio; STUDIO_AUTO = a Studio auto capture taken before the match started (read as a team list) */
+export type ScreenshotSource = "WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION" | "DEVICE" | "STUDIO" | "STUDIO_AUTO";
 
 // ---------- recipes (assisted / automatic touch steps) ----------
 export const RECIPE_KEYS = ["CREATE_ROOM", "OPEN_TEAM_LIST", "SCROLL_RESULTS"] as const;

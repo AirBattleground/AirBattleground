@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Loader2, Lock, RotateCw, Swords, Timer } from "lucide-react";
+import { CheckCircle2, Loader2, Lock, Swords, Timer } from "lucide-react";
 import type { TeamScrimOnDate } from "@7xen/shared";
 import { SlotChip } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -229,14 +229,6 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
                     <TeamStatusBadge status="REJECTED" className="px-3 py-1 text-sm" />
                     {rejectionReason && <p className="min-w-0 text-xs text-muted-foreground">{t("reason", { reason: rejectionReason })}</p>}
                   </div>
-                  {open &&
-                    (isLeader ? (
-                      <Button variant="outline" onClick={() => setRegOpen(true)} disabled={register.isPending}>
-                        <RotateCw /> {t("request_again")}
-                      </Button>
-                    ) : (
-                      ask
-                    ))}
                 </>
               )}
 
@@ -248,7 +240,7 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
                       {t("register_scrim")}
                     </Button>
                   ) : isLeader ? (
-                    <Button size="lg" className="h-11 w-full text-base font-semibold shadow-glow" onClick={() => setRegOpen(true)} disabled={register.isPending}>
+                    <Button size="lg" className="h-11 w-full text-base font-semibold shadow-glow" onClick={() => setRegOpen(true)} disabled={register.isPending || full}>
                       {register.isPending ? <Loader2 className="animate-spin" /> : null}
                       {t("register_team")}
                     </Button>

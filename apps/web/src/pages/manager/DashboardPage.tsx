@@ -1,9 +1,8 @@
 import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { CalendarClock, CalendarPlus, Inbox, Plus } from "lucide-react";
+import { CalendarClock, CalendarPlus, Plus } from "lucide-react";
 import { APP_TIMEZONE } from "@7xen/shared";
 import { EmptyState, PageHeader } from "@7xen/ui/components/brand/page";
-import { cn } from "@7xen/ui/lib/utils";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
@@ -23,7 +22,6 @@ const LuxManagerHero = lazy(() => import("@/skins/lux/pages/LuxManagerHero"));
 const TOUR: TourStep[] = [
   { title: "Welcome to your control room", description: "This is where you run your scrims. Let's take a 20-second look around." },
   { element: '[data-tour="today"]', title: "Today's sessions", description: "Every scrim running today, how full it is, and a Manage button to handle its teams." },
-  { element: '[data-tour="stat-pending"]', title: "Teams waiting for you", description: "When teams ask to join a scrim, they show up here. Tap Review to approve or reject them." },
   { element: '[data-tour="stats"]', title: "Your numbers at a glance", description: "Active scrims, teams already confirmed, and how many sessions run today." },
   { element: '[data-tour="get-app"]', title: "The Manager app", description: "Run match day from your Android phone — it records games, helps create the room and uploads screenshots for you." },
   { element: '[data-tour="org-logo"]', title: "Your organisation logo", description: "Upload your logo once — teams see it on every scrim and tournament you run." },
@@ -121,27 +119,6 @@ export default function DashboardPage() {
           </Zone>
 
           <div className="space-y-4">
-            <Zone label="Needs you" data-tour="stat-pending" className={d && d.pendingCount > 0 ? "border-warning/50" : undefined}>
-              {d ? (
-                <div className="flex items-center gap-4">
-                  <p className={cn("font-display text-5xl font-bold leading-none tabular-nums", d.pendingCount > 0 ? "text-warning-foreground dark:text-warning" : "text-muted-foreground")}>
-                    {d.pendingCount}
-                  </p>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold">{d.pendingCount === 1 ? "team waiting" : "teams waiting"}</p>
-                    <p className="text-xs text-muted-foreground">{d.pendingCount > 0 ? "Approve or reject them" : "All caught up"}</p>
-                  </div>
-                  <Button asChild variant={d.pendingCount > 0 ? "default" : "outline"} className="h-10">
-                    <Link to="/manager/requests">
-                      <Inbox /> Review
-                    </Link>
-                  </Button>
-                </div>
-              ) : (
-                <Skeleton className="h-12" />
-              )}
-            </Zone>
-
             <Zone label="At a glance" data-tour="stats">
               {d ? (
                 <dl className="divide-y text-sm">

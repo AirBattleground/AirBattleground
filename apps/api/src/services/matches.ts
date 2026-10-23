@@ -25,7 +25,7 @@ import { AppError, conflict, notFound } from "../lib/errors.js";
 import type { RosterSlot } from "../lib/extractor.js";
 import { todayInAppTz } from "@7xen/shared";
 import { dateToStr, iso, pointsSystemOf, strToDate, toTeamSummary } from "../lib/serialize.js";
-import { datedKey, deleteKey, newFileId, saveBuffer } from "../lib/storage.js";
+import { datedKey, deleteKey, imageInfo, newFileId, saveBuffer, sha256 } from "../lib/storage.js";
 import type { UploadedImage } from "../lib/upload.js";
 import { inferSlot, mergeResults, mergeSlotList, TEAM_SIZE, type DraftTeam } from "./merge.js";
 import { awardMatchCoins, revokeMatchCoins } from "./coins.js";
@@ -38,7 +38,7 @@ import { standingsForSession, storeMatchPoints } from "./standings.js";
 const MATCH_NOT_FOUND = "Match not found";
 /** Sources a client may claim on upload. "STATION" is only set by the station hooks. */
 export const SCREENSHOT_SOURCES = ["WEB", "APP_AUTO", "APP_MANUAL"] as const satisfies readonly ScreenshotSource[];
-const ALL_SCREENSHOT_SOURCES: readonly string[] = [...SCREENSHOT_SOURCES, "STATION", "DEVICE"];
+const ALL_SCREENSHOT_SOURCES: readonly string[] = [...SCREENSHOT_SOURCES, "STATION", "DEVICE", "STUDIO", "STUDIO_AUTO"];
 const SCREENSHOT_NOT_FOUND = "Screenshot not found";
 export const LOW_CONFIDENCE = 0.85;
 
@@ -505,6 +505,75 @@ export async function saveLineup(matchId: string, managerId: string, input: Save
   return buildMatchDetail(matchId);
 }
 
+/**
+ * 7XEN Studio Start: the lineup to confirm — every slot read from the lobby keeps what was read; registered teams that
+ * weren't seen get their roster (members' IGNs). 409 when there's nobody to start with.
+ */
+export async function startLineup(matchId: string): Promise<SaveLineupInput> {
+  const m = await prisma.match.findUniqueOrThrow({ where: { id: matchId }, select: { sessionId: true, groupId: true } });
+  const [regs, draft] = await Promise.all([
+    matchSlots(m),
+    prisma.matchTeam.findMany({ where: { matchId }, include: { players: { orderBy: { position: "asc" } } } }),
+  ]);
+  const read = new Map(draft.filter((t) => t.players.length).map((t) => [t.slotNumber, t.players.map((p) => ({ position: p.position, name: p.name.slice(0, 40) }))]));
+  const roster = new Map(regs.map((r) => [r.slotNumber, rosterNames(r.team).slice(0, MAX_ROSTER_PLAYERS).map((name, i) => ({ position: i + 1, name: name.slice(0, 40) }))]));
+  const slots = [...new Set([...read.keys(), ...roster.keys()])].sort((x, y) => x - y);
+  const teams = slots.map((slotNumber) => ({ slotNumber, players: read.get(slotNumber) ?? roster.get(slotNumber) ?? [] })).slice(0, 25);
+  if (!teams.some((t) => t.players.length)) throw conflict("Nobody to start with — no team has joined this match yet.");
+  return { confirm: true, teams };
+}
+
+/**
+ * A 7XEN Studio capture the reader recognised as a team list or results screen becomes a Match Center screenshot
+ * (source STUDIO_AUTO, already read) and is merged into the match draft. Frames that add nothing are dropped again —
+ * a studio sends one every few seconds. Returns the screenshot (null when dropped) and how many slots changed.
+ */
+export async function adoptScreenshot(
+  matchId: string,
+  kind: ScreenshotKind,
+  image: Buffer,
+  mime: string,
+  result: ExtractionResult,
+): Promise<{ screenshotId: string | null; changed: number }> {
+  const m = await prisma.match.findUniqueOrThrow({ where: { id: matchId }, include: ownerInclude });
+  const sha = sha256(image);
+  if (await prisma.screenshot.findUnique({ where: { matchId_sha256: { matchId, sha256: sha } }, select: { id: true } })) {
+    return { screenshotId: null, changed: 0 };
+  }
+  const info = imageInfo(image);
+  const id = newFileId();
+  const storageKey = datedKey("screenshots", id, info?.ext ?? "jpg");
+  await saveBuffer(storageKey, image);
+  try {
+    await prisma.screenshot.create({
+      data: {
+        id,
+        matchId,
+        kind,
+        storageKey,
+        mimeType: info?.mime ?? mime,
+        sha256: sha,
+        width: info?.width,
+        height: info?.height,
+        status: "PROCESSING",
+        source: "STUDIO_AUTO",
+        uploadedById: ownerManagerId(m)!,
+      },
+    });
+  } catch (e) {
+    await deleteKey(storageKey);
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return { screenshotId: null, changed: 0 };
+    throw e;
+  }
+  const { changed } = await applyExtraction(id, result);
+  if (changed === 0) {
+    await prisma.screenshot.delete({ where: { id } });
+    await deleteKey(storageKey);
+    return { screenshotId: null, changed };
+  }
+  return { screenshotId: id, changed };
+}
+
 /** phase 5: link confirmed lineup names to player accounts (name = a member's IGN, case-insensitive). */
 export async function linkMatchPlayers(matchId: string) {
   const teams = await prisma.matchTeam.findMany({
@@ -692,6 +761,12 @@ export async function rosterForScreenshot(screenshotId: string): Promise<RosterS
     where: { id: screenshotId },
     select: { kind: true, match: { select: { id: true, sessionId: true, groupId: true } } },
   });
+  return rosterForMatch(s.match, s.kind);
+}
+
+/** Known player names per slot for the reader: the registered rosters (+ the lineup, for results). */
+export async function rosterForMatch(match: { id: string; sessionId: string | null; groupId: string | null }, kind: ScreenshotKind): Promise<RosterSlot[]> {
+  const s = { kind, match };
   const regs = await matchSlots(s.match);
   const bySlot = new Map<number, RosterSlot>();
   for (const r of regs) {
@@ -719,10 +794,11 @@ export async function rosterForScreenshot(screenshotId: string): Promise<RosterS
 }
 
 /** Merge an extraction into the match draft and mark the screenshot DONE (one transaction, match row locked). */
-export async function applyExtraction(screenshotId: string, result: ExtractionResult): Promise<string[]> {
+/** Merge a read screenshot into the match draft: the merge warnings, and how many slots it changed. */
+export async function applyExtraction(screenshotId: string, result: ExtractionResult): Promise<{ warnings: string[]; changed: number }> {
   return prisma.$transaction(
     async (tx) => {
-      const s = await tx.screenshot.findUniqueOrThrow({ where: { id: screenshotId }, select: { id: true, kind: true, matchId: true } });
+      const s = await tx.screenshot.findUniqueOrThrow({ where: { id: screenshotId }, select: { id: true, kind: true, matchId: true, source: true } });
       await lockMatch(tx, s.matchId);
       const m = await tx.match.findUniqueOrThrow({
         where: { id: s.matchId },
@@ -743,6 +819,12 @@ export async function applyExtraction(screenshotId: string, result: ExtractionRe
         players: t.players.map((p) => ({ position: p.position, name: p.name, ocrName: p.ocrName, ocrConfidence: p.ocrConfidence, kills: p.kills })),
       }));
       const out = s.kind === "SLOT_LIST" ? mergeSlotList(draft, result, ctx) : mergeResults(draft, result, ctx);
+      // changedSlots = slots the read touched; count those that really differ (a repeat screenshot changes nothing)
+      const sig = (t: { teamId: string | null; placement: number | null; kills: number | null; players: { name: string; kills: number | null }[] } | undefined) =>
+        JSON.stringify(t ? [t.teamId, t.placement, t.kills, t.players.map((p) => [p.name, p.kills])] : null);
+      const changed = [...out.changedSlots].filter(
+        (slot) => sig(draft.find((d) => d.slotNumber === slot)) !== sig(out.teams.find((t) => t.slotNumber === slot)),
+      ).length;
 
       for (const slot of out.changedSlots) {
         const t = out.teams.find((x) => x.slotNumber === slot)!;
@@ -767,7 +849,8 @@ export async function applyExtraction(screenshotId: string, result: ExtractionRe
       }
 
       let status: DbMatchStatus = m.status;
-      if (s.kind === "SLOT_LIST" && m.status === "SCHEDULED") status = "LINEUP_REVIEW";
+      // a Studio auto-capture frame that read nothing (e.g. the game already started) doesn't open the lineup review
+      if (s.kind === "SLOT_LIST" && m.status === "SCHEDULED" && (changed > 0 || s.source !== "STUDIO_AUTO")) status = "LINEUP_REVIEW";
       if (s.kind === "RESULTS" && m.status === "LIVE") status = "RESULTS_REVIEW";
       if (status !== m.status) await tx.match.update({ where: { id: m.id }, data: { status } });
 
@@ -782,7 +865,7 @@ export async function applyExtraction(screenshotId: string, result: ExtractionRe
           extraction: stored as unknown as Prisma.InputJsonValue,
         },
       });
-      return out.warnings;
+      return { warnings: out.warnings, changed };
     },
     { maxWait: 15_000, timeout: 30_000 },
   );

@@ -30,11 +30,13 @@ import {
   type StudioLinkLive,
   type StudioLinkLiveState,
   type StudioLinkLiveTeam,
+  type StudioMatchControl,
 } from "@7xen/shared";
 import { prisma, type Tx } from "../db.js";
 import { conflict, forbidden, notFound } from "../lib/errors.js";
-import { brandingUrl } from "../lib/serialize.js";
+import { brandingUrl, dateToStr } from "../lib/serialize.js";
 import { loadOwnMatch, ownerInclude, ownerManagerId, type MatchWithOwner } from "./matches.js";
+import { startsAtOf } from "./schedule.js";
 import { publicUrl } from "./youtube.js";
 
 /** One player's stored state. Older rows stored bare state strings; storedTeams() upgrades them. */
@@ -98,6 +100,57 @@ export async function playerNames(matchId: string, slots: SlotTeam[], db: Tx = p
   return new Map(slots.map(({ team }) => [team.id, fromLineup.get(team.id) ?? team.members.slice(0, LIVE_TEAM_SIZE).map((x) => x.user.ign)]));
 }
 
+// ---------------------------------------------------------------- studio control
+
+/** "21:30" → "9:30 PM" */
+function time12(hhmm: string): string {
+  const [h = 0, m = 0] = hhmm.split(":").map(Number);
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+}
+
+/**
+ * What 7XEN Studio may do with a match. A scrim match unlocks when registration closes (the scrim's start time) or
+ * as soon as every slot is filled; a tournament group match is ready once drawn. `teams` = teams in the match.
+ */
+export function controlOf(m: MatchWithOwner, teams: number, now = new Date()): StudioMatchControl {
+  const slots = m.session ? m.session.scrim.slotCount : (m.group?.stage.lobbySize ?? 0);
+  const base = { unlocksAt: null, reason: null, teams, slots };
+  if (m.status === "PUBLISHED") return { ...base, state: "published" };
+  if (m.status === "RESULTS_REVIEW") return { ...base, state: "ended" };
+  if (m.status === "LIVE") return { ...base, state: "live" };
+  if (m.session) {
+    const closes = startsAtOf(dateToStr(m.session.date), m.session.scrim.startTime);
+    if (now < closes && teams < slots) {
+      return {
+        ...base,
+        state: "locked",
+        unlocksAt: closes.toISOString(),
+        reason: `Registration is open until ${time12(m.session.scrim.startTime)} (${teams}/${slots} slots filled)`,
+      };
+    }
+  }
+  return { ...base, state: "ready" };
+}
+
+/** Teams in each match (approved registrations of its session / teams of its group), by match id. */
+export async function teamCounts(ms: { id: string; sessionId: string | null; groupId: string | null }[]): Promise<Map<string, number>> {
+  const sessionIds = [...new Set(ms.flatMap((m) => (m.sessionId ? [m.sessionId] : [])))];
+  const groupIds = [...new Set(ms.flatMap((m) => (m.groupId ? [m.groupId] : [])))];
+  const [regs, groups] = await Promise.all([
+    sessionIds.length
+      ? prisma.registration.groupBy({ by: ["sessionId"], where: { sessionId: { in: sessionIds }, status: "APPROVED", slotNumber: { not: null } }, _count: true })
+      : [],
+    groupIds.length ? prisma.groupTeam.groupBy({ by: ["groupId"], where: { groupId: { in: groupIds } }, _count: true }) : [],
+  ]);
+  const bySession = new Map(regs.map((r) => [r.sessionId, r._count]));
+  const byGroup = new Map(groups.map((g) => [g.groupId, g._count]));
+  return new Map(ms.map((m) => [m.id, (m.sessionId ? bySession.get(m.sessionId) : m.groupId ? byGroup.get(m.groupId) : 0) ?? 0]));
+}
+
+export async function matchControl(m: MatchWithOwner, now = new Date()): Promise<StudioMatchControl> {
+  return controlOf(m, (await teamCounts([m])).get(m.id) ?? 0, now);
+}
+
 export function storedTeams(v: Prisma.JsonValue | null): LiveTeams {
   if (!v || typeof v !== "object" || Array.isArray(v)) return {};
   const out: LiveTeams = {};
@@ -130,25 +183,35 @@ async function buildBody(m: MatchWithOwner): Promise<Body> {
       players,
     };
   });
-  return { match: { id: m.id, title: matchTitle(m), state, map: MAP_LABELS[m.map as GameMap] ?? m.map }, teams };
+  return {
+    // in the hashed body: a locked match unlocking (or a team joining) bumps the version
+    control: controlOf(m, slots.length),
+    match: { id: m.id, title: matchTitle(m), state, map: MAP_LABELS[m.map as GameMap] ?? m.map },
+    teams,
+  };
 }
 
 const hashOf = (b: Body) => createHash("sha256").update(JSON.stringify(b)).digest("base64url");
 
-const PROCESSED: LiveCaptureStatus[] = ["APPLIED", "FAILED"];
+const PROCESSED: LiveCaptureStatus[] = ["APPLIED", "SKIPPED"];
 
 async function autoCapture(m: { id: string; liveAutoPaused: boolean }, imagePrefix: string | null, now = Date.now()): Promise<LiveAutoCapture> {
   const [last, applied, processed] = await Promise.all([
     prisma.liveCapture.findFirst({ where: { matchId: m.id }, orderBy: { createdAt: "desc" }, select: { id: true, createdAt: true } }),
     prisma.liveCapture.findFirst({ where: { matchId: m.id, status: "APPLIED" }, orderBy: { processedAt: "desc" }, select: { processedAt: true } }),
-    prisma.liveCapture.findFirst({ where: { matchId: m.id, status: { in: PROCESSED } }, orderBy: { processedAt: "desc" }, select: { status: true, error: true } }),
+    // the newest capture that was read (or failed): a reader failure or "not a game screen" shows as the last error
+    prisma.liveCapture.findFirst({
+      where: { matchId: m.id, OR: [{ status: "FAILED" }, { status: { in: PROCESSED }, detected: { not: null } }] },
+      orderBy: { processedAt: "desc" },
+      select: { status: true, error: true, detected: true, message: true },
+    }),
   ]);
   return {
     active: !!last && now - last.createdAt.getTime() < LIVE_CAPTURE_ACTIVE_MS,
     paused: m.liveAutoPaused,
     lastCaptureAt: last?.createdAt.toISOString() ?? null,
     lastAppliedAt: applied?.processedAt?.toISOString() ?? null,
-    lastError: processed?.status === "FAILED" ? processed.error : null,
+    lastError: processed?.status === "FAILED" ? processed.error : processed?.detected === "other" ? processed.message : null,
     ...(imagePrefix ? { latestImageUrl: last ? `${imagePrefix}/matches/${m.id}/captures/${last.id}/image` : null } : {}),
   };
 }

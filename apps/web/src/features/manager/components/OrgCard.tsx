@@ -19,9 +19,9 @@ const action = "flex h-9 items-center justify-center gap-1.5 rounded-lg border t
 
 /**
  * Manager sidebar card — the organiser's twin of the player "My Team" card (same frame, same place below the nav):
- * organisation logo + name, approvals waiting, and the two create actions.
+ * organisation logo + name and the create actions.
  */
-export function OrgCard({ collapsed, pending }: SidebarSlotState & { pending: number }) {
+export function OrgCard({ collapsed }: SidebarSlotState) {
   const { user } = useAuth();
   const logo = useOrgLogo().data?.url ?? null;
   const name = user?.displayName ?? "My organisation";
@@ -62,15 +62,7 @@ export function OrgCard({ collapsed, pending }: SidebarSlotState & { pending: nu
           <OrgLogo name={name} url={logo} />
           <div className="min-w-0">
             <p className="truncate text-sm font-bold tracking-wide uppercase">{name}</p>
-            <Link to="/manager/requests" className="rounded text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50">
-              {pending > 0 ? (
-                <span>
-                  <span className="font-semibold text-primary">{pending}</span> {pending === 1 ? "approval" : "approvals"} waiting
-                </span>
-              ) : (
-                "No approvals waiting"
-              )}
-            </Link>
+            <p className="text-xs text-muted-foreground">Teams join scrims on their own</p>
           </div>
         </div>
         <div className="mt-4 grid gap-2">

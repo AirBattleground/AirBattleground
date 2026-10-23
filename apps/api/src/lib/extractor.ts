@@ -259,6 +259,7 @@ export function toExtractionResult(raw: unknown, kind: ScreenshotKind, model: st
     needsReview: unsure || unmatched || warnings.length > 0,
     warnings,
     timingsMs: { total: ms },
+    ...(typeof r.screen === "string" ? { screen: r.screen } : {}),
   };
 }
 

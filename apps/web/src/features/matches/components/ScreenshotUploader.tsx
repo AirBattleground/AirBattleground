@@ -51,9 +51,9 @@ function StatusChip({ s }: { s: ScreenshotRow }) {
 function SourceBadge({ s }: { s: ScreenshotRow }) {
   const source = s.source as string;
   const label =
-    source === "STATION" ? "From station" : source === "DEVICE" ? "From iPhone" : source === "APP_AUTO" ? "From app (auto)" : source === "APP_MANUAL" ? "From app" : null;
+    source === "STUDIO" || source === "STUDIO_AUTO" ? "From 7XEN Studio" : source === "STATION" ? "From station" : source === "DEVICE" ? "From iPhone" : source === "APP_AUTO" ? "From app (auto)" : source === "APP_MANUAL" ? "From app" : null;
   if (!label) return null;
-  const Icon = source === "STATION" ? MonitorPlay : Smartphone;
+  const Icon = source === "STATION" || source.startsWith("STUDIO") ? MonitorPlay : Smartphone;
   return (
     <span title={label} aria-label={label} className="absolute top-1 left-1 grid size-5 place-items-center rounded bg-background/85 text-primary backdrop-blur-sm">
       <Icon className="size-3" />

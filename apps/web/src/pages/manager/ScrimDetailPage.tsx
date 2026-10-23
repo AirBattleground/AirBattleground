@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   CalendarDays,
   CalendarOff,
-  CheckCheck,
   ChevronDown,
-  Clock,
   Copy,
   Info,
   Lock,
@@ -27,7 +25,7 @@ import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@7xen/ui/components/ui/tabs";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
-import { useApproveRegistration, useBulkApprove, useRejectRegistration, useScrim, useSession } from "@/features/manager/api";
+import { useRejectRegistration, useScrim, useSession } from "@/features/manager/api";
 import {
   countdown,
   dateRangeLabel,
@@ -38,13 +36,11 @@ import {
   recurrenceLabel,
   slotRangeLabel,
 } from "@/features/manager/format";
-import { ConfirmDialog } from "@/features/manager/components/ConfirmDialog";
 import { DatePickerButton } from "@/features/manager/components/DatePickerButton";
 import { DateStrip } from "@/features/manager/components/DateStrip";
 import { MapChips } from "@/features/manager/components/maps";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { RejectDialog } from "@/features/manager/components/RejectDialog";
-import { RequestCard } from "@/features/manager/components/RequestCard";
 import { ScrimPosterCard } from "@/features/manager/components/BrandingCards";
 import { ScrimStatusPill } from "@/features/manager/components/ScrimStatusPill";
 import { SlotBoard, slotListText } from "@/features/manager/components/SlotBoard";
@@ -55,9 +51,9 @@ import { SessionMatches } from "@/features/matches/components/SessionMatches";
 const TOUR: TourStep[] = [
   { title: "Running a session", description: "Here you decide which teams play on a given day." },
   { element: '[data-tour="detail-dates"]', title: "Pick the day", description: "Only days this scrim runs are shown. Each day has its own list of teams." },
-  { element: '[data-tour="detail-tabs"]', title: "Teams or matches", description: "“Teams” is for approvals and slots. After the scrim starts, “Matches & results” is where you upload screenshots and publish results." },
-  { element: '[data-tour="detail-summary"]', title: "How full is it?", description: "Confirmed teams, requests waiting, slots left — and when registration closes." },
-  { element: '[data-tour="detail-requests"]', title: "Approve or reject", description: "Approving gives the team the lowest free slot automatically. You can remove a team later to free their slot." },
+  { element: '[data-tour="detail-tabs"]', title: "Teams or matches", description: "“Teams” shows who joined and their slots. After the scrim starts, “Matches & results” is where you upload screenshots and publish results." },
+  { element: '[data-tour="detail-summary"]', title: "How full is it?", description: "Teams in, slots left — and when registration closes. Teams join on their own and get the next free slot." },
+  { element: '[data-tour="detail-teams"]', title: "Teams", description: "Every team that joined, by slot. Remove a team to free its slot for someone else." },
   { element: '[data-tour="detail-board"]', title: "Slot board", description: "Who is in which slot. Use “Copy” to paste the list into WhatsApp or Discord." },
   { element: '[data-tour="detail-info"]', title: "Scrim details & poster", description: "Time, slots, maps and the poster teams see. Open it to upload or change the poster." },
 ];
@@ -272,9 +268,6 @@ function SessionTabs({ s }: { s: SessionDetail }) {
       <TabsList className="h-11 w-full sm:w-auto" data-tour="detail-tabs">
         <TabsTrigger value="teams" className="px-4">
           <Users /> Teams
-          {s.counts.pending > 0 && (
-            <span className="grid min-w-5 place-items-center rounded-full bg-warning/25 px-1.5 text-xs text-warning-foreground dark:text-warning">{s.counts.pending}</span>
-          )}
         </TabsTrigger>
         <TabsTrigger value="matches" className="px-4">
           <Trophy /> Matches & results
@@ -291,26 +284,11 @@ function SessionTabs({ s }: { s: SessionDetail }) {
 }
 
 function Session({ s }: { s: SessionDetail }) {
-  const approve = useApproveRegistration();
   const reject = useRejectRegistration();
-  const bulk = useBulkApprove();
   const now = useNow(15_000);
-  const [rejecting, setRejecting] = useState<{ reg: Registration; mode: "reject" | "remove" } | null>(null);
-  const [confirmAll, setConfirmAll] = useState(false);
-  const [bulkRunning, setBulkRunning] = useState(false);
+  const [removing, setRemoving] = useState<Registration | null>(null);
   const [showClosed, setShowClosed] = useState(false);
-  const [highlight, setHighlight] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  useEffect(() => () => clearTimeout(timer.current), []);
-  const flash = (id: string) => {
-    setHighlight(id);
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => setHighlight(null), 2500);
-  };
-
-  const byCreated = (a: Registration, b: Registration) => a.createdAt.localeCompare(b.createdAt);
-  const pending = s.registrations.filter((r) => r.status === "PENDING").sort(byCreated);
   const approved = s.registrations
     .filter((r) => r.status === "APPROVED")
     .sort((a, b) => (a.slotNumber ?? 99) - (b.slotNumber ?? 99));
@@ -329,16 +307,10 @@ function Session({ s }: { s: SessionDetail }) {
     }
   };
 
-  const approveAll = async () => {
-    setBulkRunning(true);
-    await bulk.run(pending.map((r) => ({ id: r.id, teamName: r.team.name })));
-    setBulkRunning(false);
-  };
-
   return (
     <div className="space-y-6">
       {/* key numbers */}
-      <div data-tour="detail-summary" className="grid grid-cols-2 gap-4 rounded-xl border bg-card p-4 shadow-sm sm:grid-cols-4 sm:p-5">
+      <div data-tour="detail-summary" className="grid grid-cols-2 gap-4 rounded-xl border bg-card p-4 shadow-sm sm:grid-cols-3 sm:p-5">
         <div>
           <ZoneLabel>Confirmed</ZoneLabel>
           <p className="font-display text-3xl font-bold tabular-nums">
@@ -347,7 +319,6 @@ function Session({ s }: { s: SessionDetail }) {
           </p>
           <Progress value={pct} className={cn("mt-1 h-1.5", full && "[&>[data-slot=progress-indicator]]:bg-success")} />
         </div>
-        <SummaryStat label="Waiting" value={s.counts.pending} tone={s.counts.pending > 0 ? "text-warning-foreground dark:text-warning" : undefined} />
         <SummaryStat label="Slots left" value={full ? "Full" : s.counts.slotsLeft} tone={full ? "text-success" : undefined} />
         <div>
           <ZoneLabel>Registration</ZoneLabel>
@@ -363,7 +334,7 @@ function Session({ s }: { s: SessionDetail }) {
               <p className="flex items-center gap-1.5 font-display text-2xl font-bold text-muted-foreground">
                 <Lock className="size-4" /> Closed
               </p>
-              <p className="text-xs text-muted-foreground">{left ? "Not taking requests" : "Session started"}</p>
+              <p className="text-xs text-muted-foreground">{left ? "Not taking teams" : "Session started"}</p>
             </>
           )}
         </div>
@@ -371,49 +342,10 @@ function Session({ s }: { s: SessionDetail }) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,400px)] lg:items-start">
         <div className="space-y-4">
-          {/* Requests */}
-          <Zone
-            data-tour="detail-requests"
-            label={`Requests${pending.length ? ` · ${pending.length}` : ""}`}
-            className={pending.length > 0 ? "border-warning/50" : undefined}
-            aside={
-              pending.length > 1 && (
-                <Button size="sm" variant="outline" onClick={() => setConfirmAll(true)} disabled={full || bulkRunning}>
-                  <CheckCheck /> {bulkRunning ? "Approving…" : "Approve all"}
-                </Button>
-              )
-            }
-          >
-            {pending.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No teams waiting.</p>
-            ) : (
-              <>
-                {full && <p className="mb-2 rounded-lg bg-warning/10 p-2.5 text-sm">All slots are taken. Remove a team to make room.</p>}
-                <div className="-my-2.5 divide-y">
-                  {pending.map((r) => (
-                    <RequestCard
-                      key={r.id}
-                      reg={r}
-                      full={full}
-                      busy={bulkRunning}
-                      onApprove={() =>
-                        approve.mutate(
-                          { id: r.id, teamName: r.team.name },
-                          { onSuccess: (reg) => flash(reg.id) },
-                        )
-                      }
-                      onReject={() => setRejecting({ reg: r, mode: "reject" })}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </Zone>
-
-          {/* Approved */}
-          <Zone label={`Approved · ${approved.length}`}>
+          {/* Teams (they join on their own, confirmed on the next free slot) */}
+          <Zone data-tour="detail-teams" label={`Teams · ${approved.length}`}>
             {approved.length === 0 ? (
-              <p className="text-sm text-muted-foreground">None yet — the first approved team gets slot #{s.scrim.firstSlot}.</p>
+              <p className="text-sm text-muted-foreground">No teams yet — the first team to join gets slot #{s.scrim.firstSlot}.</p>
             ) : (
               <ul className="-my-2 divide-y">
                 {approved.map((r) => (
@@ -426,7 +358,7 @@ function Session({ s }: { s: SessionDetail }) {
                       variant="ghost"
                       size="icon"
                       className="size-10 text-muted-foreground hover:text-destructive"
-                      onClick={() => setRejecting({ reg: r, mode: "remove" })}
+                      onClick={() => setRemoving(r)}
                       aria-label={`Remove ${r.team.name}`}
                       title="Remove from this session"
                     >
@@ -445,7 +377,7 @@ function Session({ s }: { s: SessionDetail }) {
                   className="flex min-h-8 items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
                 >
                   <ChevronDown className={cn("size-4 transition-transform", showClosed && "rotate-180")} />
-                  Rejected & cancelled ({closed.length})
+                  Removed & cancelled ({closed.length})
                 </button>
                 {showClosed && (
                   <ul className="mt-1 divide-y">
@@ -477,30 +409,18 @@ function Session({ s }: { s: SessionDetail }) {
             </Button>
           }
         >
-          <SlotBoard slots={s.slots} highlight={highlight} />
+          <SlotBoard slots={s.slots} />
         </Zone>
       </div>
 
       <RejectDialog
-        open={!!rejecting}
-        onOpenChange={(o) => !o && setRejecting(null)}
-        teamName={rejecting?.reg.team.name ?? ""}
-        mode={rejecting?.mode}
+        open={!!removing}
+        onOpenChange={(o) => !o && setRemoving(null)}
+        teamName={removing?.team.name ?? ""}
+        mode="remove"
         onConfirm={(reason) => {
-          if (rejecting) reject.mutate({ id: rejecting.reg.id, teamName: rejecting.reg.team.name, reason });
+          if (removing) reject.mutate({ id: removing.id, teamName: removing.team.name, reason });
         }}
-      />
-      <ConfirmDialog
-        open={confirmAll}
-        onOpenChange={setConfirmAll}
-        title={`Approve ${Math.min(pending.length, s.counts.slotsLeft)} team${Math.min(pending.length, s.counts.slotsLeft) === 1 ? "" : "s"}?`}
-        description={
-          pending.length > s.counts.slotsLeft
-            ? `Only ${s.counts.slotsLeft} slot${s.counts.slotsLeft === 1 ? " is" : "s are"} left. Teams are approved in the order they asked, until slots run out; the rest stay waiting.`
-            : "Teams are approved in the order they asked. Each gets the lowest free slot."
-        }
-        confirmLabel="Approve all"
-        onConfirm={() => void approveAll()}
       />
     </div>
   );

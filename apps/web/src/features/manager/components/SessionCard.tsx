@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Clock, Lock } from "lucide-react";
+import { ArrowRight, Lock } from "lucide-react";
 import type { ScrimOnDate } from "@7xen/shared";
 import { Pill } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
@@ -39,18 +39,12 @@ export function SessionCard({ session, className, ...rest }: { session: ScrimOnD
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        {counts.pending > 0 ? (
-          <Pill tone="warning" icon={<Clock className="size-3.5" />}>
-            {counts.pending} waiting
+        {!registrationOpen && (
+          <Pill tone="neutral" icon={<Lock className="size-3.5" />}>
+            Closed
           </Pill>
-        ) : (
-          !registrationOpen && (
-            <Pill tone="neutral" icon={<Lock className="size-3.5" />}>
-              Closed
-            </Pill>
-          )
         )}
-        <Button asChild size="sm" variant={counts.pending > 0 ? "default" : "outline"} className="h-10">
+        <Button asChild size="sm" variant="outline" className="h-10">
           <Link to={`/manager/scrims/${scrim.id}?date=${date}`}>
             Manage <ArrowRight />
           </Link>

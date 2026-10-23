@@ -123,6 +123,8 @@ export interface ExtractionResult {
   needsReview: boolean;
   warnings: string[];
   timingsMs: Record<string, number>;
+  /** which BGMI screen the reader saw (custom_lobby, tdm_lobby, custom_results, …, other) */
+  screen?: string;
 }
 
 // ---------- labels (ground truth for training samples; same shape as eval/dataset labels.json) ----------
@@ -171,8 +173,8 @@ export interface ScreenshotRow {
   processedAt: string | null;
   /** present when status DONE */
   extraction: ExtractionResult | null;
-  /** phase 4: where the screenshot came from ("WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION" | "DEVICE") */
-  source: "WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION" | "DEVICE";
+  /** phase 4: where the screenshot came from ("WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION" | "DEVICE" | "STUDIO" | "STUDIO_AUTO") */
+  source: "WEB" | "APP_AUTO" | "APP_MANUAL" | "STATION" | "DEVICE" | "STUDIO" | "STUDIO_AUTO";
 }
 
 export interface MatchPlayerRow {

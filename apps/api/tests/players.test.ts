@@ -347,7 +347,7 @@ describe("team area: leader-only actions and Ask my leader", () => {
     expect(scrims.status).toBe(200);
     expect(scrims.body.items).toHaveLength(1);
     expect(scrims.body.items[0]).toMatchObject({ scrim: { id: scrim.id }, myRegistration: null, mySuggestion: null });
-    expect(scrims.body.items[0].counts.pending).toBe(1);
+    expect(scrims.body.items[0].counts).toMatchObject({ pending: 0, approved: 1 });
 
     for (const scope of ["upcoming", "past"]) {
       const regs = await p.agent.get(`/api/team/registrations?scope=${scope}`);

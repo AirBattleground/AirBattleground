@@ -25,6 +25,8 @@ export type ApiErrorCode =
   | "LEADER_ONLY"
   | "ALREADY_IN_TEAM"
   | "TEAM_FULL"
+  /** a BR tournament needs a full team (teamSize members) to register */
+  | "ROSTER_INCOMPLETE"
   | "BGMI_ID_REQUIRED"
   | "BGMI_ID_TAKEN"
   | "INVITE_INVALID"
