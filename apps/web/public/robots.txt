@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin-ui/
+Disallow: /manager/
+Disallow: /team/
+Disallow: /join/
+
+Sitemap: https://airbattleground.com/sitemap.xml
