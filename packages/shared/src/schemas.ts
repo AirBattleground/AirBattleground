@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MAPS, MAX_ROOM_SLOTS, RECURRENCES, SCRIM_STATUSES, TEAM_REQUEST_STATUSES } from "./enums";
+import { MAPS, MAX_ROOM_SLOTS, POSTER_TEMPLATES, RECURRENCES, SCRIM_STATUSES, TEAM_REQUEST_STATUSES } from "./enums";
 import { DATE_RE, matchTimesIssue, TIME_RE } from "./schedule";
 import { winCoinsSchema } from "./coins";
 
@@ -127,6 +127,8 @@ const scrimBase = z.object({
   registrationCloseMinutes: z.number().int().min(0).max(180, "At most 3 hours before").default(0),
   /** false = save as a draft only the manager sees */
   published: z.boolean().default(true),
+  /** preset artwork teams see while no poster image is uploaded */
+  posterTemplate: z.enum(POSTER_TEMPLATES).default("TOPO"),
   recurrence: z.enum(RECURRENCES),
   startDate: dateString,
   /** Ignored for ONCE. Null/omitted = runs indefinitely. */

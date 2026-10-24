@@ -7,6 +7,7 @@ import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
 import { Countdown } from "@/features/tournaments/shared/Countdown";
+import { ScrimPosterArt, type PosterData } from "@/features/posters/ScrimPosterArt";
 import { useRegister } from "../api";
 import { RegisterDialog } from "../components/ConfirmDialogs";
 import { useDayFormat } from "../format";
@@ -79,7 +80,8 @@ function Row({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   );
 }
 
-function Poster({ url, title, left, right }: { url: string | null; title: string; left: ReactNode; right: ReactNode }) {
+/** `art`: the scrim's preset, drawn behind the title when there's no poster image */
+function Poster({ url, title, art, left, right }: { url: string | null; title: string; art: PosterData; left: ReactNode; right: ReactNode }) {
   const [failed, setFailed] = useState(false);
   const has = !!url && !failed;
   return (
@@ -92,7 +94,7 @@ function Poster({ url, title, left, right }: { url: string | null; title: string
         {has ? (
           <img src={url!} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} className="size-full object-cover" />
         ) : (
-          <div className="size-full bg-[radial-gradient(120%_90%_at_70%_20%,color-mix(in_oklch,var(--primary)_35%,transparent),transparent_60%)] bg-card" />
+          <ScrimPosterArt variant="strip" data={art} />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background/85 via-background/20 to-transparent" />
         <p className="font-hero absolute inset-x-3 bottom-2 line-clamp-2 text-center text-2xl leading-[0.95] font-extrabold tracking-wide uppercase drop-shadow-[0_2px_10px_var(--background)]">
@@ -152,6 +154,7 @@ export function NextMatchCard({ booked, open, today, loading }: { booked: TeamRe
         <Poster
           url={s.posterUrl}
           title={s.title}
+          art={{ title: s.title, maps: s.maps, startTime: s.startTime, organiser: s.manager.displayName, template: s.posterTemplate }}
           left={<span className={cn(pill, "bg-primary/15 text-primary uppercase")}>{t("scrim")}</span>}
           right={
             <span className={cn(pill, "bg-success/15 text-success")}>
@@ -193,6 +196,7 @@ export function NextMatchCard({ booked, open, today, loading }: { booked: TeamRe
         <Poster
           url={s.posterUrl}
           title={s.title}
+          art={{ title: s.title, maps: s.maps, startTime: s.startTime, organiser: s.manager.displayName, template: s.posterTemplate }}
           left={<span className={cn(pill, "bg-primary/15 text-primary uppercase")}>{t("scrim")}</span>}
           right={
             <span className={cn(pill, "bg-success/15 text-success")}>

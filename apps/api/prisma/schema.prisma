@@ -373,6 +373,8 @@ model Scrim {
   pointsSystem Json?
   /// poster image (storage key under branding/)
   posterKey    String?
+  /// PosterTemplate drawn when there's no poster image (shared enums.ts; text so new presets need no migration)
+  posterTemplate String @default("TOPO")
   /// BG coins credited to the winning team's leader for each published match (0 = none)
   winCoins     Int         @default(0)
   createdAt    DateTime    @default(now())

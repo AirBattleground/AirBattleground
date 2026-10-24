@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Loader2, Lock, Swords, Timer } from "lucide-react";
-import type { TeamScrimOnDate } from "@7xen/shared";
+import { CheckCircle2, Info, Loader2, Lock, Timer } from "lucide-react";
+import { addMinutesToTime, MAP_LABELS, matchOffsets, type TeamScrimOnDate } from "@7xen/shared";
 import { SlotChip } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@7xen/ui/components/ui/popover";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePlayerSession } from "@/lib/auth";
 import { AskLeaderButton } from "@/features/player/components/AskLeader";
 import { NeedTeamDialog } from "@/features/player/components/NeedTeamDialog";
+import { ScrimPosterArt } from "@/features/posters/ScrimPosterArt";
 import { useCancelRegistration, useRegister } from "../api";
 import { useT } from "@/i18n/core";
 import { scrimUi } from "@/i18n/scrims";
@@ -18,21 +20,26 @@ import { useCardTilt } from "../useCardTilt";
 import { OrganizerBadge, PosterDialog } from "./Branding";
 import { CancelDialog, RegisterDialog, type ScrimSummary } from "./ConfirmDialogs";
 import { Countdown } from "./Countdown";
-import { MapDots } from "./MapChips";
+import { MatchBars } from "./MapChips";
 import { TeamStatusBadge } from "./TeamStatus";
 
-/** Big poster bleeding off the card's top-left corner, feathered on its inner edges so it melts into the card. Click to enlarge. */
-function PosterBleed({ url, title }: { url: string | null; title: string }) {
+/**
+ * Big poster bleeding off the card's top-left corner, feathered on its inner edges so it melts into the card. Click to
+ * enlarge. No poster (`preset`): the organiser's preset fills the same corner unfeathered, so its title stays readable
+ * — the card moves its text clear of it (PRESET_TEXT).
+ */
+function PosterBleed({ scrim, preset, onFailed }: { scrim: TeamScrimOnDate["scrim"]; preset: boolean; onFailed: () => void }) {
+  const { posterUrl: url, title } = scrim;
   const t = useT(scrimUi);
-  const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const box = "sc-bleed absolute top-0 left-0 size-[9.5rem] sm:size-44";
-  if (!url || failed) {
+  if (!url || preset) {
     return (
-      <div className={cn(box, "pointer-events-none")} aria-hidden>
-        <div className="tc-aurora absolute inset-4 rounded-full bg-[var(--tc-accent)]/30 blur-2xl" />
-        <div className="absolute inset-0 bg-grid opacity-80" />
-        <Swords className="absolute top-1/2 left-1/2 size-14 -translate-x-1/2 -translate-y-1/2 text-primary/60 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6 sm:size-16" />
+      <div className="pointer-events-none absolute top-0 left-0 size-[9.5rem] overflow-hidden rounded-br-2xl border-r border-b sm:size-44">
+        <ScrimPosterArt
+          variant="square"
+          data={{ title, maps: scrim.maps, startTime: scrim.startTime, recurrence: scrim.recurrence, organiser: scrim.manager.displayName, template: scrim.posterTemplate }}
+        />
       </div>
     );
   }
@@ -44,7 +51,7 @@ function PosterBleed({ url, title }: { url: string | null; title: string }) {
           alt=""
           loading="lazy"
           decoding="async"
-          onError={() => setFailed(true)}
+          onError={onFailed}
           className="size-full object-cover"
         />
       </button>
@@ -52,6 +59,64 @@ function PosterBleed({ url, title }: { url: string | null; title: string }) {
     </>
   );
 }
+
+/** "6:00 PM" with the AM/PM set small */
+function Clock({ hhmm }: { hhmm: string }) {
+  const [time, ampm] = formatTime(hhmm).split(" ");
+  return (
+    <>
+      {time}
+      <span className="ml-0.5 text-[0.55em] font-bold">{ampm}</span>
+    </>
+  );
+}
+
+/** Match 1's start, big; the ⓘ lists every match's start + IDP time. */
+function ScrimTimes({ scrim }: { scrim: TeamScrimOnDate["scrim"] }) {
+  const t = useT(scrimUi);
+  const plan = scrim.matches;
+  const timed = plan.every((m) => m.startTime) ? plan.map((m) => m.startTime!) : [];
+  const offsets = timed.length ? matchOffsets(timed) : [];
+  const [h = 0, m = 0] = scrim.startTime.split(":").map(Number);
+  const nextDay = (i: number) => offsets[i] != null && h * 60 + m + offsets[i]! >= 1440;
+  return (
+    <div className="flex min-w-0 items-center gap-1">
+      <p className="min-w-0 font-display text-2xl leading-none font-extrabold whitespace-nowrap tabular-nums sm:text-3xl">
+        <Clock hhmm={scrim.startTime} />{" "}
+        <span className="text-[10px] font-semibold tracking-widest text-muted-foreground sm:text-xs">IST</span>
+      </p>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="icon-sm" className="size-8 shrink-0 text-muted-foreground hover:text-primary" aria-label={t("times_info")}>
+            <Info className="size-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-72 space-y-3 p-3.5">
+          <p className="font-display text-base font-bold">{t("times_title")}</p>
+          <ol className="space-y-2">
+            {plan.map((p, i) => (
+              <li key={p.number} className="flex items-start justify-between gap-3 text-sm">
+                <span className="min-w-0">
+                  <span className="block font-semibold">{t("times_match", { n: p.number })} · {MAP_LABELS[p.map]}</span>
+                  {p.startTime && (
+                    <span className="block text-xs text-muted-foreground">{t("times_idp", { time: formatTime(addMinutesToTime(p.startTime, -p.idpMinutes)) })}</span>
+                  )}
+                </span>
+                <span className="shrink-0 text-right font-display text-base font-bold tabular-nums">
+                  {p.startTime ? formatTime(p.startTime) : "—"}
+                  {nextDay(i) && <span className="block text-[10px] font-semibold text-warning">{t("times_next_day")}</span>}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+/** Identity text beside a preset poster: starts 0.75rem past the 9.5rem / 11rem tile and is at least as tall as it. */
+const PRESET_TEXT = "min-h-[8.75rem] pl-[9.25rem] sm:min-h-[10rem] sm:pl-[10.5rem]";
 
 /** Soft colour from the poster behind the whole card — atmosphere without covering anything. */
 function Ambient({ url }: { url: string | null }) {
@@ -99,6 +164,8 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
   const now = useNow(15_000);
   const closesAt = item.registrationClosesAt ?? startsAt;
   const started = now >= new Date(startsAt).getTime();
+  const [posterFailed, setPosterFailed] = useState(false);
+  const preset = !scrim.posterUrl || posterFailed;
   const closed = now >= new Date(closesAt).getTime();
   const open = item.registrationOpen && !closed;
   const full = counts.slotsLeft <= 0;
@@ -149,20 +216,17 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
       )}
     >
       <Ambient url={scrim.posterUrl} />
+      <div aria-hidden className="sc-tex">
+        <div className="sc-tex-dots" />
+      </div>
       <div className="tc-sheen pointer-events-none absolute inset-0 z-20" aria-hidden />
       <span aria-hidden className={cn("absolute inset-y-0 left-0 z-20 w-1", tone === "muted" ? "bg-muted-foreground/30" : "sc-rail bg-[var(--tc-accent)]")} />
 
-      <PosterBleed url={scrim.posterUrl} title={scrim.title} />
+      <PosterBleed scrim={scrim} preset={preset} onFailed={() => setPosterFailed(true)} />
 
       <div className="pointer-events-none relative z-10 flex h-full flex-col gap-3 p-3.5 pl-4 sm:p-4 sm:pl-5 [&_a]:pointer-events-auto [&_button]:pointer-events-auto">
         {/* identity, to the right of the poster */}
-        <div className="flex min-h-[8.25rem] flex-col justify-center gap-1.5 pl-[7.75rem] sm:min-h-[9.5rem] sm:pl-[9.25rem]">
-          <OrganizerBadge
-            manager={scrim.manager}
-            className="text-xs font-medium text-muted-foreground"
-            iconClassName="size-3.5 text-primary"
-            logoClassName="size-5 rounded-md"
-          />
+        <div className={cn("flex flex-col justify-center gap-1.5", preset ? PRESET_TEXT : "min-h-[8.25rem] pl-[7.75rem] sm:min-h-[9.5rem] sm:pl-[9.25rem]")}>
           <h3 className="line-clamp-2 font-display text-lg leading-tight font-extrabold tracking-tight uppercase transition-colors duration-300 group-hover:text-primary sm:text-xl">
             {linkTitle ? (
               <Link to={`/team/scrims/${scrim.id}?date=${date}`} className="rounded-sm outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
@@ -172,15 +236,19 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
               scrim.title
             )}
           </h3>
-          <p className="font-display text-2xl leading-none font-extrabold tabular-nums sm:text-3xl">
-            {formatTime(scrim.startTime)} <span className="text-[10px] font-semibold tracking-widest text-muted-foreground sm:text-xs">IST</span>
-          </p>
+          <OrganizerBadge
+            manager={scrim.manager}
+            className="text-xs font-medium text-muted-foreground"
+            iconClassName="size-3.5 text-primary"
+            logoClassName="size-5 rounded-md"
+          />
+          <ScrimTimes scrim={scrim} />
           {closes}
         </div>
 
         {/* one quiet meta line */}
         <div className="flex items-center justify-between gap-3 border-t border-border/60 pt-3">
-          <MapDots maps={scrim.maps} />
+          <MatchBars maps={scrim.maps} label={t.plural("matches", scrim.maps.length)} />
           <SlotMeter approved={counts.approved} total={scrim.slotCount} />
         </div>
 

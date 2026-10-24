@@ -75,6 +75,7 @@ export async function createScrim(managerId: string, input: CreateScrimInput): P
       idpMinutes: input.idpMinutes ?? [],
       registrationCloseMinutes: input.registrationCloseMinutes,
       published: input.published,
+      posterTemplate: input.posterTemplate,
       recurrence: input.recurrence,
       startDate: strToDate(input.startDate),
       endDate: input.recurrence === "ONCE" || !input.endDate ? null : strToDate(input.endDate),
@@ -165,6 +166,7 @@ export async function updateScrim(scrimId: string, managerId: string, input: Upd
   data.idpMinutes = plan.idpMinutes;
   if (input.registrationCloseMinutes !== undefined) data.registrationCloseMinutes = input.registrationCloseMinutes;
   if (input.published !== undefined) data.published = input.published;
+  if (input.posterTemplate !== undefined) data.posterTemplate = input.posterTemplate;
   if (input.status !== undefined) data.status = input.status;
   if (input.pointsSystem !== undefined) data.pointsSystem = input.pointsSystem;
   if (input.winCoins !== undefined) data.winCoins = input.winCoins;

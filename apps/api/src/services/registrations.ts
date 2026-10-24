@@ -55,6 +55,8 @@ export function toTeamRegistration(r: TeamRegistrationRow, now = new Date()): Te
       firstSlot: s.firstSlot,
       manager: s.manager,
       posterUrl: s.posterUrl,
+      posterTemplate: s.posterTemplate,
+      recurrence: s.recurrence,
     },
   };
 }

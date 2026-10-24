@@ -42,7 +42,7 @@ import { QueryError } from "@/features/manager/components/QueryError";
 import { RejectDialog } from "@/features/manager/components/RejectDialog";
 import { ScrimPosterCard } from "@/features/manager/components/BrandingCards";
 import { ScrimStatusPill } from "@/features/manager/components/ScrimStatusPill";
-import { DraftBanner, DraftPill, MatchScheduleList, registrationCloseLabel } from "@/features/manager/components/MatchSchedule";
+import { DraftBanner, DraftPill, MatchScheduleList, registrationCloseLabel, ScrimPresetCard } from "@/features/manager/components/MatchSchedule";
 import { SlotBoard, slotListText } from "@/features/manager/components/SlotBoard";
 import { useNow } from "@/features/manager/components/useNow";
 import { Zone, ZoneLabel } from "@/features/manager/components/Zone";
@@ -216,7 +216,10 @@ function Detail({ scrim }: { scrim: Scrim }) {
               </div>
             )}
           </dl>
-          <ScrimPosterCard scrimId={scrim.id} url={scrim.posterUrl} compact tour="detail-poster" className="border-0 bg-transparent p-0 shadow-none sm:p-0" />
+          <div className="space-y-5">
+            <ScrimPosterCard scrimId={scrim.id} url={scrim.posterUrl} compact tour="detail-poster" className="border-0 bg-transparent p-0 shadow-none sm:p-0" />
+            <ScrimPresetCard scrim={scrim} />
+          </div>
         </div>
       </details>
       </div>

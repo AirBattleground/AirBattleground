@@ -29,7 +29,7 @@ export function ScrimPosterCard({ scrimId, url, compact, className, tour }: { sc
     <BrandingImageCard
       title="Scrim poster"
       icon={<ImageIcon />}
-      description="Teams see it when they browse. Square works best."
+      description="Optional. Teams see it when they browse; without one they see your poster preset. Square works best."
       aspect="square"
       compact={compact}
       url={url}

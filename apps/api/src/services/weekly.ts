@@ -20,7 +20,7 @@ import {
 } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { conflict, notFound } from "../lib/errors.js";
-import { brandingUrl, dateToStr, pointsSystemOf, strToDate, toTeamSummary } from "../lib/serialize.js";
+import { brandingUrl, dateToStr, organizerName, pointsSystemOf, strToDate, toTeamSummary } from "../lib/serialize.js";
 import { loadOwnScrim } from "./scrims.js";
 import { inviteTeam } from "./tournaments/manage.js";
 
@@ -176,7 +176,7 @@ export async function teamFinalsSlots(teamId: string): Promise<FinalsSlot[]> {
     orderBy: { registeredAt: "desc" },
     include: {
       tournament: {
-        select: { id: true, title: true, posterKey: true, manager: { select: { displayName: true } }, stages: { orderBy: { order: "desc" }, take: 1 } },
+        select: { id: true, title: true, posterKey: true, manager: { select: { displayName: true, orgName: true } }, stages: { orderBy: { order: "desc" }, take: 1 } },
       },
     },
   });
@@ -186,7 +186,7 @@ export async function teamFinalsSlots(teamId: string): Promise<FinalsSlot[]> {
       const stage = e.tournament.stages[0]!;
       return {
         entryId: e.id,
-        tournament: { id: e.tournament.id, title: e.tournament.title, posterUrl: brandingUrl(e.tournament.posterKey), organizer: e.tournament.manager.displayName },
+        tournament: { id: e.tournament.id, title: e.tournament.title, posterUrl: brandingUrl(e.tournament.posterKey), organizer: organizerName(e.tournament.manager) },
         stage: { order: stage.order, name: stage.name, startDate: stageStart(stage.schedule) },
         note: e.awardNote,
         awardedAt: e.registeredAt.toISOString(),

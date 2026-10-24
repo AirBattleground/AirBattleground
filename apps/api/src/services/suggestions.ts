@@ -7,7 +7,7 @@ import type { Prisma } from "@prisma/client";
 import type { CreateSuggestionInput, SuggestionStatus, TeamSuggestionRow } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { AppError, conflict, notFound } from "../lib/errors.js";
-import { brandingUrl, playerSummarySelect, strToDate, toPlayerSummary } from "../lib/serialize.js";
+import { brandingUrl, organizerName, organizerSelect, playerSummarySelect, strToDate, toPlayerSummary } from "../lib/serialize.js";
 import { MSG, membershipOf, noTeam } from "./players.js";
 import { closesAtOf, scrimOccursOn } from "./schedule.js";
 import { scrimInclude } from "../lib/serialize.js";
@@ -21,10 +21,10 @@ async function toRows(rows: SuggestionWithFrom[]): Promise<TeamSuggestionRow[]> 
   const tournamentIds = [...new Set(rows.flatMap((r) => (r.tournamentId ? [r.tournamentId] : [])))];
   const [scrims, tournaments] = await Promise.all([
     scrimIds.length
-      ? prisma.scrim.findMany({ where: { id: { in: scrimIds } }, select: { id: true, title: true, startTime: true, posterKey: true, manager: { select: { displayName: true } } } })
+      ? prisma.scrim.findMany({ where: { id: { in: scrimIds } }, select: { id: true, title: true, startTime: true, posterKey: true, manager: { select: { displayName: true, orgName: true } } } })
       : [],
     tournamentIds.length
-      ? prisma.tournament.findMany({ where: { id: { in: tournamentIds } }, select: { id: true, title: true, posterKey: true, manager: { select: { displayName: true } } } })
+      ? prisma.tournament.findMany({ where: { id: { in: tournamentIds } }, select: { id: true, title: true, posterKey: true, manager: { select: { displayName: true, orgName: true } } } })
       : [],
   ]);
   const scrimById = new Map(scrims.map((s) => [s.id, s]));
@@ -38,8 +38,8 @@ async function toRows(rows: SuggestionWithFrom[]): Promise<TeamSuggestionRow[]> 
       status: r.status,
       from: toPlayerSummary(r.fromUser),
       note: r.note,
-      scrim: s && r.date ? { id: s.id, title: s.title, date: r.date, startTime: s.startTime, posterUrl: brandingUrl(s.posterKey), organiser: s.manager.displayName } : null,
-      tournament: t ? { id: t.id, name: t.title, posterUrl: brandingUrl(t.posterKey), organiser: t.manager.displayName } : null,
+      scrim: s && r.date ? { id: s.id, title: s.title, date: r.date, startTime: s.startTime, posterUrl: brandingUrl(s.posterKey), organiser: organizerName(s.manager) } : null,
+      tournament: t ? { id: t.id, name: t.title, posterUrl: brandingUrl(t.posterKey), organiser: organizerName(t.manager) } : null,
       createdAt: r.createdAt.toISOString(),
     };
   });
@@ -64,7 +64,7 @@ export async function listSuggestions(userId: string, status: SuggestionStatus):
 
 async function assertTarget(teamId: string, input: CreateSuggestionInput, now: Date) {
   if (input.kind === "SCRIM") {
-    const scrim = await prisma.scrim.findUnique({ where: { id: input.scrimId }, include: { ...scrimInclude, manager: { select: { id: true, displayName: true, orgLogoKey: true, isActive: true } } } });
+    const scrim = await prisma.scrim.findUnique({ where: { id: input.scrimId }, include: { ...scrimInclude, manager: { select: { ...organizerSelect, isActive: true } } } });
     if (!scrim || scrim.status === "ARCHIVED" || !scrim.published || !scrim.manager.isActive || !scrimOccursOn(scrim, input.date)) throw notFound("Scrim not found");
     if (scrim.status !== "ACTIVE" || now >= closesAtOf(input.date, scrim)) {
       throw new AppError("REGISTRATION_CLOSED", "Registration for this scrim has closed");

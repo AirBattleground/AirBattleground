@@ -2,10 +2,13 @@ import type { Prisma } from "@prisma/client";
 import {
   API_PREFIX,
   DEFAULT_POINTS_SYSTEM,
+  DEFAULT_POSTER_TEMPLATE,
+  POSTER_TEMPLATES,
   isLanguage,
   pointsSystemSchema,
   scrimMatchPlan,
   type PointsSystem,
+  type PosterTemplate,
 } from "@7xen/shared";
 import type {
   GameMap,
@@ -34,11 +37,16 @@ export const iso = (d: Date | null): string | null => (d ? d.toISOString() : nul
 /** branding storage key ("branding/<id>.png") → URL the frontends load; null stays null. */
 export const brandingUrl = (key: string | null | undefined): string | null => (key ? `${API_PREFIX}/media/${key}` : null);
 
-export const organizerSelect = { id: true, displayName: true, orgLogoKey: true } satisfies Prisma.UserSelect;
-/** manager row → OrganizerRef (adds the org logo URL) */
-export const toOrganizer = (m: { id: string; displayName: string; orgLogoKey: string | null }): OrganizerRef => ({
+export const organizerSelect = { id: true, displayName: true, orgName: true, orgLogoKey: true } satisfies Prisma.UserSelect;
+/**
+ * The name players see for an organiser: the organisation's name. The manager's own name is for the admin only —
+ * it's the fallback just for older accounts saved before every manager had an org name.
+ */
+export const organizerName = (m: { displayName: string; orgName: string | null }): string => m.orgName?.trim() || m.displayName;
+/** manager row → OrganizerRef (adds the org logo URL); displayName = the org's name */
+export const toOrganizer = (m: { id: string; displayName: string; orgName: string | null; orgLogoKey: string | null }): OrganizerRef => ({
   id: m.id,
-  displayName: m.displayName,
+  displayName: organizerName(m),
   logoUrl: brandingUrl(m.orgLogoKey),
 });
 
@@ -103,6 +111,10 @@ export const toTeamSummary = (t: { id: string; name: string; tag: string }): Tea
   tag: t.tag,
 });
 
+/** A stored preset that's no longer offered falls back to the default. */
+export const posterTemplateOf = (t: string): PosterTemplate =>
+  (POSTER_TEMPLATES as readonly string[]).includes(t) ? (t as PosterTemplate) : DEFAULT_POSTER_TEMPLATE;
+
 export function toScrim(s: ScrimWithManager): Scrim {
   return {
     id: s.id,
@@ -122,6 +134,7 @@ export function toScrim(s: ScrimWithManager): Scrim {
     pointsSystem: pointsSystemOf(s.pointsSystem),
     manager: toOrganizer(s.manager),
     posterUrl: brandingUrl(s.posterKey),
+    posterTemplate: posterTemplateOf(s.posterTemplate),
     winCoins: s.winCoins,
     createdAt: s.createdAt.toISOString(),
   };

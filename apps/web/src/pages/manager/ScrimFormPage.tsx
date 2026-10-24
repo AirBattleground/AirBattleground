@@ -27,7 +27,7 @@ import { Switch } from "@7xen/ui/components/ui/switch";
 import { Textarea } from "@7xen/ui/components/ui/textarea";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
-import { errorMessage, useCreateScrim, useScrim, useUpdateScrim } from "@/features/manager/api";
+import { errorMessage, useCreateScrim, useScrim, useScrims, useUpdateScrim } from "@/features/manager/api";
 import { formatDate, formatTime, nextOccurrences, scheduleSummary, slotRangeLabel } from "@/features/manager/format";
 import { DatePickerButton } from "@/features/manager/components/DatePickerButton";
 import { MapChip } from "@/features/manager/components/maps";
@@ -39,6 +39,8 @@ import { ScrimPosterCard } from "@/features/manager/components/BrandingCards";
 import { Stepper } from "@/features/manager/components/Stepper";
 import { TimeSelect } from "@/features/manager/components/TimeSelect";
 import { coinsLabel, WinCoinsInput } from "@/features/coins/components/WinCoinsInput";
+import { PosterPresetPicker } from "@/features/posters/PosterPresetPicker";
+import { useAuth } from "@/lib/auth";
 
 const TOUR: TourStep[] = [
   { title: "Set up a scrim", description: "Five short steps. Everything can be changed later." },
@@ -49,6 +51,7 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="form-close"]', title: "Registration closes", description: "When match 1 starts, or a few minutes before so you have time to set up the lobby. After that only registered teams see the scrim." },
   { element: '[data-tour="form-slots"]', title: "Slots", description: "How many teams can join, and which slot number they start from. The grid shows exactly which slots teams get." },
   { element: '[data-tour="form-coins"]', title: "BG coins", description: "Coins the winner of each match earns. They go to the winning team's leader when you publish the results." },
+  { element: '[data-tour="form-preset"]', title: "Poster preset", description: "No poster artwork? Pick a preset — teams see it with your scrim's name, maps and time. Upload your own any time and it takes over." },
   { element: '[data-tour="form-poster"]', title: "Poster", description: "Optional: upload square poster artwork. Teams see it when they browse scrims. It saves right away." },
   { element: '[data-tour="form-preview"]', title: "Check and save", description: "Everything in one place. Happy? Hit the button." },
   { element: '[data-tour="form-publish"]', title: "Publish or draft", description: "Published scrims show up for teams right away. A draft stays hidden until you publish it." },
@@ -63,7 +66,7 @@ type FieldName = keyof FormIn;
 
 /** Which fields each step validates (and where a field error sends the manager back to). */
 const STEP_FIELDS: FieldName[][] = [
-  ["title", "description"],
+  ["title", "description", "posterTemplate"],
   ["recurrence", "startDate", "endDate"],
   ["maps", "startTime", "matchTimes", "idpMinutes", "registrationCloseMinutes"],
   ["slotCount", "firstSlot", "winCoins"],
@@ -85,6 +88,7 @@ function defaults(): FormIn {
     idpMinutes: [DEFAULT_IDP_MINUTES, DEFAULT_IDP_MINUTES, DEFAULT_IDP_MINUTES],
     registrationCloseMinutes: 0,
     published: true,
+    posterTemplate: "TOPO",
     recurrence: "DAILY",
     startDate: todayInAppTz(),
     endDate: null,
@@ -105,6 +109,7 @@ function fromScrim(s: Scrim): FormIn {
     idpMinutes: s.matches.map((m) => m.idpMinutes),
     registrationCloseMinutes: s.registrationCloseMinutes,
     published: s.published,
+    posterTemplate: s.posterTemplate,
     recurrence: s.recurrence,
     startDate: s.startDate,
     endDate: s.endDate,
@@ -149,6 +154,10 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
   const update = useUpdateScrim();
   const [conflict, setConflict] = useState<string | null>(null);
   const today = todayInAppTz();
+  const { user } = useAuth();
+  // the organiser name teams see (the org's name) — any of my scrims carries it; a first scrim falls back to my name
+  const myScrims = useScrims();
+  const orgName = scrim?.manager.displayName ?? myScrims.data?.[0]?.manager.displayName ?? user?.displayName;
 
   const form = useForm<FormIn, unknown, CreateScrimInput>({
     resolver: zodResolver(createScrimSchema),
@@ -295,6 +304,31 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
               <Field label="Description" optional htmlFor="description" error={errors.description?.message}>
                 <Textarea id="description" rows={3} placeholder="Rules, eligibility, prize — anything teams should know." {...register("description")} />
               </Field>
+              <div data-tour="form-preset">
+                <Field
+                  label="Poster"
+                  hint={isEdit ? "Teams see this preset until you upload your own poster below." : "Teams see this preset until you upload your own poster from the scrim page."}
+                >
+                  <Controller
+                    control={control}
+                    name="posterTemplate"
+                    render={({ field }) => (
+                      <PosterPresetPicker
+                        value={field.value ?? "TOPO"}
+                        onChange={field.onChange}
+                        className="max-w-md"
+                        data={{
+                          title: title?.trim() || "Your scrim",
+                          maps,
+                          startTime: matchTimes[0] ?? startTime,
+                          recurrence,
+                          organiser: orgName,
+                        }}
+                      />
+                    )}
+                  />
+                </Field>
+              </div>
               {isEdit && <ScrimPosterCard scrimId={scrim.id} url={scrim.posterUrl} compact tour="form-poster" className="border-dashed shadow-none" />}
             </div>
           </Section>

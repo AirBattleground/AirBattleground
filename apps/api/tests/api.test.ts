@@ -326,6 +326,37 @@ describe("scrim match plan, close time, drafts", () => {
     expect(past.body.items).toHaveLength(1);
   });
 
+  it("poster preset: defaults to TOPO, can be picked and changed, and reaches the team's views", async () => {
+    const admin = await adminAgent();
+    const { agent: mgr } = await createManager(admin);
+    const { agent: team } = await createTeam(admin);
+    const plain = await createScrim(mgr, { title: "Plain" });
+    expect((await mgr.get(`/api/manager/scrims/${plain.id}`)).body.posterTemplate).toBe("TOPO");
+    const scrim = await createScrim(mgr, { posterTemplate: "DROPZONE" });
+    expect((await mgr.get(`/api/manager/scrims/${scrim.id}`)).body.posterTemplate).toBe("DROPZONE");
+    expect((await mgr.patch(`/api/manager/scrims/${scrim.id}`).send({ posterTemplate: "NOPE" })).status).toBe(400);
+    await mgr.patch(`/api/manager/scrims/${scrim.id}`).send({ posterTemplate: "LINEUP" }).expect(200);
+
+    const list = (await team.get("/api/team/scrims").query({ date: tomorrow() })).body.items;
+    expect(list.find((x: { scrim: { id: string } }) => x.scrim.id === scrim.id).scrim.posterTemplate).toBe("LINEUP");
+    const reg = await register(team, scrim.id);
+    expect(reg.body.scrim).toMatchObject({ posterTemplate: "LINEUP", recurrence: "DAILY" });
+  });
+
+  it("teams see the organisation's name as the organiser, not the manager's own name", async () => {
+    const admin = await adminAgent();
+    const { agent: mgr, row } = await createManager(admin);
+    const { agent: team } = await createTeam(admin);
+    const scrim = await createScrim(mgr);
+    const organiser = async () =>
+      (await team.get("/api/team/scrims").query({ date: tomorrow() })).body.items.find((x: { scrim: { id: string } }) => x.scrim.id === scrim.id).scrim.manager.displayName;
+    // older accounts without an org name fall back to the manager's name
+    expect(await organiser()).toBe(row.displayName);
+    await prisma.user.update({ where: { id: row.id }, data: { orgName: "Wolverine Esports" } });
+    expect(await organiser()).toBe("Wolverine Esports");
+    expect((await team.get(`/api/team/scrims/${scrim.id}`).query({ date: tomorrow() })).body.scrim.manager.displayName).toBe("Wolverine Esports");
+  });
+
   it("removing a match drops unplayed match rows, but not one that already started", async () => {
     const admin = await adminAgent();
     const { agent: mgr } = await createManager(admin);

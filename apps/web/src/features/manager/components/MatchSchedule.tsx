@@ -1,9 +1,10 @@
 import { EyeOff, Loader2, Radio } from "lucide-react";
 import { toast } from "sonner";
-import { addMinutesToTime, type Scrim } from "@7xen/shared";
+import { addMinutesToTime, type PosterTemplate, type Scrim } from "@7xen/shared";
 import { Pill } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
+import { PosterPresetPicker } from "@/features/posters/PosterPresetPicker";
 import { errorMessage, useUpdateScrim } from "../api";
 import { formatTime } from "../format";
 import { MapChip } from "./maps";
@@ -72,6 +73,36 @@ export function DraftBanner({ scrim }: { scrim: Scrim }) {
       <Button size="sm" className="h-10" disabled={pending} onClick={() => setPublished(true)}>
         {pending ? <Loader2 className="animate-spin" /> : <Radio />} Publish now
       </Button>
+    </div>
+  );
+}
+
+/** The scrim's poster preset, saved on tap; shown to teams while no poster image is uploaded. */
+export function ScrimPresetCard({ scrim }: { scrim: Scrim }) {
+  const upd = useUpdateScrim();
+  const pick = (posterTemplate: PosterTemplate) =>
+    posterTemplate !== scrim.posterTemplate &&
+    upd.mutate(
+      { id: scrim.id, input: { posterTemplate } },
+      {
+        onSuccess: () => toast.success("Poster preset saved"),
+        onError: (e) => toast.error("Couldn't save the preset", { description: errorMessage(e) }),
+      },
+    );
+  return (
+    <div data-tour="detail-preset" className="space-y-2">
+      <div>
+        <p className="text-sm font-semibold">Poster preset</p>
+        <p className="text-xs text-muted-foreground">
+          {scrim.posterUrl ? "Shown if you remove your poster." : "Teams see this until you upload a poster."}
+        </p>
+      </div>
+      <PosterPresetPicker
+        value={scrim.posterTemplate}
+        onChange={pick}
+        disabled={upd.isPending}
+        data={{ title: scrim.title, maps: scrim.maps, startTime: scrim.startTime, recurrence: scrim.recurrence, organiser: scrim.manager.displayName }}
+      />
     </div>
   );
 }

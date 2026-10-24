@@ -18,6 +18,7 @@ const MAP_TONE: Record<GameMap, string> = {
   TOWN: "bg-chart-5/10 text-chart-5 border-chart-5/30",
 };
 
+/** keep in step with the poster presets' MAP_HEX (features/posters/ScrimPosterArt.tsx) */
 const MAP_DOT: Record<GameMap, string> = {
   ERANGEL: "bg-info",
   MIRAMAR: "bg-warning",
@@ -71,6 +72,26 @@ export function MapDots({ maps, className }: { maps: GameMap[]; className?: stri
           {MAP_LABELS[m]}
         </span>
       ))}
+    </span>
+  );
+}
+
+/**
+ * A scrim's matches in a tight row: one or two show their map names; more become one map-coloured bar per match +
+ * "N matches" (names on hover / for screen readers, and in the card's match-times ⓘ).
+ */
+export function MatchBars({ maps, label, className }: { maps: GameMap[]; label: string; className?: string }) {
+  if (maps.length <= 2) return <MapDots maps={maps} className={className} />;
+  const names = maps.map((m) => MAP_LABELS[m]).join(", ");
+  return (
+    <span className={cn("flex min-w-0 items-center gap-2 text-xs font-medium whitespace-nowrap text-muted-foreground", className)} title={names}>
+      <span aria-hidden className="flex shrink-0 items-center gap-0.5">
+        {maps.map((m, i) => (
+          <span key={`${m}-${i}`} className={cn("h-1.5 w-3 rounded-full", MAP_DOT[m])} />
+        ))}
+      </span>
+      <span className="truncate">{label}</span>
+      <span className="sr-only">: {names}</span>
     </span>
   );
 }

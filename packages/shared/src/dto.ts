@@ -3,7 +3,7 @@
  * Every error response is `ApiErrorBody` with an HTTP 4xx/5xx status.
  * Dates are "YYYY-MM-DD"; timestamps are ISO-8601 strings.
  */
-import type { GameMap, Recurrence, RegistrationStatus, Role, ScrimStatus, TeamRequestStatus } from "./enums";
+import type { GameMap, PosterTemplate, Recurrence, RegistrationStatus, Role, ScrimStatus, TeamRequestStatus } from "./enums";
 
 export type ApiErrorCode =
   | "VALIDATION_ERROR"
@@ -172,6 +172,8 @@ export interface Scrim {
   manager: OrganizerRef;
   /** poster image URL (GET it with the session cookie); null = none uploaded */
   posterUrl: string | null;
+  /** additive: preset artwork shown while posterUrl is null */
+  posterTemplate: PosterTemplate;
   /** phase 7: BG coins for each match winner (0 = none) */
   winCoins: number;
   createdAt: string;
@@ -276,7 +278,7 @@ export interface TeamRegistration {
   over?: boolean;
   createdAt: string;
   decidedAt: string | null;
-  scrim: Pick<Scrim, "id" | "title" | "maps" | "startTime" | "slotCount" | "firstSlot" | "manager" | "posterUrl">;
+  scrim: Pick<Scrim, "id" | "title" | "maps" | "startTime" | "slotCount" | "firstSlot" | "manager" | "posterUrl"> & Partial<Pick<Scrim, "posterTemplate" | "recurrence">>;
 }
 
 export interface TeamDashboard {

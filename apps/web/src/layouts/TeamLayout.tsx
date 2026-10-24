@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Outlet } from "react-router-dom";
-import { BarChart3, CalendarSearch, Crown, Crosshair, Home, Medal, Megaphone, Radio, Search, Ticket, Trophy, UserRound, Users } from "lucide-react";
+import { BarChart3, CalendarSearch, Crown, Crosshair, Home, Medal, Megaphone, Radio, Swords, Ticket, Trophy, UserRound, Users } from "lucide-react";
 import { usePlayerSession } from "@/lib/auth";
 import { usePlayerTeam } from "@/features/player/api";
 import { AppShell, type NavItem, type ShellBrand, type SidebarSlot, type WelcomeStep } from "@/components/shell";
@@ -22,7 +22,7 @@ import { useT } from "@/i18n/core";
  */
 const NAV: NavItem[] = [
   { key: "home", to: "/team", label: "Home", icon: Home, end: true },
-  { key: "scrims", to: "/team/scrims", label: "Find scrims", short: "Scrims", icon: Search },
+  { key: "scrims", to: "/team/scrims", label: "Find scrims", short: "Scrims", icon: Swords },
   { key: "tournaments", to: "/team/tournaments", label: "Tournaments", short: "Cups", icon: Trophy },
   { key: "registrations", to: "/team/registrations", label: "My registrations", short: "Slots", icon: Ticket },
   { key: "rank", to: "/team/rank", label: "Rank", icon: Crown },

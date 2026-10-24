@@ -9,6 +9,11 @@ export type Recurrence = (typeof RECURRENCES)[number];
 export const SCRIM_STATUSES = ["ACTIVE", "PAUSED", "ARCHIVED"] as const;
 export type ScrimStatus = (typeof SCRIM_STATUSES)[number];
 
+/** Preset artwork drawn for a scrim with no uploaded poster (add a preset here + its art in the web app). */
+export const POSTER_TEMPLATES = ["TOPO", "DROPZONE", "LINEUP"] as const;
+export type PosterTemplate = (typeof POSTER_TEMPLATES)[number];
+export const DEFAULT_POSTER_TEMPLATE: PosterTemplate = "TOPO";
+
 export const REGISTRATION_STATUSES = ["PENDING", "APPROVED", "REJECTED", "CANCELLED"] as const;
 export type RegistrationStatus = (typeof REGISTRATION_STATUSES)[number];
 
