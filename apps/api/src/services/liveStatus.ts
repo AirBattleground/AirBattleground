@@ -19,6 +19,7 @@
 import { createHash } from "node:crypto";
 import type { LiveCaptureStatus, Prisma } from "@prisma/client";
 import {
+  addMinutesToTime,
   LIVE_CAPTURE_ACTIVE_MS,
   LIVE_MANAGER_LOCK_MS,
   LIVE_MIN_CONFIDENCE,
@@ -46,7 +47,7 @@ import { conflict, forbidden, notFound } from "../lib/errors.js";
 import { avatarOf, brandingUrl, dateToStr } from "../lib/serialize.js";
 import { matchContext } from "./matchContext.js";
 import { loadOwnMatch, matchPointsSystem, ownerInclude, ownerManagerId, type MatchWithOwner } from "./matches.js";
-import { startsAtOf } from "./schedule.js";
+import { closesAtOf } from "./schedule.js";
 import { publicUrl } from "./youtube.js";
 
 /** One player's stored state. Older rows stored bare state strings; storedTeams() upgrades them. */
@@ -123,7 +124,7 @@ function time12(hhmm: string): string {
 }
 
 /**
- * What 7XEN Studio may do with a match. A scrim match unlocks when registration closes (the scrim's start time) or
+ * What 7XEN Studio may do with a match. A scrim match unlocks when registration closes (match 1's start, or earlier) or
  * as soon as every slot is filled; a tournament group match is ready once drawn. `teams` = teams in the match.
  */
 export function controlOf(m: MatchWithOwner, teams: number, now = new Date()): StudioMatchControl {
@@ -133,13 +134,14 @@ export function controlOf(m: MatchWithOwner, teams: number, now = new Date()): S
   if (m.status === "RESULTS_REVIEW") return { ...base, state: "ended" };
   if (m.status === "LIVE") return { ...base, state: "live" };
   if (m.session) {
-    const closes = startsAtOf(dateToStr(m.session.date), m.session.scrim.startTime);
+    const sc = m.session.scrim;
+    const closes = closesAtOf(dateToStr(m.session.date), sc);
     if (now < closes && teams < slots) {
       return {
         ...base,
         state: "locked",
         unlocksAt: closes.toISOString(),
-        reason: `Registration is open until ${time12(m.session.scrim.startTime)} (${teams}/${slots} slots filled)`,
+        reason: `Registration is open until ${time12(addMinutesToTime(sc.startTime, -sc.registrationCloseMinutes))} (${teams}/${slots} slots filled)`,
       };
     }
   }

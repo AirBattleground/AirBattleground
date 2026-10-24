@@ -153,7 +153,14 @@ export interface Scrim {
   title: string;
   description: string | null;
   maps: GameMap[];
+  /** match 1's start ("HH:mm", IST) */
   startTime: string;
+  /** additive: every match in play order — map, "HH:mm" start (null = not timed: older scrims' matches 2+) and IDP minutes before it */
+  matches: ScrimMatchPlan[];
+  /** additive: registration closes this many minutes before match 1 (0 = when it starts) */
+  registrationCloseMinutes: number;
+  /** additive: false = draft, only the manager sees it */
+  published: boolean;
   recurrence: Recurrence;
   startDate: string;
   endDate: string | null;
@@ -170,12 +177,21 @@ export interface Scrim {
   createdAt: string;
 }
 
+export interface ScrimMatchPlan {
+  number: number;
+  map: GameMap;
+  startTime: string | null;
+  idpMinutes: number;
+}
+
 /** A scrim as it runs on one specific date, with live counts. */
 export interface ScrimOnDate {
   scrim: Scrim;
   date: string;
-  /** ISO instant the session starts; registration closes at this time */
+  /** ISO instant match 1 starts */
   startsAt: string;
+  /** additive: ISO instant registration closes (= startsAt unless the scrim closes earlier) */
+  registrationClosesAt: string;
   registrationOpen: boolean;
   counts: { pending: number; approved: number; slotsLeft: number };
 }
@@ -193,8 +209,10 @@ export interface TeamScrimDetail extends TeamScrimOnDate {
   matches: {
     number: number;
     map: GameMap;
-    /** set when the organiser scheduled it (match 1 defaults to the scrim's start) */
+    /** the match's planned start (null = not timed) */
     startsAt: string | null;
+    /** additive: when the room ID/password is due (IDP), null = not timed */
+    idpAt?: string | null;
     published: boolean;
     room: { roomId: string; password: string } | null;
     /** the room exists and appears at this time (null = not created yet, or already shown) */
@@ -250,6 +268,8 @@ export interface TeamRegistration {
   rejectionReason: string | null;
   date: string;
   startsAt: string;
+  /** additive: ISO instant registration closes (cancelling stops then too) */
+  registrationClosesAt?: string;
   createdAt: string;
   decidedAt: string | null;
   scrim: Pick<Scrim, "id" | "title" | "maps" | "startTime" | "slotCount" | "firstSlot" | "manager" | "posterUrl">;

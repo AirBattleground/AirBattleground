@@ -9,7 +9,7 @@ import { prisma } from "../db.js";
 import { AppError, conflict, notFound } from "../lib/errors.js";
 import { brandingUrl, playerSummarySelect, strToDate, toPlayerSummary } from "../lib/serialize.js";
 import { MSG, membershipOf, noTeam } from "./players.js";
-import { scrimOccursOn, startsAtOf } from "./schedule.js";
+import { closesAtOf, scrimOccursOn } from "./schedule.js";
 import { scrimInclude } from "../lib/serialize.js";
 
 const suggestionInclude = { fromUser: { select: playerSummarySelect } } satisfies Prisma.TeamSuggestionInclude;
@@ -65,8 +65,8 @@ export async function listSuggestions(userId: string, status: SuggestionStatus):
 async function assertTarget(teamId: string, input: CreateSuggestionInput, now: Date) {
   if (input.kind === "SCRIM") {
     const scrim = await prisma.scrim.findUnique({ where: { id: input.scrimId }, include: { ...scrimInclude, manager: { select: { id: true, displayName: true, orgLogoKey: true, isActive: true } } } });
-    if (!scrim || scrim.status === "ARCHIVED" || !scrim.manager.isActive || !scrimOccursOn(scrim, input.date)) throw notFound("Scrim not found");
-    if (scrim.status !== "ACTIVE" || now >= startsAtOf(input.date, scrim.startTime)) {
+    if (!scrim || scrim.status === "ARCHIVED" || !scrim.published || !scrim.manager.isActive || !scrimOccursOn(scrim, input.date)) throw notFound("Scrim not found");
+    if (scrim.status !== "ACTIVE" || now >= closesAtOf(input.date, scrim)) {
       throw new AppError("REGISTRATION_CLOSED", "Registration for this scrim has closed");
     }
     const reg = await prisma.registration.findFirst({

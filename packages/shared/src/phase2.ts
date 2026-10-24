@@ -214,6 +214,8 @@ export interface MatchDetail {
   /** TDM battle match (2 teams; a kills tie needs the manager to pick the winner with a tieNote) */
   isTdm?: boolean;
   tieNote?: string | null;
+  /** additive: a scrim match's planned IDP — minutes before the start the room goes out (null for tournament matches) */
+  idpMinutes?: number | null;
 }
 
 export const saveLineupSchema = z.object({

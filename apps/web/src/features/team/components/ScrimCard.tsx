@@ -97,8 +97,10 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
   const { scrim, date, startsAt, counts, myRegistration: my } = item;
   const t = useT(scrimUi);
   const now = useNow(15_000);
+  const closesAt = item.registrationClosesAt ?? startsAt;
   const started = now >= new Date(startsAt).getTime();
-  const open = item.registrationOpen && !started;
+  const closed = now >= new Date(closesAt).getTime();
+  const open = item.registrationOpen && !closed;
   const full = counts.slotsLeft <= 0;
   const status = my?.status === "CANCELLED" ? null : (my?.status ?? null);
 
@@ -123,7 +125,7 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
       {open ? <Timer className="size-3.5 text-primary" /> : <Lock className="size-3.5" />}
       {open ? (
         <span>
-          {t("closes_in")} <Countdown to={startsAt} className="font-semibold text-foreground" />
+          {t("closes_in")} <Countdown to={closesAt} className="font-semibold text-foreground" />
         </span>
       ) : started ? (
         t("started")
@@ -202,7 +204,7 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
                     <p className="font-display text-xl font-bold text-success">{t("youre_in")}</p>
                     {started && <p className="text-xs text-muted-foreground">{t("in_progress")}</p>}
                   </div>
-                  {!started && isLeader && (
+                  {!closed && isLeader && (
                     <Button variant="ghost" className="h-10 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>
                       {t("cancel")}
                     </Button>
@@ -215,7 +217,7 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
                   <div {...tour("scrim-status")}>
                     <TeamStatusBadge status="PENDING" className="px-3 py-1 text-sm" />
                   </div>
-                  {!started && isLeader && (
+                  {!closed && isLeader && (
                     <Button variant="ghost" className="h-10 shrink-0 text-muted-foreground hover:text-destructive" onClick={() => setCancelOpen(true)}>
                       {t("cancel_request")}
                     </Button>

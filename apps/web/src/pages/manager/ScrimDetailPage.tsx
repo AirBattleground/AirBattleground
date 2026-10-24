@@ -38,11 +38,11 @@ import {
 } from "@/features/manager/format";
 import { DatePickerButton } from "@/features/manager/components/DatePickerButton";
 import { DateStrip } from "@/features/manager/components/DateStrip";
-import { MapChips } from "@/features/manager/components/maps";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { RejectDialog } from "@/features/manager/components/RejectDialog";
 import { ScrimPosterCard } from "@/features/manager/components/BrandingCards";
 import { ScrimStatusPill } from "@/features/manager/components/ScrimStatusPill";
+import { DraftBanner, DraftPill, MatchScheduleList, registrationCloseLabel } from "@/features/manager/components/MatchSchedule";
 import { SlotBoard, slotListText } from "@/features/manager/components/SlotBoard";
 import { useNow } from "@/features/manager/components/useNow";
 import { Zone, ZoneLabel } from "@/features/manager/components/Zone";
@@ -122,12 +122,13 @@ function Detail({ scrim }: { scrim: Scrim }) {
       <PageHeader
         eyebrow={
           <span className="flex items-center gap-1.5">
-            <Repeat className="size-3.5" /> {recurrenceLabel(scrim)} · {formatTime(scrim.startTime)} IST
+            <Repeat className="size-3.5" /> {recurrenceLabel(scrim)} · {scrim.maps.length} match{scrim.maps.length === 1 ? "" : "es"}
           </span>
         }
         title={scrim.title}
         actions={
           <>
+            {!scrim.published && <DraftPill />}
             {scrim.status !== "ACTIVE" && <ScrimStatusPill status={scrim.status} />}
             {scrim.recurrence !== "ONCE" && (
               <Button asChild variant="outline">
@@ -146,6 +147,7 @@ function Detail({ scrim }: { scrim: Scrim }) {
       />
 
       <div className="space-y-6">
+      {!scrim.published && scrim.status !== "ARCHIVED" && <DraftBanner scrim={scrim} />}
       {scrim.status !== "ACTIVE" && (
         <div className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-sm">
           {scrim.status === "PAUSED"
@@ -201,14 +203,12 @@ function Detail({ scrim }: { scrim: Scrim }) {
         </summary>
         <div className="grid gap-5 border-t p-4 sm:p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,360px)]">
           <dl className="divide-y text-sm">
-            <InfoRow label="Start time">
-              <span className="font-display text-base font-bold">{formatTime(scrim.startTime)}</span> IST
+            <InfoRow label="Matches (IST)">
+              <MatchScheduleList scrim={scrim} />
             </InfoRow>
+            <InfoRow label="Registration closes">{registrationCloseLabel(scrim)}</InfoRow>
             <InfoRow label="Slots">{slotRangeLabel(scrim.firstSlot, scrim.slotCount)}</InfoRow>
             <InfoRow label="Runs">{dateRangeLabel(scrim)}</InfoRow>
-            <InfoRow label="Matches">
-              <MapChips maps={scrim.maps} numbered className="justify-end" />
-            </InfoRow>
             {scrim.description && (
               <div className="py-2.5">
                 <dt className="text-muted-foreground">Description</dt>

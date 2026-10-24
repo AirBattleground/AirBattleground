@@ -42,6 +42,8 @@
  *   POST   /api/manager/scrims             CreateScrimInput      → Scrim
  *   GET    /api/manager/scrims/:id                               → Scrim
  *   PATCH  /api/manager/scrims/:id         UpdateScrimInput      → Scrim
+ *          Match plan (additive): matchTimes[] + idpMinutes[] (one per map), registrationCloseMinutes, published (false = draft:
+ *          hidden from teams, the Live page and 7XEN Studio). Studio's control.unlocksAt = the registration close time.
  *   GET    /api/manager/schedule?date=                           → ListResponse<ScrimOnDate>   (own scrims running that date)
  *   GET    /api/manager/scrims/:id/sessions/:date                → SessionDetail  (404 if scrim doesn't run that date)
  *   GET    /api/manager/requests                                 → ListResponse<PendingRequest> (all PENDING for upcoming sessions, soonest first)
@@ -66,7 +68,9 @@
  *
  * TEAM (role TEAM)
  *   GET    /api/team/dashboard                                   → TeamDashboard
- *   GET    /api/team/scrims?date=                                → ListResponse<TeamScrimOnDate> (ACTIVE scrims of all managers on that date)
+ *   GET    /api/team/scrims?date=                                → ListResponse<TeamScrimOnDate> (ACTIVE, published scrims of all managers on
+ *                                                                   that date; once registration closes only to registered teams, and
+ *                                                                   to nobody once every match of the day is published)
  *   GET    /api/team/scrims/:scrimId?date=                       → TeamScrimDetail (one scrim on one date; no date = its next date that
  *                                                                   hasn't started; 404 NOT_FOUND when it doesn't run that day / is gone)
  *   POST   /api/team/registrations         CreateRegistrationInput → TeamRegistration (409 CONFLICT already registered; 409 REGISTRATION_CLOSED;

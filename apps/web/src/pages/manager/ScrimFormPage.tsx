@@ -3,12 +3,15 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, ChevronDown, Coins, Info, Loader2, Pencil, Save } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, ChevronDown, Coins, EyeOff, Info, Loader2, Pencil, Radio, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
   addDays,
+  addMinutesToTime,
   ApiError,
   createScrimSchema,
+  DEFAULT_IDP_MINUTES,
+  matchOffsets,
   MAX_ROOM_SLOTS,
   todayInAppTz,
   updateScrimSchema,
@@ -25,10 +28,10 @@ import { Textarea } from "@7xen/ui/components/ui/textarea";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { errorMessage, useCreateScrim, useScrim, useUpdateScrim } from "@/features/manager/api";
-import { formatDate, nextOccurrences, scheduleSummary, slotRangeLabel } from "@/features/manager/format";
+import { formatDate, formatTime, nextOccurrences, scheduleSummary, slotRangeLabel } from "@/features/manager/format";
 import { DatePickerButton } from "@/features/manager/components/DatePickerButton";
-import { MapChips } from "@/features/manager/components/maps";
-import { MapsPicker } from "@/features/manager/components/MapsPicker";
+import { MapChip } from "@/features/manager/components/maps";
+import { DEFAULT_GAP, MatchPlanEditor, RegistrationClosePicker, type MatchPlanValue } from "@/features/manager/components/MatchPlanEditor";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { RecurrencePicker } from "@/features/manager/components/RecurrencePicker";
 import { SlotGridPreview } from "@/features/manager/components/SlotGridPreview";
@@ -41,12 +44,14 @@ const TOUR: TourStep[] = [
   { title: "Set up a scrim", description: "Five short steps. Everything can be changed later." },
   { element: '[data-tour="form-steps"]', title: "Your progress", description: "Basics → Schedule → Matches → Slots → Review. Finished steps can be tapped to go back." },
   { element: '[data-tour="form-basics"]', title: "Give it a name", description: "Teams see this title when they browse scrims, so keep it clear — e.g. “Evening T3 Scrims”." },
-  { element: '[data-tour="form-schedule"]', title: "When does it run?", description: "One-time, every day, or weekends only. Pick the start date and time (Indian time)." },
-  { element: '[data-tour="form-maps"]', title: "Matches", description: "Add one map per match, in the order you'll play them. Use the arrows to reorder." },
+  { element: '[data-tour="form-schedule"]', title: "When does it run?", description: "One-time, every day, or weekends only. Daily and weekend scrims repeat the same matches every day." },
+  { element: '[data-tour="form-maps"]', title: "Matches", description: "Pick how many matches, then a map, start time and IDP time for each (Indian time). Moving match 1 moves them all." },
+  { element: '[data-tour="form-close"]', title: "Registration closes", description: "When match 1 starts, or a few minutes before so you have time to set up the lobby. After that only registered teams see the scrim." },
   { element: '[data-tour="form-slots"]', title: "Slots", description: "How many teams can join, and which slot number they start from. The grid shows exactly which slots teams get." },
   { element: '[data-tour="form-coins"]', title: "BG coins", description: "Coins the winner of each match earns. They go to the winning team's leader when you publish the results." },
   { element: '[data-tour="form-poster"]', title: "Poster", description: "Optional: upload square poster artwork. Teams see it when they browse scrims. It saves right away." },
   { element: '[data-tour="form-preview"]', title: "Check and save", description: "Everything in one place. Happy? Hit the button." },
+  { element: '[data-tour="form-publish"]', title: "Publish or draft", description: "Published scrims show up for teams right away. A draft stays hidden until you publish it." },
   { element: '[data-tour="form-nav"]', title: "Back and next", description: "Move between steps here. Each step is checked before you go on." },
 ];
 
@@ -59,13 +64,14 @@ type FieldName = keyof FormIn;
 /** Which fields each step validates (and where a field error sends the manager back to). */
 const STEP_FIELDS: FieldName[][] = [
   ["title", "description"],
-  ["recurrence", "startDate", "startTime", "endDate"],
-  ["maps"],
+  ["recurrence", "startDate", "endDate"],
+  ["maps", "startTime", "matchTimes", "idpMinutes", "registrationCloseMinutes"],
   ["slotCount", "firstSlot", "winCoins"],
-  [],
+  ["published"],
 ];
 const stepOf = (f: string) => {
-  const i = STEP_FIELDS.findIndex((fs) => fs.includes(f as FieldName));
+  const key = f.split(".")[0] as FieldName;
+  const i = STEP_FIELDS.findIndex((fs) => fs.includes(key));
   return i < 0 ? LAST : i;
 };
 
@@ -73,8 +79,12 @@ function defaults(): FormIn {
   return {
     title: "",
     description: "",
-    maps: ["ERANGEL", "MIRAMAR", "SANHOK", "ERANGEL"],
+    maps: ["ERANGEL", "MIRAMAR", "RONDO"],
     startTime: "20:00",
+    matchTimes: ["20:00", "20:40", "21:20"],
+    idpMinutes: [DEFAULT_IDP_MINUTES, DEFAULT_IDP_MINUTES, DEFAULT_IDP_MINUTES],
+    registrationCloseMinutes: 0,
+    published: true,
     recurrence: "DAILY",
     startDate: todayInAppTz(),
     endDate: null,
@@ -90,6 +100,11 @@ function fromScrim(s: Scrim): FormIn {
     description: s.description ?? "",
     maps: s.maps,
     startTime: s.startTime,
+    // older scrims only timed match 1: space the rest DEFAULT_GAP apart as a starting point
+    matchTimes: s.matches.map((m, i) => m.startTime ?? addMinutesToTime(s.startTime, i * DEFAULT_GAP)),
+    idpMinutes: s.matches.map((m) => m.idpMinutes),
+    registrationCloseMinutes: s.registrationCloseMinutes,
+    published: s.published,
     recurrence: s.recurrence,
     startDate: s.startDate,
     endDate: s.endDate,
@@ -151,11 +166,31 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
   const endDate = watch("endDate");
   const startTime = watch("startTime");
   const maps = watch("maps");
+  const matchTimes = watch("matchTimes") ?? [];
+  const idpMinutes = watch("idpMinutes") ?? [];
+  const closeMinutes = watch("registrationCloseMinutes") ?? 0;
+  const published = watch("published") ?? true;
   const slotCount = watch("slotCount");
   const firstSlot = watch("firstSlot") ?? 1;
   const title = watch("title");
   const winCoins = watch("winCoins");
   const noEnd = endDate == null;
+
+  const setPlan = (v: MatchPlanValue) => {
+    const opts = { shouldDirty: true, shouldValidate: formState.isSubmitted };
+    setValue("maps", v.maps, opts);
+    setValue("matchTimes", v.matchTimes, opts);
+    setValue("idpMinutes", v.idpMinutes, opts);
+    setValue("startTime", v.matchTimes[0] ?? startTime, opts);
+  };
+  const timeErrors = maps.map((_, i) => errors.matchTimes?.[i]?.message);
+  /** Schedule step's start time = match 1; later matches move by the same amount (gaps kept) */
+  const setFirstStart = (t: string) => {
+    const first = matchTimes[0] ?? startTime;
+    const delta = matchOffsets([first, t])[1] ?? 0;
+    const shift = delta > 720 ? delta - 1440 : delta;
+    setPlan({ maps, idpMinutes, matchTimes: (matchTimes.length ? matchTimes : [first]).map((x) => addMinutesToTime(x, shift)) });
+  };
 
   const upcoming = useMemo(
     () =>
@@ -173,12 +208,17 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
   const onSubmit = handleSubmit(
     async (values) => {
     setConflict(null);
-    const payload: CreateScrimInput = { ...values, endDate: values.recurrence === "ONCE" ? null : (values.endDate ?? null) };
+    const payload: CreateScrimInput = {
+      ...values,
+      startTime: values.matchTimes?.[0] ?? values.startTime,
+      endDate: values.recurrence === "ONCE" ? null : (values.endDate ?? null),
+    };
     try {
       const saved = isEdit
         ? await update.mutateAsync({ id: scrim.id, input: updateScrimSchema.parse(payload) })
         : await create.mutateAsync(payload);
-      toast.success(isEdit ? "Changes saved" : "Scrim created — teams can register now", { description: saved.title });
+      const created = saved.published ? "Scrim published — teams can register now" : "Saved as a draft — teams can't see it yet";
+      toast.success(isEdit ? "Changes saved" : created, { description: saved.title });
       navigate(`/manager/scrims/${saved.id}`);
     } catch (err) {
       if (err instanceof ApiError) {
@@ -204,7 +244,7 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
   );
 
   const busy = isSubmitting || create.isPending || update.isPending;
-  const saveLabel = isEdit ? "Save changes" : "Create scrim";
+  const saveLabel = isEdit ? "Save changes" : published ? "Publish scrim" : "Save draft";
   const maxSlotCount = MAX_ROOM_SLOTS - firstSlot + 1;
   const maxFirstSlot = MAX_ROOM_SLOTS - slotCount + 1;
   const cancelTo = isEdit ? `/manager/scrims/${scrim.id}` : "/manager/scrims";
@@ -284,12 +324,8 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
                     )}
                   />
                 </Field>
-                <Field label="Start time (IST)" error={errors.startTime?.message}>
-                  <Controller
-                    control={control}
-                    name="startTime"
-                    render={({ field }) => <TimeSelect value={field.value} onChange={field.onChange} invalid={!!errors.startTime} />}
-                  />
+                <Field label="Start time (IST)" error={errors.startTime?.message ?? errors.matchTimes?.[0]?.message} hint={maps.length > 1 ? "Match 1 starts at this time. Later matches move with it." : undefined}>
+                  <TimeSelect value={matchTimes[0] ?? startTime} onChange={setFirstStart} invalid={!!errors.startTime} />
                 </Field>
               </div>
 
@@ -333,18 +369,27 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
           <Section
             n={3}
             title="Matches"
-            description="One map per match, in playing order."
+            description={recurrence === "ONCE" ? "Map, start time and IDP time for each match (IST)." : "Map, start time and IDP time for each match (IST) — the same every day it runs."}
             tour="form-maps"
             aside={<span className="font-display text-lg font-bold text-muted-foreground">{maps.length}</span>}
           >
-            <Controller
-              control={control}
-              name="maps"
-              render={({ field }) => (
-                <MapsPicker value={field.value} onChange={(v) => setValue("maps", v, { shouldDirty: true, shouldValidate: true })} />
-              )}
-            />
-            <FieldError message={errors.maps?.message ?? errors.maps?.root?.message} />
+            <MatchPlanEditor value={{ maps, matchTimes, idpMinutes }} onChange={setPlan} timeErrors={timeErrors} />
+            <FieldError message={errors.maps?.message ?? errors.maps?.root?.message ?? errors.matchTimes?.message ?? errors.idpMinutes?.message} />
+
+            <div data-tour="form-close" className="mt-6 space-y-3 border-t pt-5">
+              <div>
+                <p className="font-semibold">Registration closes</p>
+                <p className="text-sm text-muted-foreground">After this only registered teams see the scrim.</p>
+              </div>
+              <Controller
+                control={control}
+                name="registrationCloseMinutes"
+                render={({ field }) => (
+                  <RegistrationClosePicker value={field.value ?? 0} onChange={field.onChange} firstStart={matchTimes[0] ?? startTime} />
+                )}
+              />
+              <FieldError message={errors.registrationCloseMinutes?.message} />
+            </div>
           </Section>
         )}
 
@@ -446,7 +491,33 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
                 )}
               </ReviewRow>
               <ReviewRow label={`Matches · ${maps.length}`} onEdit={() => goTo(2)}>
-                {maps.length ? <MapChips maps={maps} numbered /> : <span className="text-destructive">No matches yet</span>}
+                {maps.length ? (
+                  <ol className="space-y-1.5">
+                    {maps.map((m, i) => {
+                      const t = matchTimes[i];
+                      return (
+                        <li key={i} className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <MapChip map={m} index={i} />
+                          {t && (
+                            <span className="text-muted-foreground">
+                              <span className="font-display font-bold text-foreground">{formatTime(t)}</span> · IDP{" "}
+                              {formatTime(addMinutesToTime(t, -(idpMinutes[i] ?? DEFAULT_IDP_MINUTES)))}
+                            </span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <span className="text-destructive">No matches yet</span>
+                )}
+              </ReviewRow>
+              <ReviewRow label="Registration closes" onEdit={() => goTo(2)}>
+                <span>
+                  {closeMinutes > 0
+                    ? `${closeMinutes} min before match 1 · ${formatTime(addMinutesToTime(startTime, -closeMinutes))}`
+                    : `When match 1 starts · ${formatTime(startTime)}`}
+                </span>
               </ReviewRow>
               <ReviewRow label="Slots" onEdit={() => goTo(3)}>
                 <span className="font-display text-base font-bold">{slotRangeLabel(firstSlot, slotCount)}</span>
@@ -455,6 +526,13 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
                 <span className="font-display text-base font-bold">{coinsLabel(winCoins ?? 0)}</span>
               </ReviewRow>
             </dl>
+            <div data-tour="form-publish" className="mt-4 border-t pt-4">
+              <Controller
+                control={control}
+                name="published"
+                render={({ field }) => <PublishPicker value={field.value ?? true} onChange={field.onChange} isEdit={isEdit} />}
+              />
+            </div>
             {Object.keys(errors).length > 0 && (
               <p className="mt-3 flex items-center gap-2 rounded-lg bg-destructive/10 p-2.5 text-sm text-destructive">
                 <Info className="size-4 shrink-0" /> Please fix the highlighted fields.
@@ -482,11 +560,20 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
             </Button>
           )}
           {step < LAST ? (
-            <Button type="button" className={cn("h-11", !isEdit && "ml-auto sm:ml-0")} onClick={() => void next()}>
+            <Button
+              key="next"
+              type="button"
+              className={cn("h-11", !isEdit && "ml-auto sm:ml-0")}
+              onClick={(e) => {
+                // this button becomes the submit button when the last step opens — don't let the same click submit
+                e.preventDefault();
+                void next();
+              }}
+            >
               Next: {STEPS[step + 1]} <ArrowRight />
             </Button>
           ) : (
-            <Button type="submit" size="lg" className="ml-auto h-11 shadow-glow sm:ml-0" disabled={busy || (isEdit && !isDirty)}>
+            <Button key="submit" type="submit" size="lg" className="ml-auto h-11 shadow-glow sm:ml-0" disabled={busy || (isEdit && !isDirty)}>
               {busy ? <Loader2 className="animate-spin" /> : <Save />}
               {busy ? "Saving…" : saveLabel}
             </Button>
@@ -532,6 +619,42 @@ function WizardSteps({ step, reached, onSelect }: { step: number; reached: numbe
         );
       })}
     </ol>
+  );
+}
+
+function PublishPicker({ value, onChange, isEdit }: { value: boolean; onChange: (v: boolean) => void; isEdit: boolean }) {
+  const options = [
+    { on: true, icon: Radio, title: "Publish", text: isEdit ? "Teams can see it and register." : "Teams can see it and register right away." },
+    { on: false, icon: EyeOff, title: "Draft", text: "Hidden from teams, the Live page and 7XEN Studio until you publish." },
+  ];
+  return (
+    <div role="radiogroup" aria-label="Who can see this scrim" className="grid gap-2 sm:grid-cols-2">
+      {options.map((o) => {
+        const active = o.on === value;
+        const Icon = o.icon;
+        return (
+          <button
+            key={o.title}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => onChange(o.on)}
+            className={cn(
+              "flex items-start gap-3 rounded-xl border-2 p-3 text-left transition-colors",
+              active ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/40",
+            )}
+          >
+            <span className={cn("rounded-lg p-2", active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+              <Icon className="size-4" />
+            </span>
+            <span>
+              <span className="block font-semibold">{o.title}</span>
+              <span className="block text-sm text-muted-foreground">{o.text}</span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

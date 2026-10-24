@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { MAPS, MAX_ROOM_SLOTS, RECURRENCES, SCRIM_STATUSES, TEAM_REQUEST_STATUSES } from "./enums";
-import { DATE_RE, TIME_RE } from "./schedule";
+import { DATE_RE, matchTimesIssue, TIME_RE } from "./schedule";
 import { winCoinsSchema } from "./coins";
 
 const username = z
@@ -117,7 +117,16 @@ const scrimBase = z.object({
   title: z.string().trim().min(3, "At least 3 characters").max(80),
   description: optionalText(1000),
   maps: z.array(z.enum(MAPS)).min(1, "Add at least one match").max(8, "At most 8 matches"),
+  /** match 1's start; when matchTimes is sent the server uses matchTimes[0] */
   startTime: timeString,
+  /** "HH:mm" start of each match, one per map (an earlier time than the match before = next day). Omitted = only match 1 timed. */
+  matchTimes: z.array(timeString).max(8).optional(),
+  /** IDP (room ID/password reveal) minutes before each match, one per map. Omitted = DEFAULT_IDP_MINUTES. */
+  idpMinutes: z.array(z.number().int().min(0, "Can't be negative").max(60, "At most 60 minutes before")).max(8).optional(),
+  /** registration closes this many minutes before match 1 (0 = when match 1 starts) */
+  registrationCloseMinutes: z.number().int().min(0).max(180, "At most 3 hours before").default(0),
+  /** false = save as a draft only the manager sees */
+  published: z.boolean().default(true),
   recurrence: z.enum(RECURRENCES),
   startDate: dateString,
   /** Ignored for ONCE. Null/omitted = runs indefinitely. */
@@ -139,6 +148,17 @@ export const createScrimSchema = scrimBase.superRefine((v, ctx) => {
   }
   if (v.recurrence !== "ONCE" && v.endDate && v.endDate < v.startDate) {
     ctx.addIssue({ code: "custom", path: ["endDate"], message: "End date is before start date" });
+  }
+  if (v.matchTimes) {
+    if (v.matchTimes.length !== v.maps.length) {
+      ctx.addIssue({ code: "custom", path: ["matchTimes"], message: "Give every match a start time" });
+    } else {
+      const issue = matchTimesIssue(v.matchTimes);
+      if (issue) ctx.addIssue({ code: "custom", path: ["matchTimes", issue.index], message: issue.message });
+    }
+  }
+  if (v.idpMinutes && v.idpMinutes.length !== v.maps.length) {
+    ctx.addIssue({ code: "custom", path: ["idpMinutes"], message: "Give every match an IDP time" });
   }
 });
 export type CreateScrimInput = z.infer<typeof createScrimSchema>;

@@ -1,5 +1,7 @@
 import {
   addDays,
+  matchStartsAt,
+  scrimMatchPlan,
   todayInAppTz,
   type GameMap,
   type TeamRole,
@@ -15,17 +17,21 @@ import { roomRevealed } from "./live.js";
 import { openScrimSuggestions } from "./suggestions.js";
 import { teamResultsSummary } from "./teamResults.js";
 import { teamRegistrationInclude, toTeamRegistration } from "./registrations.js";
-import { buildScrimOnDate, countsByScrim, mayOccurOnWhere, scrimOccursOn, startsAtOf, tally } from "./schedule.js";
+import { buildScrimOnDate, closesAtOf, countsByScrim, mayOccurOnWhere, scrimOccursOn, startsAtOf, tally } from "./schedule.js";
 
-/** ACTIVE scrims of all (active) managers running on `date`, with this team's registration (teamId null = no team: none). */
+/**
+ * ACTIVE, published scrims of all (active) managers running on `date`, with this team's registration (teamId null =
+ * no team: none). Once registration closes only registered teams still see a scrim (as started), and once every match
+ * of the day is published it's finished and leaves the list for everyone (results live on the results pages).
+ */
 export async function teamScrimsForDate(teamId: string | null, date: string, now = new Date()): Promise<TeamScrimOnDate[]> {
   const candidates = await prisma.scrim.findMany({
-    where: { status: "ACTIVE", manager: { isActive: true }, ...mayOccurOnWhere(date) },
+    where: { status: "ACTIVE", published: true, manager: { isActive: true }, ...mayOccurOnWhere(date) },
     include: scrimInclude,
   });
   const scrims = candidates.filter((s) => scrimOccursOn(s, date)).sort((a, b) => a.startTime.localeCompare(b.startTime));
   const ids = scrims.map((s) => s.id);
-  const [counts, mine, suggested] = await Promise.all([
+  const [counts, mine, suggested, sessions] = await Promise.all([
     countsByScrim(ids, date),
     teamId
       ? prisma.registration.findMany({
@@ -34,9 +40,21 @@ export async function teamScrimsForDate(teamId: string | null, date: string, now
         })
       : [],
     teamId ? openScrimSuggestions(teamId, ids, date) : new Map<string, { id: string; fromIgn: string | null }>(),
+    prisma.scrimSession.findMany({
+      where: { scrimId: { in: ids }, date: strToDate(date) },
+      select: { scrimId: true, matches: { select: { status: true } } },
+    }),
   ]);
   const mineByScrim = new Map(mine.map((r) => [r.session.scrimId, r]));
-  return scrims.map((s) => {
+  const statusesByScrim = new Map(sessions.map((x) => [x.scrimId, x.matches.map((m) => m.status)]));
+  const visible = scrims.filter((s) => {
+    const done = statusesByScrim.get(s.id) ?? [];
+    if (done.length >= s.maps.length && done.every((st) => st === "PUBLISHED")) return false;
+    if (now < closesAtOf(date, s)) return true;
+    const r = mineByScrim.get(s.id);
+    return r?.status === "APPROVED" || r?.status === "PENDING";
+  });
+  return visible.map((s) => {
     const r = mineByScrim.get(s.id);
     return {
       ...buildScrimOnDate(s, date, counts.get(s.id), now),
@@ -52,7 +70,7 @@ export async function teamScrimsForDate(teamId: string | null, date: string, now
  * No date → its next date that hasn't started. A scrim that's no longer active only answers for dates that had a session.
  */
 export async function teamScrimDetail(teamId: string | null, scrimId: string, date: string | undefined, now = new Date()): Promise<TeamScrimDetail> {
-  const s = await prisma.scrim.findFirst({ where: { id: scrimId, manager: { isActive: true } }, include: scrimInclude });
+  const s = await prisma.scrim.findFirst({ where: { id: scrimId, published: true, manager: { isActive: true } }, include: scrimInclude });
   if (!s) throw notFound("This scrim isn't available any more");
   const today = todayInAppTz(now);
   const dates: string[] = [];
@@ -78,7 +96,12 @@ export async function teamScrimDetail(teamId: string | null, scrimId: string, da
   const regs = session?.registrations ?? [];
   const mine = teamId ? regs.find((r) => r.teamId === teamId) : undefined;
   const approved = mine?.status === "APPROVED";
-  const start = startsAtOf(day, s.startTime);
+  const plan = scrimMatchPlan(s);
+  const startOf = (n: number) => matchStartsAt(s, day, n);
+  const idpOf = (n: number) => {
+    const at = startOf(n);
+    return at ? new Date(at.getTime() - (plan[n - 1]?.idpMinutes ?? 0) * 60_000).toISOString() : null;
+  };
   const rows = session?.matches.length ? session.matches : null;
   const matches: TeamScrimDetail["matches"] = rows
     ? rows.map((m) => {
@@ -87,13 +110,14 @@ export async function teamScrimDetail(teamId: string | null, scrimId: string, da
         return {
           number: m.number,
           map: m.map as GameMap,
-          startsAt: iso(m.scheduledAt ?? (m.number === 1 ? start : null)),
+          startsAt: iso(m.scheduledAt ?? startOf(m.number)),
+          idpAt: idpOf(m.number),
           published,
           room: shown ? { roomId: m.roomId!, password: m.roomPassword! } : null,
           revealAt: approved && !published && !shown && m.roomId ? iso(m.roomRevealAt) : null,
         };
       })
-    : (s.maps as GameMap[]).map((map, i) => ({ number: i + 1, map, startsAt: i === 0 ? start.toISOString() : null, published: false, room: null, revealAt: null }));
+    : plan.map((p) => ({ number: p.number, map: p.map as GameMap, startsAt: iso(startOf(p.number)), idpAt: idpOf(p.number), published: false, room: null, revealAt: null }));
 
   const suggested = teamId ? await openScrimSuggestions(teamId, [s.id], day) : new Map<string, { id: string; fromIgn: string | null }>();
   return {

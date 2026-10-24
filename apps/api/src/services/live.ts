@@ -67,7 +67,7 @@ const liveInclude = {
   screenshots: { select: recordingShotSelect },
 } satisfies Prisma.MatchInclude;
 
-/** The manager's scrim + tournament matches from today-back to today+days (IST), soonest first. */
+/** The manager's published scrim + tournament matches from today-back to today+days (IST), soonest first. Feeds 7XEN Studio too. */
 export async function liveToday(managerId: string, days: number, now = new Date(), back = 0): Promise<LiveMatchCard[]> {
   const first = addDays(todayInAppTz(now), -back);
   const last = addDays(todayInAppTz(now), days);
@@ -75,7 +75,7 @@ export async function liveToday(managerId: string, days: number, now = new Date(
 
   // make sure every scrim session in the window has its Match rows
   const scrims = await prisma.scrim.findMany({
-    where: { managerId, status: { not: "ARCHIVED" }, startDate: { lte: strToDate(last) }, OR: mayOccurOnWhere(first).OR },
+    where: { managerId, status: { not: "ARCHIVED" }, published: true, startDate: { lte: strToDate(last) }, OR: mayOccurOnWhere(first).OR },
     include: scrimInclude,
   });
   for (let i = 0; i <= days; i++) {
@@ -92,7 +92,7 @@ export async function liveToday(managerId: string, days: number, now = new Date(
   const rows = await prisma.match.findMany({
     where: {
       OR: [
-        { session: { scrim: { managerId }, date: { gte: strToDate(first), lte: strToDate(last) } } },
+        { session: { scrim: { managerId, published: true }, date: { gte: strToDate(first), lte: strToDate(last) } } },
         {
           group: { stage: { tournament: { managerId, status: { notIn: ["DRAFT", "CANCELLED"] } } } },
           OR: [{ scheduledAt: { gte: from, lt: to } }, { scheduledAt: null, group: { startsAt: { gte: from, lt: to } } }],
@@ -149,7 +149,7 @@ export async function teamRooms(teamId: string, now = new Date()): Promise<TeamR
   const from = dayStart(today);
 
   const regs = await prisma.registration.findMany({
-    where: { teamId, status: "APPROVED", slotNumber: { not: null }, session: { date: { gte: strToDate(today) } } },
+    where: { teamId, status: "APPROVED", slotNumber: { not: null }, session: { date: { gte: strToDate(today) }, scrim: { published: true } } },
     include: { session: { include: { scrim: true } } },
   });
   for (const r of regs) await ensureMatches(r.sessionId, r.session.scrim.maps);

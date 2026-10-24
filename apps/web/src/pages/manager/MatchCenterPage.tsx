@@ -157,7 +157,7 @@ function Center({ m, back }: { m: MatchDetail; back: string }) {
       />
 
       <div className="space-y-6">
-        <MatchOps matchId={m.match.id} label={{ title: m.scrim.title, number: m.match.number, map: m.match.map }} />
+        <MatchOps matchId={m.match.id} label={{ title: m.scrim.title, number: m.match.number, map: m.match.map, idpMinutes: m.idpMinutes }} />
         <MatchStepper status={status} active={step} onSelect={setStep} />
 
         {step === "lineup" && (

@@ -1,5 +1,5 @@
 /** Phase 4: how a scrim or tournament match is titled, when it starts and which slots it uses. */
-import { sessionStartsAt } from "@7xen/shared";
+import { matchStartsAt, sessionStartsAt } from "@7xen/shared";
 import { dateToStr, strToDate } from "../lib/serialize.js";
 import type { MatchWithOwner } from "./matches.js";
 
@@ -22,7 +22,8 @@ export function matchContext(m: MatchCore) {
       kind: "SCRIM" as const,
       title: sc.title,
       subtitle: `${shortDate(date)} · Match ${m.number}`,
-      startsAt: m.scheduledAt ?? sessionStartsAt(date, sc.startTime),
+      // the plan's time for this match; older scrims only timed match 1, so their later matches fall back to it
+      startsAt: m.scheduledAt ?? matchStartsAt(sc, date, m.number) ?? sessionStartsAt(date, sc.startTime),
       slotRange: { first: sc.firstSlot, last: sc.firstSlot + sc.slotCount - 1 },
     };
   }

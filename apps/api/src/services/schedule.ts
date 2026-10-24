@@ -1,5 +1,5 @@
 import type { Prisma, RegistrationStatus } from "@prisma/client";
-import { occursOn, sessionStartsAt, todayInAppTz, type ScrimOnDate } from "@7xen/shared";
+import { occursOn, registrationClosesAt, sessionStartsAt, todayInAppTz, type ScrimOnDate } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { dateToStr, strToDate, toScrim, type ScrimWithManager } from "../lib/serialize.js";
 
@@ -10,6 +10,10 @@ interface SessionCounts {
 const ZERO: SessionCounts = { pending: 0, approved: 0 };
 
 export const startsAtOf = (date: string, startTime: string): Date => sessionStartsAt(date, startTime);
+
+/** When registration for a scrim's session on `date` closes (match 1's start minus the scrim's close offset). */
+export const closesAtOf = (date: string, s: { startTime: string; registrationCloseMinutes: number }): Date =>
+  registrationClosesAt(date, s.startTime, s.registrationCloseMinutes);
 
 export function scheduleOf(s: { recurrence: ScrimWithManager["recurrence"]; startDate: Date; endDate: Date | null }) {
   return { recurrence: s.recurrence, startDate: dateToStr(s.startDate), endDate: s.endDate ? dateToStr(s.endDate) : null };
@@ -65,11 +69,13 @@ export function buildScrimOnDate(
   now: Date = new Date(),
 ): ScrimOnDate {
   const startsAt = startsAtOf(date, scrim.startTime);
+  const closesAt = closesAtOf(date, scrim);
   return {
     scrim: toScrim(scrim),
     date,
     startsAt: startsAt.toISOString(),
-    registrationOpen: scrim.status === "ACTIVE" && now < startsAt,
+    registrationClosesAt: closesAt.toISOString(),
+    registrationOpen: scrim.status === "ACTIVE" && scrim.published && now < closesAt,
     counts: {
       pending: counts.pending,
       approved: counts.approved,

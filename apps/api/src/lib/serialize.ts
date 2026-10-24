@@ -4,6 +4,7 @@ import {
   DEFAULT_POINTS_SYSTEM,
   isLanguage,
   pointsSystemSchema,
+  scrimMatchPlan,
   type PointsSystem,
 } from "@7xen/shared";
 import type {
@@ -109,6 +110,9 @@ export function toScrim(s: ScrimWithManager): Scrim {
     description: s.description,
     maps: s.maps as GameMap[],
     startTime: s.startTime,
+    matches: scrimMatchPlan(s).map((m) => ({ ...m, map: m.map as GameMap })),
+    registrationCloseMinutes: s.registrationCloseMinutes,
+    published: s.published,
     recurrence: s.recurrence,
     startDate: dateToStr(s.startDate),
     endDate: s.endDate ? dateToStr(s.endDate) : null,
