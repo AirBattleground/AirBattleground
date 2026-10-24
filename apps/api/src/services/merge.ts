@@ -44,7 +44,7 @@ export const TEAM_SIZE = 4;
 /** A squad is 4, but substitutes who played still get a row (their finishes count for the team). */
 const MAX_MATCH_PLAYERS = 8;
 /** A results name is the same player as a lobby name when at least this alike (same team, same match). */
-const SAME_PLAYER = 0.85;
+export const SAME_PLAYER = 0.85;
 const MAX_SLOT = 100;
 
 // ---------------------------------------------------------------- name matching

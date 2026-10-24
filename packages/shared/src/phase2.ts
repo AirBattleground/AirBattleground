@@ -96,9 +96,11 @@ export interface ExtractedPlayer {
   rosterMatch: string | null;
   /** slot whose roster this name matched best (null if no roster / no match) */
   matchedSlot: number | null;
-  /** RESULTS only */
+  /** RESULTS, and the in-match team list ("N Eliminations") */
   kills: number | null;
   killsConfidence: number | null;
+  /** in-match team list only: how the card shows the player (undefined = not read) */
+  state?: "alive" | "knocked" | "eliminated" | null;
 }
 export interface ExtractedTeam {
   slot: number | null;

@@ -515,20 +515,15 @@ export async function saveLineup(matchId: string, managerId: string, input: Save
 /**
  * 7XEN Studio Start: the lineup to confirm — the players read from the lobby, slot by slot. Once a lobby was read, a
  * registered team nobody from it joined has no players (it stays in the match; it just didn't join). Only when no
- * lobby was read at all do the registered rosters stand in, so a match can still start. 409 when there's nobody.
+ * lobby was read at all, Start is refused: the registered rosters are not who actually joined (a member who never
+ * entered the room would be listed). The manager can still confirm a lineup by hand in the Match Center.
  */
 export async function startLineup(matchId: string): Promise<SaveLineupInput> {
   const m = await prisma.match.findUniqueOrThrow({ where: { id: matchId }, select: { sessionId: true, groupId: true } });
   const draft = await prisma.matchTeam.findMany({ where: { matchId }, include: { players: { orderBy: { position: "asc" } } } });
   const read = draft.filter((t) => t.players.length).map((t) => ({ slotNumber: t.slotNumber, players: t.players.map((p) => ({ position: p.position, name: p.name.slice(0, 40) })) }));
-  const teams = read.length
-    ? read
-    : (await matchSlots(m)).map((r) => ({
-        slotNumber: r.slotNumber,
-        players: rosterNames(r.team).slice(0, MAX_ROSTER_PLAYERS).map((name, i) => ({ position: i + 1, name: name.slice(0, 40) })),
-      }));
-  const lineup = teams.filter((t) => t.players.length).sort((x, y) => x.slotNumber - y.slotNumber).slice(0, 25);
-  if (!lineup.length) throw conflict("Nobody to start with — no player has joined this match yet.");
+  const lineup = read.sort((x, y) => x.slotNumber - y.slotNumber).slice(0, 25);
+  if (!lineup.length) throw conflict("No lobby read yet — put the game's lobby (team list) on air and wait for \"Lobby ✓\", then press Start.");
   return { confirm: true, teams: lineup };
 }
 

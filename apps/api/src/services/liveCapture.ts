@@ -1,17 +1,23 @@
 /**
  * Studio screenshots (shared/studioLink.ts, kind AUTO / LIVE_STATUS): 7XEN Studio sends a frame — every few seconds
  * (trigger "auto") or when the operator presses Send ("manual") — without saying what it shows. We store it, queue
- * it, and the worker reads it with the reader that fits the match's state, then applies what it found:
- *   before Start   → team-list reader: a lobby fills the team list (a Match Center screenshot, source STUDIO_AUTO)
- *   live           → live reader: the spectator HUD updates who's alive (liveStatus.applyCapture, precedence rules);
- *                    anything else → results reader: a results screen fills ranks and ends the match
- *   after Stop     → results reader: results pages fill ranks
+ * it, and the worker reads it (one reader call: extractor.readFrame) and applies what it found for the match's state.
+ * The game's team list and results screen are both scrolled, so each frame shows some of the teams; every frame adds
+ * what it shows and the match state builds up from all of them:
+ *   before Start   → team list: fills the lineup slot by slot (a Match Center screenshot, source STUDIO_AUTO)
+ *   live           → team list: each player's alive/eliminated state and kills (liveStatus.applyTeamList; a slot
+ *                    nobody was read from before Start is filled); results screen: ends the match (an interval frame
+ *                    only when it shows rank 1 and another results frame confirms it) and fills ranks; spectator HUD
+ *                    (frames that are neither): alive counts (liveStatus.applyCapture)
+ *   ended          → results pages fill ranks, until every team in the lineup has its rank; then interval frames get
+ *                    409 CAPTURE_DONE and the studio stops capturing
  * The reader's own "which screen is this" answer is the detection (`detected`); anything else is ignored.
  *
- * Queue: one capture in flight per match. Manual captures go first, oldest first, and are never skipped (results
- * pages sent back to back all count); otherwise the newest auto capture wins and older queued auto frames are
- * skipped, so a slow reader never falls behind; an auto frame arriving while one is being read is dropped ("busy"). Images and rows are deleted after 24 h, except captures whose
- * operator hint disagrees with what was detected — those are kept to train the reader.
+ * Queue: frames are read in parallel (WORKER_CONCURRENCY), manual ones first, then oldest first — each frame may show
+ * different teams, so none is superseded; per-player read times keep an older frame from overwriting a newer one.
+ * Auto frames that waited longer than STALE_MS are skipped (a slow reader catches up), and an auto frame arriving
+ * while MAX_PENDING of its match's frames wait is dropped ("busy"). Images and rows are deleted after 24 h, except
+ * captures whose operator hint disagrees with what was detected — those are kept to train the reader.
  */
 import { Prisma, type StudioWorker as DbWorker } from "@prisma/client";
 import {
@@ -31,16 +37,21 @@ import { ExtractorHttpError, ExtractorOfflineError, OFFLINE_MESSAGE, extractor }
 import { deleteKey, readBuffer, saveBuffer } from "../lib/storage.js";
 import type { UploadedImage } from "../lib/upload.js";
 import { logger } from "../logger.js";
-import { applyCapture, matchControl, registeredTeams, studioMatch } from "./liveStatus.js";
+import { applyCapture, applyTeamList, matchControl, registeredTeams, resultsProgress, studioMatch } from "./liveStatus.js";
 import { adoptScreenshot, loadOwnMatch, rosterForMatch } from "./matches.js";
 
-const DEFAULT_INTERVAL_S = 5;
+const MIN_INTERVAL_S = 2;
 const MAX_INTERVAL_S = 30;
 const PAUSED_INTERVAL_S = 15;
 /** at most 1 upload per this long per studio per match */
 export const CAPTURE_MIN_GAP_MS = isTest ? 150 : 2_000;
 const RETENTION_MS = 24 * 3600_000;
-const WORKER_CONCURRENCY = 3;
+/** reader calls at once (all matches) */
+const WORKER_CONCURRENCY = 4;
+/** an auto frame still queued this long after it arrived is skipped */
+const STALE_MS = 45_000;
+/** a match's frames queued or being read before new auto frames are dropped */
+const MAX_PENDING = 12;
 const POLL_MS = 1_000;
 const SWEEP_MS = 10 * 60_000;
 const NOT_GAME = "Not a game screen we can read. Capture the scene with the game's lobby, spectator view or results.";
@@ -64,7 +75,7 @@ export function captureWait(workerId: string, matchId: string, now = Date.now())
   return 0;
 }
 
-/** How often the studio should capture: about as often as the reader finishes one (5..30 s). */
+/** How often the studio should capture: as often as the parallel readers keep up with (2..30 s; the studio's own interval is the minimum). */
 async function nextInterval(matchId: string, paused: boolean): Promise<number> {
   if (paused) return PAUSED_INTERVAL_S;
   const recent = await prisma.liveCapture.findMany({
@@ -73,9 +84,9 @@ async function nextInterval(matchId: string, paused: boolean): Promise<number> {
     take: 5,
     select: { createdAt: true, processedAt: true },
   });
-  if (!recent.length) return DEFAULT_INTERVAL_S;
+  if (!recent.length) return MIN_INTERVAL_S;
   const avgS = recent.reduce((sum, c) => sum + (c.processedAt!.getTime() - c.createdAt.getTime()), 0) / recent.length / 1000;
-  return Math.min(MAX_INTERVAL_S, Math.max(DEFAULT_INTERVAL_S, Math.ceil(avgS)));
+  return Math.min(MAX_INTERVAL_S, Math.max(MIN_INTERVAL_S, Math.ceil(avgS / WORKER_CONCURRENCY)));
 }
 
 const duplicate = (captureId: string): { status: 200; body: LiveCaptureAccepted } => ({ status: 200, body: { captureId, accepted: false, duplicate: true } });
@@ -94,13 +105,18 @@ export async function acceptCapture(
   }
   const seen = await prisma.liveCapture.findUnique({ where: { workerId_captureId: { workerId: worker.id, captureId: fields.captureId } }, select: { id: true } });
   if (seen) return duplicate(fields.captureId);
+  const auto = fields.trigger !== "manual";
+  // interval frames stop once every team that played has its rank: the studio stops capturing on this code
+  if (auto && (m.status === "PUBLISHED" || (m.status === "RESULTS_REVIEW" && (await resultsProgress(m.id, m.status)).complete))) {
+    throw new AppError("CAPTURE_DONE", "All results are in — auto capture is done for this match.");
+  }
   if (m.status === "PUBLISHED") throw conflict("The results of this match are published. Pick the next match in 7XEN Studio.");
   if (fields.hint && fields.hint !== "lobby") {
     const c = await matchControl(m);
     if (c.state === "locked") throw conflict(`Match is still locked: ${c.reason}. Only lobby screenshots are read until then.`);
   }
-  // an interval frame while the previous one is still being read: drop it, the next one is seconds away
-  if (fields.trigger === "auto" && (await prisma.liveCapture.count({ where: { matchId, status: "PROCESSING" } }))) {
+  // the readers are behind on this match: drop interval frames, the next one is seconds away
+  if (auto && (await prisma.liveCapture.count({ where: { matchId, status: { in: ["QUEUED", "PROCESSING"] } } })) >= MAX_PENDING) {
     return { status: 200, body: { captureId: fields.captureId, accepted: false, reason: "busy" } };
   }
   const retryAfter = wait();
@@ -168,32 +184,25 @@ export async function captureStatus(worker: DbWorker, matchId: string, captureId
 // ---------------------------------------------------------------- worker
 
 /**
- * Claim the next capture of up to `limit` matches that have none in flight: the oldest manual one, else the newest
- * auto one (older queued auto frames of that match are then skipped).
+ * Claim up to `limit` queued captures: manual ones first (oldest first), then auto frames oldest first. Auto frames
+ * that waited longer than STALE_MS are skipped first, so a slow reader catches up with the studio.
  */
 async function claim(limit: number): Promise<{ id: string; matchId: string }[]> {
   if (limit <= 0) return [];
-  const rows = await prisma.$queryRaw<{ id: string; matchId: string; capturedAt: Date; trigger: string }[]>`
+  await prisma.liveCapture.updateMany({
+    where: { status: "QUEUED", trigger: "auto", createdAt: { lt: new Date(Date.now() - STALE_MS) } },
+    data: { status: "SKIPPED", error: "skipped: waited too long to be read", processedAt: new Date() },
+  });
+  return prisma.$queryRaw<{ id: string; matchId: string }[]>`
     UPDATE "LiveCapture" SET status = 'PROCESSING'
-    WHERE status = 'QUEUED' AND id IN (
-      SELECT id FROM (
-        SELECT DISTINCT ON (c."matchId") c.id, c."createdAt"
-        FROM "LiveCapture" c
-        WHERE c.status = 'QUEUED'
-          AND NOT EXISTS (SELECT 1 FROM "LiveCapture" p WHERE p."matchId" = c."matchId" AND p.status = 'PROCESSING')
-        ORDER BY c."matchId", (c.trigger = 'manual') DESC, CASE WHEN c.trigger = 'manual' THEN c."capturedAt" END ASC, c."capturedAt" DESC
-      ) next
-      ORDER BY next."createdAt"
+    WHERE id IN (
+      SELECT id FROM "LiveCapture"
+      WHERE status = 'QUEUED'
+      ORDER BY (trigger = 'manual') DESC, "capturedAt" ASC, "createdAt" ASC
       LIMIT ${limit}
+      FOR UPDATE SKIP LOCKED
     )
-    RETURNING id, "matchId", "capturedAt", trigger`;
-  for (const r of rows.filter((x) => x.trigger !== "manual")) {
-    await prisma.liveCapture.updateMany({
-      where: { matchId: r.matchId, status: "QUEUED", trigger: "auto", capturedAt: { lte: r.capturedAt } },
-      data: { status: "SKIPPED", error: "superseded by a newer capture", processedAt: new Date() },
-    });
-  }
-  return rows;
+    RETURNING id, "matchId"`;
 }
 
 async function finish(id: string, data: Prisma.LiveCaptureUpdateInput) {
@@ -210,9 +219,8 @@ const detectedOf = (ex: ExtractionResult): CaptureDetected => {
 };
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-/** Before Start: a lobby fills the team list; anything else is ignored. */
-async function readBeforeStart(c: Capture, image: Buffer): Promise<Done> {
-  const ex = await extractor.extract(image, c.mimeType, "SLOT_LIST", await rosterForMatch(c.match, "SLOT_LIST"));
+/** Before Start: a team list fills the lineup (each frame the slots it shows); anything else is ignored. */
+async function readBeforeStart(c: Capture, image: Buffer, ex: ExtractionResult): Promise<Done> {
   const detected = detectedOf(ex);
   const confidence = ex.needsReview ? UNSURE : SURE;
   if (detected === "results") return { status: "SKIPPED", detected, confidence, message: "Results screen, but this match hasn't started. Press Start first." };
@@ -220,13 +228,40 @@ async function readBeforeStart(c: Capture, image: Buffer): Promise<Done> {
   return adopt(c, image, "SLOT_LIST", ex, detected, confidence);
 }
 
-/** Live or stopped: a results screen fills ranks (and ends a live match); anything else is ignored. */
-async function readResults(c: Capture, image: Buffer): Promise<Done> {
-  const ex = await extractor.extract(image, c.mimeType, "RESULTS", await rosterForMatch(c.match, "RESULTS"));
+/** An interval frame must show this twice before it may end a live match. */
+export const RESULTS_SEEN = "Results screen seen — waiting for one more frame to confirm the match is over";
+const CONFIRM_WINDOW_MS = 90_000;
+
+/**
+ * Live: an interval (auto) frame ends the match only when it is clearly the final results — rank 1 is on it (every
+ * results page shows ranks 1 and 2) — and another frame within 90 s was a results screen too. In-game overlays that
+ * look like results never pass both. An operator's manual capture is taken as asked.
+ */
+async function finalResultsDoubt(c: Capture, ex: ExtractionResult): Promise<string | null> {
+  if (c.match.status !== "LIVE" || c.trigger === "manual") return null;
+  if (!ex.rows.some((r) => r.rank === 1)) return "Not the final results — no winner (rank 1) on this screen, so the match is still going";
+  const t = c.capturedAt.getTime();
+  const other = await prisma.liveCapture.count({
+    where: {
+      matchId: c.matchId,
+      id: { not: c.id },
+      detected: "results",
+      // another final-results candidate (rank 1 on it), not just any frame the reader took for results
+      OR: [{ message: RESULTS_SEEN }, { status: "APPLIED" }],
+      capturedAt: { gte: new Date(t - CONFIRM_WINDOW_MS), lte: new Date(t + CONFIRM_WINDOW_MS) },
+    },
+  });
+  return other ? null : RESULTS_SEEN;
+}
+
+/** Live or ended: a results screen fills ranks (and ends a live match); a team list after the end is ignored. */
+async function readResults(c: Capture, image: Buffer, ex: ExtractionResult): Promise<Done> {
   const detected = detectedOf(ex);
   const confidence = ex.needsReview ? UNSURE : SURE;
-  if (detected === "lobby") return { status: "SKIPPED", detected, confidence, message: "Lobby screen, but this match has already started." };
+  if (detected === "lobby") return { status: "SKIPPED", detected, confidence, message: "Team list, but this match has ended. Show the results screen." };
   if (detected !== "results") return { status: "SKIPPED", detected, confidence, message: NOT_GAME };
+  const doubt = await finalResultsDoubt(c, ex);
+  if (doubt) return { status: "SKIPPED", detected, confidence, message: doubt };
   return adopt(c, image, "RESULTS", ex, detected, confidence);
 }
 
@@ -238,19 +273,31 @@ async function adopt(c: Capture, image: Buffer, kind: ScreenshotKind, ex: Extrac
   return { status: "APPLIED", detected, confidence, changes: changed, screenshotId, message: changed ? `${what}${ended}` : `${what} (nothing new)` };
 }
 
-/** Live: the spectator HUD updates who's still in; otherwise it may be the results screen. */
-async function readWhileLive(c: Capture, image: Buffer): Promise<Done> {
+/** Live: the team list updates players' states and kills; a results screen may end the match; else the spectator HUD. */
+async function readWhileLive(c: Capture, image: Buffer, ex: ExtractionResult): Promise<Done> {
+  const detected = detectedOf(ex);
+  const confidence = ex.needsReview ? UNSURE : SURE;
+  if (detected === "results") return readResults(c, image, ex);
+  if (detected === "lobby") {
+    const out = await applyTeamList(c.matchId, c.capturedAt, ex.teams);
+    if (out.status === "SKIPPED") return { status: "SKIPPED", detected, confidence, message: `Team list — not applied (${out.reason})` };
+    if (out.skipped.length) logger.info({ captureId: c.captureId, matchId: c.matchId, skipped: out.skipped }, "studio capture: team list values not applied");
+    const n = ex.teams.filter((t) => t.players.length).length;
+    const parts = [out.changes ? plural(out.changes, "update") : "no changes", ...(out.filled ? [`${plural(out.filled, "team")} added to the lineup`] : [])];
+    return { status: "APPLIED", detected, confidence, changes: out.changes + out.filled, message: `Team list ✓ ${plural(n, "team")}, ${parts.join(", ")}` };
+  }
+  // neither: maybe the spectator HUD (alive bars)
   const slots = await registeredTeams(c.match);
   const read = await extractor.readLive(image, c.mimeType, slots.map((s) => ({ slot: s.slotNumber, name: s.team.name, tag: s.team.tag })));
-  if (read.screen !== "spectator_hud" || !read.teams.length) return readResults(c, image);
+  if (read.screen !== "spectator_hud" || !read.teams.length) return { status: "SKIPPED", detected, confidence, message: NOT_GAME };
   const outcome = await applyCapture(c.matchId, c.capturedAt, read.teams);
-  const confidence = Math.min(...read.teams.map((t) => t.confidence));
-  if (outcome.status === "SKIPPED") return { status: "SKIPPED", detected: "in_game", confidence, message: `In-game — not applied (${outcome.reason})` };
+  const hud = Math.min(...read.teams.map((t) => t.confidence));
+  if (outcome.status === "SKIPPED") return { status: "SKIPPED", detected: "in_game", confidence: hud, message: `In-game — not applied (${outcome.reason})` };
   if (outcome.skipped.length) logger.info({ captureId: c.captureId, matchId: c.matchId, skipped: outcome.skipped }, "studio capture: values not applied");
   return {
     status: "APPLIED",
     detected: "in_game",
-    confidence,
+    confidence: hud,
     changes: outcome.changes,
     message: outcome.changes ? `In-game ✓ ${plural(outcome.changes, "player change")}` : "In-game ✓ no changes",
     result: { read, ...outcome } as unknown as Prisma.InputJsonValue,
@@ -270,14 +317,12 @@ async function processCapture(id: string): Promise<void> {
       return;
     }
     const s = c.match.status;
-    const done: Done =
-      s === "PUBLISHED"
-        ? { status: "SKIPPED", detected: null, message: "The results of this match are published." }
-        : s === "LIVE"
-          ? await readWhileLive(c, image)
-          : s === "RESULTS_REVIEW"
-            ? await readResults(c, image)
-            : await readBeforeStart(c, image);
+    let done: Done;
+    if (s === "PUBLISHED") done = { status: "SKIPPED", detected: null, message: "The results of this match are published." };
+    else {
+      const ex = await extractor.readFrame(image, c.mimeType, await rosterForMatch(c.match, s === "SCHEDULED" || s === "LINEUP_REVIEW" ? "SLOT_LIST" : "RESULTS"));
+      done = s === "LIVE" ? await readWhileLive(c, image, ex) : s === "RESULTS_REVIEW" ? await readResults(c, image, ex) : await readBeforeStart(c, image, ex);
+    }
     await finish(id, { ...done, error: done.status === "FAILED" ? (done.message as string) : null });
   } catch (e) {
     const error =

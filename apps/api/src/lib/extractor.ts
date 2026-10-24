@@ -110,6 +110,8 @@ First decide which BGMI screen it is and set "screen":
   (left/blue and right/red, e.g. 40 and 17), and under each side a table of up to 4 players with "Finishes", "F/D", "Assists"
   (plus small "N Combo" and "MVP" tags).
 - "classic_results": a normal (non-custom) match end screen that shows only ONE team's placement (e.g. "#3/100") and its players.
+  A results screen labels kills "finishes". Cards that say "N Eliminations" (often under a "Remaining N / Team N" header, with
+  the game or its clock still visible behind) are the TEAM LIST, never results: use "custom_lobby" even in the middle of a match.
 - "other": anything else (menus, loading screens, the map, spectator view without a table, etc.).
 Rules:
 - Copy player names exactly as shown, character for character: keep symbols, CJK, Devanagari, accents, separators like 乡 ・ | 《》 and letter case. Never "fix" spelling.
@@ -142,15 +144,33 @@ const RESULTS_PROMPT = `This should be a match RESULTS screen.
   the warning "This screen shows only one team — capture the full results table if there is one".
 - Any other screen: return no rows and one warning saying it isn't a results screen.`;
 
-const playerSchema = (withKills: boolean) => ({
+/**
+ * One frame from 7XEN Studio auto capture (every few seconds, the server doesn't know what it shows): the team list
+ * (scrolled — each frame shows some of the teams, with each player's state and eliminations) or the results screen.
+ */
+const FRAME_PROMPT = `This is a frame captured every few seconds from the game feed of a BGMI custom room. It is usually the
+TEAM LIST or the RESULTS screen; both are scrolled, so a frame shows only some teams — report exactly what is visible.
+- custom_lobby (team list, before or during the match): dark team cards, each with a coloured slot number (e.g. 03, 13) and up
+  to 4 player names, each followed by "N Eliminations" (also written "/N Eliminations"). Return "teams": every fully visible card
+  in reading order with its slot number and its players in order. For each player: kills = the eliminations number (null if
+  none is shown), state = "eliminated" when the player's row is greyed out, dimmed, struck through or marked with a skull/cross,
+  "knocked" when marked as knocked/down, otherwise "alive". Return no rows.
+- tdm_lobby: return two teams as on a team list (slot shown, else 1 for the first side, 2 for the second), state "alive", kills null.
+- custom_results / tdm_results / classic_results: return "rows" exactly as for a results screen (below) and no teams.
+- other: no teams, no rows.
+Results screens:
+${RESULTS_PROMPT.split("\n").slice(1, -1).join("\n")}`;
+
+const playerSchema = (withKills: boolean, withState = false) => ({
   type: "object",
   properties: {
     name: { type: "string" },
     ...(withKills ? { kills: { type: ["integer", "null"] } } : {}),
+    ...(withState ? { state: { type: ["string", "null"], enum: [...LIVE_PLAYER_STATES, null] } } : {}),
     unsure: { type: "boolean" },
     roster_match: { type: ["string", "null"] },
   },
-  required: ["name", "unsure", "roster_match", ...(withKills ? ["kills"] : [])],
+  required: ["name", "unsure", "roster_match", ...(withKills ? ["kills"] : []), ...(withState ? ["state"] : [])],
 });
 
 /** BGMI screen families the reader tells apart (see SYSTEM_PROMPT). */
@@ -191,8 +211,26 @@ const SCHEMAS: Record<ScreenshotKind, object> = {
   },
 };
 
-function promptText(kind: ScreenshotKind, roster?: RosterSlot[]) {
-  const base = kind === "RESULTS" ? RESULTS_PROMPT : SLOT_LIST_PROMPT;
+const FRAME_SCHEMA = {
+  type: "object",
+  properties: {
+    screen: { type: "string", enum: SCREENS },
+    teams: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { slot: { type: ["integer", "null"] }, players: { type: "array", items: playerSchema(true, true) } },
+        required: ["slot", "players"],
+      },
+    },
+    rows: (SCHEMAS.RESULTS as { properties: { rows: object } }).properties.rows,
+    warnings: { type: "array", items: { type: "string" } },
+  },
+  required: ["screen", "teams", "rows", "warnings"],
+};
+
+function promptText(kind: ScreenshotKind | "FRAME", roster?: RosterSlot[]) {
+  const base = kind === "FRAME" ? FRAME_PROMPT : kind === "RESULTS" ? RESULTS_PROMPT : SLOT_LIST_PROMPT;
   if (!roster?.length) return base;
   const lines = roster.map((r) => `slot ${r.slot}${r.teamName ? ` (${r.teamName})` : ""}: ${JSON.stringify(r.players)}`);
   return `${base}\n\nRoster (registered players per slot):\n${lines.join("\n")}`;
@@ -206,13 +244,14 @@ const intOrNull = (v: unknown): number | null => (typeof v === "number" && Numbe
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
 
 /** Build the result from Claude's structured output; roster matches are checked against the real roster. */
-export function toExtractionResult(raw: unknown, kind: ScreenshotKind, model: string, roster?: RosterSlot[], ms = 0): ExtractionResult {
+export function toExtractionResult(raw: unknown, kind: ScreenshotKind | "FRAME", model: string, roster?: RosterSlot[], ms = 0): ExtractionResult {
   const r = (raw && typeof raw === "object" ? raw : {}) as Obj;
   const slotOf = new Map<string, number>();
   for (const s of roster ?? []) for (const p of s.players) if (!slotOf.has(p)) slotOf.set(p, s.slot);
 
   let unsure = false;
-  const toPlayer = (p: Obj, withKills: boolean): ExtractedPlayer => {
+  const states = new Set<string>(LIVE_PLAYER_STATES);
+  const toPlayer = (p: Obj, withKills: boolean, withState = false): ExtractedPlayer => {
     const match = typeof p.roster_match === "string" && slotOf.has(p.roster_match) ? p.roster_match : null;
     if (p.unsure === true) unsure = true;
     const conf = p.unsure === true ? UNSURE_CONFIDENCE : SURE_CONFIDENCE;
@@ -225,20 +264,22 @@ export function toExtractionResult(raw: unknown, kind: ScreenshotKind, model: st
       matchedSlot: match ? slotOf.get(match)! : null,
       kills: kills != null ? Math.max(0, kills) : null,
       killsConfidence: kills != null ? conf : null,
+      ...(withState ? { state: typeof p.state === "string" && states.has(p.state) ? (p.state as LivePlayerState) : null } : {}),
     };
   };
 
+  const frame = kind === "FRAME";
   const teams =
-    kind === "SLOT_LIST"
+    kind === "SLOT_LIST" || frame
       ? arr(r.teams).map((t) => {
           const slot = intOrNull(t.slot);
-          return { slot, slotConfidence: slot != null ? SURE_CONFIDENCE : 0, players: arr(t.players).map((p) => toPlayer(p, false)).filter((p) => p.name) };
+          return { slot, slotConfidence: slot != null ? SURE_CONFIDENCE : 0, players: arr(t.players).map((p) => toPlayer(p, frame, frame)).filter((p) => p.name) };
         })
       : [];
 
   const seenRanks = new Set<number>();
   const rows =
-    kind === "RESULTS"
+    kind === "RESULTS" || frame
       ? arr(r.rows)
           .map((row) => {
             const rank = intOrNull(row.rank);
@@ -252,7 +293,7 @@ export function toExtractionResult(raw: unknown, kind: ScreenshotKind, model: st
   const unmatched = !!roster?.length && [...teams.flatMap((t) => t.players), ...rows.flatMap((x) => x.players)].some((p) => !p.rosterMatch);
   return {
     imageId: "",
-    kind,
+    kind: frame ? (rows.length && !teams.length ? "RESULTS" : "SLOT_LIST") : kind,
     modelVersion: `claude-${model}`,
     teams,
     rows,
@@ -413,6 +454,15 @@ export const extractor = {
   async extract(image: Buffer, mime: string, kind: ScreenshotKind, roster?: RosterSlot[], _filename = "image"): Promise<ExtractionResult> {
     const { structured, model, ms } = await ask(image, mime, SYSTEM_PROMPT, promptText(kind, roster), SCHEMAS[kind], EXTRACT_TIMEOUT_MS);
     return toExtractionResult(structured, kind, model, roster, ms);
+  },
+
+  /**
+   * Read one studio auto-capture frame in a single call: the screen, plus the team list (slot, players, each player's
+   * state and eliminations) or the results rows — whichever the frame shows. `roster` as for `extract`.
+   */
+  async readFrame(image: Buffer, mime: string, roster?: RosterSlot[]): Promise<ExtractionResult> {
+    const { structured, model, ms } = await ask(image, mime, SYSTEM_PROMPT, promptText("FRAME", roster), FRAME_SCHEMA, LIVE_TIMEOUT_MS * 2);
+    return toExtractionResult(structured, "FRAME", model, roster, ms);
   },
 
   /** Read a live auto capture: each team's player states from the spectator HUD. `teams` = registered slots + names. */

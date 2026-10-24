@@ -432,7 +432,7 @@ describe("studio link", () => {
       async function applied(matchId: string, r: Read, over: Record<string, string> = {}, ex: Extraction = extraction("other")) {
         await sleep(200); // stay under the per-match upload rate
         const live = vi.spyOn(extractor, "readLive").mockResolvedValue(r);
-        const other = vi.spyOn(extractor, "extract").mockResolvedValue(ex);
+        const other = vi.spyOn(extractor, "readFrame").mockResolvedValue(ex);
         const up = await capture(matchId, over);
         expect(up.status).toBe(202);
         expect(await runLiveCaptureOnce()).toBe(1);
@@ -469,10 +469,11 @@ describe("studio link", () => {
         const spy = vi.spyOn(extractor, "readLive").mockResolvedValue(
           read([team(3, "SOUL", ["alive", "alive", "knocked", "eliminated"]), team(null, "solo", ["eliminated"])]),
         );
+        const frame = vi.spyOn(extractor, "readFrame").mockResolvedValue(extraction("other"));
         const captureId = uuid();
         const up = await capture(matchId, { captureId });
         expect(up.status).toBe(202);
-        expect(up.body).toEqual({ captureId, accepted: true, queuePosition: 0, nextIntervalSeconds: 5 });
+        expect(up.body).toEqual({ captureId, accepted: true, queuePosition: 0, nextIntervalSeconds: 2 });
         const again = await capture(matchId, { captureId });
         expect(again.status).toBe(200);
         expect(again.body).toEqual({ captureId, accepted: false, duplicate: true });
@@ -486,6 +487,7 @@ describe("studio link", () => {
           { slot: 4, name: "SOLO", tag: expect.any(String) },
         ]);
         spy.mockRestore();
+        frame.mockRestore();
         const row = await prisma.liveCapture.findFirstOrThrow({ where: { captureId } });
         expect(row).toMatchObject({ status: "APPLIED", changes: 3, storageKey: `matches/${matchId}/captures/${SESSION}/${row.sequence}.png` });
 
@@ -548,13 +550,18 @@ describe("studio link", () => {
         expect((await states())[3]).toBe("knocked:auto");
       });
 
-      it("busy: an auto frame while the previous one is being read is dropped; manual frames still queue", async () => {
+      it("busy: an auto frame while 12 of the match's frames wait to be read is dropped; manual frames still queue", async () => {
         const { matchId } = await liveSetup();
         await confirmLineup(matchId);
         const first = await capture(matchId);
         expect(first.status).toBe(202);
-        await prisma.liveCapture.updateMany({ where: { captureId: first.body.captureId }, data: { status: "PROCESSING" } });
+        const row = await prisma.liveCapture.findFirstOrThrow({ where: { captureId: first.body.captureId } });
+        const { id: _id, ...rest } = row;
+        await prisma.liveCapture.createMany({
+          data: Array.from({ length: 11 }, (_, i) => ({ ...rest, captureId: uuid(), sequence: 100 + i, result: undefined, status: "PROCESSING" as const })),
+        });
         await sleep(200);
+        // 12 pending: below that, auto frames are taken (frames are read in parallel)
         const id = uuid();
         const busy = await capture(matchId, { captureId: id });
         expect(busy.status).toBe(200);
@@ -564,7 +571,7 @@ describe("studio link", () => {
         expect((await capture(matchId, { trigger: "manual" })).status).toBe(202);
       });
 
-      it("ordering: only the newest queued capture is read; older than the last applied → skipped", async () => {
+      it("ordering: queued frames are all read (in parallel); an older frame never overwrites a newer one", async () => {
         const { matchId } = await liveSetup();
         await confirmLineup(matchId);
         const t0 = Date.now();
@@ -577,18 +584,28 @@ describe("studio link", () => {
         expect(await prisma.liveCapture.findFirstOrThrow({ where: { captureId: late.captureId } })).toMatchObject({ status: "SKIPPED" });
         expect((await board(matchId)).teams[0].status).toBe(3);
 
-        // two frames queued before the worker runs: the newer one wins, the older is skipped unread
+        // two frames queued before the worker runs: both are read (each may show different teams of a scrolled list)
         await sleep(200);
         const a = await capture(matchId, { capturedAt: new Date(t0 + 1_000).toISOString() });
         await sleep(200);
         const b = await capture(matchId, { capturedAt: new Date(t0 + 2_000).toISOString() });
         const spy = vi.spyOn(extractor, "readLive").mockResolvedValue(read([team(3, null, ["alive", "alive", "knocked", "knocked"])]));
-        expect(await runLiveCaptureOnce()).toBe(1);
-        expect(spy).toHaveBeenCalledTimes(1);
+        const frame = vi.spyOn(extractor, "readFrame").mockResolvedValue(extraction("other"));
+        expect(await runLiveCaptureOnce()).toBe(2);
+        expect(spy).toHaveBeenCalledTimes(2);
         spy.mockRestore();
-        expect(await prisma.liveCapture.findFirstOrThrow({ where: { captureId: a.body.captureId } })).toMatchObject({ status: "SKIPPED" });
+        frame.mockRestore();
         expect(await prisma.liveCapture.findFirstOrThrow({ where: { captureId: b.body.captureId } })).toMatchObject({ status: "APPLIED" });
+        expect((await prisma.liveCapture.findFirstOrThrow({ where: { captureId: a.body.captureId } })).status).not.toBe("QUEUED");
+        expect((await board(matchId)).teams[0].status).toBe(2);
         expect(await runLiveCaptureOnce()).toBe(0);
+
+        // an auto frame that waited too long is skipped unread
+        await sleep(200);
+        const old = await capture(matchId);
+        await prisma.liveCapture.updateMany({ where: { captureId: old.body.captureId }, data: { createdAt: new Date(Date.now() - 60_000) } });
+        expect(await runLiveCaptureOnce()).toBe(0);
+        expect(await prisma.liveCapture.findFirstOrThrow({ where: { captureId: old.body.captureId } })).toMatchObject({ status: "SKIPPED" });
       });
 
       it("pause: captures accepted, nothing applied; no panel on the frame → lastError; 24 h sweep", async () => {
@@ -650,6 +667,14 @@ describe("studio link", () => {
 
           for (const l of leaders.slice(1)) await l.agent.post("/api/team/registrations").send({ scrimId: scrim.id, date: tomorrow() });
           expect(await control()).toEqual({ state: "ready", unlocksAt: null, reason: null, teams: 4, slots: 4 });
+          // no lobby read yet: Start refuses instead of listing whole rosters
+          const drain = vi.spyOn(extractor, "readFrame").mockResolvedValue(extraction("other"));
+          expect(await runLiveCaptureOnce()).toBe(1); // the frame queued above shows no team list
+          drain.mockRestore();
+          const noLobby = await post(`/matches/${matchId}/start`);
+          expect(noLobby.status).toBe(409);
+          expect(noLobby.body.error.message).toMatch(/No lobby read yet/);
+          await send(matchId, lobby({ 3: NAMES }));
           const started = await post(`/matches/${matchId}/start`);
           expect(started.status).toBe(200);
           expect(started.body.control).toMatchObject({ state: "live" });
@@ -688,6 +713,7 @@ describe("studio link", () => {
 
         it("while live: the HUD updates the board, a results screen ends the match; Stop; published → 409", async () => {
           const { matchId } = await liveSetup();
+          await send(matchId, lobby({ 3: NAMES }));
           await post(`/matches/${matchId}/start`);
           expect(await send(matchId, extraction("other"), {}, read([team(3, null, ["alive", "alive", "alive", "knocked"])]))).toMatchObject({
             status: "applied",
@@ -713,9 +739,119 @@ describe("studio link", () => {
           expect((await capture(matchId, { kind: "" })).status).toBe(409);
         });
 
+        it("an interval frame doesn't end a live match unless it is the final results (rank 1) seen twice in a row", async () => {
+          const { matchId } = await liveSetup();
+          await send(matchId, lobby({ 3: NAMES }));
+          await post(`/matches/${matchId}/start`);
+          // the in-game standings overlay read as "results" (ranks 3 and 4, no winner): ignored, match keeps going
+          const overlay = await send(matchId, results([[3, 3, ["SoloOne"]], [4, 4, ["SoloTwo"]]]), { trigger: "auto" });
+          expect(overlay).toMatchObject({ status: "ignored", detected: "results", message: expect.stringMatching(/no winner/) });
+          expect(await dbStatus(matchId)).toBe("LIVE");
+          await sleep(200);
+          // a real results screen: the first sighting waits for a second one
+          const first = await send(matchId, results([[1, 3, NAMES], [2, 4, ["SoloOne"]]]), { trigger: "auto" });
+          expect(first).toMatchObject({ status: "ignored", detected: "results", message: expect.stringMatching(/one more frame/) });
+          expect(await dbStatus(matchId)).toBe("LIVE");
+          await sleep(200);
+          const second = await send(matchId, results([[1, 3, NAMES], [2, 4, ["SoloOne"]]]), { trigger: "auto" });
+          expect(second).toMatchObject({ status: "applied", message: "Results ✓ 2 ranks — the match has ended" });
+          expect(await dbStatus(matchId)).toBe("RESULTS_REVIEW");
+        });
+
+        /** the in-match team list: per slot, each player's [name, state, eliminations] */
+        const teamList = (teams: Record<number, [string, "alive" | "knocked" | "eliminated", number][]>): Extraction =>
+          extraction("custom_lobby", {
+            teams: Object.entries(teams).map(([slot, ps]) => ({
+              slot: Number(slot),
+              slotConfidence: 0.97,
+              players: ps.map(([n, state, kills]) => ({ ...player(n, kills), state })),
+            })),
+          });
+        const at = (ms: number) => ({ capturedAt: new Date(ms).toISOString() });
+        const states = async (matchId: string) =>
+          (await board(matchId)).teams.map((t: { slot: number; kills: number; players: { state: string }[] }) => [t.slot, t.kills, t.players.map((p) => p.state).join(",")]);
+
+        it("the scrolled team list: frames merge into the lineup, then update each player's state and kills; an older frame never overwrites a newer one", async () => {
+          const { matchId } = await liveSetup();
+          // before Start: two scroll positions (slot 3 on both) fill the lineup together
+          expect(await send(matchId, lobby({ 3: NAMES }))).toMatchObject({ status: "applied", message: "Lobby ✓ 1 team" });
+          expect(await send(matchId, lobby({ 3: NAMES, 4: ["SoloOne"] }))).toMatchObject({ status: "applied", message: "Lobby ✓ 2 teams" });
+          expect((await post(`/matches/${matchId}/start`)).status).toBe(200);
+          expect(await states(matchId)).toEqual([
+            [3, 0, "alive,alive,alive,alive"],
+            [4, 0, "alive"],
+          ]);
+
+          const t0 = Date.now();
+          const [a, b, c, d] = NAMES as [string, string, string, string];
+          const first = await send(matchId, teamList({ 3: [[a, "alive", 2], [b, "eliminated", 0], [c, "alive", 1], [d, "alive", 0]] }), at(t0 + 1_000));
+          expect(first).toMatchObject({ status: "applied", detected: "lobby", message: "Team list ✓ 1 team, 3 updates" });
+          expect(await states(matchId)).toEqual([
+            [3, 3, "alive,eliminated,alive,alive"],
+            [4, 0, "alive"],
+          ]);
+          // the next scroll position: slot 3 again (newer) and slot 4
+          await send(matchId, teamList({ 3: [[a, "alive", 3], [b, "eliminated", 0], [c, "eliminated", 1], [d, "alive", 0]], 4: [["SoloOne", "eliminated", 1]] }), at(t0 + 3_000));
+          expect(await states(matchId)).toEqual([
+            [3, 4, "alive,eliminated,eliminated,alive"],
+            [4, 1, "eliminated"],
+          ]);
+          // a frame captured before that one, read late (frames are read in parallel): changes nothing
+          await send(matchId, teamList({ 3: [[a, "alive", 2], [b, "alive", 0], [c, "alive", 1], [d, "alive", 0]] }), at(t0 + 2_000));
+          // a newer frame can't revive an eliminated player, and kills never go down
+          await send(matchId, teamList({ 3: [[a, "alive", 1], [b, "alive", 0], [c, "alive", 1], [d, "knocked", 0]] }), at(t0 + 5_000));
+          expect(await states(matchId)).toEqual([
+            [3, 4, "alive,eliminated,eliminated,knocked"],
+            [4, 1, "eliminated"],
+          ]);
+          // MVP material: the players' kills are on the lineup
+          const detail = (await mgr.get(`/api/manager/matches/${matchId}`)).body;
+          expect(detail.teams[0].players.map((p: { kills: number | null }) => p.kills)).toEqual([3, 0, 1, 0]);
+        });
+
+        it("a slot nobody was read from before Start is filled from the team list during the match", async () => {
+          const { matchId } = await liveSetup();
+          await send(matchId, lobby({ 3: NAMES }));
+          await post(`/matches/${matchId}/start`);
+          expect((await mgr.get(`/api/manager/matches/${matchId}`)).body.teams.map((t: { slotNumber: number }) => t.slotNumber)).toEqual([3]);
+          const st = await send(matchId, teamList({ 4: [["SoloOne", "alive", 0]] }));
+          expect(st).toMatchObject({ status: "applied", message: "Team list ✓ 1 team, no changes, 1 team added to the lineup" });
+          const lineup = (await mgr.get(`/api/manager/matches/${matchId}`)).body.teams.map((t: { slotNumber: number; players: { name: string }[] }) => [
+            t.slotNumber,
+            t.players.map((p) => p.name),
+          ]);
+          expect(lineup).toEqual([
+            [3, NAMES],
+            [4, ["SoloOne"]],
+          ]);
+        });
+
+        it("after the end: results pages fill ranks until every team that played has one; then interval frames get CAPTURE_DONE", async () => {
+          const { matchId } = await liveSetup();
+          await send(matchId, lobby({ 3: NAMES, 4: ["SoloOne"] }));
+          await post(`/matches/${matchId}/start`);
+          expect((await board(matchId)).results).toBeUndefined();
+          await post(`/matches/${matchId}/stop`);
+          expect((await board(matchId)).results).toEqual({ complete: false, placed: 0, teams: 2 });
+
+          // the results list scrolls: the first page shows rank 1 only, the next one rank 2
+          expect(await send(matchId, results([[1, 3, NAMES]]), { trigger: "auto" })).toMatchObject({ status: "applied", message: "Results ✓ 1 rank" });
+          expect((await board(matchId)).results).toEqual({ complete: false, placed: 1, teams: 2 });
+          expect(await send(matchId, results([[1, 3, NAMES], [2, 4, ["SoloOne"]]]), { trigger: "auto" })).toMatchObject({ status: "applied" });
+          expect((await board(matchId)).results).toEqual({ complete: true, placed: 2, teams: 2 });
+
+          await sleep(200);
+          const done = await capture(matchId, { kind: "" });
+          expect(done.status).toBe(409);
+          expect(done.body.error).toMatchObject({ code: "CAPTURE_DONE", message: expect.stringMatching(/All results are in/) });
+          await sleep(200);
+          expect((await capture(matchId, { kind: "", trigger: "manual" })).status).toBe(202); // the operator can still send one
+        });
+
         it("Stop ends a live match; results pages sent back to back are all read; a later auto frame doesn't skip them", async () => {
           const { matchId } = await liveSetup();
           expect((await post(`/matches/${matchId}/stop`)).status).toBe(409); // not live yet
+          await send(matchId, lobby({ 3: NAMES }));
           await post(`/matches/${matchId}/start`);
           const stopped = await post(`/matches/${matchId}/stop`);
           expect(stopped.status).toBe(200);
@@ -728,13 +864,13 @@ describe("studio link", () => {
             expect(up.status).toBe(202);
             ids.push(up.body.captureId);
           }
+          // read in parallel: two results pages and a frame that shows neither
           const pages = [results([[1, 3, NAMES]]), results([[2, 4, ["SoloOne"]]]), extraction("other")];
-          const spy = vi.spyOn(extractor, "extract").mockImplementation(async () => pages.shift()!);
-          for (let i = 0; i < 3; i++) expect(await runLiveCaptureOnce()).toBe(1);
+          const spy = vi.spyOn(extractor, "readFrame").mockImplementation(async () => pages.shift()!);
+          expect(await runLiveCaptureOnce()).toBe(3);
           spy.mockRestore();
-          expect((await status(matchId, ids[0]!)).message).toBe("Results ✓ 1 rank");
-          expect((await status(matchId, ids[1]!)).message).toBe("Results ✓ 1 rank");
-          expect(await status(matchId, ids[2]!)).toMatchObject({ status: "ignored", detected: "other" });
+          const states = await Promise.all(ids.map(async (id) => (await status(matchId, id)).status));
+          expect(states.sort()).toEqual(["applied", "applied", "ignored"]);
           const placed = (await mgr.get(`/api/manager/matches/${matchId}`)).body.teams.map((t: { placement: number | null }) => t.placement);
           expect(placed).toEqual([1, 2]);
           expect((await get(`/matches/${matchId}/captures/nope`)).status).toBe(404);

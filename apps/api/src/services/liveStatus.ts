@@ -19,6 +19,7 @@
 import { createHash } from "node:crypto";
 import type { LiveCaptureStatus, Prisma } from "@prisma/client";
 import {
+  type ExtractedTeam,
   addMinutesToTime,
   LIVE_CAPTURE_ACTIVE_MS,
   LIVE_MANAGER_LOCK_MS,
@@ -37,6 +38,7 @@ import {
   type StudioLinkLiveState,
   type StudioLinkLiveTeam,
   type StudioLinkMvp,
+  type StudioLinkResultsProgress,
   type StudioLinkSummary,
   type StudioLinkSummaryTeam,
   type StudioLinkWinner,
@@ -46,7 +48,8 @@ import { prisma, type Tx } from "../db.js";
 import { conflict, forbidden, notFound } from "../lib/errors.js";
 import { avatarOf, brandingUrl, dateToStr } from "../lib/serialize.js";
 import { matchContext } from "./matchContext.js";
-import { loadOwnMatch, matchPointsSystem, ownerInclude, ownerManagerId, type MatchWithOwner } from "./matches.js";
+import { linkMatchPlayers, loadOwnMatch, matchPointsSystem, ownerInclude, ownerManagerId, type MatchWithOwner } from "./matches.js";
+import { nameSimilarity, SAME_PLAYER } from "./merge.js";
 import { closesAtOf } from "./schedule.js";
 import { publicUrl } from "./youtube.js";
 
@@ -56,6 +59,11 @@ export interface StoredPlayer {
   source?: LiveStateSource;
   /** ISO instant of the last change */
   at?: string;
+  /**
+   * ISO capture time of the newest team-list frame applied to this player. Frames are read in parallel and can finish
+   * out of order: an older frame never overwrites what a newer one said.
+   */
+  readAt?: string;
 }
 type LiveTeams = Record<string, StoredPlayer[]>;
 type Body = Omit<StudioLinkLive, "version" | "updatedAt" | "autoCapture">;
@@ -261,6 +269,8 @@ async function buildBody(m: MatchWithOwner): Promise<Body> {
 
   let summary: StudioLinkSummary | undefined;
   let winner: StudioLinkWinner | undefined;
+  let progress: StudioLinkResultsProgress | undefined;
+  if (state === "summary" || state === "finished") progress = await resultsProgress(m.id, m.status);
   if (state === "summary" || state === "finished") {
     const rows = slots.map(({ slotNumber, team }): StudioLinkSummaryTeam => {
       const logo = logos.get(team.id);
@@ -301,7 +311,18 @@ async function buildBody(m: MatchWithOwner): Promise<Body> {
     teams,
     ...(summary ? { summary } : {}),
     ...(winner ? { winner } : {}),
+    ...(progress ? { results: progress } : {}),
   };
+}
+
+/**
+ * How far the results are: teams in the lineup (a slot with players — they joined the room) and how many of them have
+ * a rank. Complete = every one has its rank, or the results are published.
+ */
+export async function resultsProgress(matchId: string, status: MatchStatus, db: Tx = prisma): Promise<StudioLinkResultsProgress> {
+  const rows = await db.matchTeam.findMany({ where: { matchId, players: { some: {} } }, select: { placement: true } });
+  const placed = rows.filter((r) => r.placement != null).length;
+  return { complete: status === "PUBLISHED" || (status === "RESULTS_REVIEW" && rows.length > 0 && placed >= rows.length), placed, teams: rows.length };
 }
 
 const hashOf = (b: Body) => createHash("sha256").update(JSON.stringify(b)).digest("base64url");
@@ -519,5 +540,157 @@ export async function applyCapture(matchId: string, capturedAt: Date, teams: Liv
     return { status: "APPLIED", changes, skipped };
   });
   if (outcome.status === "APPLIED" && outcome.changes) await stamped(matchId);
+  return outcome;
+}
+
+// ---------------------------------------------------------------- auto capture → in-match team list
+
+/** players a team-list frame can put in an empty slot (a card shows a squad of 4) */
+const MAX_FILL = 6;
+
+/**
+ * Which lineup player a read name is (same team): the best name match at or above SAME_PLAYER, else the same position
+ * when the frame shows as many players as the lineup has. null = not in the lineup.
+ */
+function lineupIndex(read: { name: string; rosterMatch: string | null }, at: number, lineup: string[], readCount: number, taken: Set<number>): number | null {
+  let best = -1;
+  let score = 0;
+  lineup.forEach((n, i) => {
+    if (taken.has(i)) return;
+    const x = Math.max(nameSimilarity(read.name, n), read.rosterMatch ? nameSimilarity(read.rosterMatch, n) : 0);
+    if (x > score) [best, score] = [i, x];
+  });
+  if (best >= 0 && score >= SAME_PLAYER) return best;
+  return readCount === lineup.length && at < lineup.length && !taken.has(at) ? at : null;
+}
+
+const slotOfRead = (t: ExtractedTeam): number | null => {
+  if (t.slot != null) return t.slot;
+  const counts = new Map<number, number>();
+  for (const p of t.players) if (p.matchedSlot != null) counts.set(p.matchedSlot, (counts.get(p.matchedSlot) ?? 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+};
+
+export type TeamListOutcome = { status: "APPLIED"; changes: number; filled: number; skipped: string[] } | { status: "SKIPPED"; reason: string };
+
+/**
+ * A team-list frame while the match is live (the list scrolls: each frame shows some teams). Per team shown:
+ *  - a slot with no lineup yet (nobody was read from it before Start) gets the players shown — the lineup is never replaced;
+ *  - each player's state (alive / knocked / eliminated) and kills move to what the frame shows, unless a newer frame
+ *    already spoke for that player (frames are read in parallel). Auto never revives an eliminated player and never
+ *    overrides a manager edit younger than 60 s; kills only go up (the results screen sets the final figures);
+ *    values read with confidence below LIVE_MIN_CONFIDENCE are left alone.
+ * One transaction (match row locked); bumps the board version when anything changed.
+ */
+export async function applyTeamList(matchId: string, capturedAt: Date, teams: ExtractedTeam[], now = new Date()): Promise<TeamListOutcome> {
+  const outcome = await prisma.$transaction(
+    async (tx): Promise<TeamListOutcome> => {
+      await tx.$queryRaw`SELECT id FROM "Match" WHERE id = ${matchId} FOR UPDATE`;
+      const m = await tx.match.findUniqueOrThrow({ where: { id: matchId } });
+      if (m.status !== "LIVE") return { status: "SKIPPED", reason: "match not live" };
+      if (m.liveAutoPaused) return { status: "SKIPPED", reason: "auto updates paused" };
+
+      const slots = await registeredTeams(m, tx);
+      const lineup = await tx.matchTeam.findMany({ where: { matchId }, include: { players: { orderBy: { position: "asc" } } } });
+      const stored = storedTeams(m.liveTeams);
+      const readAt = capturedAt.toISOString();
+      const at = now.toISOString();
+      const skipped: string[] = [];
+      const seen = new Set<number>();
+      let changes = 0;
+      let filled = 0;
+
+      for (const rt of teams) {
+        if (!rt.players.length) continue;
+        const slot = slotOfRead(rt);
+        const label = slot != null ? `slot ${slot}` : "a team";
+        const reg = slot != null ? slots.find((x) => x.slotNumber === slot) : undefined;
+        if (slot == null || !reg) {
+          skipped.push(`${label}: no registered team on that slot`);
+          continue;
+        }
+        if (seen.has(slot)) {
+          skipped.push(`${label}: read twice`);
+          continue;
+        }
+        seen.add(slot);
+
+        let row = lineup.find((x) => x.slotNumber === slot);
+        if (!row || !row.players.length) {
+          const team = await tx.matchTeam.upsert({
+            where: { matchId_slotNumber: { matchId, slotNumber: slot } },
+            create: { matchId, slotNumber: slot, teamId: reg.team.id },
+            update: { teamId: reg.team.id },
+          });
+          await tx.matchPlayer.deleteMany({ where: { matchTeamId: team.id } });
+          await tx.matchPlayer.createMany({
+            data: rt.players.slice(0, MAX_FILL).map((p, i) => ({
+              matchTeamId: team.id,
+              position: i + 1,
+              name: (p.rosterMatch ?? p.name).slice(0, 60),
+              ocrName: p.name.slice(0, 60),
+              ocrConfidence: p.confidence,
+              kills: p.kills,
+            })),
+          });
+          row = { ...team, players: await tx.matchPlayer.findMany({ where: { matchTeamId: team.id }, orderBy: { position: "asc" } }) };
+          filled++;
+        }
+
+        const lp = row.players.slice(0, LIVE_TEAM_SIZE);
+        const cur = stored[reg.team.id] ?? [];
+        const next = lp.map((_, i): StoredPlayer => ({ ...(cur[i] ?? { state: "alive" }) }));
+        const taken = new Set<number>();
+        let killsChanged = false;
+        for (const [k, rp] of rt.players.entries()) {
+          const i = lineupIndex(rp, k, lp.map((p) => p.name), rt.players.length, taken);
+          if (i == null) {
+            skipped.push(`${label}: "${rp.name}" isn't in the lineup`);
+            continue;
+          }
+          taken.add(i);
+          const p = next[i]!;
+          if (p.readAt && Date.parse(p.readAt) >= capturedAt.getTime()) continue;
+          if (rp.confidence < LIVE_MIN_CONFIDENCE) {
+            skipped.push(`${label}: "${rp.name}" low confidence (${rp.confidence})`);
+            continue;
+          }
+          p.readAt = readAt;
+          if (rp.state && rp.state !== p.state && p.state !== "eliminated" && !lockedByManager(p, now.getTime())) {
+            Object.assign(p, { state: rp.state, source: "auto", at });
+            changes++;
+          }
+          const was = lp[i]!.kills;
+          if (rp.kills != null && (was == null || rp.kills > was)) {
+            await tx.matchPlayer.update({ where: { id: lp[i]!.id }, data: { kills: rp.kills } });
+            lp[i] = { ...lp[i]!, kills: rp.kills };
+            if (rp.kills > (was ?? 0)) {
+              killsChanged = true;
+              changes++;
+            }
+          }
+        }
+        stored[reg.team.id] = next;
+        if (killsChanged) {
+          const all = await tx.matchPlayer.findMany({ where: { matchTeamId: row.id }, select: { kills: true } });
+          await tx.matchTeam.update({ where: { id: row.id }, data: { kills: all.reduce((n, x) => n + (x.kills ?? 0), 0) } });
+        }
+      }
+
+      await tx.match.update({
+        where: { id: matchId },
+        data: {
+          liveTeams: stored as unknown as Prisma.InputJsonValue,
+          ...(!m.liveAutoAt || m.liveAutoAt < capturedAt ? { liveAutoAt: capturedAt } : {}),
+        },
+      });
+      return { status: "APPLIED", changes, filled, skipped };
+    },
+    { maxWait: 15_000, timeout: 30_000 },
+  );
+  if (outcome.status === "APPLIED") {
+    if (outcome.filled) await linkMatchPlayers(matchId);
+    if (outcome.changes || outcome.filled) await stamped(matchId);
+  }
   return outcome;
 }

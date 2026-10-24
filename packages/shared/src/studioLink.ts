@@ -17,11 +17,17 @@
  *          Both 409 with a message when the match's control.state doesn't allow it. The manager publishes results.
  *   POST   /api/studio-link/matches/:id/screenshots    multipart: one image ≤ 2 MB + captureId, capturedAt, sequence,
  *          sessionId [, kind=AUTO, trigger, hint, sceneId, sceneName, width, height] → 202 LiveCaptureAccepted
- *          (200 + duplicate for a repeat captureId; 200 + reason "busy" for an auto frame while the previous one is read). The server detects what it shows — lobby (fills the team list,
- *          before Start), in_game (live team status), results (fills ranks; while live this ends the match) — and
- *          ignores anything else. kind=LIVE_STATUS means the same as AUTO. kind=SLOT_LIST | RESULTS (old builds):
- *          multipart `files` → 201 { count }, read as that kind.
- *          409 = match published, or locked and the hint isn't lobby; 413 = over 2 MB; 429 + Retry-After above 1 upload per 2 s per studio per match.
+ *          (200 + duplicate for a repeat captureId; 200 + reason "busy" for an auto frame while too many of this match's
+ *          frames wait to be read). Frames are read in parallel. The server detects what each shows and merges it — the
+ *          team list ("lobby"; the list scrolls, every frame adds the teams it shows): before Start it fills the
+ *          lineup, while live it updates each player's alive/eliminated state and kills; the results screen (also
+ *          scrolled): while live it ends the match (an interval frame only when it shows rank 1 and another results
+ *          frame confirms it), then every page fills ranks; in_game (spectator HUD) updates alive counts. Anything else
+ *          is ignored. kind=LIVE_STATUS means the same as AUTO. kind=SLOT_LIST | RESULTS (old builds): multipart `files`
+ *          → 201 { count }, read as that kind.
+ *          409 = match published, or locked and the hint isn't lobby; 409 code CAPTURE_DONE (interval frames) = every
+ *          team that played has its rank, auto capture can stop; 413 = over 2 MB; 429 + Retry-After above 1 upload per
+ *          2 s per studio per match.
  *   GET    /api/studio-link/matches/:id/captures/:captureId → StudioCaptureStatus  (what the reader made of it)
  *   GET    /api/studio-link/matches/:id/live           → StudioLinkLive  (Team Status board, on-screen texts, summary,
  *          winner; poll every ~3 s; the final state stays available after the match)
@@ -232,6 +238,18 @@ export interface StudioLinkLive {
   summary?: StudioLinkSummary;
   /** once results are published (state finished) */
   winner?: StudioLinkWinner;
+  /**
+   * additive: results progress once the match has ended (state summary / finished). `teams` = teams in the lineup,
+   * `placed` = those with a rank so far; `complete` = every one has its rank (or the results are published). While
+   * not complete the studio shows "processing" instead of the standings and keeps capturing the results screen.
+   */
+  results?: StudioLinkResultsProgress;
+}
+
+export interface StudioLinkResultsProgress {
+  complete: boolean;
+  placed: number;
+  teams: number;
 }
 
 export const saveLiveTeamSchema = z
@@ -301,11 +319,11 @@ export interface LiveCaptureAccepted {
   captureId: string;
   accepted: boolean;
   duplicate?: true;
-  /** "busy" = the previous frame of this match is still being read; this one was dropped (auto captures only) */
+  /** "busy" = too many frames of this match are waiting to be read; this one was dropped (auto captures only) */
   reason?: "busy";
   /** captures of other matches waiting ahead of this one */
   queuePosition?: number;
-  /** seconds until the studio's next upload (5..30) */
+  /** seconds until the studio's next upload (2..30) */
   nextIntervalSeconds?: number;
 }
 

@@ -14,6 +14,8 @@ export type ApiErrorCode =
   | "SLOTS_FULL"
   | "REGISTRATION_CLOSED"
   | "RATE_LIMITED"
+  /** studio auto capture: the server has every result it needs for this match (HTTP 409) — stop capturing */
+  | "CAPTURE_DONE"
   /** phase 2: the screenshot reader service is unreachable (HTTP 503) */
   | "EXTRACTOR_OFFLINE"
   /** phase 4: resumable upload chunk sent at the wrong offset (HTTP 409; body also carries `offset`) */
