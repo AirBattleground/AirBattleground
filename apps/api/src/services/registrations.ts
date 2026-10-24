@@ -11,7 +11,7 @@ import {
   toRegistration,
   toScrim,
 } from "../lib/serialize.js";
-import { scrimOccursOn, startsAtOf } from "./schedule.js";
+import { closesAtOf, scrimOccursOn, startsAtOf } from "./schedule.js";
 import { markSuggestionsDone } from "./suggestions.js";
 
 const REG_NOT_FOUND = "Registration not found";
@@ -32,6 +32,7 @@ export function toTeamRegistration(r: TeamRegistrationRow): TeamRegistration {
     rejectionReason: r.rejectionReason,
     date,
     startsAt: startsAtOf(date, s.startTime).toISOString(),
+    registrationClosesAt: closesAtOf(date, s).toISOString(),
     createdAt: r.createdAt.toISOString(),
     decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
     scrim: {
@@ -162,10 +163,10 @@ const ALREADY = "You're already registered for this scrim";
  */
 export async function registerTeam(teamId: string, scrimId: string, date: string, now = new Date(), registeredById: string | null = null): Promise<TeamRegistration> {
   const scrim = await prisma.scrim.findUnique({ where: { id: scrimId }, include: { ...scrimInclude, manager: { select: { ...organizerSelect, isActive: true } } } });
-  if (!scrim || !scrim.manager.isActive || scrim.status === "ARCHIVED") throw notFound("Scrim not found");
+  if (!scrim || !scrim.manager.isActive || scrim.status === "ARCHIVED" || !scrim.published) throw notFound("Scrim not found");
   if (!scrimOccursOn(scrim, date)) throw notFound("This scrim doesn't run on that date");
   if (scrim.status !== "ACTIVE") throw new AppError("REGISTRATION_CLOSED", "This scrim isn't taking registrations right now");
-  if (now >= startsAtOf(date, scrim.startTime)) {
+  if (now >= closesAtOf(date, scrim)) {
     throw new AppError("REGISTRATION_CLOSED", "Registration for this scrim has closed");
   }
 
@@ -194,14 +195,14 @@ export async function registerTeam(teamId: string, scrimId: string, date: string
 export async function cancelRegistration(teamId: string, registrationId: string, now = new Date()): Promise<void> {
   const reg = await prisma.registration.findUnique({
     where: { id: registrationId },
-    select: { teamId: true, status: true, session: { select: { date: true, scrim: { select: { startTime: true } } } } },
+    select: { teamId: true, status: true, session: { select: { date: true, scrim: { select: { startTime: true, registrationCloseMinutes: true } } } } },
   });
   if (!reg || reg.teamId !== teamId) throw notFound(REG_NOT_FOUND);
   if (reg.status !== "PENDING" && reg.status !== "APPROVED") {
     throw conflict(reg.status === "CANCELLED" ? "This registration is already cancelled" : "This registration was rejected");
   }
-  if (now >= startsAtOf(dateToStr(reg.session.date), reg.session.scrim.startTime)) {
-    throw new AppError("REGISTRATION_CLOSED", "This scrim has already started, so it can't be cancelled");
+  if (now >= closesAtOf(dateToStr(reg.session.date), reg.session.scrim)) {
+    throw new AppError("REGISTRATION_CLOSED", "Registration has closed, so it can't be cancelled");
   }
   const res = await prisma.registration.updateMany({
     where: { id: registrationId, status: { in: ["PENDING", "APPROVED"] } },

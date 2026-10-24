@@ -62,3 +62,79 @@ export function slotRange(firstSlot: number, slotCount: number): number[] {
 export function teamNameKey(name: string): string {
   return name.trim().replace(/\s+/g, " ").toLowerCase();
 }
+
+// ---------- scrim match plan ----------
+
+/** IDP (room ID/password) goes out this many minutes before a match when the manager doesn't pick another value. */
+export const DEFAULT_IDP_MINUTES = 15;
+/** a scrim's matches must all start within this many minutes of match 1 */
+export const MAX_MATCH_SPAN_MINUTES = 12 * 60;
+
+const minutesOfDay = (hhmm: string) => {
+  const [h = 0, m = 0] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+};
+
+/** "HH:mm" + minutes, wrapping past midnight. */
+export function addMinutesToTime(hhmm: string, minutes: number): string {
+  const t = (((minutesOfDay(hhmm) + minutes) % 1440) + 1440) % 1440;
+  return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+}
+
+/** Minutes after match 1 for each match's "HH:mm" start; a time earlier than the one before it is the next day. */
+export function matchOffsets(times: string[]): number[] {
+  const out: number[] = [];
+  let day = 0;
+  times.forEach((t, i) => {
+    if (i > 0 && minutesOfDay(t) <= minutesOfDay(times[i - 1]!)) day += 1440;
+    out.push(minutesOfDay(t) + day - minutesOfDay(times[0]!));
+  });
+  return out;
+}
+
+/** What's wrong with a list of match start times (null = fine). `index` = the offending match (0-based). */
+export function matchTimesIssue(times: string[]): { index: number; message: string } | null {
+  for (let i = 1; i < times.length; i++) {
+    if (times[i] === times[i - 1]) return { index: i, message: `Match ${i + 1} starts at the same time as match ${i}` };
+  }
+  const offsets = matchOffsets(times);
+  const last = offsets.length - 1;
+  if (offsets[last]! > MAX_MATCH_SPAN_MINUTES) {
+    return { index: last, message: `Match ${last + 1} is more than 12 hours after match 1 — check the times are in order` };
+  }
+  return null;
+}
+
+export interface ScrimPlanLike {
+  maps: string[];
+  startTime: string;
+  matchTimes: string[];
+  idpMinutes: number[];
+}
+
+/**
+ * Each match of a scrim: map, "HH:mm" start and IDP minutes. Scrims saved before per-match times only have match 1's
+ * time (startTime), so their later matches have startTime null.
+ */
+export function scrimMatchPlan(s: ScrimPlanLike): { number: number; map: string; startTime: string | null; idpMinutes: number }[] {
+  const timed = s.matchTimes.length === s.maps.length;
+  return s.maps.map((map, i) => ({
+    number: i + 1,
+    map,
+    startTime: timed ? s.matchTimes[i]! : i === 0 ? s.startTime : null,
+    idpMinutes: s.idpMinutes[i] ?? DEFAULT_IDP_MINUTES,
+  }));
+}
+
+/** Start instant of match `number` (1-based) of a scrim's session on `date` (null = not timed). */
+export function matchStartsAt(s: ScrimPlanLike, date: string, number: number): Date | null {
+  const plan = scrimMatchPlan(s);
+  if (!plan[number - 1]?.startTime) return null;
+  const offset = s.matchTimes.length === s.maps.length ? matchOffsets(s.matchTimes)[number - 1]! : 0;
+  return new Date(sessionStartsAt(date, plan[0]!.startTime!).getTime() + offset * 60_000);
+}
+
+/** When registration for a scrim's session on `date` closes: `closeMinutes` before match 1. */
+export function registrationClosesAt(date: string, startTime: string, closeMinutes: number): Date {
+  return new Date(sessionStartsAt(date, startTime).getTime() - closeMinutes * 60_000);
+}

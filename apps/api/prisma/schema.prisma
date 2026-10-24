@@ -353,8 +353,16 @@ model Scrim {
   description  String?
   /// GameMap values, one per match, in play order
   maps         String[]
-  /// "HH:mm" in app timezone (IST)
+  /// "HH:mm" in app timezone (IST) — match 1's start (kept equal to matchTimes[0])
   startTime    String
+  /// "HH:mm" start of each match, parallel to maps; an earlier time than the one before = next day. [] = only match 1 timed (startTime)
+  matchTimes   String[]    @default([])
+  /// IDP (room ID/password reveal) minutes before each match's start, parallel to maps; [] = DEFAULT_IDP_MINUTES
+  idpMinutes   Int[]       @default([])
+  /// registration closes this many minutes before match 1 starts (0 = at the start)
+  registrationCloseMinutes Int @default(0)
+  /// false = draft: only the manager sees it (no teams, no Live page, no Studio)
+  published    Boolean     @default(true)
   recurrence   Recurrence
   startDate    DateTime    @db.Date
   endDate      DateTime?   @db.Date

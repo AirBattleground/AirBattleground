@@ -42,8 +42,9 @@ export function RegistrationCard({
   const cancel = useCancelRegistration();
   const [open, setOpen] = useState(false);
   const started = now >= new Date(reg.startsAt).getTime();
+  const closed = now >= new Date(reg.registrationClosesAt ?? reg.startsAt).getTime();
   const { isLeader } = usePlayerSession();
-  const canCancel = cancellable && isLeader && !started && (reg.status === "PENDING" || reg.status === "APPROVED");
+  const canCancel = cancellable && isLeader && !closed && (reg.status === "PENDING" || reg.status === "APPROVED");
   const tour = (name: string) => (tourAnchor ? { "data-tour": name } : {});
 
   return (

@@ -36,6 +36,8 @@ export interface MatchLabel {
   title: string;
   number: number;
   map: GameMap;
+  /** the scrim's planned IDP for this match: the default "show teams" time */
+  idpMinutes?: number | null;
 }
 
 /** Message the manager pastes into the WhatsApp group. */
@@ -131,7 +133,7 @@ export function RoomCard({ matchId, label, readOnly = false }: { matchId: string
         </div>
       )}
 
-      {editing && <RoomDialog matchId={matchId} room={room} onClose={() => setEditing(false)} />}
+      {editing && <RoomDialog matchId={matchId} room={room} idpMinutes={label.idpMinutes} onClose={() => setEditing(false)} />}
       <ConfirmDialog
         open={removing}
         onOpenChange={setRemoving}
@@ -145,11 +147,11 @@ export function RoomCard({ matchId, label, readOnly = false }: { matchId: string
   );
 }
 
-function RoomDialog({ matchId, room, onClose }: { matchId: string; room: RoomDetails | null; onClose: () => void }) {
+function RoomDialog({ matchId, room, idpMinutes, onClose }: { matchId: string; room: RoomDetails | null; idpMinutes?: number | null; onClose: () => void }) {
   const save = useSaveRoom(matchId);
   const form = useForm<FormIn, unknown, SaveRoomInput>({
     resolver: zodResolver(saveRoomSchema),
-    defaultValues: { roomId: room?.roomId ?? "", password: room?.password ?? "", revealMinutesBefore: room && !room.revealAt ? null : 15 },
+    defaultValues: { roomId: room?.roomId ?? "", password: room?.password ?? "", revealMinutesBefore: room && !room.revealAt ? null : (idpMinutes ?? 15) },
   });
   const { register, handleSubmit, control, formState, setError } = form;
 

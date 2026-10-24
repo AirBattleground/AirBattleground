@@ -13,9 +13,9 @@ packages/ui      shadcn/ui components + 7xen theme (light/dark), brand component
 ## Phase 1 domain
 - Roles: ADMIN (owner, seeded from env), MANAGER, TEAM. Admin creates manager logins. Teams: admin creates them directly, or a manager submits a `TeamRequest` that the admin approves (login only exists after approval). No self sign-up yet.
 - Team names are unique (case/space-insensitive via `teamNameKey`), across teams AND pending team requests.
-- Manager creates **scrims**: title, maps (one per match), start time (IST, "HH:mm"), recurrence ONCE | DAILY | WEEKENDS, start/end date, slotCount, firstSlot.
+- Manager creates **scrims**: title, a match plan (per match: map, start time IST "HH:mm", IDP minutes before — `maps[]` + `matchTimes[]` + `idpMinutes[]`, `startTime` = match 1), recurrence ONCE | DAILY | WEEKENDS (the same plan every day), start/end date, slotCount, firstSlot, `registrationCloseMinutes` (before match 1; 0 = at start), `published` (false = draft: hidden from teams, Live page, 7XEN Studio). Plan helpers: `scrimMatchPlan`, `matchStartsAt` in shared `schedule.ts`.
 - A scrim "occurs" on a date per `occursOn()`; one `ScrimSession` row per (scrim, date), created lazily.
-- Team picks a date → sees scrims that day → registers (PENDING). Manager approves → **lowest free slot auto-allotted** (firstSlot..firstSlot+slotCount-1). Reject/cancel frees the slot. Registration closes at session start.
+- Team picks a date → sees scrims that day → registers → confirmed straight away on the **lowest free slot** (firstSlot..firstSlot+slotCount-1; no approval). Manager removal/cancel frees the slot. Registration (and cancelling) closes at `closesAtOf()`; after that only registered teams see the scrim, and once every match that day is published it leaves the team list (results pages keep it).
 - Phase 2 (NOT now): room id/password, match results via screenshot OCR, leaderboards.
 
 ## Contracts — read before coding

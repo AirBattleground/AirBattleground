@@ -6,6 +6,7 @@ import { Prisma, type MatchStatus as DbMatchStatus } from "@prisma/client";
 import {
   MAX_ROSTER_PLAYERS,
   matchIgn,
+  scrimMatchPlan,
   type ExtractionResult,
   type GameMap,
   type MatchDetail,
@@ -253,12 +254,16 @@ export async function ensureMatches(sessionId: string, maps: string[]) {
   const byNumber = new Map(existing.map((m) => [m.number, m]));
   const missing = maps.map((map, i) => ({ sessionId, number: i + 1, map })).filter((m) => !byNumber.has(m.number));
   if (missing.length) await prisma.match.createMany({ data: missing, skipDuplicates: true });
+  const untouched = (m: (typeof existing)[number]) => m.status === "SCHEDULED" && m._count.screenshots === 0 && m._count.teams === 0;
   for (const [i, map] of maps.entries()) {
     const m = byNumber.get(i + 1);
-    if (m && m.map !== map && m.status === "SCHEDULED" && m._count.screenshots === 0 && m._count.teams === 0) {
+    if (m && m.map !== map && untouched(m)) {
       await prisma.match.update({ where: { id: m.id }, data: { map } });
     }
   }
+  // the manager dropped matches from the plan: remove the ones nobody played
+  const dropped = existing.filter((m) => m.number > maps.length && untouched(m)).map((m) => m.id);
+  if (dropped.length) await prisma.match.deleteMany({ where: { id: { in: dropped } } });
 }
 
 export async function getMatchDetail(matchId: string, managerId: string, bypass = false): Promise<MatchDetail> {
@@ -267,13 +272,14 @@ export async function getMatchDetail(matchId: string, managerId: string, bypass 
 }
 
 /** The scrim-shaped header of MatchDetail (+ tournament context for group matches). */
-function matchHeader(m: MatchWithOwner): Pick<MatchDetail, "scrim" | "date" | "tournament"> {
+function matchHeader(m: MatchWithOwner): Pick<MatchDetail, "scrim" | "date" | "tournament" | "idpMinutes"> {
   if (m.session) {
     const sc = m.session.scrim;
     return {
       scrim: { id: sc.id, title: sc.title, slotCount: sc.slotCount, firstSlot: sc.firstSlot, pointsSystem: pointsSystemOf(sc.pointsSystem) },
       date: dateToStr(m.session.date),
       tournament: null,
+      idpMinutes: scrimMatchPlan(sc)[m.number - 1]?.idpMinutes ?? null,
     };
   }
   const g = m.group!;

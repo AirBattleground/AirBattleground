@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { addMinutesToTime } from "@7xen/shared";
 import {
   adminAgent,
   http,
@@ -205,6 +206,119 @@ describe("manager scrims", () => {
   });
 });
 
+/** "HH:mm" in IST and the IST date of an instant */
+function istClock(at: Date) {
+  const time = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).format(at);
+  const date = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(at);
+  return { time, date };
+}
+
+describe("scrim match plan, close time, drafts", () => {
+  const plan = { maps: ["ERANGEL", "MIRAMAR", "RONDO"], startTime: "20:00", matchTimes: ["20:00", "20:40", "21:20"], idpMinutes: [15, 10, 15] };
+
+  it("stores each match's time + IDP, keeps startTime = match 1, and validates the times", async () => {
+    const admin = await adminAgent();
+    const { agent: mgr } = await createManager(admin);
+    const scrim = await createScrim(mgr, { ...plan, startTime: "19:00", registrationCloseMinutes: 30 });
+    const got = (await mgr.get(`/api/manager/scrims/${scrim.id}`)).body;
+    expect(got).toMatchObject({
+      startTime: "20:00",
+      registrationCloseMinutes: 30,
+      published: true,
+      matches: [
+        { number: 1, map: "ERANGEL", startTime: "20:00", idpMinutes: 15 },
+        { number: 2, map: "MIRAMAR", startTime: "20:40", idpMinutes: 10 },
+        { number: 3, map: "RONDO", startTime: "21:20", idpMinutes: 15 },
+      ],
+    });
+    const day = (await mgr.get("/api/manager/schedule").query({ date: tomorrow() })).body.items[0];
+    expect(new Date(day.startsAt).getTime() - new Date(day.registrationClosesAt).getTime()).toBe(30 * 60_000);
+
+    const same = await mgr.post("/api/manager/scrims").send({ ...plan, title: "Bad", matchTimes: ["20:00", "20:00", "21:00"], recurrence: "DAILY", startDate: tomorrow(), slotCount: 4 });
+    expect(same.status).toBe(400);
+    expect(same.body.error.fields["matchTimes.1"]).toMatch(/same time/);
+    const short = await mgr.post("/api/manager/scrims").send({ ...plan, title: "Bad", matchTimes: ["20:00"], recurrence: "DAILY", startDate: tomorrow(), slotCount: 4 });
+    expect(short.body.error.fields.matchTimes).toBe("Give every match a start time");
+
+    // older clients that only move startTime shift every match
+    const moved = await mgr.patch(`/api/manager/scrims/${scrim.id}`).send({ startTime: "21:00" });
+    expect(moved.body.matches.map((m: { startTime: string }) => m.startTime)).toEqual(["21:00", "21:40", "22:20"]);
+  });
+
+  it("a match after midnight runs the next day; team detail shows each match's start and IDP", async () => {
+    const admin = await adminAgent();
+    const { agent: mgr } = await createManager(admin);
+    const { agent: team } = await createTeam(admin);
+    const scrim = await createScrim(mgr, { maps: ["ERANGEL", "MIRAMAR"], startTime: "23:30", matchTimes: ["23:30", "00:10"], idpMinutes: [15, 10] });
+    const d = (await team.get(`/api/team/scrims/${scrim.id}`).query({ date: tomorrow() })).body;
+    const [m1, m2] = d.matches;
+    expect(new Date(m2.startsAt).getTime() - new Date(m1.startsAt).getTime()).toBe(40 * 60_000);
+    expect(new Date(m2.startsAt).getTime() - new Date(m2.idpAt).getTime()).toBe(10 * 60_000);
+  });
+
+  it("drafts are hidden from teams until published", async () => {
+    const admin = await adminAgent();
+    const { agent: mgr } = await createManager(admin);
+    const { agent: team } = await createTeam(admin);
+    const scrim = await createScrim(mgr, { published: false });
+    expect((await mgr.get("/api/manager/scrims")).body.items[0]).toMatchObject({ id: scrim.id, published: false });
+    expect((await team.get("/api/team/scrims").query({ date: tomorrow() })).body.items).toEqual([]);
+    expect((await team.get(`/api/team/scrims/${scrim.id}`)).status).toBe(404);
+    expect((await register(team, scrim.id)).status).toBe(404);
+
+    await mgr.patch(`/api/manager/scrims/${scrim.id}`).send({ published: true }).expect(200);
+    expect((await team.get("/api/team/scrims").query({ date: tomorrow() })).body.items).toHaveLength(1);
+    expect((await register(team, scrim.id)).status).toBe(201);
+  });
+
+  it("registration closes early: only registered teams keep seeing it, and nobody once every match is published", async () => {
+    const admin = await adminAgent();
+    const { agent: mgr } = await createManager(admin);
+    const { agent: inTeam } = await createTeam(admin);
+    const { agent: outTeam } = await createTeam(admin);
+    // match 1 starts in 20 minutes
+    const start = istClock(new Date(Date.now() + 20 * 60_000));
+    const scrim = await createScrim(mgr, { recurrence: "ONCE", startDate: start.date, startTime: start.time, maps: ["ERANGEL", "MIRAMAR"], matchTimes: [start.time, addMinutesToTime(start.time, 40)] });
+    const list = (agent: TestAgent) => agent.get("/api/team/scrims").query({ date: start.date });
+    expect((await register(inTeam, scrim.id, start.date)).status).toBe(201);
+
+    // close 30 min before match 1 → already closed
+    await mgr.patch(`/api/manager/scrims/${scrim.id}`).send({ registrationCloseMinutes: 30 }).expect(200);
+    const late = await register(outTeam, scrim.id, start.date);
+    expect(late.status).toBe(409);
+    expect(late.body.error.code).toBe("REGISTRATION_CLOSED");
+    expect((await list(outTeam)).body.items).toEqual([]);
+    const mine = (await list(inTeam)).body.items;
+    expect(mine).toHaveLength(1);
+    expect(mine[0]).toMatchObject({ registrationOpen: false, myRegistration: { status: "APPROVED" } });
+    // a registered team can't cancel after registration closes
+    const cancel = await inTeam.delete(`/api/team/registrations/${mine[0].myRegistration.id}`);
+    expect(cancel.status).toBe(409);
+
+    // all matches published → finished
+    await mgr.get(`/api/manager/scrims/${scrim.id}/sessions/${start.date}/matches`).expect(200);
+    await prisma.match.updateMany({ where: { session: { scrimId: scrim.id } }, data: { status: "PUBLISHED" } });
+    expect((await list(inTeam)).body.items).toEqual([]);
+  });
+
+  it("removing a match drops unplayed match rows, but not one that already started", async () => {
+    const admin = await adminAgent();
+    const { agent: mgr } = await createManager(admin);
+    const scrim = await createScrim(mgr, plan);
+    const url = `/api/manager/scrims/${scrim.id}/sessions/${tomorrow()}/matches`;
+    expect((await mgr.get(url)).body.items).toHaveLength(3);
+
+    await prisma.match.updateMany({ where: { number: 3, session: { scrimId: scrim.id } }, data: { status: "LIVE" } });
+    const refused = await mgr.patch(`/api/manager/scrims/${scrim.id}`).send({ maps: ["ERANGEL", "MIRAMAR"], matchTimes: ["20:00", "20:40"], idpMinutes: [15, 15] });
+    expect(refused.status).toBe(409);
+    expect(refused.body.error.message).toMatch(/Match 3 on .* has already started/);
+
+    await prisma.match.updateMany({ where: { number: 3, session: { scrimId: scrim.id } }, data: { status: "SCHEDULED" } });
+    await mgr.patch(`/api/manager/scrims/${scrim.id}`).send({ maps: ["ERANGEL", "MIRAMAR"], matchTimes: ["20:00", "20:40"], idpMinutes: [15, 15] }).expect(200);
+    expect((await mgr.get(url)).body.items.map((m: { number: number }) => m.number)).toEqual([1, 2]);
+  });
+});
+
 describe("registrations & slots", () => {
   async function setup(teamCount: number, scrimOverrides: Record<string, unknown> = {}) {
     const admin = await adminAgent();
@@ -314,8 +428,9 @@ describe("registrations & slots", () => {
     expect(res.status).toBe(409);
     expect(res.body.error).toEqual({ code: "REGISTRATION_CLOSED", message: "Registration for this scrim has closed" });
 
+    // closed and not registered: the scrim is no longer listed for this team
     const list = await teams[0]!.agent.get("/api/team/scrims").query({ date: yesterday() });
-    expect(list.body.items[0].registrationOpen).toBe(false);
+    expect(list.body.items).toEqual([]);
   });
 
   it("can't register for a paused scrim or a date it doesn't run", async () => {

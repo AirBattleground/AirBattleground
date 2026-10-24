@@ -1,6 +1,10 @@
 import type { Prisma } from "@prisma/client";
 import {
+  addMinutesToTime,
+  matchStartsAt,
+  matchTimesIssue,
   MAX_ROOM_SLOTS,
+  scrimMatchPlan,
   slotRange,
   todayInAppTz,
   type CreateScrimInput,
@@ -66,7 +70,11 @@ export async function createScrim(managerId: string, input: CreateScrimInput): P
       title: input.title,
       description: input.description ?? null,
       maps: input.maps,
-      startTime: input.startTime,
+      startTime: input.matchTimes?.[0] ?? input.startTime,
+      matchTimes: input.matchTimes ?? [],
+      idpMinutes: input.idpMinutes ?? [],
+      registrationCloseMinutes: input.registrationCloseMinutes,
+      published: input.published,
       recurrence: input.recurrence,
       startDate: strToDate(input.startDate),
       endDate: input.recurrence === "ONCE" || !input.endDate ? null : strToDate(input.endDate),
@@ -89,11 +97,34 @@ export async function updateScrim(scrimId: string, managerId: string, input: Upd
   if (recurrence === "ONCE") endDate = null;
   const slotCount = input.slotCount ?? current.slotCount;
   const firstSlot = input.firstSlot ?? current.firstSlot;
+  const plan = mergePlan(current, input);
 
   const fields: Record<string, string> = {};
   if (firstSlot + slotCount - 1 > MAX_ROOM_SLOTS) fields.slotCount = `Slots would go past #${MAX_ROOM_SLOTS}`;
   if (endDate && endDate < startDate) fields.endDate = "End date is before start date";
+  if (plan.matchTimes.length && plan.matchTimes.length !== plan.maps.length) fields.matchTimes = "Give every match a start time";
+  else if (plan.matchTimes.length) {
+    const issue = matchTimesIssue(plan.matchTimes);
+    if (issue) fields[`matchTimes.${issue.index}`] = issue.message;
+  }
+  if (plan.idpMinutes.length && plan.idpMinutes.length !== plan.maps.length) fields.idpMinutes = "Give every match an IDP time";
   if (Object.keys(fields).length) throw new AppError("VALIDATION_ERROR", "Please check the highlighted fields", fields);
+
+  // Matches that were played (or are being played) today or later can't be dropped from the plan.
+  if (plan.maps.length < current.maps.length) {
+    const played = await prisma.match.findFirst({
+      where: {
+        number: { gt: plan.maps.length },
+        session: { scrimId, date: { gte: strToDate(todayInAppTz()) } },
+        OR: [{ status: { not: "SCHEDULED" } }, { screenshots: { some: {} } }, { teams: { some: {} } }],
+      },
+      select: { number: true, session: { select: { date: true } } },
+      orderBy: { session: { date: "asc" } },
+    });
+    if (played) {
+      throw conflict(`Match ${played.number} on ${dateToStr(played.session!.date)} has already started or has results, so it can't be removed.`);
+    }
+  }
 
   // Don't strand teams already holding a slot that would fall outside the new range.
   if (slotCount !== current.slotCount || firstSlot !== current.firstSlot) {
@@ -128,15 +159,69 @@ export async function updateScrim(scrimId: string, managerId: string, input: Upd
   };
   if (input.title !== undefined) data.title = input.title;
   if ("description" in input) data.description = input.description ?? null;
-  if (input.maps !== undefined) data.maps = input.maps;
-  if (input.startTime !== undefined) data.startTime = input.startTime;
+  data.maps = plan.maps;
+  data.startTime = plan.startTime;
+  data.matchTimes = plan.matchTimes;
+  data.idpMinutes = plan.idpMinutes;
+  if (input.registrationCloseMinutes !== undefined) data.registrationCloseMinutes = input.registrationCloseMinutes;
+  if (input.published !== undefined) data.published = input.published;
   if (input.status !== undefined) data.status = input.status;
   if (input.pointsSystem !== undefined) data.pointsSystem = input.pointsSystem;
   if (input.winCoins !== undefined) data.winCoins = input.winCoins;
 
   const updated = await prisma.scrim.update({ where: { id: scrimId }, data, include: scrimInclude });
   if (input.pointsSystem !== undefined) await recomputeScrimPoints(scrimId, pointsSystemOf(updated.pointsSystem));
+  await moveRoomReveals(scrimId, current, updated);
   return toScrim(updated);
+}
+
+type Plan = { maps: string[]; startTime: string; matchTimes: string[]; idpMinutes: number[] };
+
+/**
+ * The scrim's match plan after a (partial) update. Times/IDPs that no longer line up with the maps are dropped; a new
+ * startTime without matchTimes moves every match by the same amount.
+ */
+function mergePlan(current: Plan, input: UpdateScrimInput): Plan {
+  const maps = input.maps ?? current.maps;
+  const fits = <T>(xs: T[]) => (xs.length === maps.length ? xs : []);
+  let matchTimes = input.matchTimes ?? fits(current.matchTimes);
+  if (!input.matchTimes && input.startTime && matchTimes.length && input.startTime !== current.startTime) {
+    const [h0 = 0, m0 = 0] = current.startTime.split(":").map(Number);
+    const [h1 = 0, m1 = 0] = input.startTime.split(":").map(Number);
+    matchTimes = matchTimes.map((t) => addMinutesToTime(t, h1 * 60 + m1 - (h0 * 60 + m0)));
+  }
+  return {
+    maps,
+    startTime: matchTimes[0] ?? input.startTime ?? current.startTime,
+    matchTimes,
+    idpMinutes: input.idpMinutes ?? fits(current.idpMinutes),
+  };
+}
+
+/**
+ * Rooms already saved for matches that haven't started keep their IDP in step with the new plan: a reveal that sat on
+ * the old IDP moves to the new one, any other reveal moves by however much the match moved.
+ */
+async function moveRoomReveals(scrimId: string, before: Plan, after: Plan, now = new Date()) {
+  const key = (p: Plan) => [p.startTime, p.matchTimes.join(), p.idpMinutes.join(), p.maps.length].join("|");
+  if (key(before) === key(after)) return;
+  const rows = await prisma.match.findMany({
+    where: { status: "SCHEDULED", roomRevealAt: { not: null }, session: { scrimId, date: { gte: strToDate(todayInAppTz(now)) } } },
+    select: { id: true, number: true, roomRevealAt: true, session: { select: { date: true } } },
+  });
+  const oldPlan = scrimMatchPlan(before);
+  const newPlan = scrimMatchPlan(after);
+  for (const m of rows) {
+    const date = dateToStr(m.session!.date);
+    const was = matchStartsAt(before, date, m.number);
+    const will = matchStartsAt(after, date, m.number);
+    const newIdp = newPlan[m.number - 1]?.idpMinutes;
+    if (!was || !will || newIdp == null) continue;
+    const reveal = m.roomRevealAt!.getTime();
+    const onIdp = reveal === was.getTime() - (oldPlan[m.number - 1]?.idpMinutes ?? 0) * 60_000;
+    const revealAt = onIdp ? will.getTime() - newIdp * 60_000 : reveal + will.getTime() - was.getTime();
+    if (revealAt !== reveal) await prisma.match.update({ where: { id: m.id }, data: { roomRevealAt: new Date(revealAt) } });
+  }
 }
 
 /** Own non-archived scrims running on `date`, with live counts, by start time. */

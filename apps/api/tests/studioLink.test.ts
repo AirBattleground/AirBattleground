@@ -97,6 +97,19 @@ describe("studio link", () => {
     expect((await get("/matches", k2)).body.items).toEqual([]);
   });
 
+  it("/matches: each match has its own start, unlocksAt = registration close, drafts aren't listed", async () => {
+    await createScrim(mgr, { title: "Plan Scrim", maps: ["ERANGEL", "MIRAMAR"], startTime: "21:00", matchTimes: ["21:00", "21:45"], registrationCloseMinutes: 30 });
+    await createScrim(mgr, { title: "Draft Scrim", published: false });
+    const items = (await get("/matches")).body.items as { title: string; subtitle: string; startsAt: string; control: { unlocksAt: string | null; reason: string | null } }[];
+    expect(items.some((m) => m.title === "Draft Scrim")).toBe(false);
+    const day = items.filter((m) => m.title === "Plan Scrim" && m.subtitle.includes("Match")).filter((m) => new Date(m.startsAt) > new Date());
+    const m1 = day.find((m) => m.subtitle.endsWith("Match 1") && m.control.unlocksAt !== null)!;
+    const m2 = day.find((m) => m.subtitle.endsWith("Match 2") && m.subtitle.split(" · ")[0] === m1.subtitle.split(" · ")[0])!;
+    expect(new Date(m2.startsAt).getTime() - new Date(m1.startsAt).getTime()).toBe(45 * 60_000);
+    expect(new Date(m1.startsAt).getTime() - new Date(m1.control.unlocksAt!).getTime()).toBe(30 * 60_000);
+    expect(m1.control.reason).toMatch(/^Registration is open until 8:30 PM/);
+  });
+
   it("/outputs: live page, no site YouTube, the manager's stream keys", async () => {
     const res = await get("/outputs");
     expect(res.body).toEqual({ livePage: true, siteYoutube: null, destinations: [{ id: destId, name: "My Twitch", kind: "CUSTOM" }] });

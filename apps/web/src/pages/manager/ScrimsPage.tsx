@@ -12,6 +12,8 @@ import {
   Play,
   Plus,
   Repeat,
+  EyeOff,
+  Radio,
 } from "lucide-react";
 import { toast } from "sonner";
 import { addDays, DATE_RE, todayInAppTz, type Scrim, type ScrimStatus } from "@7xen/shared";
@@ -35,6 +37,7 @@ import { DatePickerButton } from "@/features/manager/components/DatePickerButton
 import { DateStrip } from "@/features/manager/components/DateStrip";
 import { QueryError } from "@/features/manager/components/QueryError";
 import { ScrimStatusPill } from "@/features/manager/components/ScrimStatusPill";
+import { DraftPill, usePublishScrim } from "@/features/manager/components/MatchSchedule";
 import { SessionCard, SessionCardSkeleton } from "@/features/manager/components/SessionCard";
 import { Zone } from "@/features/manager/components/Zone";
 
@@ -214,6 +217,7 @@ function ScrimRow({ scrim }: { scrim: Scrim }) {
       },
     );
   const archived = scrim.status === "ARCHIVED";
+  const publish = usePublishScrim(scrim);
   return (
     <li className={cn("flex items-center gap-3 py-3", archived && "opacity-70")}>
       <div className="min-w-0 flex-1">
@@ -228,13 +232,14 @@ function ScrimRow({ scrim }: { scrim: Scrim }) {
           </span>
         </p>
       </div>
+      {!scrim.published && <DraftPill />}
       {scrim.status !== "ACTIVE" && <ScrimStatusPill status={scrim.status} />}
       <Button asChild size="sm" variant="outline" className="hidden h-10 sm:inline-flex">
         <Link to={`/manager/scrims/${scrim.id}`}>Open</Link>
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-10" aria-label="More actions" disabled={upd.isPending}>
+          <Button variant="ghost" size="icon" className="size-10" aria-label="More actions" disabled={upd.isPending || publish.pending}>
             <MoreHorizontal />
           </Button>
         </DropdownMenuTrigger>
@@ -249,6 +254,16 @@ function ScrimRow({ scrim }: { scrim: Scrim }) {
               <Pencil /> Edit
             </Link>
           </DropdownMenuItem>
+          {!archived &&
+            (scrim.published ? (
+              <DropdownMenuItem onSelect={() => publish.setPublished(false)}>
+                <EyeOff /> Move to draft
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem onSelect={() => publish.setPublished(true)}>
+                <Radio /> Publish
+              </DropdownMenuItem>
+            ))}
           {scrim.status === "ACTIVE" && (
             <DropdownMenuItem onSelect={() => setStatus("PAUSED", `Paused “${scrim.title}” — teams can't register until you resume it`)}>
               <Pause /> Pause

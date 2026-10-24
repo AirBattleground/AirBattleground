@@ -71,7 +71,8 @@ async function seedAdmin() {
 async function upsertUser(username: string, password: string, role: "MANAGER", displayName: string) {
   const existing = await prisma.user.findUnique({ where: { username } });
   if (existing) return existing;
-  return prisma.user.create({ data: { username, passwordHash: await hash(password), role, displayName } });
+  // dev email so the web's email sign-in finds the demo manager (managers sign in on the web by email)
+  return prisma.user.create({ data: { username, passwordHash: await hash(password), role, displayName, email: `${username}@7xen.dev` } });
 }
 
 async function upsertScrim(
@@ -407,7 +408,7 @@ async function main() {
   console.log(`  Recipes       : ${recipes} default manager-app recipe(s) created`);
   console.log(`  Training      : ${samples} new real screenshot sample(s) in ${storageRoot()}/samples/seed`);
   if (demo) {
-    console.log(`  Managers      : manager1, manager2  /  ${MANAGER_PASSWORD}`);
+    console.log(`  Managers      : web dev login as manager1@7xen.dev, manager2@7xen.dev  ·  Manager app: manager1, manager2 / ${MANAGER_PASSWORD}`);
     console.log(`  Invitation    : organiser@7xen.dev (pending; dev login with it to become a manager)`);
     console.log(`  Players       : dev login (PLAYER_DEV_LOGIN=1) as ${playerEmail(1)} … ${playerEmail(PLAYERS.length)}`);
     console.log(`                  leaders: ${playerEmail(1)} (Team Soul), ${playerEmail(5)} (GodLike), ${playerEmail(8)} (Blind); ${playerEmail(10)} has no team`);
