@@ -28,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw e;
       }
     },
-    staleTime: 5 * 60_000,
+    staleTime: 30_000, // short, so refocusing an idle tab re-checks the session and a dead one lands on login
   });
   const loginM = useMutation({
     mutationFn: (credential: string) => api.post<AuthResponse>("/api/admin/auth/google", { credential }),

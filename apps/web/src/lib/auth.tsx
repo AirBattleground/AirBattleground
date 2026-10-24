@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw e;
       }
     },
-    staleTime: 5 * 60_000,
+    staleTime: 30_000, // short, so refocusing an idle tab re-checks the session and a dead one lands on login
   });
   // Google / dev sign-in. Going through a mutation re-renders this provider, so the `me` observer
   // re-attaches to the fresh cache entry after qc.clear().
