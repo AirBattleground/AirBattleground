@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { MAPS, MAX_ROOM_SLOTS, POSTER_TEMPLATES, RECURRENCES, SCRIM_STATUSES, TEAM_REQUEST_STATUSES } from "./enums";
-import { DATE_RE, matchTimesIssue, TIME_RE } from "./schedule";
+import { MAPS, MAX_REG_OPEN_DAYS_BEFORE, MAX_ROOM_SLOTS, POSTER_TEMPLATES, RECURRENCES, SCRIM_STATUSES, TEAM_REQUEST_STATUSES } from "./enums";
+import { DATE_RE, matchTimesIssue, regOpenTimeIssue, TIME_RE } from "./schedule";
 import { winCoinsSchema } from "./coins";
 
 const username = z
@@ -138,9 +138,15 @@ const scrimBase = z.object({
   firstSlot: z.number().int().min(1).max(MAX_ROOM_SLOTS).default(1),
   /** phase 7: BG coins for the winner of each match (see coins.ts) */
   winCoins: winCoinsSchema.default(0),
+  /** "HH:mm" IST registration opens; null/omitted = automatic (see registrationOpensAt) */
+  regOpenTime: timeString.nullable().optional(),
+  /** with regOpenTime: open this many days before the match day (0 = same day) */
+  regOpenDaysBefore: z.number().int().min(0).max(MAX_REG_OPEN_DAYS_BEFORE).default(0),
 });
 
 export const createScrimSchema = scrimBase.superRefine((v, ctx) => {
+  const regOpen = regOpenTimeIssue({ ...v, startTime: v.matchTimes?.[0] ?? v.startTime });
+  if (regOpen) ctx.addIssue({ code: "custom", path: ["regOpenTime"], message: regOpen });
   if (v.firstSlot + v.slotCount - 1 > MAX_ROOM_SLOTS) {
     ctx.addIssue({
       code: "custom",

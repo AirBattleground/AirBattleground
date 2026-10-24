@@ -136,6 +136,8 @@ export function toScrim(s: ScrimWithManager): Scrim {
     posterUrl: brandingUrl(s.posterKey),
     posterTemplate: posterTemplateOf(s.posterTemplate),
     winCoins: s.winCoins,
+    regOpenTime: s.regOpenTime,
+    regOpenDaysBefore: s.regOpenDaysBefore,
     createdAt: s.createdAt.toISOString(),
   };
 }

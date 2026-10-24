@@ -82,6 +82,8 @@ export const scrimUi = defineMessages({
     register_team: "Register my team",
     full_waitlist: "All slots filled",
     reg_closed: "Registration closed",
+    opens_in: "Opens in",
+    reg_opens: "Registration opens {when}",
     this_scrim: "this scrim",
   },
   hi: {
@@ -153,6 +155,8 @@ export const scrimUi = defineMessages({
     register_team: "मेरी टीम रजिस्टर करें",
     full_waitlist: "सारे स्लॉट भरे",
     reg_closed: "रजिस्ट्रेशन बंद",
+    opens_in: "खुलने में",
+    reg_opens: "रजिस्ट्रेशन {when} खुलेगा",
     this_scrim: "इस स्क्रिम",
   },
   hinglish: {
@@ -224,6 +228,8 @@ export const scrimUi = defineMessages({
     register_team: "Meri team register karo",
     full_waitlist: "Saare slots full",
     reg_closed: "Registration band",
+    opens_in: "Khulne mein",
+    reg_opens: "Registration {when} khulega",
     this_scrim: "is scrim",
   },
 });

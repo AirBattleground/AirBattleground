@@ -12,6 +12,7 @@ import {
   createScrimSchema,
   DEFAULT_IDP_MINUTES,
   matchOffsets,
+  MAX_REG_OPEN_DAYS_BEFORE,
   MAX_ROOM_SLOTS,
   todayInAppTz,
   updateScrimSchema,
@@ -22,13 +23,14 @@ import { PageHeader } from "@7xen/ui/components/brand/page";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Input } from "@7xen/ui/components/ui/input";
 import { Label } from "@7xen/ui/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@7xen/ui/components/ui/select";
 import { Skeleton } from "@7xen/ui/components/ui/skeleton";
 import { Switch } from "@7xen/ui/components/ui/switch";
 import { Textarea } from "@7xen/ui/components/ui/textarea";
 import { cn } from "@7xen/ui/lib/utils";
 import { usePageTour, type TourStep } from "@7xen/ui/tour";
 import { errorMessage, useCreateScrim, useScrim, useScrims, useUpdateScrim } from "@/features/manager/api";
-import { formatDate, formatTime, nextOccurrences, scheduleSummary, slotRangeLabel } from "@/features/manager/format";
+import { formatDate, formatTime, nextOccurrences, regOpenSummary, scheduleSummary, slotRangeLabel } from "@/features/manager/format";
 import { DatePickerButton } from "@/features/manager/components/DatePickerButton";
 import { MapChip } from "@/features/manager/components/maps";
 import { DEFAULT_GAP, MatchPlanEditor, RegistrationClosePicker, type MatchPlanValue } from "@/features/manager/components/MatchPlanEditor";
@@ -48,6 +50,7 @@ const TOUR: TourStep[] = [
   { element: '[data-tour="form-basics"]', title: "Give it a name", description: "Teams see this title when they browse scrims, so keep it clear — e.g. “Evening T3 Scrims”." },
   { element: '[data-tour="form-schedule"]', title: "When does it run?", description: "One-time, every day, or weekends only. Daily and weekend scrims repeat the same matches every day." },
   { element: '[data-tour="form-maps"]', title: "Matches", description: "Pick how many matches, then a map, start time and IDP time for each (Indian time). Moving match 1 moves them all." },
+  { element: '[data-tour="form-open"]', title: "Registration opens", description: "Leave it automatic, or pick the day and time registration opens. Daily and weekend scrims open separately for each day." },
   { element: '[data-tour="form-close"]', title: "Registration closes", description: "When match 1 starts, or a few minutes before so you have time to set up the lobby. After that only registered teams see the scrim." },
   { element: '[data-tour="form-slots"]', title: "Slots", description: "How many teams can join, and which slot number they start from. The grid shows exactly which slots teams get." },
   { element: '[data-tour="form-coins"]', title: "BG coins", description: "Coins the winner of each match earns. They go to the winning team's leader when you publish the results." },
@@ -68,7 +71,7 @@ type FieldName = keyof FormIn;
 const STEP_FIELDS: FieldName[][] = [
   ["title", "description", "posterTemplate"],
   ["recurrence", "startDate", "endDate"],
-  ["maps", "startTime", "matchTimes", "idpMinutes", "registrationCloseMinutes"],
+  ["maps", "startTime", "matchTimes", "idpMinutes", "registrationCloseMinutes", "regOpenTime", "regOpenDaysBefore"],
   ["slotCount", "firstSlot", "winCoins"],
   ["published"],
 ];
@@ -95,6 +98,8 @@ function defaults(): FormIn {
     slotCount: 16,
     firstSlot: 3,
     winCoins: 0,
+    regOpenTime: null,
+    regOpenDaysBefore: 0,
   };
 }
 
@@ -116,8 +121,12 @@ function fromScrim(s: Scrim): FormIn {
     slotCount: s.slotCount,
     firstSlot: s.firstSlot,
     winCoins: s.winCoins,
+    regOpenTime: s.regOpenTime,
+    regOpenDaysBefore: s.regOpenDaysBefore,
   };
 }
+
+const DAYS_BEFORE = Array.from({ length: MAX_REG_OPEN_DAYS_BEFORE + 1 }, (_, n) => n);
 
 export default function ScrimFormPage() {
   const { scrimId } = useParams();
@@ -178,6 +187,9 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
   const matchTimes = watch("matchTimes") ?? [];
   const idpMinutes = watch("idpMinutes") ?? [];
   const closeMinutes = watch("registrationCloseMinutes") ?? 0;
+  const regOpenTime = watch("regOpenTime");
+  const regOpenDaysBefore = watch("regOpenDaysBefore") ?? 0;
+  const regAuto = !regOpenTime;
   const published = watch("published") ?? true;
   const slotCount = watch("slotCount");
   const firstSlot = watch("firstSlot") ?? 1;
@@ -221,12 +233,18 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
       ...values,
       startTime: values.matchTimes?.[0] ?? values.startTime,
       endDate: values.recurrence === "ONCE" ? null : (values.endDate ?? null),
+      regOpenTime: values.regOpenTime ?? null,
+      regOpenDaysBefore: values.regOpenTime ? values.regOpenDaysBefore : 0,
     };
     try {
       const saved = isEdit
         ? await update.mutateAsync({ id: scrim.id, input: updateScrimSchema.parse(payload) })
         : await create.mutateAsync(payload);
-      const created = saved.published ? "Scrim published — teams can register now" : "Saved as a draft — teams can't see it yet";
+      const created = !saved.published
+        ? "Saved as a draft — teams can't see it yet"
+        : saved.recurrence === "ONCE" && !saved.regOpenTime
+          ? "Scrim published — teams can register now"
+          : "Scrim published";
       toast.success(isEdit ? "Changes saved" : created, { description: saved.title });
       navigate(`/manager/scrims/${saved.id}`);
     } catch (err) {
@@ -410,6 +428,55 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
             <MatchPlanEditor value={{ maps, matchTimes, idpMinutes }} onChange={setPlan} timeErrors={timeErrors} />
             <FieldError message={errors.maps?.message ?? errors.maps?.root?.message ?? errors.matchTimes?.message ?? errors.idpMinutes?.message} />
 
+            <div data-tour="form-open" className="mt-6 space-y-4 border-t pt-5">
+              <div className="flex min-h-10 items-center justify-between gap-4">
+                <div>
+                  <Label htmlFor="reg-auto" className="font-semibold">Open registration automatically</Label>
+                  <p className="text-sm text-muted-foreground">{regOpenSummary({ recurrence, regOpenTime, regOpenDaysBefore })}</p>
+                </div>
+                <Switch
+                  id="reg-auto"
+                  checked={regAuto}
+                  onCheckedChange={(on) => {
+                    const first = matchTimes[0] ?? startTime;
+                    setValue("regOpenTime", on ? null : first > "12:00" ? "12:00" : "00:00", { shouldDirty: true, shouldValidate: true });
+                    if (on) setValue("regOpenDaysBefore", 0, { shouldDirty: true });
+                  }}
+                />
+              </div>
+              {!regAuto && (
+                <div className="grid gap-5 sm:grid-cols-2">
+                  <Field label="Opens on" error={errors.regOpenDaysBefore?.message}>
+                    <Controller
+                      control={control}
+                      name="regOpenDaysBefore"
+                      render={({ field }) => (
+                        <Select value={String(field.value ?? 0)} onValueChange={(v) => { field.onChange(Number(v)); void trigger("regOpenTime"); }}>
+                          <SelectTrigger className="h-11 w-full sm:w-56">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {DAYS_BEFORE.map((n) => (
+                              <SelectItem key={n} value={String(n)}>
+                                {n === 0 ? "Match day" : `${n} day${n === 1 ? "" : "s"} before`}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </Field>
+                  <Field label="Opens at (IST)" error={errors.regOpenTime?.message}>
+                    <Controller
+                      control={control}
+                      name="regOpenTime"
+                      render={({ field }) => <TimeSelect value={field.value ?? undefined} onChange={field.onChange} invalid={!!errors.regOpenTime} />}
+                    />
+                  </Field>
+                </div>
+              )}
+            </div>
+
             <div data-tour="form-close" className="mt-6 space-y-3 border-t pt-5">
               <div>
                 <p className="font-semibold">Registration closes</p>
@@ -545,6 +612,9 @@ function ScrimForm({ scrim }: { scrim?: Scrim }) {
                 ) : (
                   <span className="text-destructive">No matches yet</span>
                 )}
+              </ReviewRow>
+              <ReviewRow label="Registration opens" onEdit={() => goTo(2)}>
+                <span>{regOpenSummary({ recurrence, regOpenTime, regOpenDaysBefore })}</span>
               </ReviewRow>
               <ReviewRow label="Registration closes" onEdit={() => goTo(2)}>
                 <span>

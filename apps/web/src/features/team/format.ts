@@ -39,6 +39,11 @@ export function whenLabel(date: string, startTime: string, today: string, lang: 
   return `${dayLabel(date, today, lang)} · ${formatTime(startTime)}`;
 }
 
+/** ISO instant → "HH:mm" on the IST clock. */
+export function istClock(iso: string): string {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(iso));
+}
+
 /** Date helpers bound to the current portal language. */
 export function useDayFormat() {
   const { lang } = useLocale();

@@ -68,6 +68,19 @@ export function dateRangeLabel(s: { recurrence: Recurrence; startDate: string; e
 }
 
 /** Plain-English summary used on the scrim form. */
+/** Plain-English "when can teams register" line for the scrim form. */
+export function regOpenSummary(s: { recurrence: Recurrence; regOpenTime?: string | null; regOpenDaysBefore?: number }): string {
+  const each = s.recurrence === "ONCE" ? "the match" : "each match";
+  if (!s.regOpenTime) {
+    return s.recurrence === "ONCE"
+      ? "Teams can register as soon as it's published."
+      : "Each day's registration opens at 12:00 AM that day.";
+  }
+  const n = s.regOpenDaysBefore ?? 0;
+  const day = n === 0 ? `on the day of ${each}` : `${n} day${n === 1 ? "" : "s"} before ${each}`;
+  return `Registration opens ${day} at ${formatTime(s.regOpenTime)} IST.`;
+}
+
 export function scheduleSummary(s: {
   recurrence: Recurrence;
   startDate?: string;

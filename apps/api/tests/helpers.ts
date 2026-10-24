@@ -108,6 +108,9 @@ export async function createScrim(manager: TestAgent, overrides: Record<string, 
     startDate: yesterday(),
     slotCount: 4,
     firstSlot: 3,
+    // open a week ahead so tests can register for tomorrow (automatic = only on the match day)
+    regOpenTime: "00:00",
+    regOpenDaysBefore: 7,
     ...overrides,
   });
   if (res.status !== 201) throw new Error(`create scrim failed: ${JSON.stringify(res.body)}`);

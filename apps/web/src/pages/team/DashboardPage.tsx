@@ -44,8 +44,8 @@ function teamSteps(t: DashT): TourStep[] {
     { element: '[data-tour="home-live"]', title: t("tour_live_title"), description: t("tour_live_text"), side: "top" },
     { element: '[data-tour="next-room"]', title: t("tour_room_title"), description: t("tour_room_text"), side: "bottom" },
     { element: '[data-tour="team-suggestions"]', title: t("tour_sugg_title"), description: t("tour_sugg_text"), side: "top" },
-    { element: '[data-tour="home-tournaments"]', title: t("tour_cups_title"), description: t("tour_cups_text"), side: "top" },
     { element: '[data-tour="home-scrims"]', title: t("tour_scrims_title"), description: t("tour_scrims_text"), side: "top" },
+    { element: '[data-tour="home-tournaments"]', title: t("tour_cups_title"), description: t("tour_cups_text"), side: "top" },
     { element: '[data-tour="upcoming"]', title: t("tour_upcoming_title"), description: t("tour_upcoming_text"), side: "top" },
     { element: '[data-tour="last-result"]', title: t("tour_last_title"), description: t("tour_last_text"), side: "top" },
     { element: '[data-tour="coins"]', title: t("tour_coins_title"), description: t("tour_coins_text"), side: "top" },
@@ -59,8 +59,8 @@ function startSteps(t: DashT): TourStep[] {
     { element: '[data-tour="find-scrim"]', title: t("tour_find_title"), description: t("start_find_text"), side: "bottom" },
     { element: '[data-tour="team-up"]', title: t("start_teamup_title"), description: t("start_teamup_text"), side: "bottom" },
     { element: '[data-tour="home-live"]', title: t("tour_live_title"), description: t("start_live_text"), side: "top" },
-    { element: '[data-tour="home-tournaments"]', title: t("tour_cups_title"), description: t("start_cups_text"), side: "top" },
     { element: '[data-tour="home-scrims"]', title: t("tour_scrims_title"), description: t("start_scrims_text"), side: "top" },
+    { element: '[data-tour="home-tournaments"]', title: t("tour_cups_title"), description: t("start_cups_text"), side: "top" },
     { element: '[data-tour="coins"]', title: t("tour_coins_title"), description: t("start_coins_text"), side: "top" },
     { element: '[data-tour="organisers"]', title: t("tour_org_title"), description: t("tour_org_text"), side: "top" },
   ];
@@ -136,8 +136,8 @@ function StartHome() {
         <TeamUpBanner pending={pending} />
       </div>
       {!isArena && <LiveNowStrip />}
-      <TournamentRail {...featured} />
       <ScrimShowcase data={scrims} />
+      <TournamentRail {...featured} />
       <CoinLeaderboard />
       <OrganiserStrip items={organisers} />
     </div>
@@ -222,12 +222,12 @@ function TeamHome() {
 
       {isLeader && <SuggestionsPanel />}
 
+      <ScrimShowcase data={scrims} />
+
       <div className="flex flex-col gap-4">
         <TournamentRail {...featured} />
         <TournamentsHomeCard mineOnly />
       </div>
-
-      <ScrimShowcase data={scrims} />
 
       {!failed && (
         <div className={cn("grid gap-8 sm:gap-10", showUpcoming && "lg:grid-cols-[1.15fr_1fr] lg:gap-6")}>

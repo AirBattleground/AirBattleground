@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Info, Loader2, Lock, Timer } from "lucide-react";
-import { addMinutesToTime, MAP_LABELS, matchOffsets, type TeamScrimOnDate } from "@7xen/shared";
+import { addMinutesToTime, MAP_LABELS, matchOffsets, todayInAppTz, type TeamScrimOnDate } from "@7xen/shared";
 import { SlotChip } from "@7xen/ui/components/brand/status";
 import { Button } from "@7xen/ui/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@7xen/ui/components/ui/popover";
@@ -14,7 +14,7 @@ import { ScrimPosterArt } from "@/features/posters/ScrimPosterArt";
 import { useCancelRegistration, useRegister } from "../api";
 import { useT } from "@/i18n/core";
 import { scrimUi } from "@/i18n/scrims";
-import { formatTime } from "../format";
+import { formatTime, istClock, useDayFormat } from "../format";
 import { useNow } from "../useNow";
 import { useCardTilt } from "../useCardTilt";
 import { OrganizerBadge, PosterDialog } from "./Branding";
@@ -170,7 +170,12 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
   const [posterFailed, setPosterFailed] = useState(false);
   const preset = !scrim.posterUrl || posterFailed;
   const closed = now >= new Date(closesAt).getTime();
-  const open = item.registrationOpen && !closed;
+  // registration may open later (per-day opening time); flip to open live when it does
+  const { whenLabel } = useDayFormat();
+  const opensAt = item.registrationOpensAt ?? null;
+  const notYet = !!opensAt && now < new Date(opensAt).getTime();
+  const open = !closed && !notYet && (item.registrationOpen || (!!opensAt && scrim.status === "ACTIVE"));
+  const opensWhen = opensAt ? whenLabel(todayInAppTz(new Date(opensAt)), istClock(opensAt), todayInAppTz(new Date(now))) : "";
   const full = counts.slotsLeft <= 0;
   const status = my?.status === "CANCELLED" ? null : (my?.status ?? null);
 
@@ -192,10 +197,14 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
 
   const closes = (
     <span className={cn("inline-flex items-center gap-1 text-xs font-medium", open ? "text-muted-foreground" : "text-destructive")}>
-      {open ? <Timer className="size-3.5 text-primary" /> : <Lock className="size-3.5" />}
+      {open || notYet ? <Timer className="size-3.5 text-primary" /> : <Lock className="size-3.5" />}
       {open ? (
         <span>
           {t("closes_in")} <Countdown to={closesAt} className="font-semibold text-foreground" />
+        </span>
+      ) : notYet ? (
+        <span className="text-muted-foreground">
+          {t("opens_in")} <Countdown to={opensAt} className="font-semibold text-foreground" />
         </span>
       ) : started ? (
         t("started")
@@ -262,7 +271,7 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
         <div className="relative z-[1] mt-auto flex flex-col gap-2" {...tour("scrim-action")}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={status ?? (open ? "open" : "closed")}
+              key={status ?? (open ? "open" : notYet ? "soon" : "closed")}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
@@ -328,8 +337,9 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
               )}
 
               {status === null && !open && (
-                <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed py-2.5 text-sm font-semibold text-muted-foreground">
-                  <Lock className="size-4" /> {t("reg_closed")}
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2.5 text-center text-sm font-semibold text-muted-foreground">
+                  {notYet ? <Timer className="size-4 shrink-0 text-primary" /> : <Lock className="size-4 shrink-0" />}
+                  {notYet ? t("reg_opens", { when: opensWhen }) : t("reg_closed")}
                 </div>
               )}
             </motion.div>

@@ -299,6 +299,7 @@ function Session({ s }: { s: SessionDetail }) {
   const full = s.counts.slotsLeft === 0;
   const pct = Math.round((s.counts.approved / Math.max(1, s.scrim.slotCount)) * 100);
   const left = countdown(s.startsAt, now);
+  const opensIn = s.registrationOpensAt ? countdown(s.registrationOpensAt, now) : null;
 
   const copyList = async () => {
     const text = slotListText(s.scrim.title, formatDate(s.date), formatTime(s.scrim.startTime), s.slots);
@@ -335,9 +336,9 @@ function Session({ s }: { s: SessionDetail }) {
           ) : (
             <>
               <p className="flex items-center gap-1.5 font-display text-2xl font-bold text-muted-foreground">
-                <Lock className="size-4" /> Closed
+                <Lock className="size-4" /> {opensIn && left ? "Not open yet" : "Closed"}
               </p>
-              <p className="text-xs text-muted-foreground">{left ? "Not taking teams" : "Session started"}</p>
+              <p className="text-xs text-muted-foreground">{!left ? "Session started" : opensIn ? `Opens in ${opensIn}` : "Not taking teams"}</p>
             </>
           )}
         </div>

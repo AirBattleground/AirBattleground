@@ -178,6 +178,10 @@ export interface Scrim {
   posterTemplate: PosterTemplate;
   /** phase 7: BG coins for each match winner (0 = none) */
   winCoins: number;
+  /** additive: "HH:mm" IST registration opens; null = automatic (one-time: right away, repeating: 12:00 AM on the match day) */
+  regOpenTime: string | null;
+  /** additive: with regOpenTime, days before the match day (0 = same day) */
+  regOpenDaysBefore: number;
   createdAt: string;
 }
 
@@ -196,6 +200,8 @@ export interface ScrimOnDate {
   startsAt: string;
   /** additive: ISO instant registration closes (= startsAt unless the scrim closes earlier) */
   registrationClosesAt: string;
+  /** additive: ISO instant registration opens; null = open since the scrim was published */
+  registrationOpensAt: string | null;
   registrationOpen: boolean;
   counts: { pending: number; approved: number; slotsLeft: number };
 }

@@ -12,7 +12,7 @@ import {
   toRegistration,
   toScrim,
 } from "../lib/serialize.js";
-import { closesAtOf, scrimOccursOn, startsAtOf } from "./schedule.js";
+import { closesAtOf, registrationWindowError, scrimOccursOn, startsAtOf } from "./schedule.js";
 import { markSuggestionsDone } from "./suggestions.js";
 
 const REG_NOT_FOUND = "Registration not found";
@@ -179,9 +179,8 @@ export async function registerTeam(teamId: string, scrimId: string, date: string
   if (!scrim || !scrim.manager.isActive || scrim.status === "ARCHIVED" || !scrim.published) throw notFound("Scrim not found");
   if (!scrimOccursOn(scrim, date)) throw notFound("This scrim doesn't run on that date");
   if (scrim.status !== "ACTIVE") throw new AppError("REGISTRATION_CLOSED", "This scrim isn't taking registrations right now");
-  if (now >= closesAtOf(date, scrim)) {
-    throw new AppError("REGISTRATION_CLOSED", "Registration for this scrim has closed");
-  }
+  const closed = registrationWindowError(scrim, date, now);
+  if (closed) throw new AppError("REGISTRATION_CLOSED", closed);
 
   const session = await ensureSession(scrim.id, date);
   const id = await prisma.$transaction(

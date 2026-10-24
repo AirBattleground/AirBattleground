@@ -134,6 +134,30 @@ export function matchStartsAt(s: ScrimPlanLike, date: string, number: number): D
   return new Date(sessionStartsAt(date, plan[0]!.startTime!).getTime() + offset * 60_000);
 }
 
+export interface RegOpenLike {
+  recurrence: Recurrence;
+  /** "HH:mm" IST; null = automatic */
+  regOpenTime: string | null;
+  /** days before the match day that `regOpenTime` falls on (0 = match day) */
+  regOpenDaysBefore: number;
+}
+
+/**
+ * When registration for the session on `date` opens; null = open since the scrim was published.
+ * Automatic: one-time scrims open right away, repeating scrims open at 12:00 AM on each match day.
+ */
+export function registrationOpensAt(s: RegOpenLike, date: string): Date | null {
+  if (s.regOpenTime) return sessionStartsAt(addDays(date, -s.regOpenDaysBefore), s.regOpenTime);
+  return s.recurrence === "ONCE" ? null : sessionStartsAt(date, "00:00");
+}
+
+/** Same-day opening time issue: it must come before registration closes. */
+export function regOpenTimeIssue(s: { regOpenTime?: string | null; regOpenDaysBefore?: number; startTime: string; registrationCloseMinutes?: number }): string | null {
+  if (!s.regOpenTime || (s.regOpenDaysBefore ?? 0) > 0) return null;
+  const mins = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5));
+  return mins(s.regOpenTime) < mins(s.startTime) - (s.registrationCloseMinutes ?? 0) ? null : "Must be before registration closes";
+}
+
 /** When registration for a scrim's session on `date` closes: `closeMinutes` before match 1. */
 export function registrationClosesAt(date: string, startTime: string, closeMinutes: number): Date {
   return new Date(sessionStartsAt(date, startTime).getTime() - closeMinutes * 60_000);

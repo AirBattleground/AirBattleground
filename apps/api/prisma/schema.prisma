@@ -377,6 +377,10 @@ model Scrim {
   posterTemplate String @default("TOPO")
   /// BG coins credited to the winning team's leader for each published match (0 = none)
   winCoins     Int         @default(0)
+  /// "HH:mm" IST registration opens; null = automatic (ONCE: on publish, repeating: 00:00 on the match day)
+  regOpenTime       String?
+  /// with regOpenTime: days before the match day (0 = same day)
+  regOpenDaysBefore Int     @default(0)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 

@@ -1,5 +1,5 @@
 import type { Prisma, RegistrationStatus } from "@prisma/client";
-import { occursOn, registrationClosesAt, sessionStartsAt, todayInAppTz, type ScrimOnDate } from "@7xen/shared";
+import { occursOn, registrationClosesAt, registrationOpensAt, sessionStartsAt, todayInAppTz, type ScrimOnDate } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { dateToStr, strToDate, toScrim, type ScrimWithManager } from "../lib/serialize.js";
 
@@ -14,6 +14,21 @@ export const startsAtOf = (date: string, startTime: string): Date => sessionStar
 /** When registration for a scrim's session on `date` closes (match 1's start minus the scrim's close offset). */
 export const closesAtOf = (date: string, s: { startTime: string; registrationCloseMinutes: number }): Date =>
   registrationClosesAt(date, s.startTime, s.registrationCloseMinutes);
+
+/** Why a team can't register for `scrim` on `date` right now, or null if the window is open (status checked by the caller). */
+export function registrationWindowError(
+  scrim: { recurrence: ScrimWithManager["recurrence"]; startTime: string; registrationCloseMinutes: number; regOpenTime: string | null; regOpenDaysBefore: number },
+  date: string,
+  now: Date,
+): string | null {
+  if (now >= closesAtOf(date, scrim)) return "Registration for this scrim has closed";
+  const opens = registrationOpensAt(scrim, date);
+  if (opens && now < opens) return `Registration opens ${fmtOpens(opens)}`;
+  return null;
+}
+
+const fmtOpens = (d: Date) =>
+  new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit", hour12: true }).format(d) + " IST";
 
 export function scheduleOf(s: { recurrence: ScrimWithManager["recurrence"]; startDate: Date; endDate: Date | null }) {
   return { recurrence: s.recurrence, startDate: dateToStr(s.startDate), endDate: s.endDate ? dateToStr(s.endDate) : null };
@@ -70,12 +85,14 @@ export function buildScrimOnDate(
 ): ScrimOnDate {
   const startsAt = startsAtOf(date, scrim.startTime);
   const closesAt = closesAtOf(date, scrim);
+  const opensAt = registrationOpensAt(scrim, date);
   return {
     scrim: toScrim(scrim),
     date,
     startsAt: startsAt.toISOString(),
     registrationClosesAt: closesAt.toISOString(),
-    registrationOpen: scrim.status === "ACTIVE" && scrim.published && now < closesAt,
+    registrationOpensAt: opensAt ? opensAt.toISOString() : null,
+    registrationOpen: scrim.status === "ACTIVE" && scrim.published && now < closesAt && (!opensAt || now >= opensAt),
     counts: {
       pending: counts.pending,
       approved: counts.approved,

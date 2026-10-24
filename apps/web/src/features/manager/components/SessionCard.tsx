@@ -41,7 +41,7 @@ export function SessionCard({ session, className, ...rest }: { session: ScrimOnD
       <div className="ml-auto flex items-center gap-2">
         {!registrationOpen && (
           <Pill tone="neutral" icon={<Lock className="size-3.5" />}>
-            Closed
+            {session.registrationOpensAt && Date.now() < Date.parse(session.registrationOpensAt) ? "Opens later" : "Closed"}
           </Pill>
         )}
         <Button asChild size="sm" variant="outline" className="h-10">

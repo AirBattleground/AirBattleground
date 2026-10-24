@@ -3,6 +3,7 @@ import {
   addMinutesToTime,
   matchStartsAt,
   matchTimesIssue,
+  regOpenTimeIssue,
   MAX_ROOM_SLOTS,
   scrimMatchPlan,
   slotRange,
@@ -82,6 +83,8 @@ export async function createScrim(managerId: string, input: CreateScrimInput): P
       slotCount: input.slotCount,
       firstSlot: input.firstSlot,
       winCoins: input.winCoins,
+      regOpenTime: input.regOpenTime ?? null,
+      regOpenDaysBefore: input.regOpenTime ? input.regOpenDaysBefore : 0,
     },
     include: scrimInclude,
   });
@@ -99,8 +102,13 @@ export async function updateScrim(scrimId: string, managerId: string, input: Upd
   const slotCount = input.slotCount ?? current.slotCount;
   const firstSlot = input.firstSlot ?? current.firstSlot;
   const plan = mergePlan(current, input);
+  const regOpenTime = input.regOpenTime !== undefined ? input.regOpenTime : current.regOpenTime;
+  const regOpenDaysBefore = regOpenTime ? (input.regOpenDaysBefore ?? current.regOpenDaysBefore) : 0;
+  const registrationCloseMinutes = input.registrationCloseMinutes ?? current.registrationCloseMinutes;
 
   const fields: Record<string, string> = {};
+  const regOpenIssue = regOpenTimeIssue({ regOpenTime, regOpenDaysBefore, startTime: plan.startTime, registrationCloseMinutes });
+  if (regOpenIssue) fields.regOpenTime = regOpenIssue;
   if (firstSlot + slotCount - 1 > MAX_ROOM_SLOTS) fields.slotCount = `Slots would go past #${MAX_ROOM_SLOTS}`;
   if (endDate && endDate < startDate) fields.endDate = "End date is before start date";
   if (plan.matchTimes.length && plan.matchTimes.length !== plan.maps.length) fields.matchTimes = "Give every match a start time";
@@ -157,6 +165,8 @@ export async function updateScrim(scrimId: string, managerId: string, input: Upd
     endDate: endDate ? strToDate(endDate) : null,
     slotCount,
     firstSlot,
+    regOpenTime,
+    regOpenDaysBefore,
   };
   if (input.title !== undefined) data.title = input.title;
   if ("description" in input) data.description = input.description ?? null;

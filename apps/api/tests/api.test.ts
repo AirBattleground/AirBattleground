@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { addMinutesToTime } from "@7xen/shared";
+import { addDays, addMinutesToTime } from "@7xen/shared";
 import {
   adminAgent,
   http,
@@ -179,7 +179,9 @@ describe("manager scrims", () => {
     expect(sat.body.items[0]).toMatchObject({
       date: "2030-01-05",
       startsAt: "2030-01-05T12:30:00.000Z",
-      registrationOpen: true,
+      // repeating + automatic: each day's registration opens at 12:00 AM IST that day
+      registrationOpensAt: "2030-01-04T18:30:00.000Z",
+      registrationOpen: false,
       counts: { pending: 0, approved: 0, slotsLeft: 16 },
     });
     expect((await mgr.get("/api/manager/schedule").query({ date: "2030-01-07" })).body.items).toHaveLength(0);
@@ -188,6 +190,32 @@ describe("manager scrims", () => {
     expect(bad.status).toBe(400);
     expect(bad.body.error.fields).toHaveProperty("maps");
     expect(bad.body.error.fields).toHaveProperty("startTime");
+  });
+
+  it("registration opens per match day: automatic for repeating scrims, or at the manager's time", async () => {
+    const admin = await adminAgent();
+    const { agent: mgr } = await createManager(admin);
+    const { agent: team } = await createTeam(admin);
+    const later = addDays(today(), 3);
+
+    // repeating + automatic: only the match day itself is open
+    const auto = await createScrim(mgr, { startTime: "23:59", startDate: today(), regOpenTime: null, regOpenDaysBefore: 0 });
+    expect((await register(team, auto.id, later)).body.error).toMatchObject({ code: "REGISTRATION_CLOSED", message: expect.stringMatching(/^Registration opens /) });
+    const listed = await team.get("/api/team/scrims").query({ date: later });
+    expect(listed.body.items[0]).toMatchObject({ registrationOpen: false, registrationOpensAt: new Date(`${later}T00:00:00+05:30`).toISOString() });
+
+    // one-time + automatic: open right away
+    const once = await createScrim(mgr, { recurrence: "ONCE", startDate: later, regOpenTime: null, regOpenDaysBefore: 0 });
+    expect((await register(team, once.id, later)).status).toBe(201);
+
+    // manager-set: 3 days before at 00:00 → open now
+    const early = await createScrim(mgr, { startDate: today(), regOpenTime: "00:00", regOpenDaysBefore: 3 });
+    expect((await register(team, early.id, later)).status).toBe(201);
+
+    // on the match day the opening time must come before registration closes
+    const bad = await mgr.post("/api/manager/scrims").send({ title: "Bad open", maps: ["ERANGEL"], startTime: "20:00", recurrence: "DAILY", startDate: today(), slotCount: 4, regOpenTime: "21:00" });
+    expect(bad.body.error.fields).toHaveProperty("regOpenTime");
+    expect((await mgr.patch(`/api/manager/scrims/${early.id}`).send({ regOpenDaysBefore: 0, regOpenTime: "22:00" })).body.error.fields).toHaveProperty("regOpenTime");
   });
 
   it("a manager can't see or modify another manager's scrim", async () => {
