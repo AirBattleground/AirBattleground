@@ -80,7 +80,7 @@ function ScrimTimes({ scrim }: { scrim: TeamScrimOnDate["scrim"] }) {
   const [h = 0, m = 0] = scrim.startTime.split(":").map(Number);
   const nextDay = (i: number) => offsets[i] != null && h * 60 + m + offsets[i]! >= 1440;
   return (
-    <div className="flex min-w-0 items-center gap-1">
+    <div className="relative z-[1] flex min-w-0 items-center gap-1">
       <p className="min-w-0 font-display text-2xl leading-none font-extrabold whitespace-nowrap tabular-nums sm:text-3xl">
         <Clock hhmm={scrim.startTime} />{" "}
         <span className="text-[10px] font-semibold tracking-widest text-muted-foreground sm:text-xs">IST</span>
@@ -157,7 +157,10 @@ function SlotMeter({ approved, total, className }: { approved: number; total: nu
   );
 }
 
-/** `linkTitle`: the title opens the scrim page (off on that page itself). */
+/**
+ * `linkTitle`: the whole card opens the scrim page (off on that page itself) — the title link stretches over the card
+ * (its ::after); the ⓘ and the action buttons sit above it so they keep their own clicks.
+ */
 export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle = true }: { item: TeamScrimOnDate; rejectionReason?: string | null; tourAnchor?: boolean; linkTitle?: boolean }) {
   const { scrim, date, startsAt, counts, myRegistration: my } = item;
   const t = useT(scrimUi);
@@ -229,7 +232,10 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
         <div className={cn("flex flex-col justify-center gap-1.5", preset ? PRESET_TEXT : "min-h-[8.25rem] pl-[7.75rem] sm:min-h-[9.5rem] sm:pl-[9.25rem]")}>
           <h3 className="line-clamp-2 font-display text-lg leading-tight font-extrabold tracking-tight uppercase transition-colors duration-300 group-hover:text-primary sm:text-xl">
             {linkTitle ? (
-              <Link to={`/team/scrims/${scrim.id}?date=${date}`} className="rounded-sm outline-none hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50">
+              <Link
+                to={`/team/scrims/${scrim.id}?date=${date}`}
+                className="rounded-sm outline-none after:absolute after:inset-0 after:z-0 after:rounded-2xl hover:underline focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
                 {scrim.title}
               </Link>
             ) : (
@@ -253,7 +259,7 @@ export function ScrimCard({ item, rejectionReason, tourAnchor = false, linkTitle
         </div>
 
         {/* action */}
-        <div className="mt-auto flex flex-col gap-2" {...tour("scrim-action")}>
+        <div className="relative z-[1] mt-auto flex flex-col gap-2" {...tour("scrim-action")}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={status ?? (open ? "open" : "closed")}
