@@ -200,7 +200,8 @@ export interface StudioLinkWinner {
   logo?: string;
   kills: number;
   totalPoints: number;
-  players: { name: string; kills: number }[];
+  /** `photo`: the player's profile picture, only when the name matched a team member's account */
+  players: { name: string; kills: number; photo?: string }[];
 }
 
 export interface StudioLinkLive {

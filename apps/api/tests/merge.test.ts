@@ -52,7 +52,7 @@ describe("name matching", () => {
 });
 
 describe("mergeSlotList", () => {
-  it("creates teams per slot with roster-matched names and team ids", () => {
+  it("creates teams per slot with the names as read and team ids", () => {
     const ex = base("SLOT_LIST");
     ex.teams = [
       { slot: 5, slotConfidence: 0.99, players: [pl("A9xTARUN"), pl("A9xRo1f", { rosterMatch: "A9xRolf", confidence: 0.7 })] },
@@ -62,7 +62,7 @@ describe("mergeSlotList", () => {
     const out = mergeSlotList([], ex, ctx);
     expect(out.teams.map((t) => t.slotNumber)).toEqual([5, 10]);
     expect(out.teams[0]!.teamId).toBe("tA");
-    expect(out.teams[0]!.players[1]).toMatchObject({ position: 2, name: "A9xRolf", ocrName: "A9xRo1f", ocrConfidence: 0.7 });
+    expect(out.teams[0]!.players[1]).toMatchObject({ position: 2, name: "A9xRo1f", ocrName: "A9xRo1f", ocrConfidence: 0.7 });
     expect(out.teams[1]!.teamId).toBeNull();
     expect(out.warnings).toEqual([expect.stringContaining("Couldn't read the slot number")]);
   });
@@ -107,6 +107,20 @@ describe("mergeResults", () => {
     expect(s5).toMatchObject({ placement: 2, kills: 6 });
     expect(s5.players.find((p) => p.name === "A9xRolf")!.kills).toBe(1);
     expect(out.warnings).toEqual([expect.stringMatching(/Couldn't match rank 3 .*Nobody, Stranger/)]);
+  });
+
+  it("a full lineup + a player who joined late: his finishes still count for the team", () => {
+    const joined: DraftTeam[] = [{ slotNumber: 3, teamId: "tA", placement: null, kills: null, players: ["A2", "A3", "B4"].map((name, i) => ({ position: i + 1, name, ocrName: name, ocrConfidence: 0.9, kills: null })) }];
+    const ex = base("RESULTS");
+    ex.rows = [{ rank: 4, rankConfidence: 0.99, inferredSlot: 3, players: [pl("A2", { kills: 1 }), pl("A3", { kills: 1 }), pl("B4", { kills: 6 })] }];
+    const t = mergeResults(joined, ex, { slotToTeam: new Map([[3, "tA"]]) }).teams[0]!;
+    expect(t).toMatchObject({ placement: 4, kills: 8 });
+    expect(t.players.map((p) => [p.name, p.kills])).toEqual([["A2", 1], ["A3", 1], ["B4", 6]]);
+    // a fourth squad member seen only in the results is added, not dropped
+    ex.rows[0]!.players.push(pl("A9", { kills: 2 }));
+    const t2 = mergeResults(joined, ex, { slotToTeam: new Map([[3, "tA"]]) }).teams[0]!;
+    expect(t2).toMatchObject({ kills: 10 });
+    expect(t2.players.map((p) => p.name)).toEqual(["A2", "A3", "B4", "A9"]);
   });
 
   it("dedupes ranks repeated across screenshots (no double counting)", () => {

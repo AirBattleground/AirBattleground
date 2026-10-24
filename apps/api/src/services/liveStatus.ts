@@ -101,14 +101,17 @@ export async function registeredTeams(m: { sessionId: string | null; groupId: st
   return [];
 }
 
-/** Board player names per team id: the confirmed lineup (first 4 by position), else the roster (null = no IGN). */
-export async function playerNames(matchId: string, slots: SlotTeam[], db: Tx = prisma): Promise<Map<string, (string | null)[]>> {
+/**
+ * Board player names per team id: the lineup read from the lobby (first 4 by position). Before the match starts (no
+ * lobby yet) the registered roster stands in (null = no IGN); once it has, a team nobody joined from has no players.
+ */
+export async function playerNames(matchId: string, slots: SlotTeam[], db: Tx = prisma, rosterFallback = true): Promise<Map<string, (string | null)[]>> {
   const lineup = await db.matchTeam.findMany({
     where: { matchId, teamId: { not: null } },
     select: { teamId: true, players: { orderBy: { position: "asc" }, take: LIVE_TEAM_SIZE, select: { name: true } } },
   });
   const fromLineup = new Map(lineup.filter((t) => t.players.length).map((t) => [t.teamId!, t.players.map((p) => p.name)]));
-  return new Map(slots.map(({ team }) => [team.id, fromLineup.get(team.id) ?? team.members.slice(0, LIVE_TEAM_SIZE).map((x) => x.user.ign)]));
+  return new Map(slots.map(({ team }) => [team.id, fromLineup.get(team.id) ?? (rosterFallback ? team.members.slice(0, LIVE_TEAM_SIZE).map((x) => x.user.ign) : [])]));
 }
 
 // ---------------------------------------------------------------- studio control
@@ -226,7 +229,7 @@ function mvpOf(teams: StudioLinkSummaryTeam[], slots: SlotTeam[], results: Map<s
 async function buildBody(m: MatchWithOwner): Promise<Body> {
   const state = liveState(m.status);
   const slots = await registeredTeams(m);
-  const [names, results] = await Promise.all([playerNames(m.id, slots), state === "scheduled" ? new Map<string, ResultRow>() : resultRows(m.id)]);
+  const [names, results] = await Promise.all([playerNames(m.id, slots, prisma, state === "scheduled"), state === "scheduled" ? new Map<string, ResultRow>() : resultRows(m.id)]);
   const stored = state === "scheduled" ? {} : storedTeams(m.liveTeams);
   const ps = matchPointsSystem(m);
   const logos = new Map(slots.map(({ team }) => [team.id, absolute(brandingUrl(team.logoKey))]));
@@ -272,7 +275,10 @@ async function buildBody(m: MatchWithOwner): Promise<Body> {
         ...(top.logo ? { logo: top.logo } : {}),
         kills: top.kills,
         totalPoints: top.totalPoints,
-        players: (results.get(topTeam.id)?.players ?? []).map((p) => ({ name: p.name, kills: p.kills ?? 0 })),
+        players: (results.get(topTeam.id)?.players ?? []).map((p) => {
+          const photo = p.user ? absolute(avatarOf(p.user)) : null;
+          return { name: p.name, kills: p.kills ?? 0, ...(photo ? { photo } : {}) };
+        }),
       };
     }
   }
@@ -483,7 +489,7 @@ export async function applyCapture(matchId: string, capturedAt: Date, teams: Liv
     if (m.liveAutoAt && m.liveAutoAt >= capturedAt) return { status: "SKIPPED", reason: "a newer capture was already applied" };
 
     const slots = await registeredTeams(m, tx);
-    const names = await playerNames(matchId, slots, tx);
+    const names = await playerNames(matchId, slots, tx, false);
     const stored = storedTeams(m.liveTeams);
     const skipped: string[] = [];
     let changes = 0;

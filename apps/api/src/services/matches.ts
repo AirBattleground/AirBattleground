@@ -507,21 +507,23 @@ export async function saveLineup(matchId: string, managerId: string, input: Save
 }
 
 /**
- * 7XEN Studio Start: the lineup to confirm — every slot read from the lobby keeps what was read; registered teams that
- * weren't seen get their roster (members' IGNs). 409 when there's nobody to start with.
+ * 7XEN Studio Start: the lineup to confirm — the players read from the lobby, slot by slot. Once a lobby was read, a
+ * registered team nobody from it joined has no players (it stays in the match; it just didn't join). Only when no
+ * lobby was read at all do the registered rosters stand in, so a match can still start. 409 when there's nobody.
  */
 export async function startLineup(matchId: string): Promise<SaveLineupInput> {
   const m = await prisma.match.findUniqueOrThrow({ where: { id: matchId }, select: { sessionId: true, groupId: true } });
-  const [regs, draft] = await Promise.all([
-    matchSlots(m),
-    prisma.matchTeam.findMany({ where: { matchId }, include: { players: { orderBy: { position: "asc" } } } }),
-  ]);
-  const read = new Map(draft.filter((t) => t.players.length).map((t) => [t.slotNumber, t.players.map((p) => ({ position: p.position, name: p.name.slice(0, 40) }))]));
-  const roster = new Map(regs.map((r) => [r.slotNumber, rosterNames(r.team).slice(0, MAX_ROSTER_PLAYERS).map((name, i) => ({ position: i + 1, name: name.slice(0, 40) }))]));
-  const slots = [...new Set([...read.keys(), ...roster.keys()])].sort((x, y) => x - y);
-  const teams = slots.map((slotNumber) => ({ slotNumber, players: read.get(slotNumber) ?? roster.get(slotNumber) ?? [] })).slice(0, 25);
-  if (!teams.some((t) => t.players.length)) throw conflict("Nobody to start with — no team has joined this match yet.");
-  return { confirm: true, teams };
+  const draft = await prisma.matchTeam.findMany({ where: { matchId }, include: { players: { orderBy: { position: "asc" } } } });
+  const read = draft.filter((t) => t.players.length).map((t) => ({ slotNumber: t.slotNumber, players: t.players.map((p) => ({ position: p.position, name: p.name.slice(0, 40) })) }));
+  const teams = read.length
+    ? read
+    : (await matchSlots(m)).map((r) => ({
+        slotNumber: r.slotNumber,
+        players: rosterNames(r.team).slice(0, MAX_ROSTER_PLAYERS).map((name, i) => ({ position: i + 1, name: name.slice(0, 40) })),
+      }));
+  const lineup = teams.filter((t) => t.players.length).sort((x, y) => x.slotNumber - y.slotNumber).slice(0, 25);
+  if (!lineup.length) throw conflict("Nobody to start with — no player has joined this match yet.");
+  return { confirm: true, teams: lineup };
 }
 
 /**

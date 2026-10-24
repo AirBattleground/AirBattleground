@@ -314,7 +314,8 @@ describe("studio link", () => {
       expect(grown.status).toBe(200);
       expect(grown.body.version).toBe(out.body.version + 1);
       expect(grown.body.teams.map((t: { slot: number }) => t.slot)).toEqual([3, 4, 5]);
-      expect(grown.body.teams[2]).toMatchObject({ name: "LATE", status: 1 });
+      // it didn't join the lobby the lineup was read from, so it has no players on the board
+      expect(grown.body.teams[2]).toMatchObject({ name: "LATE", status: 0, players: [] });
 
       // kills (FIN.) and total points: points follow the kills until the manager sets them, null goes back
       const fin = await mgr.patch(`/api/manager/matches/${matchId}/team-status`).send({ teamId: soul, kills: 5 });
@@ -643,7 +644,7 @@ describe("studio link", () => {
           expect((await post(`/matches/${matchId}/start`)).status).toBe(409);
         });
 
-        it("before Start a lobby frame fills the team list; Start confirms it (unseen teams get their roster)", async () => {
+        it("before Start a lobby frame fills the team list; Start confirms it (a team nobody joined from has no players)", async () => {
           const { matchId } = await liveSetup(); // yesterday's session: unlocked
           expect((await get(`/matches/${matchId}/live`)).body.control).toMatchObject({ state: "ready", teams: 2, slots: 4 });
 
@@ -669,7 +670,6 @@ describe("studio link", () => {
           ]);
           expect(lineup).toEqual([
             [3, ["MortalX", "RegalX", "ViperX", "OwaisX"]],
-            [4, ["SoloOne"]],
           ]);
         });
 

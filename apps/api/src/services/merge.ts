@@ -41,6 +41,10 @@ interface MergeOutcome {
 }
 
 export const TEAM_SIZE = 4;
+/** A squad is 4, but substitutes who played still get a row (their finishes count for the team). */
+const MAX_MATCH_PLAYERS = 8;
+/** A results name is the same player as a lobby name when at least this alike (same team, same match). */
+const SAME_PLAYER = 0.85;
 const MAX_SLOT = 100;
 
 // ---------------------------------------------------------------- name matching
@@ -80,7 +84,7 @@ export function nameSimilarity(a: string, b: string): number {
   return 1 - levenshtein(x, y) / Math.max([...x].length, [...y].length);
 }
 
-const playerLabel = (p: ExtractedPlayer) => p.rosterMatch ?? p.name;
+const playerLabel = (p: ExtractedPlayer) => p.name;
 const namesOf = (players: ExtractedPlayer[]) => players.map(playerLabel).filter(Boolean).join(", ") || "no names read";
 
 function clone(teams: DraftTeam[]): DraftTeam[] {
@@ -135,7 +139,8 @@ export function mergeSlotList(draft: DraftTeam[], ex: ExtractionResult, ctx: Mer
 
     const players: DraftPlayer[] = t.players.slice(0, 6).map((p, i) => ({
       position: i + 1,
-      name: (p.rosterMatch ?? p.name).trim() || p.name,
+      // what the screenshot said — accounts are linked later (linkMatchPlayers, ≥95%), never by snapping names here
+      name: p.name.trim() || p.name,
       ocrName: p.name,
       ocrConfidence: p.confidence,
       kills: null,
@@ -254,20 +259,20 @@ export function mergeResults(draft: DraftTeam[], ex: ExtractionResult, ctx: Merg
     const free = new Set(team.players);
     const pick = (p: ExtractedPlayer): DraftPlayer | null => {
       const pool = [...free];
-      const exact = pool.find((d) => (p.rosterMatch && d.name === p.rosterMatch) || d.name === p.name || d.ocrName === p.name);
+      const exact = pool.find((d) => d.name === p.name || d.ocrName === p.name);
       if (exact) return exact;
-      const norm = pool.find((d) => normName(d.name) === normName(p.rosterMatch ?? p.name));
+      const norm = pool.find((d) => normName(d.name) === normName(p.name));
       if (norm) return norm;
       let best: DraftPlayer | null = null;
       let bestScore = 0;
       for (const d of pool) {
-        const s = Math.max(nameSimilarity(d.name, p.name), p.rosterMatch ? nameSimilarity(d.name, p.rosterMatch) : 0);
+        const s = nameSimilarity(d.name, p.name);
         if (s > bestScore) {
           best = d;
           bestScore = s;
         }
       }
-      return bestScore >= 0.6 ? best : null;
+      return bestScore >= SAME_PLAYER ? best : null;
     };
     for (const p of row.players) {
       const target = pick(p);
@@ -276,7 +281,7 @@ export function mergeResults(draft: DraftTeam[], ex: ExtractionResult, ctx: Merg
         target.kills = p.kills;
         continue;
       }
-      if (team.players.length < TEAM_SIZE) {
+      if (team.players.length < MAX_MATCH_PLAYERS) {
         const position = Math.max(0, ...team.players.map((x) => x.position)) + 1;
         team.players.push({ position, name: playerLabel(p), ocrName: p.name, ocrConfidence: p.confidence, kills: p.kills });
       } else {
