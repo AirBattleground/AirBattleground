@@ -1,9 +1,10 @@
 import { Prisma } from "@prisma/client";
-import { slotRange, type Registration, type TeamRegistration } from "@7xen/shared";
+import { matchStartsAt, slotRange, type Registration, type TeamRegistration } from "@7xen/shared";
 import { prisma } from "../db.js";
 import { AppError, conflict, notFound } from "../lib/errors.js";
 import {
   dateToStr,
+  iso,
   registrationInclude,
   organizerSelect,
   scrimInclude,
@@ -18,13 +19,21 @@ const REG_NOT_FOUND = "Registration not found";
 
 // ---------- shared shape for team-facing registration DTOs ----------
 export const teamRegistrationInclude = {
-  session: { select: { date: true, scrim: { include: scrimInclude } } },
+  session: { select: { date: true, scrim: { include: scrimInclude }, matches: { select: { number: true, status: true } } } },
 } satisfies Prisma.RegistrationInclude;
+
+/** A night stays upcoming for its teams until every match is published, or this long after the last match was due. */
+export const NIGHT_HOLD_MS = 60 * 60_000;
 type TeamRegistrationRow = Prisma.RegistrationGetPayload<{ include: typeof teamRegistrationInclude }>;
 
-export function toTeamRegistration(r: TeamRegistrationRow): TeamRegistration {
+export function toTeamRegistration(r: TeamRegistrationRow, now = new Date()): TeamRegistration {
   const date = dateToStr(r.session.date);
   const s = toScrim(r.session.scrim);
+  const status = new Map(r.session.matches.map((m) => [m.number, m.status]));
+  // the match being played or up next: the first one that hasn't ended (ended = results in review or published)
+  const next = s.matches.find((m) => !["RESULTS_REVIEW", "PUBLISHED"].includes(status.get(m.number) ?? "SCHEDULED"));
+  const allPublished = s.matches.every((m) => status.get(m.number) === "PUBLISHED");
+  const lastStart = matchStartsAt(r.session.scrim, date, s.matches.length) ?? startsAtOf(date, s.startTime);
   return {
     id: r.id,
     status: r.status,
@@ -33,6 +42,8 @@ export function toTeamRegistration(r: TeamRegistrationRow): TeamRegistration {
     date,
     startsAt: startsAtOf(date, s.startTime).toISOString(),
     registrationClosesAt: closesAtOf(date, s).toISOString(),
+    nextGame: next ? { number: next.number, map: next.map, startsAt: iso(matchStartsAt(r.session.scrim, date, next.number)) } : null,
+    over: allPublished || now.getTime() >= lastStart.getTime() + NIGHT_HOLD_MS,
     createdAt: r.createdAt.toISOString(),
     decidedAt: r.decidedAt ? r.decidedAt.toISOString() : null,
     scrim: {

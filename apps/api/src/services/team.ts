@@ -134,29 +134,32 @@ export async function teamScrimDetail(teamId: string | null, scrimId: string, da
   };
 }
 
-/** Non-cancelled registrations whose session hasn't started, soonest first. */
+/**
+ * Non-cancelled registrations whose night isn't over yet (still to start, or matches left to play — see
+ * NIGHT_HOLD_MS), soonest first. Yesterday is included for nights that run past midnight.
+ */
 async function upcomingRegistrations(teamId: string, now: Date): Promise<TeamRegistration[]> {
   const rows = await prisma.registration.findMany({
-    where: { teamId, status: { not: "CANCELLED" }, session: { date: { gte: strToDate(todayInAppTz(now)) } } },
+    where: { teamId, status: { not: "CANCELLED" }, session: { date: { gte: strToDate(addDays(todayInAppTz(now), -1)) }, scrim: { published: true } } },
     include: teamRegistrationInclude,
   });
   return rows
-    .map(toTeamRegistration)
-    .filter((r) => new Date(r.startsAt) >= now)
+    .map((r) => toTeamRegistration(r, now))
+    .filter((r) => !r.over)
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt));
 }
 
-/** Non-cancelled registrations whose session has started, newest first (max 100). */
+/** Non-cancelled registrations whose night is over, newest first (max 100). */
 async function pastRegistrations(teamId: string, now: Date, limit = 100): Promise<TeamRegistration[]> {
   const rows = await prisma.registration.findMany({
     where: { teamId, status: { not: "CANCELLED" }, session: { date: { lte: strToDate(todayInAppTz(now)) } } },
     include: teamRegistrationInclude,
     orderBy: { session: { date: "desc" } },
-    take: limit + 50, // today's not-yet-started sessions get filtered out below
+    take: limit + 50, // nights still running get filtered out below
   });
   return rows
-    .map(toTeamRegistration)
-    .filter((r) => new Date(r.startsAt) < now)
+    .map((r) => toTeamRegistration(r, now))
+    .filter((r) => r.over)
     .sort((a, b) => b.startsAt.localeCompare(a.startsAt))
     .slice(0, limit);
 }
@@ -179,7 +182,7 @@ export async function teamDashboard(teamId: string, myTeamRole: TeamRole = "MEMB
     teamResultsSummary(teamId),
     prisma.teamSuggestion.count({ where: { teamId, status: "OPEN" } }),
   ]);
-  const playedToday = todayApproved.map(toTeamRegistration).filter((r) => new Date(r.startsAt) < now).length;
+  const playedToday = todayApproved.map((r) => toTeamRegistration(r, now)).filter((r) => new Date(r.startsAt) < now).length;
   return {
     team: { id: team.id, name: team.name, tag: team.tag, captainName: captainNameOf(team) },
     today,

@@ -5,6 +5,7 @@ import { addDays, type TeamScrimOnDate } from "@7xen/shared";
 import { Button } from "@7xen/ui/components/ui/button";
 import { cn } from "@7xen/ui/lib/utils";
 import { useTeamScrims } from "../api";
+import { forTeamList } from "../scrimList";
 import { ScrimCard, ScrimCardSkeleton } from "../components/ScrimCard";
 import { StaggerItem, StaggerList } from "../components/Stagger";
 import { SectionHeader } from "./SectionHeader";
@@ -16,11 +17,9 @@ import { homeMsg } from "@/i18n/home";
 /** a sideways rail like the tournaments, so more scrims fit without making Home longer */
 const SHOW = 8;
 
-/** Scrims worth showing on home: still taking teams, or ones the team already asked for. */
+/** Scrims worth showing on home: open to register first, then ones the team is in, then the rest still upcoming. */
 function joinable(items: TeamScrimOnDate[] | undefined): TeamScrimOnDate[] {
-  return (items ?? [])
-    .filter((s) => s.registrationOpen || (s.myRegistration && s.myRegistration.status !== "CANCELLED"))
-    .sort((a, b) => Number(b.registrationOpen) - Number(a.registrationOpen) || a.startsAt.localeCompare(b.startsAt));
+  return forTeamList(items);
 }
 
 /** Today's and tomorrow's lists; exposed so the page can reuse them (organiser strip, hero art). */

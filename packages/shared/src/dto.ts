@@ -270,6 +270,10 @@ export interface TeamRegistration {
   startsAt: string;
   /** additive: ISO instant registration closes (cancelling stops then too) */
   registrationClosesAt?: string;
+  /** additive: the night's match being played now or up next (null = every match is done); startsAt null = not timed */
+  nextGame?: { number: number; map: GameMap; startsAt: string | null } | null;
+  /** additive: the night is over for this team (every match published, or an hour after the last one was due) */
+  over?: boolean;
   createdAt: string;
   decidedAt: string | null;
   scrim: Pick<Scrim, "id" | "title" | "maps" | "startTime" | "slotCount" | "firstSlot" | "manager" | "posterUrl">;

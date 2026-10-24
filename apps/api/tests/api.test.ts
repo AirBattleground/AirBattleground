@@ -301,6 +301,31 @@ describe("scrim match plan, close time, drafts", () => {
     expect((await list(inTeam)).body.items).toEqual([]);
   });
 
+  it("a night stays the team's next match until every match is done; nextGame follows the matches", async () => {
+    const admin = await adminAgent();
+    const { agent: mgr } = await createManager(admin);
+    const { agent: team } = await createTeam(admin);
+    const soon = istClock(new Date(Date.now() + 20 * 60_000));
+    const scrim = await createScrim(mgr, { recurrence: "ONCE", startDate: soon.date, startTime: soon.time, maps: ["ERANGEL", "MIRAMAR"], matchTimes: [soon.time, addMinutesToTime(soon.time, 40)] });
+    expect((await register(team, scrim.id, soon.date)).status).toBe(201);
+    // match 1 started 10 minutes ago, match 2 is in 30
+    const began = istClock(new Date(Date.now() - 10 * 60_000));
+    await mgr.patch(`/api/manager/scrims/${scrim.id}`).send({ startDate: began.date, matchTimes: [began.time, addMinutesToTime(began.time, 40)] }).expect(200);
+    await mgr.get(`/api/manager/scrims/${scrim.id}/sessions/${began.date}/matches`).expect(200);
+    const dash = async () => (await team.get("/api/team/dashboard")).body;
+
+    expect((await dash()).nextMatch).toMatchObject({ over: false, nextGame: { number: 1, map: "ERANGEL" } });
+    await prisma.match.updateMany({ where: { number: 1, session: { scrimId: scrim.id } }, data: { status: "PUBLISHED" } });
+    const d2 = await dash();
+    expect(d2.nextMatch.nextGame).toMatchObject({ number: 2, map: "MIRAMAR" });
+    expect(new Date(d2.nextMatch.nextGame.startsAt).getTime()).toBeGreaterThan(Date.now());
+
+    await prisma.match.updateMany({ where: { session: { scrimId: scrim.id } }, data: { status: "PUBLISHED" } });
+    expect((await dash()).nextMatch).toBeNull();
+    const past = await team.get("/api/team/registrations").query({ scope: "past" });
+    expect(past.body.items).toHaveLength(1);
+  });
+
   it("removing a match drops unplayed match rows, but not one that already started", async () => {
     const admin = await adminAgent();
     const { agent: mgr } = await createManager(admin);

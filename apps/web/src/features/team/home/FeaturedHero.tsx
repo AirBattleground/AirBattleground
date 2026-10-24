@@ -143,6 +143,9 @@ export function NextMatchCard({ booked, open, today, loading }: { booked: TeamRe
 
   if (booked) {
     const s = booked.scrim;
+    // count down to the match being played / up next tonight, not just match 1
+    const game = booked.nextGame;
+    const gameAt = game?.startsAt ?? booked.startsAt;
     return (
       <div className={shell} data-tour="next-match">
         {header("/team/registrations")}
@@ -160,7 +163,8 @@ export function NextMatchCard({ booked, open, today, loading }: { booked: TeamRe
           <Row icon={<CalendarDays />}>{whenLabel(booked.date, s.startTime, today)}</Row>
           <Row icon={<MapIcon />}>{maps(s.maps, t("maps_tba"))}</Row>
           <Row icon={<Timer />}>
-            {t("starts_in")} <Countdown to={booked.startsAt} className="font-semibold" doneText={t("now")} />
+            {game && s.maps.length > 1 && <span className="font-semibold">{t("match_n", { n: game.number, map: MAP_LABELS[game.map] })} · </span>}
+            {t("starts_in")} <Countdown to={gameAt} className="font-semibold" doneText={t("now")} />
           </Row>
         </ul>
         <div className="mt-3 flex items-center gap-3" data-tour="next-slot">

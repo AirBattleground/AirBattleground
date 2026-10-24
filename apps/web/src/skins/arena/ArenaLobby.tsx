@@ -205,7 +205,7 @@ function FindMatch({ next, openThisWeek }: { next: TeamRegistration | null; open
     (rooms ?? [])
       .filter((c) => c.startsAt && new Date(c.startsAt).getTime() + HOLD_MS > now)
       .sort((a, b) => a.startsAt!.localeCompare(b.startsAt!))[0] ?? null;
-  const match = card ? { title: card.title, startsAt: card.startsAt!, slot: card.slotNumber } : next ? { title: next.scrim.title, startsAt: next.startsAt, slot: next.slotNumber } : null;
+  const match = card ? { title: card.title, startsAt: card.startsAt!, slot: card.slotNumber } : next ? { title: next.scrim.title, startsAt: next.nextGame?.startsAt ?? next.startsAt, slot: next.slotNumber } : null;
   return (
     <div data-tour="find-scrim">
       <div className="arena-panel border-b-0 px-4 py-2.5 text-sm text-muted-foreground [clip-path:polygon(14px_0,100%_0,100%_100%,0_100%,0_14px)]">

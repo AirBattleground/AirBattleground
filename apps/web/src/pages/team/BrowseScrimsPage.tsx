@@ -13,6 +13,7 @@ import { QueryError } from "@/features/team/components/QueryError";
 import { ScrimCard, ScrimCardSkeleton } from "@/features/team/components/ScrimCard";
 import { StaggerItem, StaggerList } from "@/features/team/components/Stagger";
 import { useDayFormat } from "@/features/team/format";
+import { forTeamList } from "@/features/team/scrimList";
 import { useT } from "@/i18n/core";
 import { browseMsg, scrimUi } from "@/i18n/scrims";
 
@@ -22,7 +23,7 @@ const UPCOMING_DAYS = 7;
 const SCRIM_GRID = "grid gap-4 grid-cols-[repeat(auto-fill,minmax(min(100%,21rem),1fr))]";
 
 
-type Sort = "time-asc" | "time-desc" | "slots";
+type Sort = "best" | "time-asc" | "time-desc" | "slots";
 
 export default function BrowseScrimsPage() {
   const t = useT(browseMsg);
@@ -46,7 +47,7 @@ export default function BrowseScrimsPage() {
   const date = raw && DATE_RE.test(raw) && raw >= today ? raw : null;
   const week = useMemo(() => Array.from({ length: UPCOMING_DAYS }, (_, i) => addDays(today, i)), [today]);
   const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<Sort>("time-asc");
+  const [sort, setSort] = useState<Sort>("best");
   const [toolsOpen, setToolsOpen] = useState(false);
   // keep the search row visible while a search is active, even if the toggle was closed
   const tools = toolsOpen || !!search;
@@ -59,13 +60,19 @@ export default function BrowseScrimsPage() {
   };
 
   const days = useTeamScrimsForDays(date && !week.includes(date) ? [...week, date] : week);
-  const counts = useMemo(() => new Map(week.map((d) => [d, days.byDate.get(d)?.length])), [days.byDate, week]);
-  // Upcoming leaves out scrims that already started (unless your team is in them) — only joinable ones matter there
+  // per-day badges count what the list will show (undefined = still loading)
+  const counts = useMemo(
+    () => new Map(week.map((d) => [d, days.byDate.get(d) ? forTeamList(days.byDate.get(d)).length : undefined])),
+    [days.byDate, week],
+  );
+  // closed scrims your team isn't in are left out; "best" order = open to register → yours → the rest
   const all = useMemo(() => {
-    if (date) return days.byDate.get(date) ?? null;
+    if (date) {
+      const list = days.byDate.get(date);
+      return list ? forTeamList(list) : null;
+    }
     if (week.every((d) => days.byDate.get(d) === undefined)) return null;
-    const now = Date.now();
-    return week.flatMap((d) => days.byDate.get(d) ?? []).filter((s) => new Date(s.startsAt).getTime() > now || (s.myRegistration && s.myRegistration.status !== "CANCELLED"));
+    return week.flatMap((d) => forTeamList(days.byDate.get(d)));
   }, [date, days.byDate, week]);
   const q = { data: all, isLoading: all === null && days.isLoading, isError: days.isError && all === null, error: days.error, refetch: days.refetch };
   const regs = useMyRegistrations("upcoming");
@@ -77,6 +84,7 @@ export default function BrowseScrimsPage() {
       (s) => !term || s.scrim.title.toLowerCase().includes(term) || s.scrim.manager.displayName.toLowerCase().includes(term),
     );
     const byTime = (a: TeamScrimOnDate, b: TeamScrimOnDate) => a.startsAt.localeCompare(b.startsAt);
+    if (sort === "best") return list; // already in priority order
     return [...list].sort((a, b) =>
       sort === "time-desc" ? byTime(b, a) : sort === "slots" ? b.counts.slotsLeft - a.counts.slotsLeft || byTime(a, b) : byTime(a, b),
     );
@@ -125,7 +133,7 @@ export default function BrowseScrimsPage() {
               title={t("search_label")}
               data-tour="scrim-search"
             >
-              {search || sort !== "time-asc" ? <SlidersHorizontal className="text-primary" /> : <Search />}
+              {search || sort !== "best" ? <SlidersHorizontal className="text-primary" /> : <Search />}
             </Button>
           )}
         </div>
@@ -146,6 +154,7 @@ export default function BrowseScrimsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent align="end">
+                <SelectItem value="best">{t("sort_best")}</SelectItem>
                 <SelectItem value="time-asc">{t("sort_asc")}</SelectItem>
                 <SelectItem value="time-desc">{t("sort_desc")}</SelectItem>
                 <SelectItem value="slots">{t("sort_slots")}</SelectItem>

@@ -77,7 +77,7 @@ function greeting(t: DashT) {
 function nextOpenScrim(lists: TeamScrimOnDate[][]): TeamScrimOnDate | null {
   const now = Date.now();
   for (const list of lists) {
-    const hit = list.find((s) => s.registrationOpen && new Date(s.startsAt).getTime() > now && (!s.myRegistration || s.myRegistration.status === "CANCELLED"));
+    const hit = list.find((s) => s.registrationOpen && new Date(s.registrationClosesAt ?? s.startsAt).getTime() > now && (!s.myRegistration || s.myRegistration.status === "CANCELLED"));
     if (hit) return hit;
   }
   return null;
